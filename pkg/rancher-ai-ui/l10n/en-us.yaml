@@ -164,6 +164,8 @@ ai:
       config:
         label: Edit Configuration
         description: Configure the AI model and provider for your assistant
+  generic:
+    opensInNewTab: Opens in a new tab
 
 aiConfig:
   label: AI Assistant

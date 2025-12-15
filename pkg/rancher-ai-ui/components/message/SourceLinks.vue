@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, PropType, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
 import ContextTag from '../context/ContextTag.vue';
 
@@ -8,16 +8,15 @@ const t = store.getters['i18n/t'];
 
 const isCollapsed = ref(false);
 
-const props = defineProps({
-  links: {
-    type:    Array as PropType<string[]>,
-    default: () => ([]),
-  },
-});
+interface Props {
+  links?: string[];
+}
+const { links = [] } = defineProps<Props>();
 
 const items = computed(() => {
-  return props.links.map((value) => {
-    const lastChunk = value?.split('/').pop() || '';
+  return links.map((value) => {
+    const chunks = value?.split('/') || [];
+    const lastChunk = chunks[chunks.length - 1] || '';
     const label = lastChunk
       .split('-')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -53,19 +52,19 @@ function openLink(url: string) {
       v-if="!isCollapsed"
       class="chat-msg-source-tags"
     >
-      <template
+      <div
         v-for="item in items"
         :key="item.value"
+        @click="openLink(item.value)"
       >
-        <context-tag
+        <span class="sr-only">{{ t('ai.generic.opensInNewTab') }}</span>
+        <ContextTag
           :remove-enabled="false"
           :item="{ value: item.label }"
           type="user"
           class="chat-msg-source-tag"
-          @click.native="openLink(item.value)"
-        >
-        </context-tag>
-      </template>
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -98,5 +97,10 @@ function openLink(url: string) {
   font-size: 0.75rem;
   border: 1px solid #9fabc6;
   cursor: pointer;
+}
+
+// Only display content to screen readers
+.sr-only {
+  visibility: hidden;
 }
 </style>
