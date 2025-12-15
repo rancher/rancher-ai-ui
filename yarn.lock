@@ -2826,10 +2826,10 @@
   resolved "https://registry.yarnpkg.com/@rancher/icons/-/icons-2.0.54.tgz#7e8d4baeac36a483f18f4ce4043809371c4f0117"
   integrity sha512-Fc5xpT/yuOJJin7ChxAdB6aoG1bREgisktnePUPXpY9nIMHSHYT/Ov8GsC3yLLgoqgpm450nMvPICUO3AYcPdQ==
 
-"@rancher/shell@3.0.8-rc.10":
-  version "3.0.8-rc.10"
-  resolved "https://registry.yarnpkg.com/@rancher/shell/-/shell-3.0.8-rc.10.tgz#52519f337e9a91fe9caa31165b0fa0d329f8c7fc"
-  integrity sha512-XrBPsqXx2qeeuDjz2YliFmytdMbvtVz5doRpjXKgJCzEVrK0gEoa1J8Kl6DNr601rOReqnQ3N2kfbiDw0RILbg==
+"@rancher/shell@3.0.8-rc.12":
+  version "3.0.8-rc.12"
+  resolved "https://registry.yarnpkg.com/@rancher/shell/-/shell-3.0.8-rc.12.tgz#e716301910836fb18e45954d6df71abd1414483e"
+  integrity sha512-WIlViZg19B9CjgzOb0TyZXV56RSb0stF1vYBnXjdVrUMSAfdRR3sSk0qaBwfDCUx+w5tHjwr6F79TFMIWbhgVQ==
   dependencies:
     "@aws-sdk/client-ec2" "3.863.0"
     "@aws-sdk/client-eks" "3.879.0"
@@ -2943,7 +2943,7 @@
     vuedraggable "4.1.0"
     vuex "4.1.0"
     webpack-bundle-analyzer "4.10.2"
-    webpack-virtual-modules "0.4.3"
+    webpack-virtual-modules "0.6.2"
     worker-loader "3.0.8"
     xterm "5.2.1"
     xterm-addon-canvas "0.5.0"
@@ -14694,10 +14694,10 @@ webpack-sources@^3.3.3:
   resolved "https://registry.yarnpkg.com/webpack-sources/-/webpack-sources-3.3.3.tgz#d4bf7f9909675d7a070ff14d0ef2a4f3c982c723"
   integrity sha512-yd1RBzSGanHkitROoPFd6qsrxt+oFhg/129YzheDGqeustzX0vTZJZsSsQjVQC4yzBQ56K55XU8gaNCtIzOnTg==
 
-webpack-virtual-modules@0.4.3:
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/webpack-virtual-modules/-/webpack-virtual-modules-0.4.3.tgz#cd597c6d51d5a5ecb473eea1983a58fa8a17ded9"
-  integrity sha512-5NUqC2JquIL2pBAAo/VfBP6KuGkHIZQXW/lNKupLPfhViwh8wNsu0BObtl09yuKZszeEUfbXz8xhrHvSG16Nqw==
+webpack-virtual-modules@0.6.2:
+  version "0.6.2"
+  resolved "https://registry.yarnpkg.com/webpack-virtual-modules/-/webpack-virtual-modules-0.6.2.tgz#057faa9065c8acf48f24cb57ac0e77739ab9a7e8"
+  integrity sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==
 
 webpack-virtual-modules@^0.4.2:
   version "0.4.6"
