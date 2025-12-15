@@ -1,0 +1,15 @@
+nameOverride: ""
+fullnameOverride: ""
+plugin:
+  enabled: true
+  versionOverride: ""
+  endpoint: >-
+    https://raw.githubusercontent.com/rancher-sandbox/rancher-ai-ui/gh-pages/extensions/rancher-ai-ui/0.1.15
+  compressedEndpoint: >-
+    https://raw.githubusercontent.com/rancher-sandbox/rancher-ai-ui/gh-pages/extensions/rancher-ai-ui/0.1.15.tgz
+  noCache: false
+  noAuth: false
+  metadata:
+    catalog.cattle.io/display-name: AI Assistant
+    catalog.cattle.io/rancher-version: ">= 2.13.0"
+    catalog.cattle.io/ui-extensions-version: ">= 3.0.0 < 4.0.0"
