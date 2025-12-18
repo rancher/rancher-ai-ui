@@ -2821,10 +2821,10 @@
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.8.tgz#6b79032e760a0899cd4204710beede972a3a185f"
   integrity sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==
 
-"@rancher/cypress@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@rancher/cypress/-/cypress-1.0.2.tgz#ac0f97e67f1f320fe041093cb1b534f75b32fb96"
-  integrity sha512-1Tmvpt+ZuPgFxzH/iUZa7c4d141YG8Z/71iUelXiSSlzrpkJ+0Bw7YWxC1JaLBe5m98bI4zu10PqNwcBvXMrQA==
+"@rancher/cypress@1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@rancher/cypress/-/cypress-1.0.4.tgz#287519ceec7d048ba476c46ffd8ce27d73096792"
+  integrity sha512-Qj/Tbl2X+9SueZxC+eIy5aS6te97lRKO562gF2HvRn1vO/HL4izsYEoL93xtY017XCZIBk4u4uVfmnF2QG6q/g==
   dependencies:
     "@cypress/code-coverage" "3.10.4"
     "@cypress/grep" "3.1.5"

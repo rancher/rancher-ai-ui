@@ -27,7 +27,7 @@
     "e2e": "CATTLE_BOOTSTRAP_PASSWORD=$CATTLE_BOOTSTRAP_PASSWORD TEST_PASSWORD=$TEST_PASSWORD TEST_USERNAME=$TEST_USERNAME VAI_ENABLED=$VAI_ENABLED TEST_BASE_URL=$TEST_BASE_URL API=$API yarn cypress:run"
   },
   "devDependencies": {
-    "@rancher/cypress": "1.0.2",
+    "@rancher/cypress": "1.0.4",
     "@types/lodash": "4.17.20",
     "@types/markdown-it": "^14.1.2",
     "eslint": "^9.35.0",
