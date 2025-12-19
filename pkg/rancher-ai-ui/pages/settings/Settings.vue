@@ -25,7 +25,7 @@ import { SECRET } from '@shell/config/types';
 import dayjs from 'dayjs';
 
 /**
- * Settings page for configuring Rancher AI agent.
+ * Settings page for configuring Rancher AI assistant.
  */
 
 const store = useStore();
@@ -144,7 +144,12 @@ const resource = useFetch(async() => {
         }
       });
 
-      data.save();
+      try {
+        // AI assistant namespace may not exist yet, so wrap save in try/catch
+        await data.save();
+      } catch (err) {
+        warn('Unable to create llmConfig secret: ', { err });
+      }
     }
   }
 
@@ -373,10 +378,10 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
       <div class="form-field">
         <component
           :is="modelOptions.length > 1 ? LabeledSelect : LabeledInput"
-          :value="formData[getModelKey(formData[Settings.ACTIVE_CHATBOT])]"
+          :value="formData[getModelKey(formData[Settings.ACTIVE_CHATBOT] as ChatBotEnum)]"
           :label="t(`aiConfig.form.${ Settings.MODEL }.label`)"
           :options="modelOptions"
-          @update:value="(val: string) => updateValue(getModelKey(formData[Settings.ACTIVE_CHATBOT]), val)"
+          @update:value="(val: string) => updateValue(getModelKey(formData[Settings.ACTIVE_CHATBOT] as ChatBotEnum), val)"
         />
         <label class="text-label">
           {{ t(`aiConfig.form.${ Settings.MODEL }.description`) }}

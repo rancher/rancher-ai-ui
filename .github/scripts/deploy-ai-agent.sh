@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Helper script to install the AI Agent Helm chart into a Kubernetes cluster
+# Helper script to install the AI Assistant Helm chart into a Kubernetes cluster
 
 KUBECONFIG_PATH=$1
 
