@@ -9,8 +9,9 @@
       "DOM"
     ],
     "esModuleInterop": true,
+    "isolatedModules": true,
     "allowJs": true,
-    "sourceMap": false,
+    "sourceMap": true,
     "strict": true,
     "noEmit": true,
     "baseUrl": ".",
@@ -23,7 +24,10 @@
       ],
       "@shell/*": [
         "./node_modules/@rancher/shell/*"
-      ]
+      ],
+      "@components/*": [
+        "./node_modules/@rancher/shell/rancher-components/*"
+      ],
     },
     "typeRoots": [
       "./node_modules",
@@ -33,7 +37,9 @@
       "@types/node",
       "cypress",
       "rancher",
-      "shell"
+      "shell",
+      "jest",
+      "node"
     ]
   },
   "exclude": [

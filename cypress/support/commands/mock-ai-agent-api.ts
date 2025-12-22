@@ -7,7 +7,7 @@ Cypress.Commands.add('enqueueAIAgentResponse', (args: { content: string, chunkSi
     method: 'POST',
     url:    `${ Cypress.env('mockAgentApi') }/control/enqueue`,
     body:   {
-      content: args.content || '',
+      content:   args.content || '',
       chunkSize: args.chunkSize || 30
     }
   })

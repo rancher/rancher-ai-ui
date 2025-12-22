@@ -5,7 +5,15 @@ on:
   workflow_call:
 
 jobs:
-  # TODO add unit tests job
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Run tests
+        uses: ./.github/actions/unit-tests
 
   i18n:
     runs-on: ubuntu-latest

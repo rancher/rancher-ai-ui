@@ -1,18 +1,18 @@
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
+import jest from 'eslint-plugin-jest';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
   globalIgnores([
     '**/vue.config.js',
     '**/babel.config.js',
+    '**/jest.config.js',
     'pkg/rancher-ai-ui/index.ts',
     'dist-pkg/**',
     'cypress.config.ts',
-    'cypress/**/support/**',
-    'cypress/**/blueprints/**',
-    'cypress/globals*',
+    'utils/**/*.js',
   ]),
   {
     files:           ['**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
@@ -273,5 +273,11 @@ export default defineConfig([
       'no-unused-vars':                    'off',
       '@typescript-eslint/no-unused-vars': 'off',
     }
-  }
+  },
+  {
+    plugins:         { jest },
+    files:           ['**/__tests__/**/*.test.ts'],
+    rules:           { ...jest.configs.recommended.rules },
+    languageOptions: { globals: { ...jest.environments.globals.globals } },
+  },
 ]);
