@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import {
-  ref, computed, defineProps, defineEmits, nextTick,
+  ref, computed, nextTick,
   onMounted,
   watch,
   onUpdated

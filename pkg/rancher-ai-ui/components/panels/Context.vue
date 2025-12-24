@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { defineProps, type PropType } from 'vue';
+import { type PropType } from 'vue';
 import SelectContext from '../context/SelectContext.vue';
 import { Context } from '../../types';
 

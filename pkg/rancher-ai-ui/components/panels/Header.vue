@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-import { defineEmits } from 'vue';
 import { useStore } from 'vuex';
 import RcButton from '@components/RcButton/RcButton.vue';
-import ConsoleMenu from '../console/Menu.vue';
+import ChatMenu from '../header/ChatMenu.vue';
 
 /**
  * Header panel for the AI chat interface.
@@ -33,7 +32,7 @@ const emit = defineEmits([
       </div>
     </div>
     <div class="chat-menu">
-      <ConsoleMenu
+      <ChatMenu
         @download:chat="emit('download:chat')"
         @reset:chat="emit('reset:chat')"
         @show:help="emit('show:help')"
