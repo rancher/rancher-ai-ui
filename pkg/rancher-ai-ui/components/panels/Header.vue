@@ -12,20 +12,51 @@ import ChatMenu from '../header/ChatMenu.vue';
 const store = useStore();
 const t = store.getters['i18n/t'];
 
+type Props = {
+  disabled?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), { disabled: false });
+
 const emit = defineEmits([
-  'close',
+  'close:chat',
   'download:chat',
   'reset:chat',
   'show:help',
-  'config:chat'
+  'config:chat',
+  'toggle:history',
 ]);
+
+function toggleHistory() {
+  if (props.disabled) {
+    return;
+  }
+  emit('toggle:history');
+}
 </script>
 
 <template>
   <div class="chat-header">
     <div class="chat-title">
       <div class="chat-name">
-        <i class="icon icon-ai icon-lg" />
+        <div
+          class="chat-history-btn"
+          :class="{ disabled }"
+        >
+          <RcButton
+            small
+            ghost
+            class="btn-open-history"
+            data-testid="rancher-ai-ui-chat-history-button"
+            @click="toggleHistory"
+            @keydown.enter.stop="toggleHistory"
+            @keydown.space.enter.stop="toggleHistory"
+          >
+            <i
+              class="icon icon-menu"
+            />
+          </RcButton>
+        </div>
         <span class="label">
           {{ t('ai.header.title') }}
         </span>
@@ -45,9 +76,9 @@ const emit = defineEmits([
         ghost
         class="btn-close"
         data-testid="rancher-ai-ui-chat-close-button"
-        @click="emit('close')"
-        @keydown.enter.stop="emit('close')"
-        @keydown.space.enter.stop="emit('close')"
+        @click="emit('close:chat')"
+        @keydown.enter.stop="emit('close:chat')"
+        @keydown.space.enter.stop="emit('close:chat')"
       >
         <i
           class="icon icon-close"
@@ -61,7 +92,7 @@ const emit = defineEmits([
 .chat-header {
   background: var(--active-nav);
   color: var(--on-active);
-  padding: 12px 16px;
+  padding: 12px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -76,7 +107,7 @@ const emit = defineEmits([
 
   .chat-name {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     align-items: center;
     font-weight: 600;
     font-size: 1em;
@@ -90,7 +121,7 @@ const emit = defineEmits([
   }
 }
 
-.chat-close-btn {
+.chat-close-btn, .chat-history-btn {
   background: transparent;
   border: none;
   cursor: pointer;
@@ -101,15 +132,22 @@ const emit = defineEmits([
   }
 }
 
-.chat-close-btn:hover {
+.chat-history-btn {
+  &.disabled {
+    opacity: 1;
+    pointer-events: none;
+  }
+}
+
+.chat-close-btn:hover, .chat-history-btn:hover {
   background: var(--active-hover);
 }
 
-.btn-close {
+.btn-close, .btn-open-history {
   margin: 0 !important;
 }
 
-.icon-close {
+.icon-close, .icon-menu {
   width: 32px;
 }
 </style>
