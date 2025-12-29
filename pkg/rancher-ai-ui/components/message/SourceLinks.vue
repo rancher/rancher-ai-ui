@@ -57,12 +57,13 @@ function openLink(url: string) {
       class="chat-msg-source-tags"
     >
       <div
-        v-for="item in items"
+        v-for="(item, index) in items"
         :key="item.value"
         @click="openLink(item.value)"
       >
         <span class="sr-only">{{ t('ai.generic.opensInNewTab') }}</span>
         <ContextTag
+          :data-testid="`rancher-ai-ui-chat-message-source-link-${ index }`"
           :remove-enabled="false"
           :item="{ value: item.label }"
           type="user"
