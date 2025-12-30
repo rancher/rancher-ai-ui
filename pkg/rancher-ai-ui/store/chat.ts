@@ -104,6 +104,32 @@ const mutations = {
     }
   },
 
+  loadMessages(state: State, args: { chatId: string; messages: Message[] }) {
+    const { chatId, messages } = args;
+
+    if (!chatId || !state.chats[chatId]) {
+      return;
+    }
+
+    state.chats[chatId].msgIdCnt = undefined;
+    state.chats[chatId].messages = {};
+
+    messages.forEach((message) => {
+      if (state.chats[chatId].msgIdCnt === undefined) {
+        state.chats[chatId].msgIdCnt = 0;
+      }
+
+      const msgId = ++state.chats[chatId].msgIdCnt;
+
+      message.timestamp = message.timestamp || new Date();
+
+      state.chats[chatId].messages[msgId] = {
+        ...message,
+        id: msgId
+      };
+    });
+  },
+
   resetMessages(state: State, chatId: string) {
     if (!chatId || !state.chats[chatId]) {
       return;

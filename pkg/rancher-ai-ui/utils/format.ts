@@ -3,7 +3,8 @@ import {
   ActionType, MessageConfirmationAction, Tag, Context,
   Message,
   Role,
-  MessageAction
+  MessageAction,
+  HistoryChatMessage
 } from '../types';
 import { validateActionResource } from './validator';
 
@@ -21,15 +22,18 @@ export function formatMessageContent(message: string) {
   return raw.replace(/(?:(?:<br\s*\/?>)|\r?\n|\s)+$/gi, '');
 }
 
-export function formatMessagePromptWithContext(prompt: string, selectedContext: Context[]) {
+export function formatWSInputMessage(prompt: string, selectedContext: Context[], messageTags: string[] = []): string {
   const context = selectedContext.reduce((acc, ctx) => ({
     ...acc,
     [ctx.tag]: ctx.value
   }), {});
 
+  const tags = messageTags.length ? messageTags : undefined;
+
   return JSON.stringify({
     prompt,
-    context
+    context,
+    tags,
   });
 }
 
@@ -160,4 +164,53 @@ export function formatErrorMessage(value: string): { message: string } {
   }
 
   return { message: 'An error occurred.' };
+}
+
+export function buildMessageFromHistoryMessage(msg: HistoryChatMessage): Message {
+  const contextData = JSON.parse(msg.context || '[]');
+
+  const contextContent: Context[] = Object.keys(contextData).map((key) => ({
+    value:       contextData[key],
+    tag:         key,
+    description:   key,
+  }));
+
+  // This should become a function to be used also in useChatMessageComposable.ts
+  let suggestionActionsData: string[] = [];
+
+  if (msg.message?.includes(Tag.SuggestionsStart) && msg.message?.includes(Tag.SuggestionsEnd)) {
+    const { suggestionActions, remaining } = formatSuggestionActions(suggestionActionsData, msg.message);
+
+    suggestionActionsData = suggestionActions;
+    msg.message = remaining;
+  }
+
+  // This should become a function to be used also in useChatMessageComposable.ts
+  let relatedResourcesActions: MessageAction[] = [];
+
+  if (msg.message?.startsWith(Tag.McpResultStart) && msg.message?.includes(Tag.McpResultEnd)) {
+    const mcpPart = msg.message.substring(
+      msg.message.indexOf(Tag.McpResultStart),
+      msg.message.indexOf(Tag.McpResultEnd) + Tag.McpResultEnd.length
+    );
+
+    const remaining = msg.message.replace(mcpPart, '').trim();
+
+    relatedResourcesActions = formatMessageRelatedResourcesActions(mcpPart);
+    msg.message = remaining;
+  }
+
+  // TODO handle other message parts (templateContent, etc.)
+
+  return {
+    role:              msg.role as Role,
+    id:                msg.requestId,
+    completed:         true,
+    thinking:          false,
+    messageContent:    msg.message,
+    contextContent,
+    relatedResourcesActions,
+    suggestionActions: suggestionActionsData,
+    timestamp:         new Date(Number(msg.createdAt) * 1000),
+  };
 }

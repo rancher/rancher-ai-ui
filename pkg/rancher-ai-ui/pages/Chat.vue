@@ -4,12 +4,13 @@ import {
   onMounted, onBeforeUnmount, computed, nextTick, ref
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
-import { MessagePhase } from '../types';
+import { HistoryChat, MessagePhase } from '../types';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
 import { useContextComposable } from '../composables/useContextComposable';
 import { useHeaderComposable } from '../composables/useHeaderComposable';
 import { useAgentComposable } from '../composables/useAgentComposable';
+import { useChatHistoryComposable } from '../composables/useChatHistoryComposable';
 import Header from '../components/panels/Header.vue';
 import Messages from '../components/panels/Messages.vue';
 import Context from '../components/panels/Context.vue';
@@ -33,12 +34,18 @@ const {
   updateMessage,
   confirmMessage,
   downloadMessages,
-  resetMessages,
+  loadMessages,
   selectContext,
   resetChatError,
   phase: messagePhase,
   error: messageError
 } = useChatMessageComposable();
+
+const {
+  fetchChats,
+  fetchMessages,
+  deleteChat: deleteHistoryChat,
+} = useChatHistoryComposable();
 
 const {
   ws,
@@ -59,6 +66,7 @@ const {
 } = useHeaderComposable();
 
 const showHistory = ref(false);
+const chatHistory = ref<HistoryChat[]>([]);
 
 // Agent errors are priority over websocket and message errors
 const errors = computed(() => {
@@ -77,19 +85,30 @@ function close() {
   closePanel();
 }
 
-function toggleHistoryPanel() {
+async function toggleHistoryPanel() {
   if (errors.value.length > 0) {
     return;
+  }
+  if (!showHistory.value) {
+    chatHistory.value = await fetchChats();
   }
   showHistory.value = !showHistory.value;
 }
 
-function resetChat() {
+async function loadChat(chatId: string | null) {
   showHistory.value = false;
-  resetMessages();
   resetChatError();
   disconnect({ showError: false });
-  nextTick(connect);
+  loadMessages(chatId ? await fetchMessages(chatId) : []);
+  nextTick(() => {
+    connect(chatId as string);
+  });
+}
+
+async function deleteChat(chatId: string) {
+  await deleteHistoryChat(chatId);
+  chatHistory.value = await fetchChats();
+  loadChat(null);
 }
 
 function routeToSettings() {
@@ -135,7 +154,6 @@ function unmount() {
         @close:chat="close"
         @config:chat="routeToSettings"
         @download:chat="downloadMessages"
-        @reset:chat="resetChat"
         @toggle:history="toggleHistoryPanel"
       />
       <Messages
@@ -157,8 +175,12 @@ function unmount() {
         @input:content="sendMessage($event, ws)"
       />
       <History
+        :chats="chatHistory"
         :open="showHistory && !errors.length"
-        @close="showHistory = false"
+        @close:panel="showHistory = false"
+        @create:chat="loadChat(null)"
+        @open:chat="loadChat"
+        @delete:chat="deleteChat"
       />
     </div>
   </div>

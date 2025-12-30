@@ -1,14 +1,30 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import {
+  ref, watch, nextTick, PropType, reactive
+} from 'vue';
+import { HistoryChat } from '../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
+import HistoryChatMenu from '../history/HistoryChatMenu.vue';
 
-type Props = {
-  open?: boolean;
-}
+const props = defineProps({
+  chats: {
+    type:    Array as PropType<HistoryChat[]>,
+    default: () => ([]),
+  },
+  open: {
+    type:    Boolean,
+    default: false
+  }
+});
 
-const props = withDefaults(defineProps<Props>(), { open: false });
+const emit = defineEmits([
+  'close:panel',
+  'create:chat',
+  'open:chat',
+  'delete:chat',
+]);
 
-const emit = defineEmits(['close']);
+const chatBtnHover = reactive<Record<string, boolean>>({});
 
 const createBtn = ref();
 
@@ -20,30 +36,12 @@ watch(() => props.open, (val) => {
   }
 });
 
-const mockChats = [
-  {
-    id:    1,
-    name: 'Chat with Support',
-    date:  '2025-12-20'
-  },
-  {
-    id:    2,
-    name: 'Project Discussion',
-    date:  '2025-12-21'
-  },
-  {
-    id:    3,
-    name: 'AI Assistant',
-    date:  '2025-12-22'
-  }
-];
-
 function createChat() {
-  console.log('Open chat from history'); /* eslint-disable-line no-console */
+  emit('create:chat');
 }
 
-function openChat(chatId: number) {
-  console.log('Open chat with ID:', chatId); /* eslint-disable-line no-console */
+function openChat(id: string) {
+  emit('open:chat', id);
 }
 </script>
 
@@ -52,7 +50,7 @@ function openChat(chatId: number) {
     <div
       v-if="props.open"
       class="history-panel-overlay"
-      @click.self="emit('close')"
+      @click.self="emit('close:panel')"
     >
       <div class="history-panel">
         <div class="history-body">
@@ -75,15 +73,25 @@ function openChat(chatId: number) {
             </div>
             <div class="history-chat-list">
               <RcButton
-                v-for="chat in mockChats"
+                v-for="chat in props.chats"
                 :key="chat.id"
                 tertiary
                 class="history-chat-item"
+                :class="{ 'focused': chat.active }"
                 @click="openChat(chat.id)"
+                @keydown.enter.stop="openChat(chat.id)"
+                @keydown.space.enter.stop="openChat(chat.id)"
+                @mouseenter="chatBtnHover[chat.id] = true"
+                @mouseleave="chatBtnHover[chat.id] = false"
               >
                 <span class="chat-name">
                   {{ chat.name }}
                 </span>
+                <HistoryChatMenu
+                  v-if="chatBtnHover[chat.id]"
+                  @click.stop
+                  @delete:chat="emit('delete:chat', chat.id)"
+                />
               </RcButton>
             </div>
           </div>
@@ -135,6 +143,14 @@ function openChat(chatId: number) {
   flex-direction: column;
 }
 
+.history-chat-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px;
+}
+
 .history-chat-title-label {
   font-family: Lato;
   font-size: 16px;
@@ -149,6 +165,14 @@ function openChat(chatId: number) {
   justify-content: center;
   width: 100%;
   margin: 16px 0;
+}
+
+.chat-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
 }
 
 @keyframes slideIn {

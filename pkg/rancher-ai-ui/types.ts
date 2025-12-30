@@ -145,6 +145,23 @@ export interface FormattedMessage extends Message {
   isError?: boolean;
 }
 
+export interface HistoryChat {
+  id: string;
+  chatId?: string;
+  name?: string;
+  active: boolean;
+  createdAt: Date;
+}
+
+export interface HistoryChatMessage {
+  chatId: string;
+  context?: string;
+  createdAt: string;
+  message: string;
+  requestId: string;
+  role: Role;
+}
+
 export interface Agent {
   id?: string;
   name: string;

@@ -10,53 +10,18 @@ import {
 const store = useStore();
 const t = store.getters['i18n/t'];
 
-const props = defineProps({
-  disabled: {
-    type:    Boolean,
-    default: false,
-  },
-});
-
 const emit = defineEmits([
-  'download:chat',
-  'reset:chat',
-  'show:help',
-  'config:chat'
+  'delete:chat',
 ]);
 
 const options = ref([
   {
-    label:       t('ai.options.chat.download.label'),
-    description: t('ai.options.chat.download.description'),
-    icon:        'icon-download',
+    label:       t('ai.history.menu.items.delete'),
+    icon:        'icon-trash',
     action:      () => {
-      emit('download:chat');
+      emit('delete:chat');
     },
   },
-  {
-    label:       t('ai.options.chat.reset.label'),
-    description: t('ai.options.chat.reset.description'),
-    icon:        'icon-backup',
-    action:      () => {
-      emit('reset:chat');
-    },
-  },
-  {
-    label:       t('ai.options.chat.config.label'),
-    description: t('ai.options.chat.config.description'),
-    icon:        'icon-gear',
-    action:      () => {
-      emit('config:chat');
-    },
-  },
-  // {
-  //   label: t('ai.options.chat.help.label'),
-  //   description: t('ai.options.chat.help.description'),
-  //   icon:  'icon-question-mark',
-  //   action: () => {
-  //     emit('show:help');
-  //   },
-  // }
 ]);
 
 const isOpen = ref(false);
@@ -72,7 +37,6 @@ const isOpen = ref(false);
       <rc-dropdown-trigger
         ghost
         small
-        :disabled="props.disabled"
       >
         <i class="icon icon-actions" />
       </rc-dropdown-trigger>
@@ -80,7 +44,7 @@ const isOpen = ref(false);
         <rc-dropdown-item
           v-for="(opt, i) in options"
           :key="i"
-          v-clean-tooltip="opt.description"
+          class="history-chat-menu-dropdown-item"
           @click="opt.action"
         >
           {{ opt.label }}
@@ -98,3 +62,9 @@ const isOpen = ref(false);
     </rc-dropdown>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.history-chat-menu-dropdown-item {
+  height: 32px;
+}
+</style>

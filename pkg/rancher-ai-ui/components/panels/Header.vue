@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
 import RcButton from '@components/RcButton/RcButton.vue';
-import ChatMenu from '../header/ChatMenu.vue';
+import ChatPanelMenu from '../header/ChatPanelMenu.vue';
 
 /**
  * Header panel for the AI chat interface.
@@ -21,7 +21,6 @@ const props = withDefaults(defineProps<Props>(), { disabled: false });
 const emit = defineEmits([
   'close:chat',
   'download:chat',
-  'reset:chat',
   'show:help',
   'config:chat',
   'toggle:history',
@@ -63,9 +62,8 @@ function toggleHistory() {
       </div>
     </div>
     <div class="chat-menu">
-      <ChatMenu
+      <ChatPanelMenu
         @download:chat="emit('download:chat')"
-        @reset:chat="emit('reset:chat')"
         @show:help="emit('show:help')"
         @config:chat="emit('config:chat')"
       />

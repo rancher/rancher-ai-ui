@@ -7,7 +7,7 @@ import {
   ChatError, ConfirmationStatus, Message, MessagePhase, MessageTemplateComponent, Role, Tag
 } from '../types';
 import {
-  formatMessagePromptWithContext, formatMessageRelatedResourcesActions, formatConfirmationAction, formatSuggestionActions, formatFileMessages,
+  formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationAction, formatSuggestionActions, formatFileMessages,
   formatErrorMessage, formatSourceLinks
 } from '../utils/format';
 import { downloadFile } from '@shell/utils/download';
@@ -77,7 +77,7 @@ export function useChatMessageComposable() {
       contextContent = msg.contextContent || [];
     } else { /* msg is type of string */ }
 
-    wsSend(ws, formatMessagePromptWithContext(messageContent, selectedContext.value));
+    wsSend(ws, formatWSInputMessage(messageContent, selectedContext.value));
 
     addMessage({
       role,
@@ -104,7 +104,7 @@ export function useChatMessageComposable() {
   }
 
   function confirmMessage({ message, result }: { message: Message; result: boolean }, ws: WebSocket) {
-    wsSend(ws, formatMessagePromptWithContext(result ? 'yes' : 'no', []));
+    wsSend(ws, formatWSInputMessage(result ? 'yes' : 'no', []));
 
     updateMessage({
       ...message,
@@ -139,7 +139,7 @@ export function useChatMessageComposable() {
         - DO NOT ask for any confirmation or additional information.
       `;
 
-      wsSend(ws, formatMessagePromptWithContext(initPrompt, selectedContext.value));
+      wsSend(ws, formatWSInputMessage(initPrompt, selectedContext.value, ['welcome']));
       setPhase(MessagePhase.Processing);
     }
   }
@@ -320,6 +320,13 @@ export function useChatMessageComposable() {
     );
   }
 
+  function loadMessages(messages: Message[]) {
+    store.commit('rancher-ai-ui/chat/loadMessages', {
+      chatId: CHAT_ID,
+      messages
+    });
+  }
+
   function resetMessages() {
     store.commit('rancher-ai-ui/chat/resetMessages', CHAT_ID);
   }
@@ -339,6 +346,7 @@ export function useChatMessageComposable() {
     selectContext,
     resetChatError,
     downloadMessages,
+    loadMessages,
     resetMessages,
     phase,
     error

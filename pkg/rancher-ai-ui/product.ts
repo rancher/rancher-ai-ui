@@ -6,9 +6,11 @@ export const BLANK_CLUSTER = '_';
 
 export const AGENT_NAMESPACE = 'cattle-ai-agent-system';
 export const AGENT_NAME = 'rancher-ai-agent';
-export const AGENT_API_PATH = 'agent/ws';
+export const AGENT_API_PATH = 'agent/ws/messages';
 
 export const AGENT_CONFIG_SECRET_NAME = 'llm-config';
+
+export const CHAT_HISTORY_SERVICE_NAME = 'rancher-ai-chat';
 
 export const PANEL_POSITION = RIGHT;
 

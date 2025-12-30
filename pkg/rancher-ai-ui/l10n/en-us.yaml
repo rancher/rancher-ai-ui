@@ -168,6 +168,10 @@ ai:
     chat:
       create: Start a New Chat
       previous: Previous Chats
+    menu:
+      items:
+        delete: Delete Chat
+
   generic:
     opensInNewTab: Opens in a new tab
 
