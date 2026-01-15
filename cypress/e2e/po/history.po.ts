@@ -8,7 +8,6 @@ export class HistoryChatItemMenuActionPo extends ComponentPo {
 
   doAction() {
     this.self().click({ force: true });
-    cy.wait(500); // Wait for action processing
   }
 }
 
@@ -46,7 +45,6 @@ export class HistoryChatItemPo extends ComponentPo {
 
   select() {
     this.self().click();
-    cy.wait(500); // Wait for chat load
   }
 }
 

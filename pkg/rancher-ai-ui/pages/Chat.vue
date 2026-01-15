@@ -160,7 +160,10 @@ function unmount() {
       @mousedown.prevent.stop="resize"
       @touchstart.prevent.stop="resize"
     />
-    <div class="chat-panel">
+    <div
+      class="chat-panel"
+      :data-testid="`rancher-ai-ui-chat-panel-${ ws?.readyState === 1 ? 'ready' : 'not-ready' }`"
+    >
       <Header
         :disabled="errors.length > 0"
         @close:chat="close"

@@ -74,10 +74,11 @@ describe('History Panel', () => {
     }
   });
 
-  it('It should load previous chats - chat and messages order is correct', () => {
+  it('It should correctly load previous chats - the order of the chats and messages is correct', () => {
     for (let i = 0; i < 3; i++) {
       history.open();
       history.chatItem(i).select();
+      chat.isReady();
 
       for (let j = 0; j < 3; j++) {
         const request = `Chat ${ 3 - i } - Request Request Request ${ j + 1 }`;
@@ -111,6 +112,7 @@ describe('History Panel', () => {
     history.open();
 
     history.chatItem(0).select();
+    chat.isReady();
 
     const lastUserMessage = chat.getMessage(5);
 
@@ -129,6 +131,8 @@ describe('History Panel', () => {
     chatItem.isActive();
     chatItem.menu().doAction('delete-chat');
 
+    // When the active chat is deleted, the chat panel initializes a new chat
+    chat.isReady();
     history.isClosed();
 
     const welcomeMessage = chat.getMessage(1);
@@ -215,6 +219,7 @@ describe('History Panel', () => {
     // Now open history and select the previous chat
     history.open();
     history.chatItem(0).select();
+    chat.isReady();
 
     // Verify that the message is properly parsed
     const historyResponseMessage = chat.getMessage(2);

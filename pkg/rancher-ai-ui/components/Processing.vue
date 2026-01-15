@@ -51,6 +51,7 @@ onBeforeUnmount(() => {
   <div
     v-if="label"
     class="processing-message"
+    :data-testid="`rancher-ai-ui-processing-phase-${ label }`"
   >
     <span>
       {{ label }}

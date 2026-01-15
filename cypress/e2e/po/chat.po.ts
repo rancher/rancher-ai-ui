@@ -11,6 +11,10 @@ export default class ChatPo extends ComponentPo {
     this.rancherHeader = new RancherHeaderPo();
   }
 
+  phase(label: string) {
+    return this.self().get(`[data-testid="rancher-ai-ui-processing-phase-${ label }"]`);
+  }
+
   closeButton() {
     return this.self().get('[data-testid="rancher-ai-ui-chat-close-button"]');
   }
@@ -21,6 +25,10 @@ export default class ChatPo extends ComponentPo {
 
   console() {
     return new ConsolePo();
+  }
+
+  isReady() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-panel-ready"]').should('exist');
   }
 
   isOpen(): Cypress.Chainable<boolean> {
