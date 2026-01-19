@@ -140,7 +140,7 @@ export function useChatMessageComposable() {
         - DO NOT ask for any confirmation or additional information.
       `;
 
-      wsSend(ws, formatWSInputMessage(initPrompt, selectedContext.value, [MessageTag.Ephemeral]));
+      wsSend(ws, formatWSInputMessage(initPrompt, selectedContext.value, [MessageTag.Ephemeral, MessageTag.Welcome]));
       setPhase(MessagePhase.Processing);
     }
   }

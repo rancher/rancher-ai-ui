@@ -56,6 +56,10 @@ export class HistoryPo extends ComponentPo {
     this.chat = new ChatPo();
   }
 
+  historyButton() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-history-header-button"]');
+  }
+
   panelOverlay() {
     return cy.get('[data-testid="rancher-ai-ui-chat-history-panel-overlay"]');
   }
@@ -81,7 +85,7 @@ export class HistoryPo extends ComponentPo {
   }
 
   open() {
-    this.chat.toggleHistory();
+    this.chat.openHistory();
     cy.wait(500); // Wait for panel transition
   }
 
@@ -90,7 +94,8 @@ export class HistoryPo extends ComponentPo {
   }
 
   closeByClickButton() {
-    this.chat.toggleHistory();
+    this.historyButton().click();
+    cy.wait(500); // Wait for panel transition
   }
 
   createChat() {

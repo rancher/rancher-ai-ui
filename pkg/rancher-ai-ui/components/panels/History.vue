@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import {
-  ref, watch, nextTick, PropType, reactive,
-} from 'vue';
+import { PropType, reactive } from 'vue';
 import { useStore } from 'vuex';
 import { HistoryChat } from '../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
+import HistoryHeader from '../history/HistoryHeader.vue';
 import HistoryChatMenu from '../history/HistoryChatMenu.vue';
 
 const store = useStore();
@@ -34,16 +33,6 @@ const emit = defineEmits([
 
 const chatBtnHover = reactive<Record<string, boolean>>({});
 
-const createBtn = ref();
-
-watch(() => props.open, (val) => {
-  if (val) {
-    nextTick(() => {
-      createBtn.value?.$el?.focus?.();
-    });
-  }
-});
-
 function createChat() {
   emit('create:chat');
 }
@@ -65,6 +54,11 @@ function openChat(id: string) {
         class="history-panel"
         data-testid="rancher-ai-ui-chat-history-panel"
       >
+        <div class="history-header">
+          <HistoryHeader
+            @toggle:history="emit('close:panel')"
+          />
+        </div>
         <div class="history-body">
           <RcButton
             ref="createBtn"
@@ -80,7 +74,7 @@ function openChat(id: string) {
           </RcButton>
           <div class="history-chat-panel">
             <div class="history-chat-title">
-              <span class="history-chat-title-label">
+              <span class="history-chat-title-label text-label">
                 {{ t('ai.history.chat.previous') }}
               </span>
             </div>
@@ -118,10 +112,10 @@ function openChat(id: string) {
 <style lang="scss" scoped>
 .history-panel-overlay {
   position: absolute;
-  top: 54px;
+  top: 0;
   left: 0;
   width: 100%;
-  height: calc(100% - 54px);
+  height: 100%;
   z-index: 200;
   display: flex;
   align-items: stretch;
@@ -131,12 +125,17 @@ function openChat(id: string) {
   width: min(75%, 100vw);
   max-width: 90vw;
   height: 100vh;
-  background: rgba(255, 255, 255, 0.85); /* semi-transparent background */
+  background: var(--body-bg);
+  opacity: 0.95; /* semi-transparent background */
   box-shadow: 2px 0 8px rgba(0,0,0,0.08);
   padding: 0 0 0 0;
   display: flex;
   flex-direction: column;
   animation: slideIn 0.3s cubic-bezier(.4,0,.2,1);
+}
+
+.history-header {
+  height: 54px;
 }
 
 .history-body {
@@ -155,6 +154,7 @@ function openChat(id: string) {
 .history-chat-list {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .history-chat-item {

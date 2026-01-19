@@ -95,6 +95,7 @@ export const enum ConfirmationResponse {
 
 export const enum MessageTag {
   Ephemeral = 'ephemeral',
+  Welcome = 'welcome',
   Confirmation = 'confirmation',
 }
 

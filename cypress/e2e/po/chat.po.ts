@@ -49,7 +49,7 @@ export default class ChatPo extends ComponentPo {
     this.isClosed();
   }
 
-  toggleHistory() {
+  openHistory() {
     this.historyButton().click();
   }
 
