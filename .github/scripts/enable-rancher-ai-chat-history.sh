@@ -16,6 +16,7 @@ helm upgrade ai-agent ${HELM_CHART_ROOT}/chart/agent \
   --set llmMock.enabled=true \
   --set llmMock.url=http://llm-mock \
   --set storage.enabled=${ENABLE} \
+  --set storage.connectionString="postgresql://postgres:password@localhost:5432/postgres" \
   --set insecureSkipTls=true \
   --set log.level=debug \
   --wait --timeout 2m
