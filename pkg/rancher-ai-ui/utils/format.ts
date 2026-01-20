@@ -7,8 +7,6 @@ import {
   HistoryChatMessage,
   ChatMetadata,
   ConfirmationStatus,
-  MessageTag,
-  ConfirmationResponse,
 } from '../types';
 import { validateActionResource } from './validator';
 
@@ -226,13 +224,13 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage): Message
    */
   let confirmation = undefined;
 
-  if (msg.message.startsWith(Tag.ConfirmationStart) && msg.message.endsWith(Tag.ConfirmationEnd)) {
+  if (msg.message.startsWith(Tag.ConfirmationStart) && msg.message.endsWith(Tag.ConfirmationEnd) && msg.confirmation !== undefined) {
     const confirmationAction = formatConfirmationAction(msg.message);
 
     if (confirmationAction) {
       confirmation = {
         action: confirmationAction,
-        status: ConfirmationStatus.Canceled,
+        status: msg.confirmation ? ConfirmationStatus.Confirmed : ConfirmationStatus.Canceled,
       };
       msg.message = '';
     }
@@ -276,7 +274,6 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage): Message
 
   return {
     role:              msg.role === 'agent' ? Role.Assistant : Role.User,
-    id:                msg.requestId,
     completed:         true,
     thinking:          false,
     showThinking:      false,
@@ -289,31 +286,4 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage): Message
     messageContent:    msg.message,
     timestamp:         new Date(msg.createdAt),
   };
-}
-
-export function buildHistoryMessages(acc: Message[], msg: HistoryChatMessage): Message[] {
-  const current = buildMessageFromHistoryMessage(msg);
-
-  if (acc.length) {
-    const previous = acc[acc.length - 1];
-
-    /**
-     * Condense confirmation responses:
-     * When the current message is a user confirmation response (text == 'Yes' or 'No' and tag is 'confirmation') to a previous confirmation request,
-     * update the message's confirmation status accordingly.
-     */
-    if (previous.confirmation && msg.role === Role.User && msg.tags?.includes(MessageTag.Confirmation)) {
-      previous.confirmation.status = msg.message === ConfirmationResponse.Yes ? ConfirmationStatus.Confirmed : ConfirmationStatus.Canceled;
-
-      return [
-        ...acc.slice(0, -1),
-        previous,
-      ];
-    }
-  }
-
-  return [
-    ...acc,
-    current
-  ];
 }

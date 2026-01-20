@@ -1,6 +1,6 @@
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
 import { HistoryChat, HistoryChatMessage, Message } from '../types';
-import { buildHistoryMessages } from '../utils/format';
+import { buildMessageFromHistoryMessage } from '../utils/format';
 
 export function useChatHistoryComposable() {
   const apiPath = `/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_REST_API_PATH }`;
@@ -26,7 +26,7 @@ export function useChatHistoryComposable() {
 
       const messages = await data.json() as HistoryChatMessage[];
 
-      return messages.reduce(buildHistoryMessages, []);
+      return messages.map(buildMessageFromHistoryMessage);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to fetch messages:', error);

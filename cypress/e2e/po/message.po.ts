@@ -12,6 +12,10 @@ export class MessagePo extends ComponentPo {
     return this.self().get('[data-testid="rancher-ai-ui-chat-message-formatted-content"]');
   }
 
+  context(label: string) {
+    return this.self().get(`[data-testid="rancher-ai-ui-context-tag-${ label }"]`);
+  }
+
   suggestion(index: number) {
     return this.self().get(`[data-testid="rancher-ai-ui-chat-message-suggestion-${ index }"]`);
   }

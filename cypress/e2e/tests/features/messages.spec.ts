@@ -1,5 +1,5 @@
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
-import { WorkloadsDeploymentsDetailsPagePo } from '@rancher/cypress/e2e/po/pages/explorer/workloads/workloads-deployments.po';
+import { WorkloadsDeploymentsDetailsPagePo, WorkloadsDeploymentsListPagePo } from '@rancher/cypress/e2e/po/pages/explorer/workloads/workloads-deployments.po';
 
 import ChatPo from '@/cypress/e2e/po/chat.po';
 
@@ -29,6 +29,37 @@ describe('Messages', () => {
     suggestions.forEach((value, index) => {
       welcomeMessage.suggestion(index).should('contain.text', value);
     });
+  });
+
+  it('Show context', () => {
+    // Navigate to deployments page to have context
+    const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
+
+    deploymentsListPage.goTo();
+    deploymentsListPage.waitForPage();
+
+    chat.open();
+
+    const welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    cy.enqueueLLMResponse({
+      text: [
+        'Her is the ',
+        'context from Rancher UI',
+      ],
+    });
+
+    chat.sendMessage('Show me the context from Rancher UI');
+
+    const userMessage = chat.getMessage(2);
+
+    userMessage.containsText('Show me the context from Rancher UI');
+
+    const resultMessage = chat.getMessage(3);
+
+    resultMessage.context('local').should('exist');
   });
 
   it('Show thinking phase', () => {

@@ -170,11 +170,11 @@ export interface HistoryChat {
 
 export interface HistoryChatMessage {
   chatId: string;
-  requestId: string;
   role: string | Role;
   message: string;
   context?: string;
   tags?: string[];
+  confirmation?: boolean;
   createdAt: string;
 }
 
