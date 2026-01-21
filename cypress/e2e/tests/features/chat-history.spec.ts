@@ -53,8 +53,8 @@ describe('History Panel', () => {
   it('It should create new chats and populate the history list', () => {
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 3; j++) {
-        const request = `Chat ${ i + 1 } - Request Request Request ${ j + 1 }`;
-        const response = `Chat ${ i + 1 } - Response Response Response ${ j + 1 }`;
+        const request = `Chat ${ i + 1 } - request ${ j + 1 }`;
+        const response = `Chat ${ i + 1 } - response ${ j + 1 }`;
 
         cy.enqueueLLMResponse({
           text:      response,
@@ -69,6 +69,7 @@ describe('History Panel', () => {
 
         const responseMessage = chat.getMessage(3 + (j * 2));
 
+        responseMessage.isCompleted();
         responseMessage.containsText(response);
       }
 
@@ -89,12 +90,18 @@ describe('History Panel', () => {
   it('It should correctly load previous chats - the order of the chats and messages is correct', () => {
     for (let i = 0; i < 3; i++) {
       history.open();
-      history.chatItem(i).select();
+
+      const chatItem = history.chatItem(i);
+
+      chatItem.checkExists();
+      chatItem.name().contains(`Chat ${ 3 - i } - request 1`);
+
+      chatItem.select();
       chat.isReady();
 
       for (let j = 0; j < 3; j++) {
-        const request = `Chat ${ 3 - i } - Request Request Request ${ j + 1 }`;
-        const response = `Chat ${ 3 - i } - Response Response Response ${ j + 1 }`;
+        const request = `Chat ${ 3 - i } - request ${ j + 1 }`;
+        const response = `Chat ${ 3 - i } - response ${ j + 1 }`;
 
         const lastUserMessage = chat.getMessage(1 + (j * 2));
 
@@ -129,12 +136,12 @@ describe('History Panel', () => {
     const lastUserMessage = chat.getMessage(5);
 
     lastUserMessage.scrollIntoView();
-    lastUserMessage.containsText('Chat 3 - Request Request Request 3');
+    lastUserMessage.containsText('Chat 3 - request 3');
 
     const lastResponseMessage = chat.getMessage(6);
 
     lastResponseMessage.scrollIntoView();
-    lastResponseMessage.containsText('Chat 3 - Response Response Response 3');
+    lastResponseMessage.containsText('Chat 3 - response 3');
 
     history.open();
 

@@ -168,6 +168,8 @@ ai:
     chat:
       create: Start a New Chat
       previous: Previous Chats
+      items:
+        nameTooltip: "{name}. Started on {createdAt}"
     menu:
       items:
         delete: Delete Chat

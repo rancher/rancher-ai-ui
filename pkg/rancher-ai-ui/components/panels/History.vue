@@ -33,6 +33,25 @@ const emit = defineEmits([
 
 const chatBtnHover = reactive<Record<string, boolean>>({});
 
+function chatNameTooltip(chat: HistoryChat): string {
+  let createdAt = '';
+
+  if (chat.createdAt) {
+    createdAt = new Date(chat.createdAt).toLocaleString([], {
+      year:   'numeric',
+      month:  '2-digit',
+      day:    '2-digit',
+      hour:   '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  return t('ai.history.chat.items.nameTooltip', {
+    name: chat.name || '',
+    createdAt
+  });
+}
+
 function createChat() {
   emit('create:chat');
 }
@@ -92,7 +111,11 @@ function openChat(id: string) {
                 @mouseover="chatBtnHover[chat.id] = true"
                 @mouseleave="chatBtnHover[chat.id] = false"
               >
-                <span class="chat-name">
+                <span
+                  v-clean-tooltip="chatNameTooltip(chat)"
+                  data-testid="rancher-ai-ui-chat-history-item-name"
+                  class="chat-name"
+                >
                   {{ chat.name }}
                 </span>
                 <HistoryChatMenu

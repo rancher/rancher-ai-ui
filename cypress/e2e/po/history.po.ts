@@ -37,6 +37,10 @@ export class HistoryChatItemPo extends ComponentPo {
     this.self().should('have.class', 'focused');
   }
 
+  name() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-history-item-name"]');
+  }
+
   menu() {
     this.self().realMouseUp();
 
