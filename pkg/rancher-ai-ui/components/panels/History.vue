@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { PropType, reactive } from 'vue';
+import { PropType, reactive, ref } from 'vue';
 import { useStore } from 'vuex';
 import { HistoryChat } from '../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
 import HistoryHeader from '../history/HistoryHeader.vue';
 import HistoryChatMenu from '../history/HistoryChatMenu.vue';
+import DeleteChatModal from '../../dialog/DeleteChatModal.vue';
 
 const store = useStore();
 const t = store.getters['i18n/t'];
@@ -32,6 +33,7 @@ const emit = defineEmits([
 ]);
 
 const chatBtnHover = reactive<Record<string, boolean>>({});
+const deletingChat = ref<HistoryChat | null>(null);
 
 function chatNameTooltip(chat: HistoryChat): string {
   let createdAt = '';
@@ -49,7 +51,7 @@ function chatNameTooltip(chat: HistoryChat): string {
   return t('ai.history.chat.items.nameTooltip', {
     name: chat.name || '',
     createdAt
-  });
+  }, true);
 }
 
 function createChat() {
@@ -58,6 +60,14 @@ function createChat() {
 
 function openChat(id: string) {
   emit('open:chat', id);
+}
+
+function deleteChat() {
+  if (deletingChat.value) {
+    emit('delete:chat', deletingChat.value.id);
+
+    deletingChat.value = null;
+  }
 }
 </script>
 
@@ -91,7 +101,10 @@ function openChat(id: string) {
             <i class="icon icon-plus" />
             <span>{{ t('ai.history.chat.create') }}</span>
           </RcButton>
-          <div class="history-chat-panel">
+          <div
+            v-if="props.chats.length > 0"
+            class="history-chat-panel"
+          >
             <div class="history-chat-title">
               <span class="history-chat-title-label text-label">
                 {{ t('ai.history.chat.previous') }}
@@ -121,7 +134,7 @@ function openChat(id: string) {
                 <HistoryChatMenu
                   v-if="chatBtnHover[chat.id]"
                   @click.stop
-                  @delete:chat="emit('delete:chat', chat.id)"
+                  @delete:chat="deletingChat = chat"
                 />
               </RcButton>
             </div>
@@ -130,6 +143,12 @@ function openChat(id: string) {
       </div>
     </div>
   </transition>
+  <DeleteChatModal
+    v-if="!!deletingChat"
+    :name="deletingChat.name"
+    @confirm="deleteChat"
+    @close="deletingChat = null"
+  />
 </template>
 
 <style lang="scss" scoped>
