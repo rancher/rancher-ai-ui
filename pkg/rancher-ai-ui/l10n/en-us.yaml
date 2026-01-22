@@ -13,7 +13,7 @@ ai:
           line1: I'm Liz, your personal AI assistant.
           line2: How can I help you?
           line3: 'Hi, {name}!'
-        info: 'Pro tip: you can also interact with the status badges and error messages throughout the Rancher UI to ask me for help.'
+        info: 'Pro tip: you can also interact with the status badges and error messages throughout the Rancher UI to ask me for help. Or, you can resume one of your previous chats - I automatically save them in the main menu for easy access.'
         suggestions:
           label: 'Here are a few suggestions based on your context:'
     assistant:
