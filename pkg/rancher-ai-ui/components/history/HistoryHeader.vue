@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { computed } from 'vue';
 import RcButton from '@components/RcButton/RcButton.vue';
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 type Props = {
   disabled?: boolean;
