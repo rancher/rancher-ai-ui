@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, type PropType } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { Context } from '../../types';
 import ContextTag from './ContextTag.vue';
 import {
@@ -15,7 +16,7 @@ function _id(item: Context) {
 }
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const props = defineProps({
   options: {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { Message } from '../../../types';
 import Suggestions from '../Suggestions.vue';
 // @ts-expect-error FIXME: Cannot find module '../../../assets/liz-icon.svg'... Remove this comment to see the full error message
@@ -15,7 +16,7 @@ interface Content {
 }
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const props = defineProps({
   content: {

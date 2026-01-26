@@ -2,12 +2,13 @@
 import { MessageAction } from '../../../types';
 import { computed, type PropType, ref } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import Action from './Action.vue';
 
 const THRESHOLD = 7; // Maximum number of actions for human readability
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const props = defineProps({
   label: {

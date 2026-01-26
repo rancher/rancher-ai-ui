@@ -1,8 +1,9 @@
+import { nextTick } from 'vue';
+import { Store } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { waitFor } from '@shell/utils/async';
 import { warn } from '../../../utils/log';
 import { Context } from '../../../types';
-import { Store } from 'vuex';
-import { nextTick } from 'vue';
 import { HooksOverlay } from './index';
 import Chat from '../../chat';
 import TemplateMessage from '../template-message';
@@ -143,7 +144,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
   }
 
   create(store: Store<any>, target: HTMLElement, badge: HTMLElement, ctx: Context, globalCtx: Context[] = []) {
-    const t = store.getters['i18n/t'];
+    const { t } = useI18n(store);
     const theme = store.getters['prefs/theme'] as Theme;
 
     const {

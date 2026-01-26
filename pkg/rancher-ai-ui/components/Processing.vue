@@ -4,9 +4,10 @@ import {
   onBeforeUnmount
 } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const now = ref(Date.now());
 

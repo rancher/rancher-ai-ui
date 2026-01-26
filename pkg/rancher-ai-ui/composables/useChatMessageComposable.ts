@@ -1,5 +1,6 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import debounce from 'lodash/debounce';
 import { NORMAN } from '@shell/config/types';
 import { useContextComposable } from './useContextComposable';
@@ -28,7 +29,7 @@ const EXPAND_THINKING = false;
  */
 export function useChatMessageComposable() {
   const store = useStore();
-  const t = store.getters['i18n/t'];
+  const { t } = useI18n(store);
 
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};
 

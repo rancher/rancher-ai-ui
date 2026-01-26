@@ -3,6 +3,7 @@ import {
   ref, computed, watch, nextTick, onMounted, onBeforeUnmount, type PropType,
 } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import {
   Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase
 } from '../../types';
@@ -19,7 +20,7 @@ import Processing from '../Processing.vue';
  */
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const props = defineProps({
   messages: {

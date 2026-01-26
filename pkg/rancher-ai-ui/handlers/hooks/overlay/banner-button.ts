@@ -1,7 +1,8 @@
+import { Store } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { waitFor } from '@shell/utils/async';
 import { warn } from '../../../utils/log';
 import { Context } from '../../../types';
-import { Store } from 'vuex';
 import { nextTick } from 'vue';
 import TemplateMessage from '../template-message';
 import { HooksOverlay } from './index';
@@ -19,7 +20,7 @@ class BannerButtonOverlay extends HooksOverlay {
   }
 
   create(store: Store<any>, target: HTMLElement, banner: HTMLElement, ctx: Context, globalCtx: Context[] = []) {
-    const t = store.getters['i18n/t'];
+    const { t } = useI18n(store);
 
     const overlay = document.createElement('button');
 

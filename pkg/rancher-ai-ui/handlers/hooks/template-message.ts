@@ -1,4 +1,5 @@
 import { Store } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { Context, Message, Role, HookContextTag } from '../../types';
 
 export interface MessageTemplateFill {
@@ -13,7 +14,7 @@ export interface MessageTemplateFill {
  */
 class TemplateMessageFactory {
   fill(store: Store<any>, ctx: Context, globalCtx: Context[]): Message {
-    const t = store.getters['i18n/t'];
+    const { t } = useI18n(store);
 
     let messageContent = t('ai.message.template.heyAnalyzeResource');
     let summaryContent = '';

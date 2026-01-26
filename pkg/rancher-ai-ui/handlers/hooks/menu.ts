@@ -1,4 +1,5 @@
 import { Store } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { Context } from '../../types';
 import { nextTick } from 'vue';
 import Chat from '../chat';
@@ -16,7 +17,7 @@ interface MenuItems {
  */
 class MenuFactory {
   buildItems(store: Store<any>, context: Context): MenuItems[] {
-    const t = store.getters['i18n/t'];
+    const { t } = useI18n(store);
     const items: MenuItems[] = [];
 
     if (context.value && typeof context.value === 'object') {
@@ -72,7 +73,7 @@ class MenuFactory {
   }
 
   build(store: Store<any>, context: Context): HTMLElement {
-    const t = store.getters['i18n/t'];
+    const { t } = useI18n(store);
 
     const menuItems = this.buildItems(store, context);
 

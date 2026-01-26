@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { warn } from '../../utils/log';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { ConfirmationStatus, ConfirmationType, MessageConfirmation } from '../../types';
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const props = defineProps({
   value: {

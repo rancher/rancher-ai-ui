@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { NORMAN } from '@shell/config/types';
 import { computed } from 'vue';
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const userIcon = computed(() => {
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};

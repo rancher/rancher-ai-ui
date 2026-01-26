@@ -3,6 +3,7 @@ import {
   computed, nextTick, onBeforeUnmount, ref, type PropType
 } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { FormattedMessage, MessagePhase, Role as RoleEnum } from '../../types';
 import Processing from '../Processing.vue';
 import Actions from './action/index.vue';
@@ -15,7 +16,7 @@ import SystemAvatar from './avatar/SystemAvatar.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const props = defineProps({
   message: {

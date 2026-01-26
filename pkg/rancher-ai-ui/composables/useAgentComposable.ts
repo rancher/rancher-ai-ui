@@ -1,5 +1,6 @@
-import { useStore } from 'vuex';
 import { onMounted, ref } from 'vue';
+import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { base64Decode } from '@shell/utils/crypto';
 import { warn } from '../utils/log';
 import { AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_SECRET_NAME, PRODUCT_NAME } from '../product';
@@ -16,7 +17,7 @@ import { ActionType, Agent, ChatError } from '../types';
  */
 export function useAgentComposable() {
   const store = useStore();
-  const t = store.getters['i18n/t'];
+  const { t } = useI18n(store);
 
   const agent = ref<Agent | null>(null);
   const error = ref<ChatError | null>(null);

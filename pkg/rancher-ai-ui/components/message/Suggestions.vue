@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { type PropType } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { MessageActionSuggestion } from '../../types';
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const props = defineProps({
   label: {

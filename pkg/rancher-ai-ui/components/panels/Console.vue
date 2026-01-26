@@ -5,8 +5,9 @@ import {
   watch,
   onUpdated
 } from 'vue';
-import { Agent } from '../../types';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
+import { Agent } from '../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
 import TextLabelPopover from '../popover/TextLabel.vue';
 import VerifyResultsDisclaimer from '../../static/VerifyResultsDisclaimer.vue';
@@ -19,7 +20,7 @@ import type { PropType } from 'vue';
  */
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 const props = defineProps({
   disabled: {
