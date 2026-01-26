@@ -7,13 +7,12 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import type { PropType } from 'vue';
 import { LLMConfig } from '../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
-import TextLabelPopover from '../popover/TextLabel.vue';
-import VerifyResultsDisclaimer from '../../static/VerifyResultsDisclaimer.vue';
+import LlmModelLabel from '../console/LlmModelLabel.vue';
+import VerifyResultsDisclaimer from '../console/VerifyResultsDisclaimer.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
-
-import type { PropType } from 'vue';
 
 /**
  * Console panel for AI chat messages input and AI service's configuration.
@@ -23,14 +22,14 @@ const store = useStore();
 const { t } = useI18n(store);
 
 const props = defineProps({
+  llmConfig: {
+    type:     Object as PropType<LLMConfig | null>,
+    default:  null,
+  },
   disabled: {
     type:    Boolean,
     default: false,
   },
-  llmConfig: {
-    type:     Object as PropType<LLMConfig | null>,
-    default:  null,
-  }
 });
 
 const emit = defineEmits(['input:content']);
@@ -45,25 +44,6 @@ const text = computed(() => {
   }
 
   return inputText.value;
-});
-
-const llmModelDisplayName = computed(() => {
-  if (!!props.llmConfig) {
-    return t('ai.configurations.label', {
-      name:  props.llmConfig.name,
-      model: props.llmConfig.model
-    }, true);
-  }
-
-  return t('ai.configurations.models.unknown');
-});
-
-const llmModelTooltip = computed(() => {
-  if (!!props.llmConfig && props.llmConfig.model?.length > 20) {
-    return props.llmConfig.model;
-  }
-
-  return '';
 });
 
 function onInputMessage(event: Event) {
@@ -161,18 +141,12 @@ watch(() => text.value, () => {
       </div>
     </div>
     <div class="chat-console-row chat-console-chat-text-info">
-      <span
-        v-clean-tooltip="llmModelTooltip"
-        class="chat-model label text-deemphasized"
-      >
-        {{ llmModelDisplayName }}
-      </span>
-      <TextLabelPopover
-        :label="t('ai.configurations.verifyResults.button.label')"
+      <LlmModelLabel
+        :llm-config="props.llmConfig"
+      />
+      <VerifyResultsDisclaimer
         :disabled="props.disabled"
-      >
-        <VerifyResultsDisclaimer />
-      </TextLabelPopover>
+      />
     </div>
   </div>
 </template>
@@ -185,14 +159,6 @@ watch(() => text.value, () => {
   gap: 0.75rem;
   border-top: 1px solid var(--border);
   min-height: 70px;
-}
-
-.chat-model {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-  font-size: 12px;
 }
 
 .chat-console-row {
