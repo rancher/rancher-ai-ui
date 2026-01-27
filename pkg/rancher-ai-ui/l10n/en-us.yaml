@@ -151,20 +151,21 @@ ai:
         noPermission: You do not have permission to access the Rancher AI Agent. Please contact your administrator.
         notFound: Rancher AI Agent not found. Please ensure the agent chart is installed.
         notActive: Rancher AI Agent is not active. Please ensure the agent is running properly.
-  options:
-    chat:
-      reset:
-        label: Reset Chat
-        description: Clear the current chat and start a new conversation
-      download:
-        label: Download Messages
-        description: Download the current messages to a text file
-      help:
-        label: Chat Help
-        description: Get assistance with using the chat features
-      config:
-        label: Edit Configuration
-        description: Configure the AI model and provider for your assistant
+  menu:
+    options:
+      chat:
+        reset:
+          label: Reset Chat
+          description: Clear the current chat and start a new conversation
+        download:
+          label: Download Messages
+          description: Download the current messages to a text file
+        help:
+          label: Chat Help
+          description: Get assistance with using the chat features
+        config:
+          label: Edit Configuration
+          description: Configure the AI model and provider for your assistant
   history:
     chat:
       create: Start a New Chat
