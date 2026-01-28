@@ -257,7 +257,10 @@ class BadgeSlidingOverlay extends HooksOverlay {
           prompt = `${ message.summaryContent }\n\n${ prompt }`;
         }
 
-        ws.send(formatWSInputMessage(prompt, message.contextContent || []));
+        ws.send(formatWSInputMessage({
+          prompt,
+          context: message.contextContent || [],
+        }));
       }
 
       overlay.remove();

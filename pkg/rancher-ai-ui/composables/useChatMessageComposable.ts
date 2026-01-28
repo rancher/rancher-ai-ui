@@ -1,4 +1,6 @@
-import { ref, computed, onMounted, watch } from 'vue';
+import {
+  ref, computed, onMounted, watch, ComputedRef
+} from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import debounce from 'lodash/debounce';
@@ -14,7 +16,6 @@ import {
 } from '../utils/format';
 import { downloadFile } from '@shell/utils/download';
 
-const CHAT_ID = 'default';
 const EXPAND_THINKING = false;
 
 /**
@@ -27,18 +28,18 @@ const EXPAND_THINKING = false;
  *
  * @returns Composable for managing chat messages within the AI chat.
  */
-export function useChatMessageComposable() {
+export function useChatMessageComposable(chatId: string, agentId: ComputedRef<string>) {
   const store = useStore();
   const { t } = useI18n(store);
 
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};
 
-  const messages = computed(() => Object.values(store.getters['rancher-ai-ui/chat/messages'](CHAT_ID)) as Message[]);
+  const messages = computed(() => Object.values(store.getters['rancher-ai-ui/chat/messages'](chatId)) as Message[]);
   const currentMsg = ref<Message>({} as Message);
-  const error = computed(() => store.getters['rancher-ai-ui/chat/error'](CHAT_ID));
+  const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
   // Get phase from store with debounce to avoid rapid changes
-  const _phase = computed(() => store.getters['rancher-ai-ui/chat/phase'](CHAT_ID));
+  const _phase = computed(() => store.getters['rancher-ai-ui/chat/phase'](chatId));
   const phase = ref(_phase.value || MessagePhase.Initializing);
   const applyPhase = debounce((v: MessagePhase) => {
     phase.value = v;
@@ -49,7 +50,7 @@ export function useChatMessageComposable() {
   // Set phase in store
   const setPhase = (phase: MessagePhase) => {
     store.commit('rancher-ai-ui/chat/setPhase', {
-      chatId: CHAT_ID,
+      chatId,
       phase
     });
   };
@@ -79,7 +80,11 @@ export function useChatMessageComposable() {
       contextContent = msg.contextContent || [];
     } else { /* msg is type of string */ }
 
-    wsSend(ws, formatWSInputMessage(messageContent, selectedContext.value));
+    wsSend(ws, formatWSInputMessage({
+      prompt:  messageContent,
+      context: selectedContext.value,
+      agent:   agentId.value,
+    }));
 
     addMessage({
       role,
@@ -93,20 +98,23 @@ export function useChatMessageComposable() {
 
   async function addMessage(message: Message) {
     return await store.dispatch('rancher-ai-ui/chat/addMessage', {
-      chatId: CHAT_ID,
+      chatId,
       message
     });
   }
 
   function updateMessage(message: Message) {
     store.commit('rancher-ai-ui/chat/updateMessage', {
-      chatId: CHAT_ID,
+      chatId,
       message
     });
   }
 
   function confirmMessage({ message, result }: { message: Message; result: boolean }, ws: WebSocket) {
-    wsSend(ws, formatWSInputMessage(result ? ConfirmationResponse.Yes : ConfirmationResponse.No, [], [MessageTag.Confirmation]));
+    wsSend(ws, formatWSInputMessage({
+      prompt: result ? ConfirmationResponse.Yes : ConfirmationResponse.No,
+      tags:   [MessageTag.Confirmation]
+    }));
 
     updateMessage({
       ...message,
@@ -119,7 +127,7 @@ export function useChatMessageComposable() {
 
   function getMessage(messageId: string) {
     return store.getters['rancher-ai-ui/chat/message']({
-      chatId: CHAT_ID,
+      chatId,
       messageId
     });
   }
@@ -141,7 +149,11 @@ export function useChatMessageComposable() {
         - DO NOT ask for any confirmation or additional information.
       `;
 
-      wsSend(ws, formatWSInputMessage(initPrompt, selectedContext.value, [MessageTag.Ephemeral, MessageTag.Welcome]));
+      wsSend(ws, formatWSInputMessage({
+        prompt:  initPrompt,
+        context: selectedContext.value,
+        tags:    [MessageTag.Ephemeral, MessageTag.Welcome]
+      }));
       setPhase(MessagePhase.Processing);
     }
   }
@@ -161,8 +173,8 @@ export function useChatMessageComposable() {
       // eslint-disable-next-line no-console
       console.error('Error processing messages:', err);
       store.commit('rancher-ai-ui/chat/setError', {
-        chatId: CHAT_ID,
-        error:  { message: `${ t('ai.error.message.processing') } ${ (err as ChatError).message || err || '' }` }
+        chatId,
+        error: { message: `${ t('ai.error.message.processing') } ${ (err as ChatError).message || err || '' }` }
       });
 
       setPhase(MessagePhase.Idle);
@@ -319,31 +331,31 @@ export function useChatMessageComposable() {
 
   function resetChatError() {
     store.commit('rancher-ai-ui/chat/setError', {
-      chatId: CHAT_ID,
-      error:  null
+      chatId,
+      error: null
     });
   }
 
   function downloadMessages() {
     downloadFile(
-      `Rancher-liz-chat-${ CHAT_ID }_${ new Date().toISOString().slice(0, 10) }.txt`,
+      `Rancher-liz-chat-${ chatId }_${ new Date().toISOString().slice(0, 10) }.txt`,
       formatFileMessages(principal, messages.value)
     );
   }
 
   function loadMessages(messages: Message[]) {
     store.commit('rancher-ai-ui/chat/loadMessages', {
-      chatId: CHAT_ID,
+      chatId,
       messages
     });
   }
 
   function resetMessages() {
-    store.commit('rancher-ai-ui/chat/resetMessages', CHAT_ID);
+    store.commit('rancher-ai-ui/chat/resetMessages', chatId);
   }
 
   onMounted(() => {
-    store.commit('rancher-ai-ui/chat/init', CHAT_ID);
+    store.commit('rancher-ai-ui/chat/init', chatId);
   });
 
   return {

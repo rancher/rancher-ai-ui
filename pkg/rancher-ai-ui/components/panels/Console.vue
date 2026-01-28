@@ -8,8 +8,9 @@ import {
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import type { PropType } from 'vue';
-import { LLMConfig } from '../../types';
+import { Agent, LLMConfig } from '../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
+import SelectAgent from '../agent/SelectAgent.vue';
 import LlmModelLabel from '../console/LlmModelLabel.vue';
 import VerifyResultsDisclaimer from '../console/VerifyResultsDisclaimer.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
@@ -26,13 +27,24 @@ const props = defineProps({
     type:     Object as PropType<LLMConfig | null>,
     default:  null,
   },
+  agents: {
+    type:     Array as PropType<Agent[]>,
+    default:  () => [],
+  },
+  agentId: {
+    type:    String,
+    default: '',
+  },
   disabled: {
     type:    Boolean,
     default: false,
   },
 });
 
-const emit = defineEmits(['input:content']);
+const emit = defineEmits([
+  'input:content',
+  'select:agent'
+]);
 
 const { inputText, updateInput, cleanInput } = useInputComposable();
 
@@ -125,6 +137,12 @@ watch(() => text.value, () => {
         data-testid="rancher-ai-ui-chat-input-textarea"
         @input="onInputMessage"
         @keydown="handleTextareaKeydown"
+      />
+      <SelectAgent
+        :agents="props.agents"
+        :agent-id="props.agentId"
+        :disabled="props.disabled"
+        @select="emit('select:agent', $event)"
       />
       <div
         class="chat-input-send"

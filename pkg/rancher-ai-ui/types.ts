@@ -1,5 +1,36 @@
 /* eslint-disable no-unused-vars */
 
+/**
+ * Rancher AI schema types.
+ */
+export const RANCHER_AI = { AI_AGENT_CONFIG: 'ai.cattle.io.aiagentconfig' };
+
+/**
+ * Tags used in Rancher AI Chat messages.
+ */
+
+export const enum Tag {
+  ChatMetadataStart = '<chat-metadata>',
+  ChatMetadataEnd = '</chat-metadata>',
+  MessageStart = '<message>',
+  MessageEnd = '</message>',
+  ThinkingStart = '<think>',
+  ThinkingEnd = '</think>',
+  McpResultStart = '<mcp-response>',
+  McpResultEnd = '</mcp-response>',
+  ConfirmationStart = '<confirmation-response>',
+  ConfirmationEnd = '</confirmation-response>',
+  SuggestionsStart = '<suggestion>',
+  SuggestionsEnd = '</suggestion>',
+  DocLinkStart = '<mcp-doclink>',
+  DocLinkEnd = '</mcp-doclink>',
+  ErrorStart = '<error>',
+  ErrorEnd = '</error>',
+}
+
+/**
+ * Types used in Rancher AI Chat UI.
+ */
 export interface ChatError {
   key?:     string;
   message?: string;
@@ -27,25 +58,6 @@ export const enum PanelState {
   Loading = 'loading',
   Error = 'error',
   Ready = 'ready',
-}
-
-export const enum Tag {
-  ChatMetadataStart = '<chat-metadata>',
-  ChatMetadataEnd = '</chat-metadata>',
-  MessageStart = '<message>',
-  MessageEnd = '</message>',
-  ThinkingStart = '<think>',
-  ThinkingEnd = '</think>',
-  McpResultStart = '<mcp-response>',
-  McpResultEnd = '</mcp-response>',
-  ConfirmationStart = '<confirmation-response>',
-  ConfirmationEnd = '</confirmation-response>',
-  SuggestionsStart = '<suggestion>',
-  SuggestionsEnd = '</suggestion>',
-  DocLinkStart = '<mcp-doclink>',
-  DocLinkEnd = '</mcp-doclink>',
-  ErrorStart = '<error>',
-  ErrorEnd = '</error>',
 }
 
 export const enum Role {
@@ -165,6 +177,7 @@ export interface MessageTemplate {
 export interface Message {
   id?: number | string;
   role: Role;
+  agent?: string;
   thinkingContent?: string;
   messageContent?: string;
   summaryContent?: string;
@@ -224,6 +237,7 @@ export interface Context {
 }
 
 export interface Agent {
-  id?: string;
+  id: string;
   name: string;
+  description?: string;
 }

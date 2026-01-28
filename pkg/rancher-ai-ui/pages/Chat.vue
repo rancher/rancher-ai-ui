@@ -11,6 +11,7 @@ import { useContextComposable } from '../composables/useContextComposable';
 import { useHeaderComposable } from '../composables/useHeaderComposable';
 import { useAIServiceComposable } from '../composables/useAIServiceComposable';
 import { useChatHistoryComposable } from '../composables/useChatHistoryComposable';
+import { useAgentComposable } from '../composables/useAgentComposable';
 import Header from '../components/panels/Header.vue';
 import Messages from '../components/panels/Messages.vue';
 import Context from '../components/panels/Context.vue';
@@ -22,9 +23,16 @@ import Chat from '../handlers/chat';
  * Chat panel landing page.
  */
 
+const CHAT_ID = 'default';
 const store = useStore();
 
 const { llmConfig, error: aiServiceError } = useAIServiceComposable();
+
+const {
+  agents,
+  agentId,
+  selectAgent,
+} = useAgentComposable(CHAT_ID);
 
 const {
   messages,
@@ -39,7 +47,7 @@ const {
   resetChatError,
   phase: messagePhase,
   error: messageError
-} = useChatMessageComposable();
+} = useChatMessageComposable(CHAT_ID, agentId);
 
 const {
   fetchChats,
@@ -194,9 +202,12 @@ function unmount() {
         @select="selectContext"
       />
       <Console
-        :disabled="!ws || ws.readyState === 3 || errors.length > 0 || messagePhase === MessagePhase.AwaitingConfirmation"
         :llm-config="llmConfig"
+        :agents="agents"
+        :agent-id="agentId"
+        :disabled="!ws || ws.readyState === 3 || errors.length > 0 || messagePhase === MessagePhase.AwaitingConfirmation"
         @input:content="sendMessage($event, ws)"
+        @select:agent="selectAgent"
       />
       <History
         :chats="chatHistory"

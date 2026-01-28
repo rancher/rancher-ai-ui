@@ -10,6 +10,13 @@ import {
 } from '../types';
 import { validateActionResource } from './validator';
 
+interface WSInputMessageArgs {
+  prompt: string;
+  agent?: string;
+  context?: Context[];
+  tags?: string[];
+}
+
 const md = new MarkdownIt({
   html:        true,
   breaks:      true,
@@ -24,16 +31,17 @@ export function formatMessageContent(message: string) {
   return raw.replace(/(?:(?:<br\s*\/?>)|\r?\n|\s)+$/gi, '');
 }
 
-export function formatWSInputMessage(prompt: string, selectedContext: Context[], messageTags: string[] = []): string {
-  const context = selectedContext.reduce((acc, ctx) => ({
+export function formatWSInputMessage(args: WSInputMessageArgs): string {
+  const context = (args.context || []).reduce((acc, ctx) => ({
     ...acc,
     [ctx.tag]: ctx.value
   }), {});
 
-  const tags = messageTags.length ? messageTags : undefined;
+  const tags = args.tags?.length ? args.tags : undefined;
 
   return JSON.stringify({
-    prompt,
+    prompt: args.prompt,
+    agent:  args.agent,
     context,
     tags,
   });

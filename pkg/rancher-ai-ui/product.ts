@@ -15,7 +15,11 @@ export const PANEL_POSITION = RIGHT;
 
 export function init($plugin: IPlugin, store: any) {
   // Configure Settings page to include AI Assistant settings
-  const { virtualType, basicType } = $plugin.DSL(store, 'settings');
+  const {
+    basicType,
+    mapGroup,
+    virtualType,
+  } = $plugin.DSL(store, 'settings');
 
   basicType([PRODUCT_NAME]);
 
@@ -25,4 +29,7 @@ export function init($plugin: IPlugin, store: any) {
     namespaced: false,
     route:      { name: `c-cluster-settings-${ PRODUCT_NAME }` }
   });
+
+  // Configure Rancher AI group
+  mapGroup('ai.cattle.io', 'Rancher AI');
 }

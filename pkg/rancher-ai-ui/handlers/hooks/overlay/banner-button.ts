@@ -137,7 +137,10 @@ class BannerButtonOverlay extends HooksOverlay {
       const ws = store.getters['rancher-ai-ui/connection/ws'];
 
       if (!!ws) {
-        ws.send(formatWSInputMessage(message.messageContent || '', message.contextContent || []));
+        ws.send(formatWSInputMessage({
+          prompt:  message.messageContent || '',
+          context: message.contextContent || [],
+        }));
       }
 
       overlay.remove();
