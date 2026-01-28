@@ -39,8 +39,8 @@ const options = computed<Agent[]>(() => [
     description: t('ai.agents.items.default.description'),
   },
   ...props.agents.map((a: any) => ({
-    id:          a.spec.name,
-    name:        a.spec.name,
+    id:          a.metadata.name,
+    name:        a.spec.displayName || a.metadata.name,
     description: a.spec.description,
   })),
 ]);
