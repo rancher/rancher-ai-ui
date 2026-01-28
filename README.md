@@ -51,8 +51,7 @@ This will install the AI Agent Helm chart into your Kubernetes cluster.
 The LLM is configured to use a mock service for testing purposes.
 
 ```bash
-cd .github/scripts
-./deploy-rancher-ai.sh $YOUR_KUBECONFIG_PATH
+./.github/scripts/deploy-rancher-ai.sh $YOUR_KUBECONFIG_PATH
 ```
 
 #### Launch UI in dev mode

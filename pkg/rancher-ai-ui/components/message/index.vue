@@ -181,7 +181,7 @@ onBeforeUnmount(() => {
           <span
             v-if="props.message.formattedMessageContent && (!props.message.summaryContent || props.message.showCompleteMessage)"
             v-clean-html="props.message.formattedMessageContent"
-            data-testid="message-formatted-content"
+            data-testid="rancher-ai-ui-chat-message-formatted-content"
             :class="{
               'chat-msg-user-expanded': !!props.message.summaryContent && props.message.showCompleteMessage
             }"

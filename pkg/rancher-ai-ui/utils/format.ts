@@ -3,7 +3,10 @@ import {
   ActionType, MessageConfirmationAction, Tag, Context,
   Message,
   Role,
-  MessageAction
+  MessageAction,
+  HistoryChatMessage,
+  ChatMetadata,
+  ConfirmationStatus,
 } from '../types';
 import { validateActionResource } from './validator';
 
@@ -21,16 +24,29 @@ export function formatMessageContent(message: string) {
   return raw.replace(/(?:(?:<br\s*\/?>)|\r?\n|\s)+$/gi, '');
 }
 
-export function formatMessagePromptWithContext(prompt: string, selectedContext: Context[]) {
+export function formatWSInputMessage(prompt: string, selectedContext: Context[], messageTags: string[] = []): string {
   const context = selectedContext.reduce((acc, ctx) => ({
     ...acc,
     [ctx.tag]: ctx.value
   }), {});
 
+  const tags = messageTags.length ? messageTags : undefined;
+
   return JSON.stringify({
     prompt,
-    context
+    context,
+    tags,
   });
+}
+
+export function formatChatMetadata(data: string): ChatMetadata | null {
+  if (data.startsWith(Tag.ChatMetadataStart) && data.endsWith(Tag.ChatMetadataEnd)) {
+    const cleaned = data.replaceAll(Tag.ChatMetadataStart, '').replaceAll(Tag.ChatMetadataEnd, '').trim();
+
+    return JSON.parse(cleaned);
+  }
+
+  return null;
 }
 
 export function formatMessageRelatedResourcesActions(value: string, actionType = ActionType.Button): MessageAction[] {
@@ -160,4 +176,114 @@ export function formatErrorMessage(value: string): { message: string } {
   }
 
   return { message: 'An error occurred.' };
+}
+
+export function buildMessageFromHistoryMessage(msg: HistoryChatMessage): Message {
+  /**
+   * Parsing context
+   */
+  const contextData = (msg.context || {}) as Record<string, any>;
+
+  const contextContent: Context[] = Object.keys(contextData).map((key) => ({
+    value:       contextData[key],
+    tag:         key,
+    description:   key,
+  }));
+
+  /**
+   * Parsing suggestion actions
+   */
+  let suggestionActions: string[] = [];
+
+  if (msg.message?.includes(Tag.SuggestionsStart) && msg.message?.includes(Tag.SuggestionsEnd)) {
+    const { suggestionActions: suggestionActionsData, remaining } = formatSuggestionActions(suggestionActions, msg.message);
+
+    suggestionActions = suggestionActionsData;
+    msg.message = remaining;
+  }
+
+  /**
+   * Parsing related resources actions
+   */
+  let relatedResourcesActions: MessageAction[] = [];
+
+  if (msg.message?.startsWith(Tag.McpResultStart) && msg.message?.includes(Tag.McpResultEnd)) {
+    const mcpPart = msg.message.substring(
+      msg.message.indexOf(Tag.McpResultStart),
+      msg.message.indexOf(Tag.McpResultEnd) + Tag.McpResultEnd.length
+    );
+
+    const remaining = msg.message.replace(mcpPart, '').trim();
+
+    relatedResourcesActions = formatMessageRelatedResourcesActions(mcpPart);
+    msg.message = remaining;
+  }
+
+  /**
+   * Parsing confirmation action
+   */
+  let confirmation = undefined;
+
+  if (msg.message.startsWith(Tag.ConfirmationStart) && msg.message.endsWith(Tag.ConfirmationEnd) && msg.confirmation !== undefined) {
+    const confirmationAction = formatConfirmationAction(msg.message);
+
+    if (confirmationAction) {
+      confirmation = {
+        action: confirmationAction,
+        status: msg.confirmation ? ConfirmationStatus.Confirmed : ConfirmationStatus.Canceled,
+      };
+      msg.message = '';
+    }
+  }
+
+  /**
+   * Parsing source links
+   */
+  let sourceLinks: string[] = [];
+
+  while (msg.message?.includes(Tag.DocLinkStart) && msg.message?.includes(Tag.DocLinkEnd)) {
+    const linkPart = msg.message.substring(
+      msg.message.indexOf(Tag.DocLinkStart),
+      msg.message.indexOf(Tag.DocLinkEnd) + Tag.DocLinkEnd.length
+    );
+
+    sourceLinks = formatSourceLinks(sourceLinks, linkPart);
+    msg.message = msg.message.replace(linkPart, '').trim();
+  }
+
+  /**
+   * Parsing thinking content
+   */
+  let thinkingContent = '';
+
+  if (msg.message?.startsWith(Tag.ThinkingStart) && msg.message?.includes(Tag.ThinkingEnd)) {
+    const thinkingPart = msg.message.substring(
+      msg.message.indexOf(Tag.ThinkingStart),
+      msg.message.indexOf(Tag.ThinkingEnd) + Tag.ThinkingEnd.length
+    );
+
+    thinkingContent = thinkingPart
+      .replaceAll(Tag.ThinkingStart, '')
+      .replaceAll(Tag.ThinkingEnd, '')
+      .trim();
+
+    const remaining = msg.message.replace(thinkingPart, '').trim();
+
+    msg.message = remaining;
+  }
+
+  return {
+    role:              msg.role === 'agent' ? Role.Assistant : Role.User,
+    completed:         true,
+    thinking:          false,
+    showThinking:      false,
+    thinkingContent,
+    contextContent,
+    relatedResourcesActions,
+    confirmation,
+    suggestionActions,
+    sourceLinks,
+    messageContent:    msg.message,
+    timestamp:         new Date(msg.createdAt),
+  };
 }

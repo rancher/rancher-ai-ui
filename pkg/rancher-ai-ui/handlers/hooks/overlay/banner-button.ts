@@ -6,7 +6,7 @@ import { nextTick } from 'vue';
 import TemplateMessage from '../template-message';
 import { HooksOverlay } from './index';
 import Chat from '../../chat';
-import { formatMessagePromptWithContext } from '../../../utils/format';
+import { formatWSInputMessage } from '../../../utils/format';
 
 /**
  * Overlay that adds a button to status banners allowing
@@ -136,7 +136,7 @@ class BannerButtonOverlay extends HooksOverlay {
       const ws = store.getters['rancher-ai-ui/connection/ws'];
 
       if (!!ws) {
-        ws.send(formatMessagePromptWithContext(message.messageContent || '', message.contextContent || []));
+        ws.send(formatWSInputMessage(message.messageContent || '', message.contextContent || []));
       }
 
       overlay.remove();

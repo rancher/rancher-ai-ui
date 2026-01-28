@@ -1,4 +1,5 @@
 ### Node template
+
 # Logs
 logs
 *.log
@@ -110,3 +111,7 @@ scripts/standalone/node
 
 # Cypress
 browser-logs
+
+# CI
+rancher-ai-agent
+rancher-ai-llm-mock

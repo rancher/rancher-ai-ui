@@ -1,17 +1,21 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
-import { onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
+import {
+  onMounted, onBeforeUnmount, computed, nextTick, ref
+} from 'vue';
 import { PRODUCT_NAME } from '../product';
-import { MessagePhase } from '../types';
+import { HistoryChat, MessagePhase } from '../types';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
 import { useContextComposable } from '../composables/useContextComposable';
 import { useHeaderComposable } from '../composables/useHeaderComposable';
 import { useAgentComposable } from '../composables/useAgentComposable';
+import { useChatHistoryComposable } from '../composables/useChatHistoryComposable';
 import Header from '../components/panels/Header.vue';
 import Messages from '../components/panels/Messages.vue';
 import Context from '../components/panels/Context.vue';
 import Console from '../components/panels/Console.vue';
+import History from '../components/panels/History.vue';
 import Chat from '../handlers/chat';
 
 /**
@@ -30,12 +34,18 @@ const {
   updateMessage,
   confirmMessage,
   downloadMessages,
-  resetMessages,
+  loadMessages,
   selectContext,
   resetChatError,
   phase: messagePhase,
   error: messageError
 } = useChatMessageComposable();
+
+const {
+  fetchChats,
+  fetchMessages,
+  deleteChat: deleteHistoryChat,
+} = useChatHistoryComposable();
 
 const {
   ws,
@@ -55,6 +65,12 @@ const {
   restore,
 } = useHeaderComposable();
 
+const showHistory = ref(false);
+const chatHistory = ref<HistoryChat[]>([]);
+const activeChatId = computed(() => {
+  return store.getters['rancher-ai-ui/chat/metadata']?.activeChatId || null;
+});
+
 // Agent errors are priority over websocket and message errors
 const errors = computed(() => {
   if (agentError.value) {
@@ -72,11 +88,39 @@ function close() {
   closePanel();
 }
 
-function resetChat() {
-  resetMessages();
+async function toggleHistoryPanel() {
+  if (errors.value.length > 0) {
+    return;
+  }
+  if (!showHistory.value) {
+    chatHistory.value = await fetchChats();
+  }
+  showHistory.value = !showHistory.value;
+}
+
+async function loadChat(chatId: string | null) {
+  showHistory.value = false;
+  if (chatId && chatId === activeChatId.value) {
+    return;
+  }
+
   resetChatError();
   disconnect({ showError: false });
-  nextTick(connect);
+  loadMessages(chatId ? await fetchMessages(chatId) : []);
+  nextTick(() => {
+    store.commit('rancher-ai-ui/chat/setMetadata', { activeChatId: chatId });
+    connect(chatId);
+  });
+}
+
+async function deleteChat(id: string) {
+  await deleteHistoryChat(id);
+
+  if (id === activeChatId.value) {
+    loadChat(null);
+  } else {
+    chatHistory.value = await fetchChats();
+  }
 }
 
 function routeToSettings() {
@@ -116,12 +160,16 @@ function unmount() {
       @mousedown.prevent.stop="resize"
       @touchstart.prevent.stop="resize"
     />
-    <div class="chat-panel">
+    <div
+      class="chat-panel"
+      :data-testid="`rancher-ai-ui-chat-panel-${ ws?.readyState === 1 ? 'ready' : 'not-ready' }`"
+    >
       <Header
-        @close="close"
+        :disabled="errors.length > 0"
+        @close:chat="close"
         @config:chat="routeToSettings"
         @download:chat="downloadMessages"
-        @reset:chat="resetChat"
+        @toggle:history="toggleHistoryPanel"
       />
       <Messages
         :messages="messages"
@@ -140,6 +188,15 @@ function unmount() {
         :disabled="!ws || ws.readyState === 3 || errors.length > 0 || messagePhase === MessagePhase.AwaitingConfirmation"
         :agent="agent"
         @input:content="sendMessage($event, ws)"
+      />
+      <History
+        :chats="chatHistory"
+        :active-chat-id="activeChatId"
+        :open="showHistory && !errors.length"
+        @close:panel="showHistory = false"
+        @create:chat="loadChat(null)"
+        @open:chat="loadChat"
+        @delete:chat="deleteChat"
       />
     </div>
   </div>

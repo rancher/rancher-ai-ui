@@ -69,7 +69,7 @@ Cypress.Commands.add('enqueueLLMResponse', (args: { text?: string | string[], ch
   return cy.getCookie('R_SESS').then((token) => {
     cy.request({
       method:  'POST',
-      url:     `${ Cypress.env('api') }${ Cypress.env('llmMockServiceProxyPath') }/v1/control/push`,
+      url:     `${ Cypress.env('llmMockServiceProxyPath') }/v1/control/push`,
       headers: {
         'Content-Type': 'application/json',
         'Cookie':       `R_SESS=${ token?.value }`,
@@ -94,7 +94,7 @@ Cypress.Commands.add('clearLLMResponses', () => {
   return cy.getCookie('R_SESS').then((token) => {
     cy.request({
       method:  'POST',
-      url:     `${ Cypress.env('api') }${ Cypress.env('llmMockServiceProxyPath') }/v1/control/clear`,
+      url:     `${ Cypress.env('llmMockServiceProxyPath') }/v1/control/clear`,
       headers: {
         'Content-Type': 'application/json',
         'Cookie':       `R_SESS=${ token?.value }`,

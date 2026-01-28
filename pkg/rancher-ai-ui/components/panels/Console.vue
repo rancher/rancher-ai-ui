@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import {
-  ref, computed, defineProps, defineEmits, nextTick,
+  ref, computed, nextTick,
   onMounted,
   watch,
   onUpdated
@@ -61,7 +61,11 @@ function sendContent(event: Event) {
   event.preventDefault();
   event.stopPropagation();
 
-  emit('input:content', cleanInput(text.value));
+  const content = cleanInput(text.value);
+
+  if (content) {
+    emit('input:content', content);
+  }
 
   updateInput('');
 }
@@ -128,7 +132,7 @@ watch(() => text.value, () => {
       >
         <RcButton
           small
-          :disabled="!text || props.disabled"
+          :disabled="!cleanInput(text) || props.disabled"
           @click="sendContent"
           @keydown.enter="sendContent"
         >

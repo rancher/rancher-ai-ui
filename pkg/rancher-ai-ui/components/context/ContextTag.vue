@@ -25,7 +25,10 @@ const emit = defineEmits(['remove']);
     class="vs__selected tag"
     :class="{ ['user-context']: props.type === 'user'}"
   >
-    <div class="tag-content">
+    <div
+      class="tag-content"
+      :data-testid="`rancher-ai-ui-context-tag-${ props.item.valueLabel || props.item.value }`"
+    >
       <span>
         {{ props.item.valueLabel || props.item.value }}
       </span>

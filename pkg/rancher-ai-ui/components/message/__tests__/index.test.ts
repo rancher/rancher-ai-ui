@@ -41,7 +41,7 @@ describe('message/index.vue', () => {
       },
     });
 
-    const formattedMessageContent = wrapper.find('[data-testid="message-formatted-content"]');
+    const formattedMessageContent = wrapper.find('[data-testid="rancher-ai-ui-chat-message-formatted-content"]');
 
     expect(formattedMessageContent.exists()).toBe(true);
     expect(cleanHtmlSpy).toHaveBeenCalled();

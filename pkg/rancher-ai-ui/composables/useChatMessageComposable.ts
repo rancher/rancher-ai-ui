@@ -4,11 +4,12 @@ import debounce from 'lodash/debounce';
 import { NORMAN } from '@shell/config/types';
 import { useContextComposable } from './useContextComposable';
 import {
-  ChatError, ConfirmationStatus, Message, MessagePhase, MessageTemplateComponent, Role, Tag
+  ChatError, ConfirmationResponse, ConfirmationStatus, Message, MessagePhase, MessageTag, MessageTemplateComponent, Role, Tag
 } from '../types';
 import {
-  formatMessagePromptWithContext, formatMessageRelatedResourcesActions, formatConfirmationAction, formatSuggestionActions, formatFileMessages,
-  formatErrorMessage, formatSourceLinks
+  formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationAction, formatSuggestionActions, formatFileMessages,
+  formatErrorMessage, formatSourceLinks,
+  formatChatMetadata
 } from '../utils/format';
 import { downloadFile } from '@shell/utils/download';
 
@@ -77,7 +78,7 @@ export function useChatMessageComposable() {
       contextContent = msg.contextContent || [];
     } else { /* msg is type of string */ }
 
-    wsSend(ws, formatMessagePromptWithContext(messageContent, selectedContext.value));
+    wsSend(ws, formatWSInputMessage(messageContent, selectedContext.value));
 
     addMessage({
       role,
@@ -104,7 +105,7 @@ export function useChatMessageComposable() {
   }
 
   function confirmMessage({ message, result }: { message: Message; result: boolean }, ws: WebSocket) {
-    wsSend(ws, formatMessagePromptWithContext(result ? 'yes' : 'no', []));
+    wsSend(ws, formatWSInputMessage(result ? ConfirmationResponse.Yes : ConfirmationResponse.No, [], [MessageTag.Confirmation]));
 
     updateMessage({
       ...message,
@@ -139,7 +140,7 @@ export function useChatMessageComposable() {
         - DO NOT ask for any confirmation or additional information.
       `;
 
-      wsSend(ws, formatMessagePromptWithContext(initPrompt, selectedContext.value));
+      wsSend(ws, formatWSInputMessage(initPrompt, selectedContext.value, [MessageTag.Ephemeral, MessageTag.Welcome]));
       setPhase(MessagePhase.Processing);
     }
   }
@@ -150,6 +151,7 @@ export function useChatMessageComposable() {
     try {
       if (!messages.value.find((msg) => msg.completed)) {
         setPhase(MessagePhase.Initializing);
+        await processChatMetadata(data);
         await processWelcomeData(data);
       } else {
         await processMessageData(data);
@@ -163,6 +165,14 @@ export function useChatMessageComposable() {
       });
 
       setPhase(MessagePhase.Idle);
+    }
+  }
+
+  async function processChatMetadata(data: string) {
+    const metadata = formatChatMetadata(data);
+
+    if (metadata) {
+      store.commit('rancher-ai-ui/chat/setMetadata', { activeChatId: metadata?.chatId });
     }
   }
 
@@ -320,6 +330,13 @@ export function useChatMessageComposable() {
     );
   }
 
+  function loadMessages(messages: Message[]) {
+    store.commit('rancher-ai-ui/chat/loadMessages', {
+      chatId: CHAT_ID,
+      messages
+    });
+  }
+
   function resetMessages() {
     store.commit('rancher-ai-ui/chat/resetMessages', CHAT_ID);
   }
@@ -339,6 +356,7 @@ export function useChatMessageComposable() {
     selectContext,
     resetChatError,
     downloadMessages,
+    loadMessages,
     resetMessages,
     phase,
     error

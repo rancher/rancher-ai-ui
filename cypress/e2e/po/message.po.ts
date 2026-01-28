@@ -8,30 +8,12 @@ export class MessagePo extends ComponentPo {
     this.id = id;
   }
 
-  isCompleted() {
-    return this.self().get(`[data-teststatus="rancher-ai-ui-chat-message-status-${ this.id }-completed"]`).should('exist');
+  content() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-message-formatted-content"]');
   }
 
-  isConfirmed() {
-    return this.self().get('[data-testid="rancher-ai-ui-chat-message-confirmation-confirmed"]').should('exist');
-  }
-
-  isCanceled() {
-    return this.self().get('[data-testid="rancher-ai-ui-chat-message-confirmation-canceled"]').should('exist');
-  }
-
-  thinkingLabel() {
-    return this.self().get('[data-testid="rancher-ai-ui-chat-message-thinking-label"]');
-  }
-
-  showThinkingButton() {
-    const thinkingLabel = this.thinkingLabel();
-
-    thinkingLabel.should('exist');
-
-    thinkingLabel.trigger('mouseenter', { force: true });
-
-    return this.self().find('[data-testid="rancher-ai-ui-chat-message-show-thinking-button"]');
+  context(label: string) {
+    return this.self().get(`[data-testid="rancher-ai-ui-context-tag-${ label }"]`);
   }
 
   suggestion(index: number) {
@@ -54,9 +36,35 @@ export class MessagePo extends ComponentPo {
     return this.self().get('[data-testid="rancher-ai-ui-chat-message-confirmation-cancel-button"]');
   }
 
+  isCompleted() {
+    return this.self().get(`[data-teststatus="rancher-ai-ui-chat-message-status-${ this.id }-completed"]`).should('exist');
+  }
+
+  isConfirmed() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-message-confirmation-confirmed"]').should('exist');
+  }
+
+  isCanceled() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-message-confirmation-canceled"]').should('exist');
+  }
+
+  thinkingLabel() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-message-thinking-label"]');
+  }
+
+  thinkingButton() {
+    this.self().trigger('mouseenter', { force: true });
+
+    return this.self().find('[data-testid="rancher-ai-ui-chat-message-show-thinking-button"]');
+  }
+
   containsText(value: string) {
     return this.self().within(() => {
       cy.contains(value).should('be.visible', { timeout: 10000 });
     });
+  }
+
+  scrollIntoView() {
+    return this.self().scrollIntoView();
   }
 }

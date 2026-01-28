@@ -8,7 +8,8 @@ declare global {
     interface Chainable {
       enqueueLLMResponse(args: { text?: string | string[], chunkSize?: number, tool?: McpTool }): void;
       clearLLMResponses(): void;
-      // Add more commands here
+      cleanChatHistory(): void;
+      agentDBPersistencyEnabled(value: boolean): void;
     }
   }
 }

@@ -164,6 +164,23 @@ ai:
       config:
         label: Edit Configuration
         description: Configure the AI model and provider for your assistant
+  history:
+    chat:
+      create: Start a New Chat
+      previous: Previous Chats
+      items:
+        nameTooltip: "{name}<br>Started on {createdAt}"
+      delete:
+        modal:
+          title: Delete Chat
+          message: "You are attempting to delete the chat "
+          warning: This action cannot be undone.
+          confirm: Delete
+          cancel: Cancel
+    menu:
+      items:
+        delete: Delete Chat
+
   generic:
     opensInNewTab: Opens in a new tab
 

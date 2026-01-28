@@ -18,10 +18,15 @@ fi
 
 export KUBECONFIG="$KUBECONFIG_PATH"
 
+helm uninstall ai-agent -n cattle-ai-agent-system || true
+helm uninstall llm-mock -n cattle-ai-agent-system || true
+rm -rf rancher-ai-agent
+rm -rf rancher-ai-llm-mock
+
 echo ""
 echo "Cloning rancher-ai-agent chart repository..."
 
-git clone https://github.com/rancher-sandbox/rancher-ai-agent.git
+git clone https://github.com/rancher/rancher-ai-agent.git
 
 echo ""
 echo "Cloning llm-mock chart repository..."
@@ -36,19 +41,20 @@ helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
   --create-namespace \
   --set googleApiKey=empty \
   --set ollamaUrl="" \
-  --set llmModel=gemini-2.0-flash \
-  --set insecureSkipTls=true \
-  --set activeLlm=gemini \
-  --set awsBedrock.region=us-west-2 \
-  --set awsBedrock.accessKeyId=empty \
-  --set awsBedrock.secretAccessKey=empty \
-  --set log.level=debug \
+  --set llmModel=ollama \
+  --set activeLlm=ollama \
+  --set mcp.image.repository=ghcr.io/rancher/rancher-ai-mcp \
+  --set mcp.image.tag=v0.1.2-alpha.3 \
+  --set aiAgent.image.repository=ghcr.io/rancher/rancher-ai-agent \
+  --set aiAgent.image.tag=v0.1.2-alpha.4 \
   --set llmMock.enabled=true \
   --set llmMock.url=http://llm-mock \
-  --wait --timeout 1m
+  --set insecureSkipTls=true \
+  --set log.level=debug \
+  --wait --timeout 2m
 
-kubectl -n cattle-ai-agent-system rollout status deployment/rancher-ai-agent --timeout=1m
-kubectl -n cattle-ai-agent-system wait --for=condition=available --timeout=1m deployment/rancher-ai-agent
+kubectl -n cattle-ai-agent-system rollout status deployment/rancher-ai-agent --timeout=2m
+kubectl -n cattle-ai-agent-system wait --for=condition=available --timeout=2m deployment/rancher-ai-agent
 
 echo ""
 echo "Deploying LLM mock service..."

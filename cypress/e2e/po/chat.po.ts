@@ -1,7 +1,7 @@
 import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
 import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
-import { MessagePo } from '@/cypress/e2e/po/components/message.po';
-import { ConsolePo } from '@/cypress/e2e/po/components/console.po';
+import { MessagePo } from '@/cypress/e2e/po/message.po';
+import { ConsolePo } from '@/cypress/e2e/po/console.po';
 
 export default class ChatPo extends ComponentPo {
   rancherHeader: RancherHeaderPo;
@@ -11,20 +11,32 @@ export default class ChatPo extends ComponentPo {
     this.rancherHeader = new RancherHeaderPo();
   }
 
+  phase(label: string) {
+    return this.self().get(`[data-testid="rancher-ai-ui-processing-phase-${ label }"]`);
+  }
+
   closeButton() {
     return this.self().get('[data-testid="rancher-ai-ui-chat-close-button"]');
+  }
+
+  historyButton() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-history-button"]');
   }
 
   console() {
     return new ConsolePo();
   }
 
+  isReady() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-panel-ready"]').should('exist');
+  }
+
   isOpen(): Cypress.Chainable<boolean> {
-    return this.self().should('exist');
+    return this.checkExists();
   }
 
   isClosed(): Cypress.Chainable<boolean> {
-    return this.self().should('not.exist');
+    return this.checkNotExists();
   }
 
   open() {
@@ -35,6 +47,10 @@ export default class ChatPo extends ComponentPo {
   close() {
     this.closeButton().click();
     this.isClosed();
+  }
+
+  openHistory() {
+    this.historyButton().click();
   }
 
   getMessage(id: string | number) {

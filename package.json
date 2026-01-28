@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@rancher/shell": "3.0.8-rc.12"
+    "@rancher/shell": "3.0.9-rc.1"
   },
   "resolutions": {
     "@types/node": "~20.10.0",
@@ -26,13 +26,13 @@
     "test:ci": "NODE_OPTIONS=--max_old_space_size=8192 jest --silent",
     "cypress:open": "rancher-cypress open --e2e --browser chrome",
     "cypress:run": "rancher-cypress run",
-    "e2e": "CATTLE_BOOTSTRAP_PASSWORD=$CATTLE_BOOTSTRAP_PASSWORD TEST_PASSWORD=$TEST_PASSWORD TEST_USERNAME=$TEST_USERNAME VAI_ENABLED=$VAI_ENABLED TEST_BASE_URL=$TEST_BASE_URL API=$API yarn cypress:run"
+    "e2e": "CATTLE_BOOTSTRAP_PASSWORD=$CATTLE_BOOTSTRAP_PASSWORD TEST_USERNAME=$TEST_USERNAME VAI_ENABLED=$VAI_ENABLED API=$API yarn cypress:run"
   },
   "devDependencies": {
     "@babel/core": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@rancher/cypress": "1.0.4",
+    "@rancher/cypress": "1.0.5",
     "@types/jest": "^30.0.0",
     "@types/lodash": "4.17.20",
     "@types/markdown-it": "^14.1.2",

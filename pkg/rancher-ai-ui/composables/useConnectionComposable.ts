@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
-import { AGENT_NAME, AGENT_NAMESPACE, AGENT_API_PATH } from '../product';
+import { AGENT_NAME, AGENT_NAMESPACE, AGENT_WS_API_PATH } from '../product';
 import { ConnectionPhase } from '../types';
 
 /**
@@ -24,8 +24,10 @@ export function useConnectionComposable(options: {
   const phase = ref<ConnectionPhase>(ConnectionPhase.Idle); // Not handled at the moment
   const error = computed(() => store.getters['rancher-ai-ui/connection/error']);
 
-  async function connect() {
-    const url = `wss://${ window.location.host }/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_API_PATH }`;
+  const baseUrl = `wss://${ window.location.host }/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_WS_API_PATH }`;
+
+  async function connect(chatId?: string | null) {
+    const url = chatId ? `${ baseUrl }/${ chatId }` : baseUrl;
 
     const { onopen, onmessage, onclose } = options;
 

@@ -1,6 +1,7 @@
 import { PRODUCT_NAME } from '../product';
 import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
 import {
+  ChatMetadata,
   ConfirmationStatus, Message, MessageError, MessagePhase, Role
 } from '../types';
 
@@ -20,10 +21,14 @@ interface Chat {
 }
 
 interface State {
+  metadata: ChatMetadata | null;
   chats: Record<string, Chat>;
 }
 
 const getters = {
+  metadata: (state: State) => {
+    return state.metadata;
+  },
   messages: (state: State) => (chatId: string) => {
     return state.chats[chatId]?.messages || {};
   },
@@ -71,6 +76,13 @@ const mutations = {
     };
   },
 
+  setMetadata(state: State, metadata: ChatMetadata) {
+    state.metadata = {
+      ...state.metadata,
+      ...metadata
+    };
+  },
+
   addMessage(state: State, args: { chatId: string; message: Message }) {
     const { chatId, message } = args;
 
@@ -102,6 +114,32 @@ const mutations = {
     if (state.chats[chatId].messages[message.id]) {
       Object.assign(state.chats[chatId].messages[message.id], message);
     }
+  },
+
+  loadMessages(state: State, args: { chatId: string; messages: Message[] }) {
+    const { chatId, messages } = args;
+
+    if (!chatId || !state.chats[chatId]) {
+      return;
+    }
+
+    state.chats[chatId].msgIdCnt = undefined;
+    state.chats[chatId].messages = {};
+
+    messages.forEach((message) => {
+      if (state.chats[chatId].msgIdCnt === undefined) {
+        state.chats[chatId].msgIdCnt = 0;
+      }
+
+      const msgId = ++state.chats[chatId].msgIdCnt;
+
+      message.timestamp = message.timestamp || new Date();
+
+      state.chats[chatId].messages[msgId] = {
+        ...message,
+        id: msgId
+      };
+    });
   },
 
   resetMessages(state: State, chatId: string) {
@@ -167,7 +205,10 @@ const actions = {
 const factory = (): CoreStoreSpecifics => {
   return {
     state: (): State => {
-      return { chats: {} };
+      return {
+        metadata: null,
+        chats:    {}
+      };
     },
     getters:   { ...getters },
     mutations: { ...mutations },

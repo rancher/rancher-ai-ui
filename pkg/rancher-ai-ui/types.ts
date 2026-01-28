@@ -30,6 +30,8 @@ export const enum PanelState {
 }
 
 export const enum Tag {
+  ChatMetadataStart = '<chat-metadata>',
+  ChatMetadataEnd = '</chat-metadata>',
   MessageStart = '<message>',
   MessageEnd = '</message>',
   ThinkingStart = '<think>',
@@ -84,6 +86,17 @@ export const enum ConfirmationStatus {
   Pending = 'pending',
   Confirmed = 'confirmed',
   Canceled = 'canceled',
+}
+
+export const enum ConfirmationResponse {
+  Yes = 'yes',
+  No = 'no',
+}
+
+export const enum MessageTag {
+  Ephemeral = 'ephemeral',
+  Welcome = 'welcome',
+  Confirmation = 'confirmation',
 }
 
 export interface MessageConfirmationAction {
@@ -143,6 +156,26 @@ export interface FormattedMessage extends Message {
   formattedThinkingContent?: string;
   formattedMessageContent?: string;
   isError?: boolean;
+}
+
+export interface ChatMetadata {
+  chatId: string;
+}
+
+export interface HistoryChat {
+  id: string;
+  name?: string;
+  createdAt: Date;
+}
+
+export interface HistoryChatMessage {
+  chatId: string;
+  role: string | Role;
+  message: string;
+  context?: string;
+  tags?: string[];
+  confirmation?: boolean;
+  createdAt: string;
 }
 
 export interface Agent {

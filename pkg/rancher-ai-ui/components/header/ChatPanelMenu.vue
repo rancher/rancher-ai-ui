@@ -19,7 +19,6 @@ const props = defineProps({
 
 const emit = defineEmits([
   'download:chat',
-  'reset:chat',
   'show:help',
   'config:chat'
 ]);
@@ -31,14 +30,6 @@ const options = ref([
     icon:        'icon-download',
     action:      () => {
       emit('download:chat');
-    },
-  },
-  {
-    label:       t('ai.options.chat.reset.label'),
-    description: t('ai.options.chat.reset.description'),
-    icon:        'icon-backup',
-    action:      () => {
-      emit('reset:chat');
     },
   },
   {

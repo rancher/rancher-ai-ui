@@ -48,9 +48,7 @@ jobs:
         continue-on-error: true
         env:
           TEST_USERNAME: admin
-          TEST_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
           CATTLE_BOOTSTRAP_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
-          TEST_BASE_URL: ${{ env.DEV_UI_URL }}
           API: ${{ env.CATTLE_SERVER_URL }}
         run: |
           yarn e2e --browser chrome

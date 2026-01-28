@@ -1,16 +1,11 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
+import { computed } from 'vue';
 import RcButton from '@components/RcButton/RcButton.vue';
-import ChatPanelMenu from '../header/ChatPanelMenu.vue';
-
-/**
- * Header panel for the AI chat interface.
- *
- * This is custom header for the AI chat, replacing the default shell WindowManager header.
- */
 
 const store = useStore();
-const t = store.getters['i18n/t'];
+const { t } = useI18n(store);
 
 type Props = {
   disabled?: boolean;
@@ -19,12 +14,10 @@ type Props = {
 const props = withDefaults(defineProps<Props>(), { disabled: false });
 
 const emit = defineEmits([
-  'close:chat',
-  'download:chat',
-  'show:help',
-  'config:chat',
   'toggle:history',
 ]);
+
+const theme = computed(() => store.getters['prefs/theme']);
 
 function toggleHistory() {
   if (props.disabled) {
@@ -35,7 +28,10 @@ function toggleHistory() {
 </script>
 
 <template>
-  <div class="chat-header">
+  <div
+    class="chat-header"
+    :class="{ 'is-dark': theme === 'dark' }"
+  >
     <div class="chat-title">
       <div class="chat-name">
         <div
@@ -46,7 +42,7 @@ function toggleHistory() {
             small
             ghost
             class="btn-open-history"
-            data-testid="rancher-ai-ui-chat-history-button"
+            data-testid="rancher-ai-ui-chat-history-header-button"
             @click="toggleHistory"
             @keydown.enter.stop="toggleHistory"
             @keydown.space.enter.stop="toggleHistory"
@@ -61,39 +57,26 @@ function toggleHistory() {
         </span>
       </div>
     </div>
-    <div class="chat-menu">
-      <ChatPanelMenu
-        @download:chat="emit('download:chat')"
-        @show:help="emit('show:help')"
-        @config:chat="emit('config:chat')"
-      />
-    </div>
-    <div class="chat-close-btn">
-      <RcButton
-        small
-        ghost
-        class="btn-close"
-        data-testid="rancher-ai-ui-chat-close-button"
-        @click="emit('close:chat')"
-        @keydown.enter.stop="emit('close:chat')"
-        @keydown.space.enter.stop="emit('close:chat')"
-      >
-        <i
-          class="icon icon-close"
-        />
-      </RcButton>
-    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .chat-header {
-  background: var(--active-nav);
-  color: var(--on-active);
+  background: #A7BFF1;
+  color: #3C57A3;
   padding: 12px;
   display: flex;
   align-items: center;
   gap: 16px;
+
+  &.is-dark {
+    color: #fff ;
+    background: var(--category-active, var(--nav-active));
+
+    .chat-history-btn:hover {
+      background: color-mix(in srgb, var(--category-active, var(--nav-active)) 80%, #fff);
+    }
+  }
 }
 
 .chat-title {
@@ -109,7 +92,6 @@ function toggleHistory() {
     align-items: center;
     font-weight: 600;
     font-size: 1em;
-    color: var(--on-active);
     margin: 0;
     width: 60px;
 
@@ -119,26 +101,25 @@ function toggleHistory() {
   }
 }
 
-.chat-close-btn, .chat-history-btn {
+.chat-history-btn {
   background: transparent;
   border: none;
   cursor: pointer;
   border-radius: 8px;
   transition: background 0.2s;
+
+  &.disabled {
+    opacity: 1;
+    pointer-events: none;
+  }
+
   .btn-close {
     margin: 0 8px;
   }
 }
 
-.chat-history-btn {
-  &.disabled {
-    opacity: 1;
-    pointer-events: none;
-  }
-}
-
-.chat-close-btn:hover, .chat-history-btn:hover {
-  background: var(--active-hover);
+.chat-history-btn:hover {
+  background: color-mix(in srgb, #A7BFF1 80%, #fff);
 }
 
 .btn-close, .btn-open-history {
