@@ -30,7 +30,7 @@ const { llmConfig, error: aiServiceError } = useAIServiceComposable();
 
 const {
   agents,
-  agentId,
+  agentName,
   selectAgent,
 } = useAgentComposable(CHAT_ID);
 
@@ -47,7 +47,7 @@ const {
   resetChatError,
   phase: messagePhase,
   error: messageError
-} = useChatMessageComposable(CHAT_ID, agentId);
+} = useChatMessageComposable(CHAT_ID, agents, agentName);
 
 const {
   fetchChats,
@@ -204,7 +204,7 @@ function unmount() {
       <Console
         :llm-config="llmConfig"
         :agents="agents"
-        :agent-id="agentId"
+        :agent-name="agentName"
         :disabled="!ws || ws.readyState === 3 || errors.length > 0 || messagePhase === MessagePhase.AwaitingConfirmation"
         @input:content="sendMessage($event, ws)"
         @select:agent="selectAgent"

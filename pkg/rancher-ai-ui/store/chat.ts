@@ -15,7 +15,7 @@ import {
 interface Chat {
   id: string;
   msgIdCnt?: number;
-  agentId?: string;
+  agentName?: string;
   messages: Record<string, Message>;
   phase?: MessagePhase;
   error?: MessageError | null;
@@ -30,8 +30,8 @@ const getters = {
   metadata: (state: State) => {
     return state.metadata;
   },
-  agentId: (state: State) => (chatId: string) => {
-    return state.chats[chatId]?.agentId;
+  agentName: (state: State) => (chatId: string) => {
+    return state.chats[chatId]?.agentName;
   },
   messages: (state: State) => (chatId: string) => {
     return state.chats[chatId]?.messages || {};
@@ -87,14 +87,14 @@ const mutations = {
     };
   },
 
-  setAgentId(state: State, args: { chatId: string; agentId: string }) {
-    const { chatId, agentId } = args;
+  setAgentName(state: State, args: { chatId: string; agentName: string }) {
+    const { chatId, agentName } = args;
 
     if (!chatId || !state.chats[chatId]) {
       return;
     }
 
-    state.chats[chatId].agentId = agentId;
+    state.chats[chatId].agentName = agentName;
   },
 
   addMessage(state: State, args: { chatId: string; message: Message }) {

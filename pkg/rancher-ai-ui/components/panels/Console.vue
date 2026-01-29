@@ -31,7 +31,7 @@ const props = defineProps({
     type:     Array as PropType<Agent[]>,
     default:  () => [],
   },
-  agentId: {
+  agentName: {
     type:    String,
     default: '',
   },
@@ -140,7 +140,7 @@ watch(() => text.value, () => {
       />
       <SelectAgent
         :agents="props.agents"
-        :agent-id="props.agentId"
+        :agent-name="props.agentName"
         :disabled="props.disabled"
         @select="emit('select:agent', $event)"
       />

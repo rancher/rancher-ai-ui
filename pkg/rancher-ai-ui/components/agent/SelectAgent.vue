@@ -20,7 +20,7 @@ const props = defineProps({
       return [];
     },
   },
-  agentId: {
+  agentName: {
     type:    String,
     default: '',
   },
@@ -34,18 +34,14 @@ const emit = defineEmits(['select']);
 
 const options = computed<Agent[]>(() => [
   {
-    id:          'default',
-    name:        t('ai.agents.items.default.name'),
+    name:          'default',
+    displayName:   t('ai.agents.items.default.displayName'),
     description: t('ai.agents.items.default.description'),
   },
-  ...props.agents.map((a: any) => ({
-    id:          a.metadata.name,
-    name:        a.spec.displayName || a.metadata.name,
-    description: a.spec.description,
-  })),
+  ...props.agents,
 ]);
 
-const selectedAgentId = computed<string>(() => props.agentId || 'default');
+const selectedAgentName = computed<string>(() => props.agentName || 'default');
 
 const debouncedSelectAgent = debounce((id: string) => {
   emit('select', id === 'default' ? '' : id);
@@ -70,7 +66,7 @@ const isOpen = ref(false);
         <span
           :class="{ 'ml-5': props.disabled }"
         >
-          {{ options?.find(opt => opt.id === selectedAgentId)?.name || t('ai.agents.items.unknown') }}
+          {{ options?.find(opt => opt.name === selectedAgentName)?.displayName || t('ai.agents.items.unknown') }}
         </span>
       </rc-dropdown-trigger>
       <template #dropdownCollection>
@@ -79,12 +75,12 @@ const isOpen = ref(false);
           :key="i"
           v-clean-tooltip="{ content: opt.description, delay: { show: 500 } }"
           class="agent-label"
-          @click="debouncedSelectAgent(opt.id)"
+          @click="debouncedSelectAgent(opt.name)"
         >
-          <span>{{ opt.name }}</span>
+          <span>{{ opt.displayName }}</span>
           <i
             class="icon icon-checkmark"
-            :class="{ hidden: opt.id !== selectedAgentId }"
+            :class="{ hidden: opt.name !== selectedAgentName }"
           />
         </rc-dropdown-item>
       </template>

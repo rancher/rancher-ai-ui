@@ -1,3 +1,10 @@
+export interface LlmResponseArgs {
+  agent?: string;
+  text?: string | string[];
+  chunkSize?: number;
+  tool?: McpTool;
+}
+
 export interface McpTool {
   name: string;
   args: Record<string, string | object>;
@@ -6,10 +13,11 @@ export interface McpTool {
 declare global {
   namespace Cypress {
     interface Chainable {
-      enqueueLLMResponse(args: { text?: string | string[], chunkSize?: number, tool?: McpTool }): void;
+      enqueueLLMResponse(args: LlmResponseArgs): void;
       clearLLMResponses(): void;
       cleanChatHistory(): void;
       agentDBPersistencyEnabled(value: boolean): void;
+      enableAgent(name: string, enabled: boolean): void;
     }
   }
 }

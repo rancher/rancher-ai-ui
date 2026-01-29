@@ -186,7 +186,7 @@ ai:
   agents:
     items:
       default:
-        name: Adaptive Agent Selection
+        displayName: Adaptive Agent Selection
         description: Automatically selects the best available agent based on your configuration and environment
       unknown: Unknown Agent
 

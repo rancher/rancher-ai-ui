@@ -1,6 +1,7 @@
 import { computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
-import { RANCHER_AI, type Agent } from '../types';
+import { Agent, AIAgentConfigCRD, RANCHER_AI } from '../types';
+import { formatAgentFromCRD } from '../utils/format';
 
 /**
  * Composable for managing the AI agents.
@@ -8,18 +9,22 @@ import { RANCHER_AI, type Agent } from '../types';
 export function useAgentComposable(chatId: string) {
   const store = useStore();
 
-  const agents = computed<Agent[]>(() => store.getters['management/all'](RANCHER_AI.AI_AGENT_CONFIG));
+  const agents = computed<Agent[]>(() => {
+    const all: AIAgentConfigCRD[] = store.getters['management/all'](RANCHER_AI.AI_AGENT_CONFIG);
 
-  const agentId = computed<string>(() => store.getters['rancher-ai-ui/chat/agentId'](chatId));
+    return all.map(formatAgentFromCRD);
+  });
+
+  const agentName = computed<string>(() => store.getters['rancher-ai-ui/chat/agentName'](chatId));
 
   async function fetchAgents() {
     await store.dispatch('management/findAll', { type: RANCHER_AI.AI_AGENT_CONFIG });
   }
 
-  function selectAgent(agentId: string) {
-    store.commit('rancher-ai-ui/chat/setAgentId', {
+  function selectAgent(agentName: string) {
+    store.commit('rancher-ai-ui/chat/setAgentName', {
       chatId,
-      agentId,
+      agentName,
     });
   }
 
@@ -30,6 +35,6 @@ export function useAgentComposable(chatId: string) {
   return {
     agents,
     selectAgent,
-    agentId,
+    agentName,
   };
 }

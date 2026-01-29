@@ -7,6 +7,7 @@ import debounce from 'lodash/debounce';
 import { NORMAN } from '@shell/config/types';
 import { useContextComposable } from './useContextComposable';
 import {
+  Agent,
   ChatError, ConfirmationResponse, ConfirmationStatus, Message, MessagePhase, MessageTag, MessageTemplateComponent, Role, Tag
 } from '../types';
 import {
@@ -29,7 +30,7 @@ const EXPAND_THINKING = false;
  *
  * @returns Composable for managing chat messages within the AI chat.
  */
-export function useChatMessageComposable(chatId: string, agentId: ComputedRef<string>) {
+export function useChatMessageComposable(chatId: string, agents: ComputedRef<Agent[]>, agentName: ComputedRef<string>) {
   const store = useStore();
   const { t } = useI18n(store);
 
@@ -84,10 +85,10 @@ export function useChatMessageComposable(chatId: string, agentId: ComputedRef<st
     wsSend(ws, formatWSInputMessage({
       prompt:  messageContent,
       context: selectedContext.value,
-      agent:   agentId.value,
+      agent:   agentName.value,
     }));
 
-    const agentMetadata = { agent: agentId.value };
+    const agentMetadata = { agent: agents.value.find((a) => a.name === agentName.value) || {} as Agent };
 
     addMessage({
       role,
@@ -274,7 +275,7 @@ export function useChatMessageComposable(chatId: string, agentId: ComputedRef<st
       setPhase(MessagePhase.GeneratingResponse);
 
       if (data.startsWith(Tag.AgentMetadataStart) && data.endsWith(Tag.AgentMetadataEnd)) {
-        const metadata = formatAgentMetadata(data);
+        const metadata = formatAgentMetadata(data, agents.value);
 
         if (metadata) {
           currentMsg.value.agentMetadata = metadata;

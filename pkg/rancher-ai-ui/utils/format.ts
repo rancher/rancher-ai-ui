@@ -8,6 +8,9 @@ import {
   ChatMetadata,
   ConfirmationStatus,
   AgentMetadata,
+  AIAgentConfigCRD,
+  Agent,
+  AgentSelectionMode,
 } from '../types';
 import { validateActionResource } from './validator';
 
@@ -62,11 +65,32 @@ export function formatChatMetadata(data: string): ChatMetadata | null {
   return null;
 }
 
-export function formatAgentMetadata(data: string): AgentMetadata | null {
+export function formatAgentFromCRD(config: AIAgentConfigCRD): Agent {
+  return {
+    name:          config.metadata.name,
+    displayName:   config.spec.displayName,
+    description: config.spec.description || '',
+  };
+}
+
+export function formatAgentMetadata(data: string, agents: Agent[]): AgentMetadata | null {
   const cleaned = data.replaceAll(Tag.AgentMetadataStart, '').replaceAll(Tag.AgentMetadataEnd, '').trim();
 
   try {
-    return JSON.parse(cleaned);
+    const rawMetadata = JSON.parse(cleaned);
+
+    if (rawMetadata) {
+      const { agentName, selectionMode } = rawMetadata;
+
+      const agent = agents.find((a) => a.name === agentName);
+
+      if (agent) {
+        return {
+          agent,
+          selectionMode,
+        };
+      }
+    }
   } catch (error) {
     console.error('Failed to parse agent metadata:', error); /* eslint-disable-line no-console */
   }

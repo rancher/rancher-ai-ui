@@ -1,9 +1,14 @@
-import { McpTool } from '../../globals';
+import { LlmResponseArgs, McpTool } from '../../globals';
 
 /**
  * Enqueue a response to be sent by the llm mock service.
  *
  * @param args - The arguments for the LLM response.
+ *
+ * arg.agent (Optional)
+ *   The agent name that will be selected by the ai agent. If not provided, the default agent will be used.
+ *   Note: This parameter is useful when multiple agents are configured in the Rancher AI UI.
+ *         When agents are not configured or there is only one agent, this parameter MUST be omitted.
  *
  * arg.text (Optional)
  *   The text content to be received. Can be a string or an array of strings (chunks).
@@ -43,7 +48,7 @@ import { McpTool } from '../../globals';
  *
  * @return void
  */
-Cypress.Commands.add('enqueueLLMResponse', (args: { text?: string | string[], chunkSize?: number, tool?: McpTool }) => {
+Cypress.Commands.add('enqueueLLMResponse', (args: LlmResponseArgs) => {
   let chunks: string[] = [];
 
   if (args.text) {
@@ -63,6 +68,7 @@ Cypress.Commands.add('enqueueLLMResponse', (args: { text?: string | string[], ch
     }
   }
 
+  const agent = args.agent;
   const text = chunks.length > 0 ? { chunks } : undefined;
   const tool = args.tool;
 
@@ -75,6 +81,7 @@ Cypress.Commands.add('enqueueLLMResponse', (args: { text?: string | string[], ch
         'Cookie':       `R_SESS=${ token?.value }`,
       },
       body: {
+        agent,
         text,
         tool
       },

@@ -208,13 +208,23 @@ export interface ChatMetadata {
 }
 
 export interface AgentMetadata {
-  agent: string;
+  agent: Agent | null;
   selectionMode?: AgentSelectionMode; // user messages will not have this field
 }
 
 export const enum AgentSelectionMode {
   Auto = 'auto',
   Manual = 'manual',
+}
+
+export interface AIAgentConfigCRD {
+  metadata: {
+    name: string;
+  };
+  spec: {
+    displayName: string;
+    description?: string;
+  }
 }
 
 export interface HistoryChat {
@@ -226,6 +236,10 @@ export interface HistoryChat {
 export interface HistoryChatMessage {
   chatId: string;
   role: string | Role;
+  agent: {
+    name: string;
+    mode: AgentSelectionMode;
+  }
   message: string;
   context?: string;
   tags?: string[];
@@ -249,7 +263,7 @@ export interface Context {
 }
 
 export interface Agent {
-  id: string;
   name: string;
+  displayName: string;
   description?: string;
 }
