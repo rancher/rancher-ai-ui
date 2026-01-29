@@ -12,7 +12,9 @@ export function useAgentComposable(chatId: string) {
   const agents = computed<Agent[]>(() => {
     const all: AIAgentConfigCRD[] = store.getters['management/all'](RANCHER_AI.AI_AGENT_CONFIG);
 
-    return all.map(formatAgentFromCRD);
+    return all
+      .filter((crd) => crd.spec.enabled)
+      .map(formatAgentFromCRD);
   });
 
   const agentName = computed<string>(() => store.getters['rancher-ai-ui/chat/agentName'](chatId));

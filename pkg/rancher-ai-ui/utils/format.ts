@@ -10,7 +10,6 @@ import {
   AgentMetadata,
   AIAgentConfigCRD,
   Agent,
-  AgentSelectionMode,
 } from '../types';
 import { validateActionResource } from './validator';
 
@@ -67,9 +66,9 @@ export function formatChatMetadata(data: string): ChatMetadata | null {
 
 export function formatAgentFromCRD(config: AIAgentConfigCRD): Agent {
   return {
-    name:          config.metadata.name,
-    displayName:   config.spec.displayName,
-    description: config.spec.description || '',
+    name:        config.metadata.name,
+    displayName: config.spec.displayName,
+    description: config.spec.description,
   };
 }
 
@@ -227,7 +226,26 @@ export function formatErrorMessage(value: string): { message: string } {
   return { message: 'An error occurred.' };
 }
 
-export function buildMessageFromHistoryMessage(msg: HistoryChatMessage): Message {
+export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: Agent[]): Message {
+  /**
+   * Parsing agent metadata
+   */
+  let agentMetadata = undefined;
+
+  if (msg.agent?.name) {
+    const { name, mode } = msg.agent;
+    const agent = agents.find((a) => a.name === name) || {
+      name,
+      displayName: name,
+      description: ''
+    };
+
+    agentMetadata = {
+      agent,
+      selectionMode: mode,
+    };
+  }
+
   /**
    * Parsing context
    */
@@ -326,6 +344,7 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage): Message
     completed:         true,
     thinking:          false,
     showThinking:      false,
+    agentMetadata,
     thinkingContent,
     contextContent,
     relatedResourcesActions,

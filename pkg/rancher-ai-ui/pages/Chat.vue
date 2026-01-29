@@ -54,7 +54,7 @@ const {
   fetchMessages,
   updateChat: updateHistoryChat,
   deleteChat: deleteHistoryChat,
-} = useChatHistoryComposable();
+} = useChatHistoryComposable(agents);
 
 const {
   ws,

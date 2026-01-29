@@ -1,8 +1,9 @@
+import { ComputedRef } from 'vue';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
-import { HistoryChat, HistoryChatMessage, Message } from '../types';
+import { Agent, HistoryChat, HistoryChatMessage, Message } from '../types';
 import { buildMessageFromHistoryMessage } from '../utils/format';
 
-export function useChatHistoryComposable() {
+export function useChatHistoryComposable(agents: ComputedRef<Agent[]>) {
   const apiPath = `/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_REST_API_PATH }`;
 
   async function fetchChats(): Promise<HistoryChat[]> {
@@ -52,7 +53,7 @@ export function useChatHistoryComposable() {
 
       const messages = await data.json() as HistoryChatMessage[];
 
-      return messages.map(buildMessageFromHistoryMessage);
+      return messages.map((msg) => buildMessageFromHistoryMessage(msg, agents.value || []));
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to fetch messages:', error);

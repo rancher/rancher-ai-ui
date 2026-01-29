@@ -51,7 +51,10 @@ const isOpen = ref(false);
 </script>
 
 <template>
-  <div class="agent-select">
+  <div
+    class="agent-select"
+    data-testid="rancher-ai-ui-multi-agent-select"
+  >
     <rc-dropdown
       class="agent-dropdown"
       placement="top-end"
@@ -77,7 +80,7 @@ const isOpen = ref(false);
           class="agent-label"
           @click="debouncedSelectAgent(opt.name)"
         >
-          <span>{{ opt.displayName }}</span>
+          <span>{{ opt.displayName || opt.name }}</span>
           <i
             class="icon icon-checkmark"
             :class="{ hidden: opt.name !== selectedAgentName }"

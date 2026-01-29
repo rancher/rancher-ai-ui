@@ -139,6 +139,7 @@ watch(() => text.value, () => {
         @keydown="handleTextareaKeydown"
       />
       <SelectAgent
+        v-if="props.agents.length > 1"
         :agents="props.agents"
         :agent-name="props.agentName"
         :disabled="props.disabled"

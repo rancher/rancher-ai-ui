@@ -222,6 +222,7 @@ export interface AIAgentConfigCRD {
     name: string;
   };
   spec: {
+    enabled: boolean;
     displayName: string;
     description?: string;
   }
