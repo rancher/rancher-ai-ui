@@ -184,6 +184,10 @@ ai:
         rename: Rename Chat
         delete: Delete Chat
   agents:
+    selectionMode:
+      none: ''
+      auto: (Adaptive Mode)
+      manual: ''
     items:
       default:
         displayName: Adaptive Agent Selection

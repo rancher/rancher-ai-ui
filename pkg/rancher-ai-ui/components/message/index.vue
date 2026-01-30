@@ -161,6 +161,14 @@ onBeforeUnmount(() => {
           </button>
         </div>
         <div class="chat-msg-text">
+          <div
+            v-if="props.message.role === RoleEnum.Assistant && props.message.agentMetadata?.agent"
+            class="chat-msg-selected-agent"
+          >
+            <span class="chat-msg-selected-agent-label">
+              {{ props.message.agentMetadata?.agent?.displayName }} {{ t(`ai.agents.selectionMode.${ props.message.agentMetadata?.selectionMode || 'none' }`) }}
+            </span>
+          </div>
           <div v-if="!props.disabled && isThinking">
             <Processing
               data-testid="rancher-ai-ui-chat-message-thinking-label"
@@ -472,5 +480,17 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
+}
+
+.chat-msg-selected-agent {
+  margin-bottom: 4px;
+}
+.chat-msg-selected-agent-label {
+  color: #BFC1D3;
+  font-family: Lato;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 21px; /* 150% */
 }
 </style>
