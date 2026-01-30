@@ -8,6 +8,10 @@ export class MessagePo extends ComponentPo {
     this.id = id;
   }
 
+  selectedAgentLabel(agentName: string) {
+    return this.self().get(`[data-testid="rancher-ai-ui-chat-message-selected-agent-label-${ agentName }"]`);
+  }
+
   content() {
     return this.self().get('[data-testid="rancher-ai-ui-chat-message-formatted-content"]');
   }

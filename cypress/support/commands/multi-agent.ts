@@ -14,7 +14,7 @@ Cypress.Commands.add('multiAgentEnabled', (value: boolean) => {
   if (value) {
     cy.createRancherResource('v1', 'ai.cattle.io.aiagentconfig', JSON.stringify(harvesterAgentConfig), false);
   } else {
-    cy.deleteRancherResource('v1', 'ai.cattle.io.aiagentconfig', 'cattle-ai-agent-system/harvester');
+    cy.deleteRancherResource('v1', 'ai.cattle.io.aiagentconfig', 'cattle-ai-agent-system/harvester', false);
   }
   // Give some time for the agent config to be fully registered in the AI system.
   cy.wait(1000);

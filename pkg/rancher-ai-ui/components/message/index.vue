@@ -165,7 +165,10 @@ onBeforeUnmount(() => {
             v-if="props.message.role === RoleEnum.Assistant && props.message.agentMetadata?.agent"
             class="chat-msg-selected-agent"
           >
-            <span class="chat-msg-selected-agent-label">
+            <span
+              class="chat-msg-selected-agent-label"
+              :data-testid="`rancher-ai-ui-chat-message-selected-agent-label-${ props.message.agentMetadata?.agent?.name }`"
+            >
               {{ props.message.agentMetadata?.agent?.displayName }} {{ t(`ai.agents.selectionMode.${ props.message.agentMetadata?.selectionMode || 'none' }`) }}
             </span>
           </div>

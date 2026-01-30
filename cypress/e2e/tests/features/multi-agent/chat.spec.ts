@@ -20,14 +20,28 @@ describe('Multi Agent Chat', () => {
     welcomeMessage.isCompleted();
   });
 
-  it('It should display the multi-agent select interface in the console', () => {
+  it('It should be possible to switch agents manually', () => {
     chat.console().selectAgent().checkExists();
-  });
 
-  it.skip('It should be possible to switch agents manually', () => {});
-  it.skip('It should display the correct agent info when switching agents (agent names, tooltips)', () => {});
-  it.skip('It should display additional agent info in the agent selection dropdown', () => {});
-  it.skip('It should remember the last selected agent across messages', () => {});
+    const selectAgent = chat.console().selectAgent();
+
+    selectAgent.self().contains('Adaptive Agent Selection');
+
+    selectAgent.open();
+
+    const item = selectAgent.agentItem('harvester');
+
+    item.select();
+    item.checkNotExists();
+
+    selectAgent.self().contains('Harvester');
+
+    selectAgent.open();
+
+    const harvesterAgent = selectAgent.agentItem('harvester');
+
+    harvesterAgent.checkSelected();
+  });
 
   after(() => {
     cy.multiAgentEnabled(false);

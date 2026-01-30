@@ -81,6 +81,7 @@ const isOpen = ref(false);
           v-for="(opt, i) in options"
           :key="i"
           v-clean-tooltip="{ content: opt.description, delay: { show: 500 } }"
+          :data-testid="`rancher-ai-ui-multi-agent-select-option-${opt.name}`"
           class="agent-label"
           @click="debouncedSelectAgent(opt.name)"
         >
