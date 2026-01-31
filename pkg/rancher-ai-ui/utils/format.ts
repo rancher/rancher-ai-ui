@@ -233,16 +233,17 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
   let agentMetadata = undefined;
 
   if (msg.agent?.name) {
-    const { name, mode } = msg.agent;
+    const { name, mode: selectionMode } = msg.agent;
+
     const agent = agents.find((a) => a.name === name) || {
       name,
       displayName: name,
-      description: ''
+      description: 'Unknown agent',
     };
 
     agentMetadata = {
       agent,
-      selectionMode: mode,
+      selectionMode,
     };
   }
 

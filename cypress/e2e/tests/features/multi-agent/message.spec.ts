@@ -345,19 +345,15 @@ describe('Multi Agent Messages', () => {
     responseMessage.selectedAgentLabel(customAgent.name).should('not.contain', '(Adaptive Mode)');
   });
 
-  it('It should correctly parse messages and the selected agent is no more available', () => {
+  it('It should correctly parse messages for which the selected agent is no longer available', () => {
     const selectAgent = chat.console().selectAgent();
 
     selectAgent.self().contains('Adaptive Agent Selection');
 
-    selectAgent.open();
-
-    const item = selectAgent.agentItem(customAgent.name);
-
-    item.select();
-
-    selectAgent.self().contains(customAgent.displayName);
-    cy.enqueueLLMResponse({ text: 'Response from agent.' });
+    cy.enqueueLLMResponse({
+      agent: customAgent.name,
+      text:  'Response from agent.'
+    });
 
     chat.sendMessage('Request message.');
 
@@ -368,8 +364,7 @@ describe('Multi Agent Messages', () => {
     let responseMessage = chat.getMessage(3);
 
     responseMessage.isCompleted();
-    responseMessage.selectedAgentLabel(customAgent.name).contains(customAgent.displayName);
-    responseMessage.selectedAgentLabel(customAgent.name).should('not.contain', '(Adaptive Mode)');
+    responseMessage.selectedAgentLabel(customAgent.name).contains(`${ customAgent.displayName } (Adaptive Mode)`);
 
     chat.close();
 
@@ -401,8 +396,7 @@ describe('Multi Agent Messages', () => {
      * The agent label should show Custom agent name
      * - the displayName is not available anymore since the agent config is deleted
      */
-    responseMessage.selectedAgentLabel(customAgent.name).contains(customAgent.name);
-    responseMessage.selectedAgentLabel(customAgent.name).should('not.contain', '(Adaptive Mode)');
+    responseMessage.selectedAgentLabel(customAgent.name).contains(`${ customAgent.name } (Adaptive Mode)`);
   });
 
   after(() => {

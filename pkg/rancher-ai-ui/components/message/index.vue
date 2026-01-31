@@ -166,6 +166,7 @@ onBeforeUnmount(() => {
             class="chat-msg-selected-agent"
           >
             <span
+              v-clean-tooltip="props.message.agentMetadata?.agent?.description"
               class="chat-msg-selected-agent-label"
               :data-testid="`rancher-ai-ui-chat-message-selected-agent-label-${ props.message.agentMetadata?.agent?.name }`"
             >
