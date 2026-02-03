@@ -221,6 +221,9 @@ aiConfig:
         banner:
           header: "Privacy Notice:"
           description: 'When using external, third-party providers, please be aware that SUSE does not own or control this LLM and is not responsible for its output. Your prompts and data will be sent to the provider’s servers (e.g., Google’s servers for Gemini). These providers may use your data according to their own privacy policies. The additional risk with public LLMs is the much wider dataset they use for training. Your input data could potentially be incorporated into that dataset, making it accessible to other users or used for future model training.<br><br>For highly sensitive or confidential information, we strongly recommend using a local provider instead.'
+        noPermission:
+          list: You do not have permission to view or edit the AI Assistant provider. Please contact your administrator.
+          edit: You do not have permission to edit the AI Assistant provider. Please contact your administrator.
       rag:
         header: RAG (Retrieval-Augmented Generation)
         description: Enable RAG to make your chatbot smarter by giving it access to external knowledge 
@@ -232,8 +235,11 @@ aiConfig:
       aiAgent:
         header: AI Agents
         description: Manage all your MCP servers
-        banner:
+        adaptiveModeBanner:
           label: 'Because you have multiple AI agents enabled, you will be able to choose between “Adaptive Mode” (the most suitable AI agent will be selected for you automatically) and “Manual Mode” (you have to select a specific AI agent) each time you prompt the AI assistant. Whilst powerful, the “Adaptive Mode” might take longer to respond - in this case, we recommend you to select a faster AI model.'
+        noPermission:
+          list: You do not have permission to view or edit AI Agents. Please contact your administrator.
+          edit: You do not have permission to edit the AI Agents configuration. Please contact your administrator.
         locked: This AI agent is locked - you cannot remove it or change it, but you can enable or disable it.
         sections:
           mcp:

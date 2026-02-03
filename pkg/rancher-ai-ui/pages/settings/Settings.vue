@@ -11,10 +11,12 @@ import { SECRET } from '@shell/config/types';
 import { SECRET_TYPES } from '@shell/config/secret';
 import { useI18n } from '@shell/composables/useI18n';
 import { base64Decode, base64Encode } from '@shell/utils/crypto';
+import Banner from '@components/Banner/Banner.vue';
 import AsyncButton from '@shell/components/AsyncButton.vue';
 import Loading from '@shell/components/Loading.vue';
 import {
-  SettingsFormData, Settings, Workload, AiAgentConfigSecretPayload, AIAgentConfigAuthType
+  SettingsFormData, Settings, Workload, AiAgentConfigSecretPayload, AIAgentConfigAuthType,
+  SettingsPermissions
 } from './types';
 import { AIAgentConfigCRD, RANCHER_AI_SCHEMA } from '../../types';
 import { AI_AGENT_LABELS } from '../../labels-annotations';
@@ -33,6 +35,7 @@ const aiAgentSettings = ref<SettingsFormData | null>(null);
 const aiAgentConfigCRDs = ref<AIAgentConfigCRD[] | null>(null);
 const authenticationSecrets = ref<Record<string, AiAgentConfigSecretPayload | null>>({});
 
+const permissions = ref<SettingsPermissions | null>(null);
 const hasErrors = ref<boolean>(false);
 
 /**
@@ -266,17 +269,21 @@ async function redeployAiAgent() {
  */
 const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no-unused-vars
   try {
-    // Save AI Agent Settings to Secret
-    await saveAgentSettings();
+    if (permissions?.value?.create.canCreateSecrets) {
+      // Save AI Agent Settings to Secret
+      await saveAgentSettings();
 
-    // Save AI Agent Config authentication secrets created for the agents
-    await saveAiAgentConfigAuthenticationSecrets();
+      if (permissions?.value?.create.canCreateAiAgentCRDS) {
+        // Save AI Agent Config authentication secrets created for the agents
+        await saveAiAgentConfigAuthenticationSecrets();
 
-    // Save AI Agent Config CRDs
-    await saveAiAgentConfigCRDs();
+        // Save AI Agent Config CRDs
+        await saveAiAgentConfigCRDs();
+      }
 
-    // Redeploy the rancher-ai-agent deployment after save
-    await redeployAiAgent();
+      // Redeploy the rancher-ai-agent deployment after save
+      await redeployAiAgent();
+    }
 
     btnCB(true);
   } catch (err) { // eslint-disable-line no-unused-vars
@@ -284,26 +291,46 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
   }
 };
 
-onBeforeMount(() => {
-  // Check also aiagent config CRD permissions
+function getPermissions() {
   const canListSecrets = store.getters['management/canList'](SECRET);
+  const canListAiAgentCRDS = store.getters['management/canList'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG);
 
-  if (!canListSecrets) {
-    store.state.$router.push({
-      name:   'c-cluster-settings',
-      params: { cluster: 'local' }
-    });
-  }
+  let schema = store.getters['management/schemaFor'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG);
+  const canCreateAiAgentCRDS = !!schema?.resourceMethods.find((verb: any) => 'PUT' === verb);
+
+  schema = store.getters['management/schemaFor'](SECRET);
+  const canCreateSecrets = !!schema?.resourceMethods.find((verb: any) => 'PUT' === verb);
+
+  return {
+    list:   {
+      canListSecrets,
+      canListAiAgentCRDS
+    },
+    create: {
+      canCreateSecrets,
+      canCreateAiAgentCRDS
+    }
+  };
+}
+
+onBeforeMount(() => {
+  permissions.value = getPermissions();
 });
 
 onMounted(() => {
-  fetchAiAgentSettings();
-  fetchAiAgentConfigCRDs();
+  const listPermissions = permissions.value?.list;
+
+  if (listPermissions?.canListSecrets) {
+    fetchAiAgentSettings();
+  }
+  if (listPermissions?.canListAiAgentCRDS) {
+    fetchAiAgentConfigCRDs();
+  }
 });
 </script>
 
 <template>
-  <loading v-if="!aiAgentSettings || !aiAgentConfigCRDs" />
+  <loading v-if="(permissions?.list.canListSecrets && !aiAgentSettings) || (permissions?.list.canListAiAgentCRDS && !aiAgentConfigCRDs)" />
   <div
     v-else
     class="ai-configs-container"
@@ -317,8 +344,16 @@ onMounted(() => {
       :description="t('aiConfig.form.section.provider.description')"
     >
       <AIAgentSettings
+        v-if="aiAgentSettings"
         :value="aiAgentSettings"
+        :read-only="!permissions?.create.canCreateSecrets"
         @update:value="aiAgentSettings = $event"
+      />
+      <Banner
+        v-else
+        class="m-0"
+        color="warning"
+        :label="t('aiConfig.form.section.provider.noPermission.list')"
       />
     </settings-row>
 
@@ -327,15 +362,24 @@ onMounted(() => {
       :description="t('aiConfig.form.section.aiAgent.description')"
     >
       <AIAgentConfigs
+        v-if="aiAgentConfigCRDs"
         :value="aiAgentConfigCRDs"
+        :read-only="!permissions?.create.canCreateSecrets || !permissions?.create.canCreateAiAgentCRDS"
         @update:value="aiAgentConfigCRDs = $event"
         @update:authentication-secrets="authenticationSecrets = $event"
         @update:validation-error="hasErrors = $event"
+      />
+      <Banner
+        v-else
+        class="m-0"
+        color="warning"
+        :label="t('aiConfig.form.section.aiAgent.noPermission.list')"
       />
     </settings-row>
 
     <div class="form-footer">
       <async-button
+        v-if="permissions?.create.canCreateAiAgentCRDS || permissions?.create.canCreateSecrets"
         action-label="Apply"
         :disabled="hasErrors"
         @click="save"

@@ -10,9 +10,16 @@ type ToggleGroupItem = {
 
 const modelValue = defineModel<string>();
 
-defineProps < { items: ToggleGroupItem[]}>();
+const props = defineProps<{
+  items: ToggleGroupItem[],
+  disabled?: boolean,
+}>();
 
 const update = (value: string) => {
+  if (props.disabled) {
+    return;
+  }
+
   modelValue.value = value;
 };
 
@@ -21,13 +28,14 @@ const update = (value: string) => {
 <template>
   <div class="toggle-group">
     <template
-      v-for="item in items"
+      v-for="item in props.items"
       :key="item.name"
     >
       <rc-button
         ghost
         class="toggle-group-item"
         :class="{ active: modelValue === item.value }"
+        :disabled="props.disabled && modelValue !== item.value"
         @click="update(item.value)"
       >
         <i :class="['icon', 'icon-2x', item.icon]" />

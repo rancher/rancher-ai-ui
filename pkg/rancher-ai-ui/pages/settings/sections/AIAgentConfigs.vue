@@ -29,6 +29,10 @@ const props = defineProps({
     type:     Array as PropType<AIAgentConfigCRD[]>,
     default:  () => [],
   },
+  readOnly: {
+    type:    Boolean,
+    default: false,
+  }
 });
 
 const emit = defineEmits([
@@ -140,12 +144,27 @@ const validationErrors = computed(() => {
 });
 
 const adaptiveModeBanner = computed(() => {
+  if (props.readOnly) {
+    return null;
+  }
+
   const show = agents.value.filter((c: AIAgentConfigCRD) => c.spec.enabled).length > 1;
 
   if (show) {
     return {
       color: 'info',
-      label: t('aiConfig.form.section.aiAgent.banner.label')
+      label: t('aiConfig.form.section.aiAgent.adaptiveModeBanner.label')
+    };
+  }
+
+  return null;
+});
+
+const readOnlyBanner = computed(() => {
+  if (props.readOnly) {
+    return {
+      color: 'warning',
+      label: t('aiConfig.form.section.aiAgent.noPermission.edit')
     };
   }
 
@@ -241,6 +260,10 @@ function updateAgent(patch: Partial<AIAgentConfigCRD>) {
 }
 
 function addAgent() {
+  if (props.readOnly) {
+    return;
+  }
+
   const name = `agent-${ agents.value.length + 1 }`;
 
   const newList: AIAgentConfigCRD[] = [
@@ -270,7 +293,7 @@ function addAgent() {
 }
 
 function removeAgent() {
-  if (isAgentLocked.value) {
+  if (isAgentLocked.value || props.readOnly) {
     return;
   }
 
@@ -315,6 +338,14 @@ watch(validationErrors, (errors) => {
       />
     </div>
 
+    <div v-if="readOnlyBanner">
+      <Banner
+        class="m-0"
+        :color="readOnlyBanner.color"
+        :label="readOnlyBanner.label"
+      />
+    </div>
+
     <Tabbed
       :side-tabs="true"
       :weight="99"
@@ -336,7 +367,7 @@ watch(validationErrors, (errors) => {
         class="form-values"
       >
         <div
-          v-if="isAgentLocked"
+          v-if="isAgentLocked && !props.readOnly"
           class="row"
         >
           <Banner
@@ -353,14 +384,14 @@ watch(validationErrors, (errors) => {
                 :label="t('aiConfig.form.section.aiAgent.fields.displayName.label')"
                 :rules="nameRules()"
                 required
-                :disabled="isAgentLocked"
+                :disabled="isAgentLocked || props.readOnly"
                 @update:value="(val: string) => updateAgent({ spec: { ...selectedAgent.spec, displayName: val } })"
               />
             </div>
             <div class="col span-6">
               <LabeledInput
                 :value="selectedAgent.spec.description"
-                :disabled="isAgentLocked"
+                :disabled="isAgentLocked || props.readOnly"
                 :label="t('aiConfig.form.section.aiAgent.fields.description.label')"
                 @update:value="(val: string) => updateAgent({ spec: { ...selectedAgent.spec, description: val } })"
               />
@@ -370,6 +401,7 @@ watch(validationErrors, (errors) => {
             :value="selectedAgent.spec.enabled"
             :label="t('aiConfig.form.section.aiAgent.fields.enabled.label')"
             :tooltip="t('aiConfig.form.section.aiAgent.fields.enabled.tooltip')"
+            :disabled="props.readOnly"
             @update:value="(val: boolean) => updateAgent({ spec: { ...selectedAgent.spec, enabled: val } })"
           />
         </div>
@@ -384,7 +416,7 @@ watch(validationErrors, (errors) => {
                 required
                 :value="selectedAgent.spec.mcpURL"
                 :rules="mcpUrlRules()"
-                :disabled="isAgentLocked"
+                :disabled="isAgentLocked || props.readOnly"
                 :label="t('aiConfig.form.section.aiAgent.fields.mcpURL.label')"
                 :placeholder="t('aiConfig.form.section.aiAgent.fields.mcpURL.placeholder')"
                 @update:value="(val: string) => updateAgent({ spec: { ...selectedAgent.spec, mcpURL: val } })"
@@ -393,7 +425,7 @@ watch(validationErrors, (errors) => {
             <div class="col span-6">
               <LabeledSelect
                 :value="selectedAgent.spec.authenticationType"
-                :disabled="isAgentLocked"
+                :disabled="isAgentLocked || props.readOnly"
                 :label="t('aiConfig.form.section.aiAgent.fields.authenticationType.label')"
                 :options="authOptions"
                 @update:value="(val: AIAgentConfigAuthType) => updateAgent({ spec: { ...selectedAgent.spec, authenticationType: val } })"
@@ -401,7 +433,7 @@ watch(validationErrors, (errors) => {
             </div>
           </div>
           <div
-            v-if="selectedAgent.spec.authenticationType === AIAgentConfigAuthType.BASIC && !isAgentLocked"
+            v-if="selectedAgent.spec.authenticationType === AIAgentConfigAuthType.BASIC && !isAgentLocked && !props.readOnly"
             class="row"
           >
             <div class="col span-12">
@@ -432,9 +464,9 @@ watch(validationErrors, (errors) => {
           </h3>
           <ArrayList
             :value="selectedAgent.spec.humanValidationTools"
-            :disabled="isAgentLocked"
-            :remove-allowed="!isAgentLocked"
-            :add-allowed="!isAgentLocked"
+            :disabled="isAgentLocked || props.readOnly"
+            :remove-allowed="!isAgentLocked && !props.readOnly"
+            :add-allowed="!isAgentLocked && !props.readOnly"
             :show-header="true"
             :add-label="t('aiConfig.form.section.aiAgent.fields.humanValidationTools.addLabel')"
             @remove="removeValidationTools"
@@ -456,7 +488,7 @@ watch(validationErrors, (errors) => {
                 <div class="col span-6">
                   <LabeledInput
                     :value="row.value.name"
-                    :disabled="isAgentLocked"
+                    :disabled="isAgentLocked || props.readOnly"
                     @update:value="updateValidationTools(i, 'name', $event)"
                   />
                 </div>
@@ -464,7 +496,7 @@ watch(validationErrors, (errors) => {
                   <LabeledSelect
                     :value="row.value.type"
                     :options="validationTypes"
-                    :disabled="isAgentLocked"
+                    :disabled="isAgentLocked || props.readOnly"
                     @update:value="updateValidationTools(i, 'type', $event)"
                   />
                 </div>
@@ -485,7 +517,7 @@ watch(validationErrors, (errors) => {
             <TextAreaAutoGrow
               :key="selectedAgent.metadata.name"
               :value="selectedAgent.spec.systemPrompt || ''"
-              :disabled="isAgentLocked"
+              :disabled="isAgentLocked || props.readOnly"
               :placeholder="t('aiConfig.form.section.aiAgent.fields.systemPrompt.placeholder')"
               :max-height="5000"
               :min-height="200"
@@ -493,7 +525,7 @@ watch(validationErrors, (errors) => {
             />
           </div>
           <div
-            v-if="!isAgentLocked"
+            v-if="!isAgentLocked && !props.readOnly"
             class="row"
           >
             <div class="col span-4">

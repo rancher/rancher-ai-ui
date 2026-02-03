@@ -10,7 +10,7 @@ import LabeledSelect from '@shell/components/form/LabeledSelect.vue';
 import LabeledInput from '@components/Form/LabeledInput/LabeledInput.vue';
 import Checkbox from '@components/Form/Checkbox/Checkbox.vue';
 import Banner from '@components/Banner/Banner.vue';
-import { _EDIT } from '@shell/config/query-params';
+import { _EDIT, _VIEW } from '@shell/config/query-params';
 import AdvancedSection from '@shell/components/AdvancedSection.vue';
 import Password from '@shell/components/form/Password.vue';
 import { Settings, SettingsFormData, ChatBotEnum } from '../types';
@@ -24,6 +24,10 @@ const props = defineProps({
     type:     Object as () => SettingsFormData,
     default:  () => ({}),
   },
+  readOnly: {
+    type:    Boolean,
+    default: false,
+  }
 });
 
 const emit = defineEmits(['update:value']);
@@ -91,6 +95,17 @@ const formData = computed<SettingsFormData>(() => {
     ...props.value,
     [Settings.ACTIVE_CHATBOT]: activeChatbot,
   };
+});
+
+const readOnlyBanner = computed(() => {
+  if (props.readOnly) {
+    return {
+      color: 'warning',
+      label: t('aiConfig.form.section.provider.noPermission.edit')
+    };
+  }
+
+  return null;
 });
 
 /**
@@ -186,14 +201,25 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
 </script>
 
 <template>
+  <div
+    v-if="readOnlyBanner"
+    class="read-only-info"
+  >
+    <Banner
+      class="m-0"
+      :color="readOnlyBanner.color"
+      :label="readOnlyBanner.label"
+    />
+  </div>
   <div class="form-values">
     <ToggleGroup
       :model-value="formData[Settings.ACTIVE_CHATBOT]"
       :items="activeChatbotOptions"
+      :disabled="readOnly"
       @update:model-value="(val: string | undefined) => updateValue(Settings.ACTIVE_CHATBOT, val as ChatBotEnum)"
     />
     <banner
-      v-if="formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local"
+      v-if="formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local && !readOnly"
       color="warning"
       class="mt-0 mb-0"
     >
@@ -209,6 +235,8 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
         :is="chatbotConfigKey === Settings.OLLAMA_URL ? LabeledInput : Password"
         :value="formData[chatbotConfigKey]"
         :label="t(`aiConfig.form.${ chatbotConfigKey }.label`)"
+        :disabled="readOnly"
+        :mode="readOnly ? _VIEW : _EDIT"
         @update:value="(val: string) => updateValue(chatbotConfigKey, val)"
       />
       <label class="text-label">
@@ -221,6 +249,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
         <Password
           :value="formData[Settings.AWS_ACCESS_KEY_ID]"
           :label="t(`aiConfig.form.${ Settings.AWS_ACCESS_KEY_ID}.label`)"
+          :mode="readOnly ? _VIEW : _EDIT"
           @update:value="(val: string) => updateValue(Settings.AWS_ACCESS_KEY_ID, val)"
         />
         <label class="text-label">
@@ -231,6 +260,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
         <Password
           :value="formData[Settings.AWS_BEARER_TOKEN_BEDROCK]"
           :label="t(`aiConfig.form.${ Settings.AWS_BEARER_TOKEN_BEDROCK}.label`)"
+          :mode="readOnly ? _VIEW : _EDIT"
           @update:value="(val: string) => updateValue(Settings.AWS_BEARER_TOKEN_BEDROCK, val)"
         />
         <label class="text-label">
@@ -241,6 +271,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
         <labeled-input
           :value="formData[Settings.AWS_REGION]"
           :label="t(`aiConfig.form.${ Settings.AWS_REGION}.label`)"
+          :disabled="readOnly"
           @update:value="(val: string) => updateValue(Settings.AWS_REGION, val)"
         />
         <label class="text-label">
@@ -255,6 +286,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
         :value="formData[getModelKey(formData[Settings.ACTIVE_CHATBOT] as ChatBotEnum)]"
         :label="t(`aiConfig.form.${ Settings.MODEL }.label`)"
         :options="modelOptions"
+        :disabled="readOnly"
         @update:value="(val: string) => updateValue(getModelKey(formData[Settings.ACTIVE_CHATBOT] as ChatBotEnum), val)"
       />
       <label class="text-label">
@@ -273,6 +305,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
         <LabeledInput
           :value="formData[Settings.OPENAI_THIRD_PARTY_URL]"
           :label="t(`aiConfig.form.${ Settings.OPENAI_THIRD_PARTY_URL }.label`)"
+          :disabled="readOnly"
           @update:value="(val: string) => updateValue(Settings.OPENAI_THIRD_PARTY_URL, val)"
         />
         <label class="text-label">
@@ -296,6 +329,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
           :value="formData[Settings.ENABLE_RAG]"
           :label="t(`aiConfig.form.${ Settings.ENABLE_RAG}.label`)"
           value-when-true="true"
+          :disabled="readOnly"
           @update:value="(val: string) => updateValue(Settings.ENABLE_RAG, val)"
         />
 
@@ -303,6 +337,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
           <labeled-input
             :value="formData[Settings.EMBEDDINGS_MODEL]"
             :label="t(`aiConfig.form.${ Settings.EMBEDDINGS_MODEL}.label`)"
+            :disabled="readOnly"
             @update:value="(val: string) => updateValue(Settings.EMBEDDINGS_MODEL, val)"
           />
           <label class="text-label">
@@ -328,6 +363,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
           <labeled-input
             :value="formData[Settings.LANGFUSE_HOST]"
             :label="t(`aiConfig.form.${ Settings.LANGFUSE_HOST}.label`)"
+            :disabled="readOnly"
             @update:value="(val: string) => updateValue(Settings.LANGFUSE_HOST, val)"
           />
           <label class="text-label">
@@ -339,6 +375,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
           <labeled-input
             :value="formData[Settings.LANGFUSE_PUBLIC_KEY]"
             :label="t(`aiConfig.form.${ Settings.LANGFUSE_PUBLIC_KEY}.label`)"
+            :disabled="readOnly"
             @update:value="(val: string) => updateValue(Settings.LANGFUSE_PUBLIC_KEY, val)"
           />
           <label class="text-label">
@@ -350,6 +387,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
           <password
             :value="formData[Settings.LANGFUSE_SECRET_KEY]"
             :label="t(`aiConfig.form.${ Settings.LANGFUSE_SECRET_KEY}.label`)"
+            :mode="readOnly ? _VIEW : _EDIT"
             @update:value="(val: string) => updateValue(Settings.LANGFUSE_SECRET_KEY, val)"
           />
           <label class="text-label">
@@ -362,6 +400,10 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
 </template>
 
 <style lang="scss" scoped>
+.read-only-info {
+  margin-bottom: 1.5rem;
+}
+
 .form-values {
   display: flex;
   flex-direction: column;

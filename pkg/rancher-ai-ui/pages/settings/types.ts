@@ -1,5 +1,16 @@
 /* eslint-disable no-unused-vars */
 
+export interface SettingsPermissions {
+  list: {
+    canListSecrets: boolean;
+    canListAiAgentCRDS: boolean;
+  };
+  create: {
+    canCreateAiAgentCRDS: boolean;
+    canCreateSecrets: boolean;
+  };
+}
+
 export const enum ChatBotEnum {
   Local = 'ollama',
   OpenAI = 'openai',
