@@ -46,7 +46,10 @@ const getters = {
   phase: (state: State) => (chatId: string) => {
     const messages = Object.values(state.chats[chatId]?.messages || {});
 
-    if (messages.length && messages[messages.length - 1]?.confirmation?.status === ConfirmationStatus.Confirmed) {
+    if (
+      messages.length && messages[messages.length - 1]?.role === Role.Assistant &&
+      messages[messages.length - 1]?.confirmation?.status === ConfirmationStatus.Confirmed
+    ) {
       return MessagePhase.Confirming;
     }
 
@@ -129,16 +132,17 @@ const mutations = {
     };
   },
 
-  updateMessage(state: State, args: { chatId: string; message: Message }) {
+  updateMessage(state: State, args: { chatId: string; message: Partial<Message> }) {
     const { chatId, message } = args;
 
-    if (!chatId || !state.chats[chatId] || !message.id) {
+    if (!chatId || !state.chats[chatId] || !message.id || !state.chats[chatId].messages[message.id]) {
       return;
     }
 
-    if (state.chats[chatId].messages[message.id]) {
-      Object.assign(state.chats[chatId].messages[message.id], message);
-    }
+    Object.assign(state.chats[chatId].messages[message.id], {
+      ...state.chats[chatId].messages[message.id],
+      ...message
+    });
   },
 
   loadMessages(state: State, args: { chatId: string; messages: Message[] }) {

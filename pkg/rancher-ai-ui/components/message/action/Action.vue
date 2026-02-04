@@ -39,7 +39,7 @@ function goTo() {
 }
 
 onMounted(async() => {
-  if (!!props.value.resource.detailLocation) {
+  if (!!props.value.resource?.detailLocation) {
     to.value = props.value.resource;
   } else {
     const inStore = 'management';
@@ -48,7 +48,7 @@ onMounted(async() => {
 
     const {
       cluster, type, namespace, name
-    } = props.value.resource;
+    } = props.value.resource || {};
 
     try {
       to.value = await store.dispatch(`${ inStore }/find`, {

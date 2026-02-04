@@ -142,32 +142,28 @@ export const enum MessageTag {
   Confirmation = 'confirmation',
 }
 
-export interface MessageConfirmationAction {
-  type: ConfirmationType | string;
-  payload?: OperationPayload[];
-  resource: ActionResource;
-}
-
 export interface MessageAction {
   type: ActionType | string;
   label: string;
   tooltip?: string;
   description?: string;
   resource?: ActionResource;
-  action?: () => MessageActionResult;
-}
-
-export interface MessageActionResult {
-  label: string;
-  icon?: string;
-  confirm: boolean;
+  action?: () => MessageConfirmation;
 }
 
 export type MessageActionSuggestion = string;
 
 export interface MessageConfirmation {
-  action: MessageConfirmationAction | null;
+  action?: MessageConfirmationAction | null;
   status: ConfirmationStatus;
+  label?: string;
+  icon?: string;
+}
+
+export interface MessageConfirmationAction {
+  type: ConfirmationType | string;
+  payload?: OperationPayload[];
+  resource: ActionResource;
 }
 
 export const enum MessageTemplateComponent {

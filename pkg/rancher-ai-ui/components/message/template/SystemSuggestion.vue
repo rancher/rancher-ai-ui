@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, type PropType } from 'vue';
-import { Message, MessageActionResult } from '../../../types';
+import { computed, type PropType } from 'vue';
+import { Message } from '../../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { formatMessageContent } from '../../../utils/format';
 
@@ -15,6 +15,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['update:message']);
+
 const actions = computed(() => {
   const all = props.message?.actions || [];
 
@@ -24,11 +26,11 @@ const actions = computed(() => {
   };
 });
 
-const result = ref<MessageActionResult | null>(null);
-
 function doAction(type: 'confirm' | 'cancel') {
   if (actions.value[type]?.action) {
-    result.value = actions.value[type].action();
+    props.message.confirmation = actions.value[type].action();
+
+    emit('update:message', props.message);
   }
 }
 </script>
@@ -46,22 +48,19 @@ function doAction(type: 'confirm' | 'cancel') {
     >
       <div class="chat-system-suggestion-msg-text">
         <span
-          v-clean-html="formatMessageContent(props.message.templateContent.content.message)"
+          v-clean-html="formatMessageContent(props.message.templateContent.content.message || '')"
         />
       </div>
 
       <div class="chat-system-suggestion-actions">
         <div
-          v-if="result"
-          :data-testid="`rancher-ai-ui-chat-message-confirmation-${result.confirm ? 'confirmed' : 'canceled'}`"
-          :class="['chat-system-suggestion-actions-result', `status-${result.confirm ? 'confirmed' : 'canceled'}` ]"
+          v-if="props.message.confirmation"
+          :data-testid="`rancher-ai-ui-chat-message-confirmation-${props.message.confirmation.status}`"
+          :class="['chat-system-suggestion-actions-result', `status-${props.message.confirmation.status}` ]"
         >
-          <i
-            v-if="result.icon"
-            :class="['icon', result.icon]"
-          />
+          <i :class="[ 'icon', props.message.confirmation.icon ]" />
           <span
-            v-clean-html="formatMessageContent(result.label)"
+            v-clean-html="formatMessageContent(props.message.confirmation.label || '')"
             class="chat-system-suggestion-msg-text"
           />
         </div>
@@ -178,7 +177,7 @@ function doAction(type: 'confirm' | 'cancel') {
   align-items: center;
   gap: 4px;
   height: 30px;
-  justify-content: flex-end;
+  margin-left: auto;
 
   &.status-confirmed {
     .icon {

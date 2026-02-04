@@ -116,7 +116,7 @@ export function useChatMessageComposable(
     });
   }
 
-  function updateMessage(message: Message) {
+  function updateMessage(message: Partial<Message>) {
     store.commit('rancher-ai-ui/chat/updateMessage', {
       chatId,
       message
@@ -130,7 +130,7 @@ export function useChatMessageComposable(
     }));
 
     updateMessage({
-      ...message,
+      id:           message.id,
       confirmation: {
         action: message.confirmation?.action || null,
         status: result ? ConfirmationStatus.Confirmed : ConfirmationStatus.Canceled
@@ -163,7 +163,7 @@ export function useChatMessageComposable(
         component: MessageTemplateComponent.Welcome,
         content:   {
           principal,
-          message: t('ai.message.system.welcome.info'),
+          message: t('ai.message.system.welcome.info', {}, true),
         }
       },
       completed: false,
@@ -186,9 +186,9 @@ export function useChatMessageComposable(
             selectAgent(currentMsg.value.agentMetadata?.recommended || '');
 
             return {
-              label:   t('ai.message.system.switchAgent.results.confirm', { agent: agent?.displayName || currentMsg.value.agentMetadata?.recommended }, true),
-              icon:    'icon-checkmark',
-              confirm: true
+              label:  t('ai.message.system.switchAgent.results.confirm', { agent: agent?.displayName || currentMsg.value.agentMetadata?.recommended }, true),
+              status: ConfirmationStatus.Confirmed,
+              icon:   'icon-checkmark'
             };
           },
         },
@@ -200,9 +200,9 @@ export function useChatMessageComposable(
             store.commit('rancher-ai-ui/chat/setSession', { [DISMISS_RECOMMENDED_AGENT_KEY]: true });
 
             return {
-              label:   t('ai.message.system.switchAgent.results.dismiss'),
-              icon:    'icon-close',
-              confirm: false
+              label:   t('ai.message.system.switchAgent.results.dismiss', {}, true),
+              status:  ConfirmationStatus.Canceled,
+              icon:    'icon-close'
             };
           },
         }

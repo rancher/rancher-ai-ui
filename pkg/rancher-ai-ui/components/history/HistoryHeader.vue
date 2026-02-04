@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import { computed } from 'vue';
 import RcButton from '@components/RcButton/RcButton.vue';
 
 const store = useStore();
@@ -17,8 +16,6 @@ const emit = defineEmits([
   'toggle:history',
 ]);
 
-const theme = computed(() => store.getters['prefs/theme']);
-
 function toggleHistory() {
   if (props.disabled) {
     return;
@@ -30,7 +27,6 @@ function toggleHistory() {
 <template>
   <div
     class="chat-header"
-    :class="{ 'is-dark': theme === 'dark' }"
   >
     <div class="chat-title">
       <div class="chat-name">
@@ -68,14 +64,14 @@ function toggleHistory() {
   display: flex;
   align-items: center;
   gap: 16px;
+}
 
-  &.is-dark {
-    color: #fff ;
-    background: var(--category-active, var(--nav-active));
+.theme-dark .chat-header {
+  color: #fff;
+  background: var(--category-active, var(--nav-active));
 
-    .chat-history-btn:hover {
-      background: color-mix(in srgb, var(--category-active, var(--nav-active)) 80%, #fff);
-    }
+  .chat-history-btn:hover {
+    background: color-mix(in srgb, var(--category-active, var(--nav-active)) 80%, #fff);
   }
 }
 

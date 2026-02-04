@@ -23,6 +23,3 @@ helm upgrade ai-agent ${HELM_CHART_ROOT}/chart/agent \
 
 kubectl -n cattle-ai-agent-system rollout status deployment/rancher-ai-agent --timeout=2m
 kubectl -n cattle-ai-agent-system wait --for=condition=available --timeout=2m deployment/rancher-ai-agent
-
-# Wait some time for the agent to fully start
-sleep 10

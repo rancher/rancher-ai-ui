@@ -4,6 +4,7 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { Message } from '../../../types';
 import Suggestions from '../Suggestions.vue';
+import { formatMessageContent } from '../../../utils/format';
 // @ts-expect-error FIXME: Cannot find module '../../../assets/liz-icon.svg'... Remove this comment to see the full error message
 import lizIcon from '../../../assets/liz-icon.svg';
 
@@ -73,9 +74,9 @@ const user = computed(() => {
       class="chat-welcome-msg-bubble"
     >
       <div class="chat-welcome-msg-text">
-        <span>
-          {{ props.message.templateContent?.content?.message }}
-        </span>
+        <span
+          v-clean-html="formatMessageContent(props.message.templateContent?.content?.message || '')"
+        />
       </div>
     </div>
     <div

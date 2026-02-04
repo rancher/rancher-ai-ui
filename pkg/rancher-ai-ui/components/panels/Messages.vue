@@ -178,6 +178,7 @@ onBeforeUnmount(() => {
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
         :disabled="disabled"
         :message="message"
+        @update:message="emit('update:message', message)"
         @send:message="emit('send:message', $event)"
       />
       <MessageComponent
