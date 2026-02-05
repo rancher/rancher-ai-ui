@@ -73,7 +73,7 @@ button {
     gap: 0.75rem;
 
     min-width: 16rem;
-    padding: 14px 0;
+    padding: 14px 0 !important;
     border: 2px solid var(--input-border);
     border-radius: 0.5rem;
     background: var(--body-bg);
