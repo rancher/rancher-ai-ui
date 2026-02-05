@@ -111,7 +111,7 @@ function dismissEdit() {
 </script>
 
 <template>
-  <transition>
+  <transition name="slide-in">
     <div
       v-if="props.open"
       class="history-panel-overlay"
@@ -220,10 +220,8 @@ function dismissEdit() {
   background: var(--body-bg);
   opacity: 0.95; /* semi-transparent background */
   box-shadow: 2px 0 8px rgba(0,0,0,0.08);
-  padding: 0 0 0 0;
   display: flex;
   flex-direction: column;
-  animation: slideIn 0.3s cubic-bezier(.4,0,.2,1);
 }
 
 .history-header {
@@ -231,22 +229,17 @@ function dismissEdit() {
 }
 
 .history-body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   padding: 16px;
-}
-
-.history-chat-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  overflow: hidden;
 }
 
 .history-chat-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  overflow-y: auto;
+  max-height: calc(100vh - 250px);
+  padding-bottom: 8px;
 }
 
 .history-chat-item {
@@ -255,6 +248,7 @@ function dismissEdit() {
   justify-content: space-between;
   gap: 16px;
   padding: 0 16px;
+  flex-shrink: 0;
 }
 
 .history-chat-title-label {
@@ -263,6 +257,8 @@ function dismissEdit() {
   font-style: normal;
   font-weight: 600;
   line-height: 24px;
+  display: block;
+  margin-bottom: 12px;
 }
 
 .btn-create-chat {
@@ -270,7 +266,7 @@ function dismissEdit() {
   flex-direction: row;
   justify-content: center;
   width: 100%;
-  margin: 16px 0;
+  margin: 16px 0 28px 0;
 }
 
 .history-chat-name {
@@ -287,17 +283,11 @@ function dismissEdit() {
   border: 1px solid var(--border);
 }
 
-@keyframes slideIn {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
-}
-
 .slide-in-enter-active, .slide-in-leave-active {
   transition: all 0.3s cubic-bezier(.4,0,.2,1);
 }
 
 .slide-in-enter-from, .slide-in-leave-to {
   transform: translateX(-100%);
-  opacity: 0.5;
 }
 </style>
