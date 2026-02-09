@@ -52,6 +52,7 @@ const isOpen = ref(false);
 
 <template>
   <div
+    v-clean-tooltip="{ content: t('ai.agents.selectAgent.tooltip'), delay: { show: 500 } }"
     class="agent-selector-container"
     data-testid="rancher-ai-ui-multi-agent-select"
   >

@@ -192,6 +192,10 @@ ai:
         rename: Rename Chat
         delete: Delete Chat
   agents:
+    selectAgent:
+      tooltip: 'Select an Agent to handle your request or use "Adaptive Agent Selection" to let the system choose the best agent based on your context and needs.'
+    selectedAgent:
+      label: "Agent: {agent}"
     selectionMode:
       none: ''
       auto: (Adaptive Mode)
