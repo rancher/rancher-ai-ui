@@ -9,7 +9,7 @@ describe('AI Assistant Configuration', () => {
     llm:          'ollama',
     apiKey:       'empty',
     fleetAgent:   'fleet',
-    rancherAgent: 'rancher',
+    rancherAgent: 'rancher', // default built-in agent
   };
 
   const updatedValues = {

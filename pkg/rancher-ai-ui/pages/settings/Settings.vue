@@ -400,9 +400,8 @@ onMounted(() => {
 }
 
 .form-footer {
-  position: sticky;
-  bottom: 24px;
   display: flex;
   flex-direction: row-reverse;
+  margin-top: 16px;
 }
 </style>

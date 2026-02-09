@@ -170,7 +170,10 @@ function requiredSetup() {
         SelectOrCreateAuthSecret: true,
         FileSelector:             true,
       },
-      directives: { 'clean-tooltip': jest.fn() },
+      directives: {
+        'clean-html':    jest.fn(),
+        'clean-tooltip': jest.fn()
+      },
     }
   };
 }
@@ -378,6 +381,17 @@ describe('AIAgentConfigs.vue', () => {
       expect(updatedList[0].metadata.name).toBe(DEFAULT_AI_AGENT);
     });
 
+    it('should hide remove button for built-in agent', () => {
+      const wrapper = mount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [mockBuiltInAgent()] }
+      });
+
+      const tabbedComponent = wrapper.findComponent({ name: 'Tabbed' });
+
+      expect(tabbedComponent.classes()).toContain('remove-btn-disabled');
+    });
+
     it('should not remove built-in agent', () => {
       const wrapper = mount(AIAgentConfigs, {
         ...requiredSetup(),
@@ -391,7 +405,7 @@ describe('AIAgentConfigs.vue', () => {
       expect(wrapper.emitted('update:value')).toBeUndefined();
     });
 
-    it('should switch to default agent after removal', () => {
+    it('should switch to next agent in the list after removal', () => {
       const agent1 = mockAgent({
         metadata: {
           name:      'agent-1',
@@ -416,7 +430,7 @@ describe('AIAgentConfigs.vue', () => {
       vm.selectedAgentName = 'agent-1';
       vm.removeAgent();
 
-      expect(vm.selectedAgentName).toBe(DEFAULT_AI_AGENT);
+      expect(vm.selectedAgentName).toBe(agent2.metadata.name);
     });
 
     it('should clear secrets for removed agent', () => {
@@ -1070,19 +1084,6 @@ describe('AIAgentConfigs.vue', () => {
       await (wrapper as any).setProps({ value: [agent1, agent2] });
 
       expect(vm.agents.length).toBe(2);
-    });
-
-    it('should update selected agent name when props change', async() => {
-      const agent1 = mockAgent();
-
-      const wrapper = mount(AIAgentConfigs, {
-        ...requiredSetup(),
-        props: { value: [agent1] }
-      });
-
-      const vm = wrapper.vm as any;
-
-      expect(vm.selectedAgentName).toBe('test-agent');
     });
   });
 

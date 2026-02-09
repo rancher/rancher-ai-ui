@@ -236,11 +236,11 @@ aiConfig:
         header: AI Agents
         description: Manage all your MCP servers
         adaptiveModeBanner:
-          label: 'Because you have multiple AI agents enabled, you will be able to choose between “Adaptive Mode” (the most suitable AI agent will be selected for you automatically) and “Manual Mode” (you have to select a specific AI agent) each time you prompt the AI assistant. Whilst powerful, the “Adaptive Mode” might take longer to respond - in this case, we recommend you to select a faster AI model.'
+          label: 'Because you have multiple AI agents enabled, you will be able to choose between “Adaptive Mode” (the most suitable AI agent will be selected for you automatically) and “Manual Mode” (you have to select a specific AI agent) each time you prompt the AI assistant. Whilst powerful, the “Adaptive Mode” might take longer to respond - in this case, we recommend you to <b>select a faster AI model</b>.'
         noPermission:
           list: You do not have permission to view or edit AI Agents. Please contact your administrator.
           edit: You do not have permission to edit the AI Agents configuration. Please contact your administrator.
-        locked: This AI agent is locked - you cannot remove it or change it, but you can enable or disable it.
+        locked: 'This AI agent is locked - you cannot remove it or change it, but <b>you can enable or disable it</b>.'
         sections:
           mcp:
             title: MCP Configuration
@@ -272,6 +272,7 @@ aiConfig:
                 label: Name
               type:
                 label: Type
+            emptyLabel: No human validation tools have been defined for this agent
           systemPrompt:
             label: System Prompt
             placeholder: Markdown Instructions

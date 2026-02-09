@@ -153,7 +153,7 @@ const adaptiveModeBanner = computed(() => {
   if (show) {
     return {
       color: 'info',
-      label: t('aiConfig.form.section.aiAgent.adaptiveModeBanner.label')
+      label: t('aiConfig.form.section.aiAgent.adaptiveModeBanner.label', {}, true)
     };
   }
 
@@ -297,12 +297,18 @@ function removeAgent() {
     return;
   }
 
-  const newList = agents.value.filter((a) => a.metadata?.name !== selectedAgentName.value);
+  const index = agents.value.indexOf(selectedAgent.value);
 
-  delete agentSecrets.value[selectedAgentName.value];
+  if (index === -1) {
+    return;
+  }
 
-  selectedAgentName.value = DEFAULT_AI_AGENT || newList[0]?.metadata?.name || '';
+  selectedAgentName.value = agents.value[index + 1]?.metadata?.name || agents.value[0]?.metadata?.name || DEFAULT_AI_AGENT || '';
   window.location.hash = selectedAgentName.value;
+
+  const newList = agents.value.filter((_, i) => i !== index);
+
+  delete agentSecrets.value[agents.value[index].metadata?.name];
 
   emit('update:value', newList);
   emit('update:authentication-secrets', agentSecrets.value);
@@ -334,8 +340,11 @@ watch(validationErrors, (errors) => {
       <Banner
         class="m-0"
         :color="adaptiveModeBanner.color"
-        :label="adaptiveModeBanner.label"
-      />
+      >
+        <span
+          v-clean-html="adaptiveModeBanner.label"
+        />
+      </Banner>
     </div>
 
     <div v-if="readOnlyBanner">
@@ -352,6 +361,7 @@ watch(validationErrors, (errors) => {
       :use-hash="true"
       :show-tabs-add-remove="true"
       :default-tab="selectedAgentName"
+      :class="{ 'remove-btn-disabled': isAgentLocked }"
       @changed="tabChanged"
       @addTab="addAgent"
       @removeTab="removeAgent"
@@ -361,6 +371,7 @@ watch(validationErrors, (errors) => {
         :key="agent.metadata?.name"
         :label="agent.spec.displayName || agent.metadata?.name"
         :name="agent.metadata?.name"
+        :label-icon="agent?.spec?.enabled ? 'icon-confirmation-alt' : ''"
         :weight="99 - index"
         :show-header="false"
         :error="validationErrors[agent.metadata?.name]"
@@ -373,8 +384,11 @@ watch(validationErrors, (errors) => {
           <Banner
             class="m-0"
             color="warning"
-            :label="t('aiConfig.form.section.aiAgent.locked')"
-          />
+          >
+            <span
+              v-clean-html="t('aiConfig.form.section.aiAgent.locked', {}, true)"
+            />
+          </Banner>
         </div>
         <div class="form-values-row">
           <div class="row mb-16">
@@ -502,6 +516,13 @@ watch(validationErrors, (errors) => {
                 </div>
               </div>
             </template>
+            <template #empty>
+              <div class="row">
+                <span class="col span-12 text-label">
+                  {{ t('aiConfig.form.section.aiAgent.fields.humanValidationTools.emptyLabel') }}
+                </span>
+              </div>
+            </template>
           </ArrayList>
         </div>
 
@@ -584,7 +605,21 @@ watch(validationErrors, (errors) => {
   cursor: pointer;
 }
 
+.remove-btn-disabled {
+  :deep(.tab-list-footer) {
+    li > button:nth-of-type(2) {
+      visibility: hidden;
+    }
+  }
+}
+
 :deep(.select-or-create-auth-secret .mt-20) {
   margin-top: 0 !important;
+}
+
+:deep(.tab) {
+  a {
+    padding-left: 8px !important;
+  }
 }
 </style>
