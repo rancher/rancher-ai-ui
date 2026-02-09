@@ -169,7 +169,7 @@ ai:
       create: Start a New Chat
       previous: Previous Chats
       items:
-        nameTooltip: "{name}<br>Started on {createdAt}"
+        nameTooltip: "{name}<br><br>Started on {createdAt}"
       delete:
         modal:
           title: Delete Chat

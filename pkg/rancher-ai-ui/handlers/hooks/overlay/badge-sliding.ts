@@ -250,7 +250,13 @@ class BadgeSlidingOverlay extends HooksOverlay {
       const ws = store.getters['rancher-ai-ui/connection/ws'];
 
       if (!!ws) {
-        ws.send(formatWSInputMessage(message.messageContent || '', message.contextContent || []));
+        let prompt = message.messageContent || '';
+
+        if (message.summaryContent) {
+          prompt = `${ message.summaryContent }\n\n${ prompt }`;
+        }
+
+        ws.send(formatWSInputMessage(prompt, message.contextContent || []));
       }
 
       overlay.remove();

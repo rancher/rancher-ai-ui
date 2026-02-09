@@ -52,8 +52,14 @@ function chatNameTooltip(chat: HistoryChat): string {
     });
   }
 
+  let name = '';
+
+  if (chat.name) {
+    name = chat.name.replaceAll('\n', '<br>').slice(0, 500).trim();
+  }
+
   return t('ai.history.chat.items.nameTooltip', {
-    name: chat.name || '',
+    name,
     createdAt
   }, true);
 }
@@ -181,11 +187,10 @@ function dismissEdit() {
                 <span
                   v-else
                   v-clean-tooltip="chatNameTooltip(chat)"
+                  v-clean-html="chat.name"
                   data-testid="rancher-ai-ui-chat-history-item-name"
                   class="history-chat-name"
-                >
-                  {{ chat.name }}
-                </span>
+                />
                 <HistoryChatMenu
                   v-if="chatBtnHover[chat.id]"
                   @click.stop
