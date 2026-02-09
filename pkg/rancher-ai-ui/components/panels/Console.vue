@@ -264,6 +264,11 @@ watch(() => text.value, () => {
 }
 
 .chat-console-chat-text-info {
-  justify-content: center;
+  font-family: Lato;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  justify-content: flex-start;
 }
 </style>

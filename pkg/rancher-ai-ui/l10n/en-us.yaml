@@ -77,7 +77,7 @@ ai:
       cluster: Cluster
       namespace: Namespace
   configurations:
-    label: Uses AI (running {name} {model}).
+    label: Uses AI, running {name} ({model}).
     verifyResults:
       button:
         label: Verify the results.
