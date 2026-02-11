@@ -540,7 +540,7 @@ watch(validationErrors, (errors) => {
               :value="selectedAgent.spec.systemPrompt || ''"
               :disabled="isAgentLocked || props.readOnly"
               :placeholder="t('aiConfig.form.section.aiAgent.fields.systemPrompt.placeholder')"
-              :max-height="5000"
+              :max-height="200"
               :min-height="200"
               @update:value="(val: string) => updateAgent({ spec: { ...selectedAgent.spec, systemPrompt: val } })"
             />
