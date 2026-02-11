@@ -181,6 +181,10 @@ export interface MessageTemplateContent {
   message: string;
 }
 
+export const enum MessageLabelKey {
+  Summary = 'summary',
+}
+
 export interface Message {
   id?: number | string;
   role: Role;
@@ -249,6 +253,7 @@ export interface HistoryChatMessage {
   }
   message: string;
   context?: string;
+  labels?: Record<MessageLabelKey, string>;
   tags?: string[];
   confirmation?: boolean;
   createdAt: string;

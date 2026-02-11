@@ -10,6 +10,7 @@ import {
   AgentMetadata,
   AIAgentConfigCRD,
   Agent,
+  MessageLabelKey,
 } from '../types';
 import { validateActionResource } from './validator';
 
@@ -17,6 +18,7 @@ interface WSInputMessageArgs {
   prompt: string;
   agent?: string;
   context?: Context[];
+  labels?: Record<MessageLabelKey, string>;
   tags?: string[];
 }
 
@@ -46,6 +48,7 @@ export function formatWSInputMessage(args: WSInputMessageArgs): string {
     prompt: args.prompt,
     agent:  args.agent,
     context,
+    labels: args.labels,
     tags,
   });
 }
@@ -341,6 +344,11 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
     msg.message = remaining;
   }
 
+  /**
+   * Parsing summary content
+   */
+  const summaryContent = msg.labels?.[MessageLabelKey.Summary] || undefined;
+
   return {
     role:              msg.role === 'agent' ? Role.Assistant : Role.User,
     completed:         true,
@@ -349,6 +357,7 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
     agentMetadata,
     thinkingContent,
     contextContent,
+    summaryContent,
     relatedResourcesActions,
     confirmation,
     suggestionActions,

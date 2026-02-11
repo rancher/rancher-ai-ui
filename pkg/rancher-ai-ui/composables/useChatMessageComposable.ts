@@ -10,7 +10,7 @@ import {
   ActionType,
   Agent,
   AgentSelectionMode,
-  ChatError, ConfirmationResponse, ConfirmationStatus, Message, MessagePhase, MessageTag, MessageTemplateComponent, Role, Tag
+  ChatError, ConfirmationResponse, ConfirmationStatus, Message, MessageLabelKey, MessagePhase, MessageTag, MessageTemplateComponent, Role, Tag
 } from '../types';
 import {
   formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationAction, formatSuggestionActions, formatFileMessages,
@@ -81,11 +81,17 @@ export function useChatMessageComposable(
     let summaryContent = '';
     let messageContent = msg as string;
     let contextContent = selectedContext.value;
+    let labels = undefined;
 
     // msg is type of Message
     if (msg && typeof msg === 'object' && msg.messageContent) {
       role = msg.role;
+
       summaryContent = msg.summaryContent || '';
+      if (summaryContent) {
+        labels = { [MessageLabelKey.Summary]: summaryContent };
+      }
+
       messageContent = msg.messageContent || '';
       contextContent = msg.contextContent || [];
     } else { /* msg is type of string */ }
@@ -94,6 +100,7 @@ export function useChatMessageComposable(
       prompt:  messageContent,
       context: selectedContext.value,
       agent:   agentName.value,
+      labels
     }));
 
     const agentMetadata = { agent: agents.value.find((a) => a.name === agentName.value) || {} as Agent };

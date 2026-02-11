@@ -496,7 +496,7 @@ onBeforeUnmount(() => {
 .chat-msg-selected-agent-label {
   color: #BFC1D3;
   font-family: Lato;
-  font-size: 12px;
+  font-size: 14px;
   font-style: normal;
   font-weight: 400;
   line-height: 21px; /* 150% */

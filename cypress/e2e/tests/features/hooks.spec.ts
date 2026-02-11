@@ -47,10 +47,12 @@ describe('Hooks', () => {
       chatItem.showTooltip();
 
       chatItem.tooltip().within(() => {
-        // The tooltip content should be: Summary + Content + Created at information
+        // The tooltip content should be: Summary + CreatedAt
         cy.contains('Please analyse the Cluster "local" and troubleshoot any problems.').should('be.visible');
-        cy.contains('Explain what the "active" state means').should('be.visible');
         cy.contains('Started on').should('be.visible');
+
+        // The message body should not be visible
+        cy.contains('Explain what the "active" state means').should('not.exist');
       });
     });
   });

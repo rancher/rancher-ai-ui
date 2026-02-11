@@ -12,7 +12,12 @@ export function useChatHistoryComposable(agents: ComputedRef<Agent[]>) {
 
       const all = await data.json() as HistoryChat[];
 
-      return all.filter((chat) => !!chat.name);
+      return all
+        .filter((chat) => !!chat.name)
+        .map((chat) => ({
+          ...chat,
+          name: chat.name?.split('\n')[0].slice(0, 500).trim(),
+        }));
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to fetch chats:', error);

@@ -3,7 +3,7 @@ import { Store } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { waitFor } from '@shell/utils/async';
 import { warn } from '../../../utils/log';
-import { Context } from '../../../types';
+import { Context, MessageLabelKey } from '../../../types';
 import { HooksOverlay } from './index';
 import Chat from '../../chat';
 import TemplateMessage from '../template-message';
@@ -251,15 +251,11 @@ class BadgeSlidingOverlay extends HooksOverlay {
       const ws = store.getters['rancher-ai-ui/connection/ws'];
 
       if (!!ws) {
-        let prompt = message.messageContent || '';
-
-        if (message.summaryContent) {
-          prompt = `${ message.summaryContent }\n\n${ prompt }`;
-        }
-
         ws.send(formatWSInputMessage({
-          prompt,
+          prompt:  message.messageContent || '',
           context: message.contextContent || [],
+          tags:    ['sliding-badge'],
+          labels:  { [MessageLabelKey.Summary]: message.summaryContent || '' }
         }));
       }
 

@@ -52,14 +52,8 @@ function chatNameTooltip(chat: HistoryChat): string {
     });
   }
 
-  let name = '';
-
-  if (chat.name) {
-    name = chat.name.replaceAll('\n', '<br>').slice(0, 500).trim();
-  }
-
   return t('ai.history.chat.items.nameTooltip', {
-    name,
+    name: chat.name,
     createdAt
   }, true);
 }
