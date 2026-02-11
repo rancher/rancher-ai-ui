@@ -57,7 +57,6 @@ const isOpen = ref(false);
     data-testid="rancher-ai-ui-multi-agent-select"
   >
     <rc-dropdown
-      class="agent-dropdown"
       placement="top-end"
       @update:open="isOpen = $event"
     >
@@ -105,11 +104,6 @@ const isOpen = ref(false);
   font-weight: 500;
   min-width: 0;
   max-width: 100%;
-
-  .agent-dropdown {
-    min-width: 0;
-    max-width: 100%;
-  }
 
   .agent-trigger {
     display: flex !important;
