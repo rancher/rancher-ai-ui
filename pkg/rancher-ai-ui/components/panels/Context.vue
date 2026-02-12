@@ -24,7 +24,7 @@ const emit = defineEmits(['select']);
 <template>
   <div
     class="chat-context"
-    :class="{ disabled: props.disabled }"
+    :class="{ 'disabled-panel': props.disabled }"
   >
     <SelectContext
       :options="props.value"

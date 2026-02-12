@@ -40,9 +40,7 @@ const user = computed(() => {
 <template>
   <div
     class="chat-welcome-message"
-    :class="{
-      disabled: props.disabled
-    }"
+    :class="{ 'disabled-panel': props.disabled }"
   >
     <div class="chat-welcome-msg-splash">
       <div class="chat-welcome-msg-avatar-panel">

@@ -41,9 +41,7 @@ function doAction(type: 'confirm' | 'cancel') {
 <template>
   <div
     class="chat-system-suggestion-message"
-    :class="{
-      disabled: props.disabled
-    }"
+    :class="{ 'disabled-panel': props.disabled }"
   >
     <div
       v-if="props.message?.templateContent?.content?.message"

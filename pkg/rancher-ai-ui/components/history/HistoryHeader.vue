@@ -32,7 +32,7 @@ function toggleHistory() {
       <div class="chat-name">
         <div
           class="chat-history-btn"
-          :class="{ disabled }"
+          :class="{ 'disabled-panel': props.disabled }"
         >
           <RcButton
             small

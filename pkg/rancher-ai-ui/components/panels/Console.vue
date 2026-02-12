@@ -126,7 +126,10 @@ watch(() => text.value, () => {
   >
     <div
       class="chat-input-wrapper"
-      :class="{ focused: isFocused, disabled: props.disabled }"
+      :class="{
+        focused: isFocused,
+        'disabled-panel': props.disabled
+      }"
     >
       <textarea
         ref="promptTextarea"
@@ -152,7 +155,7 @@ watch(() => text.value, () => {
         />
         <div
           class="chat-input-send"
-          :class="{ disabled: props.disabled }"
+          :class="{ 'disabled-panel': props.disabled }"
         >
           <RcButton
             class="send-button"

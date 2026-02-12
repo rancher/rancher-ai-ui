@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
     class="chat-message"
     :class="{
       'chat-message-user': props.message.role === RoleEnum.User,
-      disabled: props.disabled
+      'disabled-panel': props.disabled
     }"
   >
     <component
