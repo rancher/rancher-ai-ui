@@ -213,6 +213,7 @@ onBeforeUnmount(() => {
     <MessageComponent
       v-for="(error, i) in errorMessages"
       :key="i"
+      :data-testid="`rancher-ai-ui-chat-error-message-box-${ i + 1 }`"
       :message="error"
     />
     <Processing

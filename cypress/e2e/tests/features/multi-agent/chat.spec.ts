@@ -1,7 +1,7 @@
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
-import { harvesterAgentConfig, invalidAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
+import { rancherAgentConfig, harvesterAgentConfig, invalidAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
 
 describe('Multi Agent Chat', () => {
   const chat = new ChatPo();
@@ -138,12 +138,32 @@ describe('Multi Agent Chat', () => {
     cy.deleteAgentConfig(invalidAgentConfig);
   });
 
-  it('It should show an error message in the chat panel if no agent is available', () => {
-    // cy.agentEnabled('rancher', false);
+  it('It should show an error message if all enabled agents are not available', () => {
+    // Delete custom agent
+    cy.deleteAgentConfig(harvesterAgentConfig);
+
+    // Replace mcpURL with an invalid one in the default agent config to make it unavailable
+    cy.updateAgentConfig({
+      ...rancherAgentConfig,
+      spec: { mcpURL: 'invalid-mcp' }
+    });
+
+    // Check for the error message in the chat panel
+    cy.login();
+
+    HomePagePo.goTo();
+
+    chat.open();
+
+    chat.getErrorMessage(1).containsText('Connection closed');
+    chat.getErrorMessage(2).containsText('Failed to load MCP tools for all enabled agents.');
+    chat.getErrorMessage(2).containsText('Please check the AI Agents configuration and ensure the MCP server is accessible with the provided connection details.');
   });
 
   after(() => {
+    cy.deleteAgentConfig(invalidAgentConfig);
     cy.deleteAgentConfig(harvesterAgentConfig);
+    cy.updateAgentConfig(rancherAgentConfig);
     cy.cleanChatHistory();
   });
 });

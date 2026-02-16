@@ -1,10 +1,10 @@
 import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
 
-export class MessagePo extends ComponentPo {
+class RawMessagePo extends ComponentPo {
   private id: string;
 
-  constructor(id: string) {
-    super(`[data-testid="rancher-ai-ui-chat-message-box-${ id }"]`);
+  constructor(selector: string, id: string) {
+    super(selector);
     this.id = id;
   }
 
@@ -70,5 +70,17 @@ export class MessagePo extends ComponentPo {
 
   scrollIntoView() {
     return this.self().scrollIntoView();
+  }
+}
+
+export class MessagePo extends RawMessagePo {
+  constructor(id: string) {
+    super(`[data-testid="rancher-ai-ui-chat-message-box-${ id }"]`, id);
+  }
+}
+
+export class ErrorMessagePo extends RawMessagePo {
+  constructor(id: string) {
+    super(`[data-testid="rancher-ai-ui-chat-error-message-box-${ id }"]`, id);
   }
 }

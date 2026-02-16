@@ -1,3 +1,13 @@
+export const rancherAgentConfig = {
+  apiVersion: 'ai.cattle.io/v1alpha1',
+  kind:       'AIAgentConfig',
+  metadata:   {
+    name:      'rancher',
+    namespace: 'cattle-ai-agent-system',
+  },
+  spec: { mcpURL: 'rancher-mcp-server.cattle-ai-agent-system.svc' }
+};
+
 export const harvesterAgentConfig = {
   apiVersion: 'ai.cattle.io/v1alpha1',
   kind:       'AIAgentConfig',
