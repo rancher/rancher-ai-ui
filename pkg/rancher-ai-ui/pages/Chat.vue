@@ -77,7 +77,7 @@ const {
 const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
 const activeChatId = computed(() => {
-  return store.getters['rancher-ai-ui/chat/metadata']?.activeChatId || null;
+  return store.getters['rancher-ai-ui/chat/metadata']?.chatId || null;
 });
 
 // AI service's errors are priority over websocket and message errors
@@ -117,7 +117,7 @@ async function loadChat(chatId: string | null) {
   disconnect({ showError: false });
   loadMessages(chatId ? await fetchMessages(chatId) : []);
   nextTick(() => {
-    store.commit('rancher-ai-ui/chat/setMetadata', { activeChatId: chatId });
+    store.commit('rancher-ai-ui/chat/setMetadata', { chatId });
     connect(chatId);
   });
 }

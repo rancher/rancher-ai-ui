@@ -270,7 +270,7 @@ export function useChatMessageComposable(
     const metadata = formatChatMetadata(data);
 
     if (metadata) {
-      store.commit('rancher-ai-ui/chat/setMetadata', { activeChatId: metadata?.chatId });
+      store.commit('rancher-ai-ui/chat/setMetadata', metadata);
     }
   }
 
