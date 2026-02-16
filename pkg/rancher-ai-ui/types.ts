@@ -26,6 +26,8 @@ export const enum Tag {
   SuggestionsEnd = '</suggestion>',
   DocLinkStart = '<mcp-doclink>',
   DocLinkEnd = '</mcp-doclink>',
+  ChatErrorStart = '<chat-error>',
+  ChatErrorEnd = '</chat-error>',
   ErrorStart = '<error>',
   ErrorEnd = '</error>',
 }
@@ -214,6 +216,13 @@ export interface FormattedMessage extends Message {
 
 export interface ChatMetadata {
   chatId: string;
+  agents: ChatAgentStatus[];
+}
+
+export interface ChatAgentStatus {
+  name: string;
+  status?: 'active' | 'unknown' | 'error';
+  description?: string;
 }
 
 export interface AgentMetadata {
@@ -249,6 +258,14 @@ export interface AIAgentConfigCRD {
     systemPrompt?: string;
     toolSet?: string;
   }
+  status?: {
+    conditions: {
+      error: boolean;
+      message?: string;
+    }[];
+  }
+  state?: string;
+  stateDescription?: string;
 }
 
 export interface HistoryChat {
@@ -291,4 +308,5 @@ export interface Agent {
   name: string;
   displayName: string;
   description?: string;
+  status?: string;
 }

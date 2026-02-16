@@ -96,6 +96,15 @@ const agents = computed(() => {
 const selectedAgentName = ref(agents.value[0]?.metadata?.name || '');
 const selectedAgent = computed(() => agents.value.find((a) => a.metadata?.name === selectedAgentName.value) || agents.value[0]);
 const isAgentLocked = computed(() => selectedAgent.value?.spec.builtIn);
+const isAgentUnavailable = computed(() => {
+  if (selectedAgent.value?.spec.enabled === false) {
+    return false;
+  }
+
+  const errorMessage = getAgentErrorMessage(selectedAgent.value);
+
+  return !!errorMessage;
+});
 
 const agentSecrets = ref<Record<string, AiAgentConfigSecretPayload | null>>({});
 
@@ -170,6 +179,32 @@ const readOnlyBanner = computed(() => {
 
   return null;
 });
+
+function getAgentErrorMessage(agent: AIAgentConfigCRD) {
+  return agent.stateDescription || agent.status?.conditions.find((c) => c.error)?.message;
+}
+
+function tabLabelIcon(agent: AIAgentConfigCRD) {
+  if (agent.spec?.enabled === false) {
+    return 'icon-close';
+  }
+
+  const errorMessage = getAgentErrorMessage(agent);
+
+  if (errorMessage) {
+    return 'icon-endpoints_disconnected';
+  }
+
+  if (validationErrors.value[agent.metadata?.name]) {
+    return 'icon-close';
+  }
+
+  if (agent.spec?.enabled) {
+    return 'icon-confirmation-alt';
+  }
+
+  return 'icon-close';
+}
 
 function updateAuthenticationSecret(value: AiAgentConfigSecretPayload) {
   const { selected, privateKey, publicKey } = value;
@@ -371,12 +406,25 @@ watch(validationErrors, (errors) => {
         :key="agent.metadata?.name"
         :label="agent.spec.displayName || agent.metadata?.name"
         :name="agent.metadata?.name"
-        :label-icon="agent?.spec?.enabled ? 'icon-confirmation-alt' : 'icon-close'"
+        :label-icon="tabLabelIcon(agent)"
         :weight="99 - index"
         :show-header="false"
         :error="validationErrors[agent.metadata?.name]"
         class="form-values"
       >
+        <div
+          v-if="isAgentUnavailable"
+          class="row"
+        >
+          <Banner
+            class="m-0"
+            color="error"
+          >
+            <span
+              v-clean-html="t('ai.error.agent.unavailable', { message: getAgentErrorMessage(selectedAgent) }, true)"
+            />
+          </Banner>
+        </div>
         <div
           v-if="isAgentLocked && !props.readOnly"
           class="row"
@@ -624,6 +672,16 @@ watch(validationErrors, (errors) => {
 :deep(.tab) {
   a {
     padding-left: 8px !important;
+
+    span {
+      word-break: break-word;
+      white-space: pre-line;
+      list-style-position: inside;
+    }
+  }
+
+  .icon-endpoints_disconnected {
+    color: var(--error);
   }
 
   .icon-close {

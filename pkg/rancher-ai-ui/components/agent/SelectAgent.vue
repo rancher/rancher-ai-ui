@@ -10,6 +10,16 @@ import {
   RcDropdownItem,
 } from '@components/RcDropdown';
 
+const ADAPTIVE_MODE_ID = '__adaptive__';
+
+interface AgentOption {
+  name: string;
+  displayName: string;
+  description?: string;
+  disabled: boolean;
+  tooltip: string;
+}
+
 const store = useStore();
 const { t } = useI18n(store);
 
@@ -32,19 +42,33 @@ const props = defineProps({
 
 const emit = defineEmits(['select']);
 
-const options = computed<Agent[]>(() => [
+const options = computed<AgentOption[]>(() => [
   {
-    name:          'default',
-    displayName:   t('ai.agents.items.default.displayName'),
-    description: t('ai.agents.items.default.description'),
+    name:        ADAPTIVE_MODE_ID,
+    displayName: t('ai.agents.items.default.displayName'),
+    disabled:    false,
+    tooltip:     t('ai.agents.items.default.description'),
   },
-  ...props.agents,
+  ...props.agents.map((agent) => ({
+    name:        agent.name,
+    displayName: agent.displayName || agent.name,
+    disabled:    agent.status !== 'active',
+    tooltip:     agent.status !== 'active' ? t('ai.agents.items.unavailable', {}, true) : t('ai.agents.items.default.description'),
+  }))
 ]);
 
-const selectedAgentName = computed<string>(() => props.agentName || 'default');
+const selectedAgentName = computed<string>(() => {
+  const agentName = props.agentName;
+
+  if (!agentName || props.agents.find((agent) => agent.name === agentName)?.status !== 'active') {
+    return ADAPTIVE_MODE_ID;
+  }
+
+  return agentName;
+});
 
 const debouncedSelectAgent = debounce((id: string) => {
-  emit('select', id === 'default' ? '' : id);
+  emit('select', id === ADAPTIVE_MODE_ID ? '' : id);
 }, 100);
 
 const isOpen = ref(false);
@@ -80,13 +104,19 @@ const isOpen = ref(false);
         <rc-dropdown-item
           v-for="(opt, i) in options"
           :key="i"
-          v-clean-tooltip="{ content: opt.description, delay: { show: 500 } }"
+          v-clean-tooltip="{ content: opt.tooltip, delay: { show: 500 } }"
           :data-testid="`rancher-ai-ui-multi-agent-select-option-${opt.name}`"
           class="agent-label"
+          :disabled="opt.disabled"
           @click="debouncedSelectAgent(opt.name)"
         >
           <span>{{ opt.displayName || opt.name }}</span>
           <i
+            v-if="opt.disabled"
+            class="icon icon-error"
+          />
+          <i
+            v-else
             class="icon icon-checkmark"
             :class="{ hidden: opt.name !== selectedAgentName }"
           />
@@ -134,6 +164,10 @@ const isOpen = ref(false);
     &.hidden {
       visibility: hidden;
     }
+  }
+
+  .icon-error {
+    color: var(--error);
   }
 }
 

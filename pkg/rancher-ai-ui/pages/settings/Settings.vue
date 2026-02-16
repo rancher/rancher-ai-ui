@@ -279,6 +279,9 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
 
         // Save AI Agent Config CRDs
         await saveAiAgentConfigCRDs();
+
+        // Re-watch configs to get any changes made in the backend (status updates)
+        fetchAiAgentConfigCRDs();
       }
 
       // Redeploy the rancher-ai-agent deployment after save

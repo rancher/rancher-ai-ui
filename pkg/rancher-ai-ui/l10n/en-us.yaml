@@ -122,6 +122,7 @@ ai:
   settings:
     title: AI Assistant
     goToSettings: Configure AI Assistant
+    goToAgents: Configure AI Agents
   confirmation:
     message:
       question: Are you sure you want to proceed with this action?
@@ -159,6 +160,8 @@ ai:
         noPermission: You do not have permission to access the Rancher AI Agent. Please contact your administrator.
         notFound: Rancher AI Agent not found. Please ensure the agent chart is installed.
         notActive: Rancher AI Agent is not active. Please ensure the agent is running properly.
+    agent:
+      unavailable: 'This AI agent is currently unavailable.<br>{message}'
   menu:
     options:
       chat:
@@ -204,6 +207,7 @@ ai:
       default:
         displayName: Adaptive Agent Selection
         description: Automatically selects the best available agent based on your configuration and environment
+      unavailable: 'This AI agent is currently unavailable.<br>Please check its status in the AI Agents configuration and ensure it is properly configured.'
       unknown: Unknown Agent
 
   generic:

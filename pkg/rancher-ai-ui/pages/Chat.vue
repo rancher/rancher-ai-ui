@@ -4,7 +4,7 @@ import {
   onMounted, onBeforeUnmount, computed, nextTick, ref
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
-import { HistoryChat, MessagePhase } from '../types';
+import { Agent, ChatMetadata, HistoryChat, MessagePhase } from '../types';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
 import { useContextComposable } from '../composables/useContextComposable';
@@ -76,8 +76,19 @@ const {
 
 const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
-const activeChatId = computed(() => {
-  return store.getters['rancher-ai-ui/chat/metadata']?.chatId || null;
+const chatMetadata = computed<ChatMetadata>(() => {
+  return store.getters['rancher-ai-ui/chat/metadata'] || {};
+});
+
+const chatAgents = computed<Agent[]>(() => {
+  return agents.value.map((agent) => {
+    const chatAgent = chatMetadata.value.agents?.find((a) => a.name === agent?.name);
+
+    return {
+      ...agent,
+      status: (chatAgent && chatAgent.status !== 'active') || agent.status !== 'ready' ? 'error' : 'active',
+    };
+  });
 });
 
 // AI service's errors are priority over websocket and message errors
@@ -109,7 +120,7 @@ async function toggleHistoryPanel() {
 
 async function loadChat(chatId: string | null) {
   showHistory.value = false;
-  if (chatId && chatId === activeChatId.value) {
+  if (chatId && chatId === chatMetadata.value.chatId) {
     return;
   }
 
@@ -133,7 +144,7 @@ async function updateChat(args:{ id: string, payload: Partial<HistoryChat> }) {
 async function deleteChat(id: string) {
   await deleteHistoryChat(id);
 
-  if (id === activeChatId.value) {
+  if (id === chatMetadata.value.chatId) {
     loadChat(null);
   } else {
     chatHistory.value = await fetchChats();
@@ -189,7 +200,7 @@ function unmount() {
         @toggle:history="toggleHistoryPanel"
       />
       <Messages
-        :active-chat-id="activeChatId"
+        :active-chat-id="chatMetadata.chatId"
         :messages="messages"
         :errors="errors"
         :message-phase="messagePhase"
@@ -204,7 +215,7 @@ function unmount() {
       />
       <Console
         :llm-config="llmConfig"
-        :agents="agents"
+        :agents="chatAgents"
         :agent-name="agentName"
         :disabled="!ws || ws.readyState === 3 || errors.length > 0 || messagePhase === MessagePhase.AwaitingConfirmation"
         @input:content="sendMessage($event, ws)"
@@ -212,7 +223,7 @@ function unmount() {
       />
       <History
         :chats="chatHistory"
-        :active-chat-id="activeChatId"
+        :active-chat-id="chatMetadata.chatId"
         :open="showHistory && !errors.length"
         @close:panel="showHistory = false"
         @create:chat="loadChat(null)"
