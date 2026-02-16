@@ -16,3 +16,22 @@ export const harvesterAgentConfig = {
     toolSet:            'harvester'
   }
 };
+
+export const InvalidAgentConfig = {
+  apiVersion: 'ai.cattle.io/v1alpha1',
+  kind:       'AIAgentConfig',
+  metadata:   {
+    name:      'invalid-agent',
+    namespace: 'cattle-ai-agent-system',
+  },
+  spec: {
+    authenticationType: 'RANCHER',
+    builtIn:            true,
+    description:        'Invalid agent description',
+    displayName:        'Invalid Agent',
+    enabled:            true,
+    mcpURL:             'invalid-mcp-url',
+    systemPrompt:       'Invalid agent system prompt',
+    toolSet:            'harvester'
+  }
+};
