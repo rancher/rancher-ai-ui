@@ -18,8 +18,8 @@ declare global {
       cleanChatHistory(): void;
       agentDBPersistencyEnabled(value: boolean): void;
       createAgentConfig(config: object): void;
+      updateAgentConfig(config: object): void;
       deleteAgentConfig(config: object): void;
-      agentEnabled(name: string, value: boolean): void;
     }
   }
 }
