@@ -1,6 +1,7 @@
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
+import { InvalidAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
 
 describe('Multi Agent Chat', () => {
   const chat = new ChatPo();
@@ -43,6 +44,22 @@ describe('Multi Agent Chat', () => {
     const harvesterAgent = selectAgent.agentItem('harvester');
 
     harvesterAgent.checkSelected();
+  });
+
+  it('It should show invalid agents in the agent switcher', () => {
+    cy.createRancherResource('v1', 'ai.cattle.io.aiagentconfig', JSON.stringify(InvalidAgentConfig), false);
+
+    chat.console().selectAgent().checkExists();
+
+    const selectAgent = chat.console().selectAgent();
+
+    selectAgent.open();
+
+    const item = selectAgent.agentItem(InvalidAgentConfig.metadata.name);
+
+    item.isDisabled();
+
+    cy.deleteRancherResource('v1', 'ai.cattle.io.aiagentconfig', `${ InvalidAgentConfig.metadata.namespace }/${ InvalidAgentConfig.metadata.name }`, false);
   });
 
   it('It should be possible to switch agent selection mode from a system recommendation message', () => {
