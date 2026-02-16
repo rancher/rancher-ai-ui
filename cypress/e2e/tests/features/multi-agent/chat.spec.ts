@@ -1,14 +1,16 @@
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
-import { InvalidAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
+import { harvesterAgentConfig, invalidAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
 
 describe('Multi Agent Chat', () => {
   const chat = new ChatPo();
   const history = new HistoryPo();
 
   before(() => {
-    cy.multiAgentEnabled(true);
+    cy.login();
+    // Create a custom agent config to enable multi-agent switching
+    cy.createAgentConfig(harvesterAgentConfig);
   });
 
   beforeEach(() => {
@@ -44,22 +46,6 @@ describe('Multi Agent Chat', () => {
     const harvesterAgent = selectAgent.agentItem('harvester');
 
     harvesterAgent.checkSelected();
-  });
-
-  it('It should show invalid agents in the agent switcher', () => {
-    cy.createRancherResource('v1', 'ai.cattle.io.aiagentconfig', JSON.stringify(InvalidAgentConfig), false);
-
-    chat.console().selectAgent().checkExists();
-
-    const selectAgent = chat.console().selectAgent();
-
-    selectAgent.open();
-
-    const item = selectAgent.agentItem(InvalidAgentConfig.metadata.name);
-
-    item.isDisabled();
-
-    cy.deleteRancherResource('v1', 'ai.cattle.io.aiagentconfig', `${ InvalidAgentConfig.metadata.namespace }/${ InvalidAgentConfig.metadata.name }`, false);
   });
 
   it('It should be possible to switch agent selection mode from a system recommendation message', () => {
@@ -136,8 +122,28 @@ describe('Multi Agent Chat', () => {
     chat.getMessage(14).checkNotExists();
   });
 
+  it('It should show invalid agents in the agent switcher', () => {
+    cy.createAgentConfig(invalidAgentConfig);
+
+    chat.console().selectAgent().checkExists();
+
+    const selectAgent = chat.console().selectAgent();
+
+    selectAgent.open();
+
+    const item = selectAgent.agentItem(invalidAgentConfig.metadata.name);
+
+    item.isDisabled();
+
+    cy.deleteAgentConfig(invalidAgentConfig);
+  });
+
+  it('It should show an error message in the chat panel if no agent is available', () => {
+    // cy.agentEnabled('rancher', false);
+  });
+
   after(() => {
-    cy.multiAgentEnabled(false);
+    cy.deleteAgentConfig(harvesterAgentConfig);
     cy.cleanChatHistory();
   });
 });

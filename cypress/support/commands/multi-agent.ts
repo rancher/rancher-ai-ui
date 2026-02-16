@@ -1,23 +1,21 @@
-import { harvesterAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
-
 /**
- * Enable Multi-Agent Configuration environment
+ * Create agent config in the cluster
  *
- * Multi-Agent Setup:
- *  - To enable multi-agent chat features, we need to have at least two AI Agent Configs in the system.
- *  - Rancher agent is built-in, so we just need to add one more (Harvester).
  * @return void
  */
-Cypress.Commands.add('multiAgentEnabled', (value: boolean) => {
-  cy.login();
+Cypress.Commands.add('createAgentConfig', (config: object) => {
+  cy.createRancherResource('v1', 'ai.cattle.io.aiagentconfig', JSON.stringify(config), false);
+});
 
-  if (value) {
-    cy.createRancherResource('v1', 'ai.cattle.io.aiagentconfig', JSON.stringify(harvesterAgentConfig), false);
-  } else {
-    cy.deleteRancherResource('v1', 'ai.cattle.io.aiagentconfig', 'cattle-ai-agent-system/harvester', false);
-  }
-  // Give some time for the agent config to be fully registered in the AI system.
-  cy.wait(1000);
+/**
+ * Delete agent config from the cluster
+ *
+ * @return void
+ */
+Cypress.Commands.add('deleteAgentConfig', (config: object) => {
+  const { name, namespace } = (config as any).metadata;
+
+  cy.deleteRancherResource('v1', 'ai.cattle.io.aiagentconfig', `${ namespace }/${ name }`, false);
 });
 
 /**

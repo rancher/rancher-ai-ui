@@ -17,7 +17,7 @@ export const harvesterAgentConfig = {
   }
 };
 
-export const InvalidAgentConfig = {
+export const invalidAgentConfig = {
   apiVersion: 'ai.cattle.io/v1alpha1',
   kind:       'AIAgentConfig',
   metadata:   {
@@ -26,7 +26,7 @@ export const InvalidAgentConfig = {
   },
   spec: {
     authenticationType: 'RANCHER',
-    builtIn:            true,
+    builtIn:            false,
     description:        'Invalid agent description',
     displayName:        'Invalid Agent',
     enabled:            true,

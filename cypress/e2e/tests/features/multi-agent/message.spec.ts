@@ -1,6 +1,7 @@
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
+import { harvesterAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
 
 describe('Multi Agent Messages', () => {
   const chat = new ChatPo();
@@ -19,7 +20,9 @@ describe('Multi Agent Messages', () => {
   };
 
   before(() => {
-    cy.multiAgentEnabled(true);
+    cy.login();
+    // Create a custom agent config to enable multi-agent switching
+    cy.createAgentConfig(harvesterAgentConfig);
     cy.cleanChatHistory();
   });
 
@@ -400,7 +403,7 @@ describe('Multi Agent Messages', () => {
   });
 
   after(() => {
-    cy.multiAgentEnabled(false);
+    cy.deleteAgentConfig(harvesterAgentConfig);
     cy.cleanChatHistory();
     cy.clearLLMResponses();
   });
