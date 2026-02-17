@@ -125,7 +125,10 @@ export function useAIServiceComposable() {
           action: {
             label:    t('ai.installation.goToInstall'),
             type:     ActionType.Button,
-            resource: { detailLocation: { name: 'c-cluster-apps-charts' } } // TODO: add params to open AI chart directly
+            resource: {
+              cluster:        'local',
+              detailLocation: { name: 'c-cluster-apps-charts' }
+            }
           }
         };
       }
@@ -160,7 +163,10 @@ export function useAIServiceComposable() {
         action: {
           label:    t('ai.settings.goToSettings'),
           type:     ActionType.Button,
-          resource: { detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` } }
+          resource: {
+            cluster:        'local',
+            detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
+          }
         }
       };
     }

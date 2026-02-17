@@ -260,7 +260,10 @@ export function useChatMessageComposable(
           action:  {
             label:    t('ai.settings.goToAgents'),
             type:     ActionType.Button,
-            resource: { detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` } }
+            resource: {
+              cluster:        'local',
+              detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
+            }
           }
         },
       });
