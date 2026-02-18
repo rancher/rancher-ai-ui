@@ -225,16 +225,9 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
   } = chatMetadata.value;
 
   /**
-   * Connect on opening the chat
+   * AI agent became active on mount or after a service state update - connect to the existing chat if there is one in memory, otherwise start a new one
    */
-  if (!oldState && newState === AIServiceState.Active) {
-    connect();
-  }
-
-  /**
-   * AI agent became active - connect to the existing chat if there is one in memory, otherwise start a new one
-   */
-  if (oldState && oldState !== AIServiceState.Active && newState === AIServiceState.Active) {
+  if (oldState !== AIServiceState.Active && newState === AIServiceState.Active) {
     resetMessageErrors();
 
     connect(storageType === StorageType.InMemory ? null : chatId);
@@ -310,8 +303,8 @@ function unmount() {
       <Messages
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
-        :is-chat-initialized="isChatInitialized"
         :errors="errors"
+        :disabled="errors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active"
         :message-phase="messagePhase"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
