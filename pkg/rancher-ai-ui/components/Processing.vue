@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import debounce from 'lodash/debounce';
 import {
   ref, computed, onMounted,
-  onBeforeUnmount
+  onBeforeUnmount,
+  watch
 } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
@@ -9,18 +11,24 @@ import { useI18n } from '@shell/composables/useI18n';
 const store = useStore();
 const { t } = useI18n(store);
 
+const IDLE = 'idle';
 const now = ref(Date.now());
 
 let interval: any;
 
-const props = withDefaults(defineProps<{
-  phases?: string[];
-  phase?: string | null;
-  showProgress?: boolean;
-}>(), {
-  phases:       () => [],
-  phase:        null,
-  showProgress: true,
+const props = defineProps({
+  phases: {
+    type:    Array as () => string[],
+    default: () => [],
+  },
+  phase: {
+    type:    String,
+    default: '',
+  },
+  showProgress: {
+    type:    Boolean,
+    default: true,
+  },
 });
 
 const dots = computed(() => {
@@ -29,9 +37,17 @@ const dots = computed(() => {
   return '.'.repeat(cycle);
 });
 
+// Debounce props.phase to avoid rapid changes
+const phase = ref(props.phase);
+const applyPhase = debounce((v) => {
+  phase.value = v;
+}, 150);
+
+watch(() => props.phase, (v) => applyPhase(v), { immediate: true });
+
 const label = computed(() => {
-  if (props.phase && props.phase !== 'idle' && (!props.phases.length || props.phases.includes(props.phase))) {
-    return t(`ai.phase.${ props.phase }`);
+  if (phase.value && phase.value !== IDLE && (!props.phases.length || props.phases.includes(phase.value))) {
+    return t(`ai.phase.${ phase.value }`);
   }
 
   return '';

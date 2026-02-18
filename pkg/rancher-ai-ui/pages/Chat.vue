@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import debounce from 'lodash/debounce';
 import { useStore } from 'vuex';
 import {
   onMounted, onBeforeUnmount, computed, nextTick, ref,
@@ -124,17 +123,6 @@ const disabled = computed(() => {
     messagePhase.value === MessagePhase.AwaitingConfirmation;
 });
 
-const debounceDisabled = ref(false);
-
-watch(
-  () => disabled.value,
-  debounce((val) => {
-    debounceDisabled.value = val;
-    showHistory.value = false;
-  }, 300), // Avoids flickering on chat open
-  { immediate: true }
-);
-
 function close() {
   resetMessageErrors();
   closePanel();
@@ -256,6 +244,8 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
    * AI agent became inactive - disconnect and clear chat if it was stored in memory
    */
   if (oldState === AIServiceState.Active && newState !== AIServiceState.Active) {
+    showHistory.value = false;
+
     if (storageType === StorageType.InMemory) {
       store.commit('rancher-ai-ui/chat/setMetadata', {
         chatId:      '',
@@ -263,6 +253,7 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
         storageType: null
       });
     }
+
     disconnect();
   }
 
@@ -310,7 +301,7 @@ function unmount() {
       :data-testid="`rancher-ai-ui-chat-panel-${ isChatInitialized ? 'ready' : 'not-ready' }`"
     >
       <Header
-        :disabled="debounceDisabled"
+        :disabled="disabled"
         @close:chat="close"
         @config:chat="routeToSettings"
         @download:chat="downloadMessages"
@@ -337,21 +328,21 @@ function unmount() {
       />
       <Context
         :value="context"
-        :disabled="debounceDisabled"
+        :disabled="disabled"
         @select="selectContext"
       />
       <Console
         :llm-config="llmConfig"
         :agents="chatAgents"
         :agent-name="agentName"
-        :disabled="debounceDisabled"
+        :disabled="disabled"
         @input:content="ensureConnectionAndSendMessage($event)"
         @select:agent="selectAgent"
       />
       <History
         :chats="chatHistory"
         :active-chat-id="chatMetadata.chatId"
-        :open="showHistory && !debounceDisabled"
+        :open="showHistory && !disabled"
         @close:panel="showHistory = false"
         @create:chat="ensureReconnectionAndLoadChat(null)"
         @open:chat="ensureReconnectionAndLoadChat"

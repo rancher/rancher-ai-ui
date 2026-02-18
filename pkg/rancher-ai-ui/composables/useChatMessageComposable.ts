@@ -1,9 +1,6 @@
-import {
-  ref, computed, onMounted, watch, ComputedRef
-} from 'vue';
+import { ref, computed, onMounted, ComputedRef } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import debounce from 'lodash/debounce';
 import { NORMAN } from '@shell/config/types';
 import { PRODUCT_NAME } from '../product';
 import { useContextComposable } from './useContextComposable';
@@ -52,14 +49,7 @@ export function useChatMessageComposable(
 
   const isChatInitialized = computed(() => !!store.getters['rancher-ai-ui/chat/metadata']?.chatId);
 
-  // Get phase from store with debounce to avoid rapid changes
-  const _phase = computed(() => store.getters['rancher-ai-ui/chat/phase'](chatId));
-  const phase = ref(_phase.value || MessagePhase.Initializing);
-  const applyPhase = debounce((v: MessagePhase) => {
-    phase.value = v;
-  }, 150);
-
-  watch(_phase, (v) => applyPhase(v), { immediate: true });
+  const phase = computed(() => store.getters['rancher-ai-ui/chat/phase'](chatId) || MessagePhase.Initializing);
 
   // Set phase in store
   const setPhase = (phase: MessagePhase) => {
