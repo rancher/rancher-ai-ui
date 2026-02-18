@@ -1,10 +1,12 @@
 <script lang="ts" setup>
+import debounce from 'lodash/debounce';
 import { useStore } from 'vuex';
 import {
-  onMounted, onBeforeUnmount, computed, nextTick, ref
+  onMounted, onBeforeUnmount, computed, nextTick, ref,
+  watch
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
-import { Agent, ChatMetadata, HistoryChat, MessagePhase } from '../types';
+import { Agent, ChatMetadata, ConnectionPhase, HistoryChat, MessagePhase, StorageType } from '../types';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
 import { useContextComposable } from '../composables/useContextComposable';
@@ -14,6 +16,7 @@ import { useChatHistoryComposable } from '../composables/useChatHistoryComposabl
 import { useAgentComposable } from '../composables/useAgentComposable';
 import Header from '../components/panels/Header.vue';
 import Messages from '../components/panels/Messages.vue';
+import Processing from '../components/Processing.vue';
 import Context from '../components/panels/Context.vue';
 import Console from '../components/panels/Console.vue';
 import History from '../components/panels/History.vue';
@@ -26,7 +29,11 @@ import Chat from '../handlers/chat';
 const CHAT_ID = 'default';
 const store = useStore();
 
-const { llmConfig, error: aiServiceError } = useAIServiceComposable();
+const {
+  aiAgentDeploymentState,
+  llmConfig,
+  error: aiServiceError,
+} = useAIServiceComposable();
 
 const {
   agents,
@@ -38,6 +45,7 @@ const {
   messages,
   onopen,
   onmessage,
+  onclose,
   sendMessage,
   updateMessage,
   confirmMessage,
@@ -45,6 +53,7 @@ const {
   loadMessages,
   selectContext,
   resetChatError,
+  isChatInitialized,
   phase: messagePhase,
   error: messageError
 } = useChatMessageComposable(CHAT_ID, agents, agentName, selectAgent);
@@ -60,10 +69,13 @@ const {
   ws,
   connect,
   disconnect,
+  setPhase,
+  phase: connectionPhase,
   error: wsError
 } = useConnectionComposable({
   onopen,
   onmessage,
+  onclose,
 });
 
 const { context } = useContextComposable();
@@ -103,13 +115,31 @@ const errors = computed(() => {
   }
 });
 
+const disabled = computed(() => {
+  return !isChatInitialized.value ||
+    errors.value.length > 0 ||
+    messagePhase.value === MessagePhase.AwaitingConfirmation;
+});
+
+const debounceDisabled = ref(false);
+
+watch(
+  () => disabled.value,
+  debounce((val) => {
+    console.log('Console disabled state changed', val);
+    debounceDisabled.value = val;
+    showHistory.value = false;
+  }, 300), // Avoids flickering on chat open
+  { immediate: true }
+);
+
 function close() {
   resetChatError();
   closePanel();
 }
 
 async function toggleHistoryPanel() {
-  if (errors.value.length > 0) {
+  if (disabled.value) {
     return;
   }
   if (!showHistory.value) {
@@ -125,7 +155,7 @@ async function loadChat(chatId: string | null) {
   }
 
   resetChatError();
-  disconnect({ showError: false });
+  disconnect();
   loadMessages(chatId ? await fetchMessages(chatId) : []);
   nextTick(() => {
     store.commit('rancher-ai-ui/chat/setMetadata', { chatId });
@@ -159,7 +189,6 @@ function routeToSettings() {
 }
 
 onMounted(() => {
-  connect();
   // Ensure disconnection on browser refresh/close
   window.addEventListener('beforeunload', unmount);
 });
@@ -171,11 +200,41 @@ onBeforeUnmount(() => {
 
 function unmount() {
   // Clear connection when websocket is disconnected and chat is manually closed
-  if ((!Chat.isOpen(store) && ws.value?.readyState !== WebSocket.OPEN)) {
+  if ((!Chat.isOpen(store) && !isChatInitialized.value)) {
+    console.log('WebSocket is already closed, skipping disconnect');
     disconnect();
   }
   restore();
 }
+
+watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
+  console.log('--- Deployment state changed', { oldState, newState } , connectionPhase.value);
+
+  if (!oldState && newState === 'active') {
+    connect();
+  }
+
+  if (newState && oldState && newState === 'active' && oldState !== 'active') {
+    resetChatError();
+
+    const { chatId = null, storageType = StorageType.InMemory } = store.getters['rancher-ai-ui/chat/metadata'] || {};
+    connect(storageType === StorageType.InMemory ? null : chatId);
+  } else if (oldState === 'active' && newState !== 'active') {
+    disconnect();
+  }
+
+  if (newState === 'in-progress' || newState === 'updating') {
+    if (oldState === 'not-found') {
+      setPhase(ConnectionPhase.Connecting);
+    } else {
+      setPhase(ConnectionPhase.Reconnecting);
+    }
+  }
+
+  if (newState === 'not-found') {
+    setPhase(ConnectionPhase.Disconnected);
+  }
+});
 </script>
 
 <template>
@@ -190,10 +249,10 @@ function unmount() {
     />
     <div
       class="chat-panel"
-      :data-testid="`rancher-ai-ui-chat-panel-${ ws?.readyState === 1 ? 'ready' : 'not-ready' }`"
+      :data-testid="`rancher-ai-ui-chat-panel-${ isChatInitialized ? 'ready' : 'not-ready' }`"
     >
       <Header
-        :disabled="errors.length > 0"
+        :disabled="debounceDisabled"
         @close:chat="close"
         @config:chat="routeToSettings"
         @download:chat="downloadMessages"
@@ -202,29 +261,38 @@ function unmount() {
       <Messages
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
+        :is-chat-initialized="isChatInitialized"
         :errors="errors"
         :message-phase="messagePhase"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
       />
+      <Processing
+        class="connection-processing-label text-label"
+        :phase="connectionPhase"
+        :show-progress="![
+          ConnectionPhase.Connected,
+          ConnectionPhase.Disconnected,
+        ].includes(connectionPhase)"
+      />
       <Context
         :value="context"
-        :disabled="errors.length > 0"
+        :disabled="debounceDisabled"
         @select="selectContext"
       />
       <Console
         :llm-config="llmConfig"
         :agents="chatAgents"
         :agent-name="agentName"
-        :disabled="!ws || ws.readyState === 3 || errors.length > 0 || messagePhase === MessagePhase.AwaitingConfirmation"
+        :disabled="debounceDisabled"
         @input:content="sendMessage($event, ws)"
         @select:agent="selectAgent"
       />
       <History
         :chats="chatHistory"
         :active-chat-id="chatMetadata.chatId"
-        :open="showHistory && !errors.length"
+        :open="showHistory && !debounceDisabled"
         @close:panel="showHistory = false"
         @create:chat="loadChat(null)"
         @open:chat="loadChat"
@@ -275,5 +343,14 @@ function unmount() {
     background: var(--primary);
     opacity: 1;
   }
+}
+
+.connection-processing-label {
+  color: #9fabc6;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+  padding: 16px;
 }
 </style>

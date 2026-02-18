@@ -50,6 +50,8 @@ export function useChatMessageComposable(
   const currentMsg = ref<Message>({} as Message);
   const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
+  const isChatInitialized = computed(() => !!store.getters['rancher-ai-ui/chat/metadata']?.chatId);
+
   // Get phase from store with debounce to avoid rapid changes
   const _phase = computed(() => store.getters['rancher-ai-ui/chat/phase'](chatId));
   const phase = ref(_phase.value || MessagePhase.Initializing);
@@ -248,45 +250,57 @@ export function useChatMessageComposable(
   async function onmessage(event: MessageEvent) {
     const data = event.data;
 
-    try {
-      processChatErrors(data);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Error initiating chat:', err);
-      store.commit('rancher-ai-ui/chat/setError', {
-        chatId,
-        error: {
-          message: (err as ChatError).message,
-          action:  {
-            label:    t('ai.settings.goToAgents'),
-            type:     ActionType.Button,
-            resource: {
-              cluster:        'local',
-              detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
-            }
-          }
-        },
-      });
-    }
-
-    try {
-      if (!messages.value.find((msg) => msg.completed)) {
-        setPhase(MessagePhase.Initializing);
+    if (!isChatInitialized.value) {
+      try {
+        processChatErrors(data);
         processChatMetadata(data);
-        await processWelcomeData(data);
-      } else {
-        await processMessageData(data);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error initiating chat:', err);
+        store.commit('rancher-ai-ui/chat/setError', {
+          chatId,
+          error: {
+            message: (err as ChatError).message,
+            action:  {
+              label:    t('ai.settings.goToAgents'),
+              type:     ActionType.Button,
+              resource: {
+                cluster:        'local',
+                detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
+              }
+            }
+          },
+        });
       }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Error processing messages:', err);
-      store.commit('rancher-ai-ui/chat/setError', {
-        chatId,
-        error: { message: `${ t('ai.error.message.processing') } ${ (err as ChatError).message || err || '' }` }
-      });
+    } else {
+      try {
+        if (!messages.value.find((msg) => msg.completed)) {
+          setPhase(MessagePhase.Initializing);
+          await processWelcomeData(data);
+        } else {
+          await processMessageData(data);
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error processing messages:', err);
+        store.commit('rancher-ai-ui/chat/setError', {
+          chatId,
+          error: { message: `${ t('ai.error.message.processing') } ${ (err as ChatError).message || err || '' }` }
+        });
 
-      setPhase(MessagePhase.Idle);
+        setPhase(MessagePhase.Idle);
+      }
     }
+  }
+
+  function onclose() {
+    store.commit('rancher-ai-ui/chat/setMetadata', { chatId: '', agents: null, storageType: null });
+
+    if (currentMsg.value) {
+      currentMsg.value.completed = true;
+    }
+
+    setPhase(MessagePhase.Idle);
   }
 
   function processChatErrors(data: string) {
@@ -299,6 +313,8 @@ export function useChatMessageComposable(
 
   function processChatMetadata(data: string) {
     const metadata = formatChatMetadata(data);
+
+    console.log('--- Chat metadata', metadata);
 
     if (metadata) {
       store.commit('rancher-ai-ui/chat/setMetadata', metadata);
@@ -451,13 +467,6 @@ export function useChatMessageComposable(
     }
   }
 
-  function resetChatError() {
-    store.commit('rancher-ai-ui/chat/setError', {
-      chatId,
-      error: null
-    });
-  }
-
   function downloadMessages() {
     downloadFile(
       `Rancher-liz-chat-${ chatId }_${ new Date().toISOString().slice(0, 10) }.txt`,
@@ -476,6 +485,13 @@ export function useChatMessageComposable(
     store.commit('rancher-ai-ui/chat/resetMessages', chatId);
   }
 
+  function resetChatError() {
+    store.commit('rancher-ai-ui/chat/setError', {
+      chatId,
+      error: null
+    });
+  }
+
   onMounted(() => {
     store.commit('rancher-ai-ui/chat/init', chatId);
   });
@@ -483,6 +499,7 @@ export function useChatMessageComposable(
   return {
     onopen,
     onmessage,
+    onclose,
     messages,
     sendMessage,
     addMessage,
@@ -493,6 +510,7 @@ export function useChatMessageComposable(
     downloadMessages,
     loadMessages,
     resetMessages,
+    isChatInitialized,
     phase,
     error
   };

@@ -36,6 +36,10 @@ const props = defineProps({
     type:    Array as PropType<ChatError[]>,
     default: () => [],
   },
+  isChatInitialized: {
+    type:    Boolean,
+    default: false,
+  },
   messagePhase: {
     type:    String,
     default: '',
@@ -75,7 +79,7 @@ const errorMessages = computed<FormattedMessage[]>(() => {
   }));
 });
 
-const disabled = computed(() => props.errors.length > 0);
+const disabled = computed(() => props.errors.length > 0 || !props.isChatInitialized);
 
 function getMessageTemplate(component: MessageTemplateComponent) {
   switch (component) {

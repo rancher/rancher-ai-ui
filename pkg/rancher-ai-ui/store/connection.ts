@@ -1,6 +1,6 @@
 import { PRODUCT_NAME } from '../product';
 import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
-import { ConnectionError, ConnectionParams } from '../types';
+import { ConnectionError, ConnectionParams, ConnectionPhase } from '../types';
 
 /**
  * Manages the state of WebSocket connections within the Rancher AI UI.
@@ -8,11 +8,13 @@ import { ConnectionError, ConnectionParams } from '../types';
 
 interface State {
   ws: WebSocket | null;
+  phase: ConnectionPhase;
   error: ConnectionError | null;
 }
 
 const getters = {
   ws:    (state: State) => state.ws,
+  phase: (state: State) => state.phase,
   error: (state: State) => state.error,
 };
 
@@ -22,6 +24,9 @@ const mutations = {
       return;
     }
     state.ws = ws;
+  },
+  setPhase(state: State, phase: ConnectionPhase) {
+    state.phase = phase;
   },
   send(state: State, message: string) {
     if (state.ws) {
@@ -85,6 +90,7 @@ const factory = (): CoreStoreSpecifics => {
     state: (): State => {
       return {
         ws:    null,
+        phase: ConnectionPhase.Idle,
         error: null
       };
     },

@@ -16,9 +16,11 @@ let interval: any;
 const props = withDefaults(defineProps<{
   phases?: string[];
   phase?: string | null;
+  showProgress?: boolean;
 }>(), {
-  phases: () => [],
-  phase:  null,
+  phases:       () => [],
+  phase:        null,
+  showProgress: true,
 });
 
 const dots = computed(() => {
@@ -57,7 +59,10 @@ onBeforeUnmount(() => {
     <span>
       {{ label }}
     </span>
-    <div class="dots">
+    <div
+      v-if="props.showProgress"
+      class="dots"
+    >
       <span>
         {{ dots }}
       </span>

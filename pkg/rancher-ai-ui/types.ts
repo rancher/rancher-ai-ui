@@ -96,6 +96,7 @@ export const enum MessagePhase {
 export const enum ConnectionPhase {
   Idle = 'idle',
   Connecting = 'connecting',
+  Reconnecting = 'reconnecting',
   Connected = 'connected',
   Disconnected = 'disconnected'
 }
@@ -217,12 +218,18 @@ export interface FormattedMessage extends Message {
 export interface ChatMetadata {
   chatId: string;
   agents: ChatAgentStatus[];
+  storageType: StorageType;
 }
 
 export interface ChatAgentStatus {
   name: string;
   status?: 'active' | 'unknown' | 'error';
   description?: string;
+}
+
+export const enum StorageType {
+  InMemory = 'in-memory',
+  Postgres = 'postgres',
 }
 
 export interface AgentMetadata {

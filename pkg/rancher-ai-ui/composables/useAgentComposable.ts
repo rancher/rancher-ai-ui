@@ -20,7 +20,11 @@ export function useAgentComposable(chatId: string) {
   const agentName = computed<string>(() => store.getters['rancher-ai-ui/chat/agentName'](chatId));
 
   async function fetchAgents() {
-    await store.dispatch('management/findAll', { type: RANCHER_AI_SCHEMA.AI_AGENT_CONFIG });
+    const schema = store.getters['management/schemaFor'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG);
+
+    if (schema) {
+      await store.dispatch('management/findAll', { type: RANCHER_AI_SCHEMA.AI_AGENT_CONFIG });
+    }
   }
 
   function selectAgent(agentName: string) {
