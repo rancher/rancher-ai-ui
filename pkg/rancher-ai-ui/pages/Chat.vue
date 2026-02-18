@@ -6,7 +6,7 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ChatMetadata, ConnectionPhase, HistoryChat, MessagePhase, StorageType
+  Agent, AgentState, AIServiceState, ChatMetadata, ConnectionPhase, HistoryChat, Message, MessagePhase, Role, StorageType
 } from '../types';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
@@ -190,7 +190,7 @@ async function ensureReconnectionAndLoadChat(chatId: string | null) {
   }
 }
 
-function ensureConnectionAndSendMessage(data: string) {
+function ensureConnectionAndSendMessage(data: string | Message, add = true) {
   if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
     resetMessageErrors();
     setPhase(ConnectionPhase.Reconnecting);
@@ -199,7 +199,7 @@ function ensureConnectionAndSendMessage(data: string) {
       () => ws.value,
       (newWs) => {
         if (newWs && newWs.readyState === WebSocket.OPEN) {
-          sendMessage(data, ws.value);
+          sendMessage(data, ws.value, add);
           unwatch();
         }
       }
@@ -207,7 +207,7 @@ function ensureConnectionAndSendMessage(data: string) {
 
     connect(chatMetadata.value.chatId);
   } else {
-    sendMessage(data, ws.value);
+    sendMessage(data, ws.value, add);
   }
 }
 
@@ -259,6 +259,14 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
     setPhase(!oldState || oldState === AIServiceState.NotFound ? ConnectionPhase.Connecting : ConnectionPhase.Reconnecting);
   }
 });
+
+watch(messages, (newMessages) => {
+  const lastMessage = newMessages[newMessages.length - 1];
+
+  if (lastMessage && lastMessage.role === Role.User && lastMessage.labels?.from === 'hook') {
+    ensureConnectionAndSendMessage(lastMessage, false);
+  }
+}, { immediate: true });
 
 onMounted(() => {
   // Ensure disconnection on browser refresh/close

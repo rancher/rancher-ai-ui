@@ -214,6 +214,7 @@ export interface Message {
   suggestionActions?: string[];
   confirmation?: MessageConfirmation;
   sourceLinks?: string[];
+  labels?: Record<string, string>;
   timestamp?: Date;
 }
 

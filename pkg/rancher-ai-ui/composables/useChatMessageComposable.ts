@@ -69,7 +69,7 @@ export function useChatMessageComposable(
     ws.send(value);
   }
 
-  function sendMessage(msg: string | Message, ws: WebSocket) {
+  function sendMessage(msg: string | Message, ws: WebSocket, add = true) {
     let role = Role.User;
 
     let summaryContent = '';
@@ -97,6 +97,9 @@ export function useChatMessageComposable(
       labels
     }));
 
+    if (!add) {
+      return;
+    }
     const agentMetadata = { agent: agents.value.find((a) => a.name === agentName.value) || {} as Agent };
 
     addMessage({
