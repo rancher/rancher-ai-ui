@@ -98,7 +98,15 @@ export const enum ConnectionPhase {
   Connecting = 'connecting',
   Reconnecting = 'reconnecting',
   Connected = 'connected',
-  Disconnected = 'disconnected'
+  Disconnected = 'disconnected',
+  ConnectionClosed = 'connectionClosed',
+}
+
+export const enum AIServiceState {
+  NotFound = 'not-found',
+  Active = 'active',
+  InProgress = 'in-progress',
+  Updating = 'updating'
 }
 
 export const enum ActionType {
@@ -225,6 +233,13 @@ export interface ChatAgentStatus {
   name: string;
   status?: 'active' | 'unknown' | 'error';
   description?: string;
+}
+
+export const enum AgentState {
+  Active = 'active',
+  Ready = 'ready',
+  Unknown = 'unknown',
+  Error = 'error',
 }
 
 export const enum StorageType {

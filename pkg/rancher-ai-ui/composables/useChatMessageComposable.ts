@@ -294,8 +294,6 @@ export function useChatMessageComposable(
   }
 
   function onclose() {
-    store.commit('rancher-ai-ui/chat/setMetadata', { chatId: '', agents: null, storageType: null });
-
     if (currentMsg.value) {
       currentMsg.value.completed = true;
     }
@@ -313,8 +311,6 @@ export function useChatMessageComposable(
 
   function processChatMetadata(data: string) {
     const metadata = formatChatMetadata(data);
-
-    console.log('--- Chat metadata', metadata);
 
     if (metadata) {
       store.commit('rancher-ai-ui/chat/setMetadata', metadata);
@@ -485,7 +481,7 @@ export function useChatMessageComposable(
     store.commit('rancher-ai-ui/chat/resetMessages', chatId);
   }
 
-  function resetChatError() {
+  function resetErrors() {
     store.commit('rancher-ai-ui/chat/setError', {
       chatId,
       error: null
@@ -506,7 +502,7 @@ export function useChatMessageComposable(
     updateMessage,
     confirmMessage,
     selectContext,
-    resetChatError,
+    resetErrors,
     downloadMessages,
     loadMessages,
     resetMessages,

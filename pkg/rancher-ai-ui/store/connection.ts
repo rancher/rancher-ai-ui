@@ -1,6 +1,7 @@
 import { PRODUCT_NAME } from '../product';
 import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
 import { ConnectionError, ConnectionParams, ConnectionPhase } from '../types';
+import { isManualDisconnect, MANUAL_DISCONNECT } from '../utils/ws';
 
 /**
  * Manages the state of WebSocket connections within the Rancher AI UI.
@@ -24,6 +25,8 @@ const mutations = {
       return;
     }
     state.ws = ws;
+
+    state.phase = ConnectionPhase.Idle;
   },
   setPhase(state: State, phase: ConnectionPhase) {
     state.phase = phase;
@@ -33,11 +36,12 @@ const mutations = {
       state.ws.send(message);
     }
   },
-  close(state: State) {
+  close(state: State, { phase }: { phase: ConnectionPhase } = { phase: ConnectionPhase.Disconnected }) {
     if (state.ws) {
-      state.ws.close();
+      state.phase = phase;
+
+      state.ws.close(...MANUAL_DISCONNECT);
     }
-    state.ws = null;
   },
   setError(state: State, error: ConnectionError | null) {
     state.error = error;
@@ -65,7 +69,17 @@ const actions = {
       };
 
       ws.onmessage = onmessage || null;
-      ws.onclose = onclose || null;
+      ws.onclose = (e) => {
+        if (!isManualDisconnect(e)) {
+          state.phase = ConnectionPhase.ConnectionClosed;
+        }
+
+        if (onclose) {
+          onclose(e);
+        }
+
+        state.ws = null;
+      };
       ws.onerror = (e) => {
         // eslint-disable-next-line no-console
         console.error('WebSocket error: ', e);
@@ -79,10 +93,6 @@ const actions = {
       commit('setError', { key: 'ai.error.websocket.connection' } );
     }
   },
-
-  async close({ commit }: { commit: Function }) {
-    commit('close');
-  }
 };
 
 const factory = (): CoreStoreSpecifics => {

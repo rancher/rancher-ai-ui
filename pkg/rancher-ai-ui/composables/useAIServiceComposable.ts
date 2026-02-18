@@ -5,7 +5,7 @@ import { base64Decode } from '@shell/utils/crypto';
 import { warn } from '../utils/log';
 import { AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_SECRET_NAME, PRODUCT_NAME } from '../product';
 import { SECRET, WORKLOAD_TYPES } from '@shell/config/types';
-import { ActionType, ChatError, LLMConfig } from '../types';
+import { ActionType, AIServiceState, ChatError, LLMConfig } from '../types';
 
 /**
  * Composable for fetching AI service configuration and monitoring the AI agent state.
@@ -37,7 +37,7 @@ export function useAIServiceComposable() {
     }
 
     if (!deployment) {
-      return 'not-found';
+      return AIServiceState.NotFound;
     }
 
     return deployment?.state;
@@ -162,7 +162,7 @@ export function useAIServiceComposable() {
   }
 
   watch(() => aiAgentDeploymentState.value, (newState) => {
-    if (newState === 'not-found') {
+    if (newState === AIServiceState.NotFound) {
       error.value = { key: 'ai.error.services.deployment.notFound' };
     } else {
       error.value = null;

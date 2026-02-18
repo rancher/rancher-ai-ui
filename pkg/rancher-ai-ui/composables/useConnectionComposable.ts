@@ -24,7 +24,6 @@ export function useConnectionComposable(options: {
   const phase = computed(() => store.getters['rancher-ai-ui/connection/phase']);
   const error = computed(() => store.getters['rancher-ai-ui/connection/error']);
 
-  // const baseUrl = `ws://localhost:8000/${ AGENT_WS_API_PATH }`;
   const baseUrl = `wss://${ window.location.host }/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_WS_API_PATH }`;
 
   async function connect(chatId?: string | null) {
@@ -38,13 +37,10 @@ export function useConnectionComposable(options: {
       onmessage,
       onclose,
     });
-
-    setPhase(ConnectionPhase.Idle);
   }
 
-  function disconnect() {
-    store.commit('rancher-ai-ui/connection/close');
-    setPhase(ConnectionPhase.Disconnected);
+  function disconnect(phase?: ConnectionPhase) {
+    store.commit('rancher-ai-ui/connection/close', { phase });
   }
 
   function setPhase(phase: ConnectionPhase) {

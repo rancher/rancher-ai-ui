@@ -145,6 +145,7 @@ ai:
     reconnecting: 'Reconnecting'
     connected: 'Connected'
     disconnected: 'Disconnected'
+    connectionClosed: 'Connection closed'
   error:
     message:
       processing: 'Error processing messages: '

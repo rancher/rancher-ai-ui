@@ -6,7 +6,9 @@ import {
   watch
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
-import { Agent, ChatMetadata, ConnectionPhase, HistoryChat, MessagePhase, StorageType } from '../types';
+import {
+  Agent, AgentState, AIServiceState, ChatMetadata, ConnectionPhase, HistoryChat, MessagePhase, StorageType
+} from '../types';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
 import { useContextComposable } from '../composables/useContextComposable';
@@ -52,7 +54,7 @@ const {
   downloadMessages,
   loadMessages,
   selectContext,
-  resetChatError,
+  resetErrors: resetMessageErrors,
   isChatInitialized,
   phase: messagePhase,
   error: messageError
@@ -83,11 +85,12 @@ const { context } = useContextComposable();
 const {
   resize,
   close: closePanel,
-  restore,
+  restore: restorePanel,
 } = useHeaderComposable();
 
 const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
+
 const chatMetadata = computed<ChatMetadata>(() => {
   return store.getters['rancher-ai-ui/chat/metadata'] || {};
 });
@@ -98,7 +101,7 @@ const chatAgents = computed<Agent[]>(() => {
 
     return {
       ...agent,
-      status: (chatAgent && chatAgent.status !== 'active') || agent.status !== 'ready' ? 'error' : 'active',
+      status: (chatAgent && chatAgent.status !== AgentState.Active) || agent.status !== AgentState.Ready ? AgentState.Error : AgentState.Active,
     };
   });
 });
@@ -116,7 +119,7 @@ const errors = computed(() => {
 });
 
 const disabled = computed(() => {
-  return !isChatInitialized.value ||
+  return aiAgentDeploymentState.value !== AIServiceState.Active ||
     errors.value.length > 0 ||
     messagePhase.value === MessagePhase.AwaitingConfirmation;
 });
@@ -126,7 +129,6 @@ const debounceDisabled = ref(false);
 watch(
   () => disabled.value,
   debounce((val) => {
-    console.log('Console disabled state changed', val);
     debounceDisabled.value = val;
     showHistory.value = false;
   }, 300), // Avoids flickering on chat open
@@ -134,7 +136,7 @@ watch(
 );
 
 function close() {
-  resetChatError();
+  resetMessageErrors();
   closePanel();
 }
 
@@ -146,21 +148,6 @@ async function toggleHistoryPanel() {
     chatHistory.value = await fetchChats();
   }
   showHistory.value = !showHistory.value;
-}
-
-async function loadChat(chatId: string | null) {
-  showHistory.value = false;
-  if (chatId && chatId === chatMetadata.value.chatId) {
-    return;
-  }
-
-  resetChatError();
-  disconnect();
-  loadMessages(chatId ? await fetchMessages(chatId) : []);
-  nextTick(() => {
-    store.commit('rancher-ai-ui/chat/setMetadata', { chatId });
-    connect(chatId);
-  });
 }
 
 async function updateChat(args:{ id: string, payload: Partial<HistoryChat> }) {
@@ -175,9 +162,64 @@ async function deleteChat(id: string) {
   await deleteHistoryChat(id);
 
   if (id === chatMetadata.value.chatId) {
-    loadChat(null);
+    ensureReconnectionAndLoadChat(null);
   } else {
     chatHistory.value = await fetchChats();
+  }
+}
+
+async function ensureReconnectionAndLoadChat(chatId: string | null) {
+  showHistory.value = false;
+
+  if (chatId && chatId === chatMetadata.value.chatId) {
+    return;
+  }
+
+  resetMessageErrors();
+
+  const initChat = async() => {
+    loadMessages(chatId ? await fetchMessages(chatId) : []);
+    nextTick(() => {
+      store.commit('rancher-ai-ui/chat/setMetadata', { chatId });
+      connect(chatId);
+    });
+  };
+
+  if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
+    await initChat();
+  } else {
+    const unwatch = watch(
+      () => ws.value,
+      async(newWs) => {
+        if (!newWs) {
+          await initChat();
+          unwatch();
+        }
+      }
+    );
+
+    disconnect(ConnectionPhase.Idle);
+  }
+}
+
+function ensureConnectionAndSendMessage(data: string) {
+  if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
+    resetMessageErrors();
+    setPhase(ConnectionPhase.Reconnecting);
+
+    const unwatch = watch(
+      () => ws.value,
+      (newWs) => {
+        if (newWs && newWs.readyState === WebSocket.OPEN) {
+          sendMessage(data, ws.value);
+          unwatch();
+        }
+      }
+    );
+
+    connect(chatMetadata.value.chatId);
+  } else {
+    sendMessage(data, ws.value);
   }
 }
 
@@ -187,6 +229,52 @@ function routeToSettings() {
     params: { cluster: store.state.$route.params.cluster || 'local' },
   });
 }
+
+watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
+  const {
+    chatId = null,
+    storageType = StorageType.InMemory
+  } = chatMetadata.value;
+
+  /**
+   * Connect on opening the chat
+   */
+  if (!oldState && newState === AIServiceState.Active) {
+    connect();
+  }
+
+  /**
+   * AI agent became active - connect to the existing chat if there is one in memory, otherwise start a new one
+   */
+  if (oldState && oldState !== AIServiceState.Active && newState === AIServiceState.Active) {
+    resetMessageErrors();
+
+    connect(storageType === StorageType.InMemory ? null : chatId);
+  }
+
+  /**
+   * AI agent became inactive - disconnect and clear chat if it was stored in memory
+   */
+  if (oldState === AIServiceState.Active && newState !== AIServiceState.Active) {
+    if (storageType === StorageType.InMemory) {
+      store.commit('rancher-ai-ui/chat/setMetadata', {
+        chatId:      '',
+        agents:      null,
+        storageType: null
+      });
+    }
+    disconnect();
+  }
+
+  /**
+   * Set the connection phase
+   */
+  if (!newState || newState === AIServiceState.NotFound) {
+    setPhase(ConnectionPhase.Disconnected);
+  } else if (newState !== AIServiceState.Active) {
+    setPhase(!oldState || oldState === AIServiceState.NotFound ? ConnectionPhase.Connecting : ConnectionPhase.Reconnecting);
+  }
+});
 
 onMounted(() => {
   // Ensure disconnection on browser refresh/close
@@ -201,40 +289,10 @@ onBeforeUnmount(() => {
 function unmount() {
   // Clear connection when websocket is disconnected and chat is manually closed
   if ((!Chat.isOpen(store) && !isChatInitialized.value)) {
-    console.log('WebSocket is already closed, skipping disconnect');
     disconnect();
   }
-  restore();
+  restorePanel();
 }
-
-watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
-  console.log('--- Deployment state changed', { oldState, newState } , connectionPhase.value);
-
-  if (!oldState && newState === 'active') {
-    connect();
-  }
-
-  if (newState && oldState && newState === 'active' && oldState !== 'active') {
-    resetChatError();
-
-    const { chatId = null, storageType = StorageType.InMemory } = store.getters['rancher-ai-ui/chat/metadata'] || {};
-    connect(storageType === StorageType.InMemory ? null : chatId);
-  } else if (oldState === 'active' && newState !== 'active') {
-    disconnect();
-  }
-
-  if (newState === 'in-progress' || newState === 'updating') {
-    if (oldState === 'not-found') {
-      setPhase(ConnectionPhase.Connecting);
-    } else {
-      setPhase(ConnectionPhase.Reconnecting);
-    }
-  }
-
-  if (newState === 'not-found') {
-    setPhase(ConnectionPhase.Disconnected);
-  }
-});
 </script>
 
 <template>
@@ -274,6 +332,7 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
         :show-progress="![
           ConnectionPhase.Connected,
           ConnectionPhase.Disconnected,
+          ConnectionPhase.ConnectionClosed,
         ].includes(connectionPhase)"
       />
       <Context
@@ -286,7 +345,7 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
         :agents="chatAgents"
         :agent-name="agentName"
         :disabled="debounceDisabled"
-        @input:content="sendMessage($event, ws)"
+        @input:content="ensureConnectionAndSendMessage($event)"
         @select:agent="selectAgent"
       />
       <History
@@ -294,8 +353,8 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
         :active-chat-id="chatMetadata.chatId"
         :open="showHistory && !debounceDisabled"
         @close:panel="showHistory = false"
-        @create:chat="loadChat(null)"
-        @open:chat="loadChat"
+        @create:chat="ensureReconnectionAndLoadChat(null)"
+        @open:chat="ensureReconnectionAndLoadChat"
         @update:chat="updateChat"
         @delete:chat="deleteChat"
       />
