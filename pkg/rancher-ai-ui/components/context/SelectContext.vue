@@ -101,14 +101,6 @@ function reset() {
         >
           {{ t('ai.context.add') }}
         </span>
-        <template #after>
-          <i
-            :class="{
-              'icon icon-chevron-up': isOpen,
-              'icon icon-chevron-down': !isOpen
-            }"
-          />
-        </template>
       </rc-dropdown-trigger>
       <template #dropdownCollection>
         <rc-dropdown-item
@@ -173,16 +165,12 @@ function reset() {
   min-height: 24px;
 }
 
-.context-trigger-text {
-  margin: 0 4px;
-}
-
 .context-select {
   display: flex;
   flex-wrap: wrap;
   max-width: 100%;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: var(--active-nav);
 }
 

@@ -103,6 +103,7 @@ function openLink(url: string) {
   font-size: 0.75rem;
   border: 1px solid #9fabc6;
   cursor: pointer;
+  line-height: normal;
 }
 
 // Only display content to screen readers

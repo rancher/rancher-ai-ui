@@ -92,7 +92,8 @@ class TemplateMessageFactory {
       messageContent,
       summaryContent,
       contextContent,
-      completed: true
+      completed: true,
+      labels: { 'from': 'hook' }
     };
   }
 }

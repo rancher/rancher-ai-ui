@@ -24,9 +24,10 @@ const emit = defineEmits(['select']);
 <template>
   <div
     class="chat-context"
-    :class="{ disabled: props.disabled }"
+    :class="{ 'disabled-panel': props.disabled }"
   >
     <SelectContext
+      class="select-context"
       :options="props.value"
       :auto-select="props.value"
       :disabled="props.disabled"
@@ -43,5 +44,9 @@ const emit = defineEmits(['select']);
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
+
+  .select-context {
+    margin-left: 4px;
+  }
 }
 </style>

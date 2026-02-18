@@ -2,7 +2,8 @@
 import dayjs from 'dayjs';
 import {
   ref, onBeforeMount,
-  onMounted
+  onMounted,
+  computed
 } from 'vue';
 import { useStore } from 'vuex';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_CONFIG_SECRET_NAME } from '../../product';
@@ -18,7 +19,7 @@ import {
   SettingsFormData, Settings, Workload, AiAgentConfigSecretPayload, AIAgentConfigAuthType,
   SettingsPermissions
 } from './types';
-import { AIAgentConfigCRD, RANCHER_AI_SCHEMA } from '../../types';
+import { AIAgentConfigCRD, RANCHER_AI_SCHEMA, StorageType } from '../../types';
 import { AI_AGENT_LABELS } from '../../labels-annotations';
 import SettingsRow from './SettingsRow.vue';
 import AIAgentConfigs from './sections/AIAgentConfigs.vue';
@@ -37,6 +38,8 @@ const authenticationSecrets = ref<Record<string, AiAgentConfigSecretPayload | nu
 
 const permissions = ref<SettingsPermissions | null>(null);
 const hasErrors = ref<boolean>(false);
+
+const storageType = computed(() => store.getters['rancher-ai-ui/chat/metadata']?.storageType);
 
 /**
  * Fetches the AI agent settings from the llmConfig Secret.
@@ -279,6 +282,9 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
 
         // Save AI Agent Config CRDs
         await saveAiAgentConfigCRDs();
+
+        // Re-watch configs to get any changes made in the backend (status updates)
+        fetchAiAgentConfigCRDs();
       }
 
       // Redeploy the rancher-ai-agent deployment after save
@@ -379,6 +385,13 @@ onMounted(() => {
         :label="t('aiConfig.form.section.aiAgent.noPermission.list')"
       />
     </settings-row>
+
+    <Banner
+      v-if="storageType === StorageType.InMemory"
+      class="m-0"
+      color="warning"
+      :label="t('aiConfig.form.warning.inMemoryStorage')"
+    />
 
     <div class="form-footer">
       <async-button

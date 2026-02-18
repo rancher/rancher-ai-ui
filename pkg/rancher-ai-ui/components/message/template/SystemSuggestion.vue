@@ -3,6 +3,7 @@ import { computed, type PropType } from 'vue';
 import { Message } from '../../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { formatMessageContent } from '../../../utils/format';
+import SystemAvatar from '../avatar/SystemAvatar.vue';
 
 const props = defineProps({
   message: {
@@ -41,10 +42,9 @@ function doAction(type: 'confirm' | 'cancel') {
 <template>
   <div
     class="chat-system-suggestion-message"
-    :class="{
-      disabled: props.disabled
-    }"
+    :class="{ 'disabled-panel': props.disabled }"
   >
+    <SystemAvatar class="chat-msg-avatar" />
     <div
       v-if="props.message?.templateContent?.content?.message"
       class="chat-system-suggestion-msg-bubble"

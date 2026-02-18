@@ -1,6 +1,6 @@
 import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
 import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
-import { MessagePo } from '@/cypress/e2e/po/message.po';
+import { MessagePo, ErrorMessagePo } from '@/cypress/e2e/po/message.po';
 import { ConsolePo } from '@/cypress/e2e/po/console.po';
 
 export default class ChatPo extends ComponentPo {
@@ -55,6 +55,10 @@ export default class ChatPo extends ComponentPo {
 
   getMessage(id: string | number) {
     return new MessagePo(id.toString());
+  }
+
+  getErrorMessage(index: number) {
+    return new ErrorMessagePo(index.toString());
   }
 
   sendMessage(value: string) {

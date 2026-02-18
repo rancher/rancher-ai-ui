@@ -17,8 +17,9 @@ declare global {
       clearLLMResponses(): void;
       cleanChatHistory(): void;
       agentDBPersistencyEnabled(value: boolean): void;
-      multiAgentEnabled(value: boolean): void;
-      agentEnabled(name: string, value: boolean): void;
+      createAgentConfig(config: object): void;
+      updateAgentConfig(config: object): void;
+      deleteAgentConfig(config: object): void;
     }
   }
 }

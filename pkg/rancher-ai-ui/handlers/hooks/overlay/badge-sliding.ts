@@ -241,23 +241,23 @@ class BadgeSlidingOverlay extends HooksOverlay {
     nextTick(async() => {
       Chat.open(store);
 
-      // TODO remove hacky waitFor, the WS should be already available or opened by now
-      try {
-        await waitFor(() => !!store.getters['rancher-ai-ui/connection/ws'], 'Wait for ws open', 2000, 100, false);
-      } catch (err) {
-        warn('WebSocket not available, cannot send message', err);
-      }
+      // // TODO remove hacky waitFor, the WS should be already available or opened by now
+      // try {
+      //   await waitFor(() => !!store.getters['rancher-ai-ui/connection/ws'], 'Wait for ws open', 2000, 100, false);
+      // } catch (err) {
+      //   warn('WebSocket not available, cannot send message', err);
+      // }
 
-      const ws = store.getters['rancher-ai-ui/connection/ws'];
+      // const ws = store.getters['rancher-ai-ui/connection/ws'];
 
-      if (!!ws) {
-        ws.send(formatWSInputMessage({
-          prompt:  message.messageContent || '',
-          context: message.contextContent || [],
-          tags:    ['sliding-badge'],
-          labels:  { [MessageLabelKey.Summary]: message.summaryContent || '' }
-        }));
-      }
+      // if (!!ws) {
+      //   ws.send(formatWSInputMessage({
+      //     prompt:  message.messageContent || '',
+      //     context: message.contextContent || [],
+      //     tags:    ['sliding-badge'],
+      //     labels:  { [MessageLabelKey.Summary]: message.summaryContent || '' }
+      //   }));
+      // }
 
       overlay.remove();
     });

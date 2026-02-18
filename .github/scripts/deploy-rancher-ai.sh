@@ -34,6 +34,17 @@ echo "Cloning llm-mock chart repository..."
 git clone https://github.com/rancher-sandbox/rancher-ai-llm-mock.git
 
 echo ""
+echo "Deploying LLM mock service..."
+
+helm upgrade --install llm-mock ./rancher-ai-llm-mock/chart/llm-mock \
+  --namespace cattle-ai-agent-system \
+  --create-namespace \
+  --wait --timeout 1m
+
+kubectl -n cattle-ai-agent-system rollout status deployment/llm-mock --timeout=1m
+kubectl -n cattle-ai-agent-system wait --for=condition=available --timeout=1m deployment/llm-mock
+
+echo ""
 echo "Deploying Rancher AI Helm chart with LLM mock configuration..."
 
 helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
@@ -51,14 +62,3 @@ helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
 
 kubectl -n cattle-ai-agent-system rollout status deployment/rancher-ai-agent --timeout=2m
 kubectl -n cattle-ai-agent-system wait --for=condition=available --timeout=2m deployment/rancher-ai-agent
-
-echo ""
-echo "Deploying LLM mock service..."
-
-helm upgrade --install llm-mock ./rancher-ai-llm-mock/chart/llm-mock \
-  --namespace cattle-ai-agent-system \
-  --create-namespace \
-  --wait --timeout 1m
-
-kubectl -n cattle-ai-agent-system rollout status deployment/llm-mock --timeout=1m
-kubectl -n cattle-ai-agent-system wait --for=condition=available --timeout=1m deployment/llm-mock

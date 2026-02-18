@@ -24,6 +24,10 @@ const store = useStore();
 const { t } = useI18n(store);
 
 const props = defineProps({
+  activeChatId: {
+    type:    String,
+    default: '',
+  },
   messages: {
     type:    Array as PropType<Message[]>,
     default: () => [],
@@ -35,6 +39,10 @@ const props = defineProps({
   messagePhase: {
     type:    String,
     default: '',
+  },
+  disabled: {
+    type:    Boolean,
+    default: false,
   }
 });
 
@@ -71,8 +79,6 @@ const errorMessages = computed<FormattedMessage[]>(() => {
   }));
 });
 
-const disabled = computed(() => props.errors.length > 0);
-
 function getMessageTemplate(component: MessageTemplateComponent) {
   switch (component) {
   case MessageTemplateComponent.Welcome:
@@ -104,6 +110,19 @@ function scrollToBottom() {
 
   messagesView.value.scrollTop = messagesView.value.scrollHeight;
 }
+
+// Watch activeChatId to handle auto-scroll and scroll button visibility when switching between chats
+watch(
+  () => props.activeChatId,
+  (newVal, oldVal) => {
+    if (oldVal && newVal !== oldVal) {
+      nextTick(() => {
+        handleScroll();
+        scrollToBottom();
+      });
+    }
+  }
+);
 
 // Watch both messages and messagePhase to handle auto-scroll when new messages arrive or phase changes
 watch(
@@ -176,7 +195,7 @@ onBeforeUnmount(() => {
         }"
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
-        :disabled="disabled"
+        :disabled="props.disabled"
         :message="message"
         @update:message="emit('update:message', $event)"
         @send:message="emit('send:message', $event)"
@@ -186,7 +205,7 @@ onBeforeUnmount(() => {
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
         :message="message"
-        :disabled="disabled"
+        :disabled="props.disabled"
         :pending-confirmation="messagePhase === MessagePhase.AwaitingConfirmation"
         @update:message="emit('update:message', $event)"
         @confirm:message="emit('confirm:message', $event)"
@@ -196,10 +215,11 @@ onBeforeUnmount(() => {
     <MessageComponent
       v-for="(error, i) in errorMessages"
       :key="i"
+      :data-testid="`rancher-ai-ui-chat-error-message-box-${ i + 1 }`"
       :message="error"
     />
     <Processing
-      v-if="!disabled"
+      v-if="!props.disabled"
       class="chat-message-processing-label text-label"
       :class="{
         /* It avoids pushing the System messages up (Welcome template) */
@@ -208,7 +228,7 @@ onBeforeUnmount(() => {
       :phase="messagePhase"
     />
     <ScrollButton
-      v-if="fastScrollEnabled && !disabled"
+      v-if="fastScrollEnabled && !props.disabled"
       class="chat-message-fast-scroll"
       @scroll="scrollToBottom"
     />
@@ -219,7 +239,7 @@ onBeforeUnmount(() => {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 12px;
+  padding: 24px 12px 16px 12px;
   display: flex;
   flex-direction: column;
   gap: 16px;

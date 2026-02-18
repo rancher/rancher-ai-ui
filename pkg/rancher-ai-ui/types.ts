@@ -26,6 +26,8 @@ export const enum Tag {
   SuggestionsEnd = '</suggestion>',
   DocLinkStart = '<mcp-doclink>',
   DocLinkEnd = '</mcp-doclink>',
+  ChatErrorStart = '<chat-error>',
+  ChatErrorEnd = '</chat-error>',
   ErrorStart = '<error>',
   ErrorEnd = '</error>',
 }
@@ -94,8 +96,17 @@ export const enum MessagePhase {
 export const enum ConnectionPhase {
   Idle = 'idle',
   Connecting = 'connecting',
+  Reconnecting = 'reconnecting',
   Connected = 'connected',
-  Disconnected = 'disconnected'
+  Disconnected = 'disconnected',
+  ConnectionClosed = 'connectionClosed',
+}
+
+export const enum AIServiceState {
+  NotFound = 'not-found',
+  Active = 'active',
+  InProgress = 'in-progress',
+  Updating = 'updating'
 }
 
 export const enum ActionType {
@@ -203,6 +214,7 @@ export interface Message {
   suggestionActions?: string[];
   confirmation?: MessageConfirmation;
   sourceLinks?: string[];
+  labels?: Record<string, string>;
   timestamp?: Date;
 }
 
@@ -214,6 +226,26 @@ export interface FormattedMessage extends Message {
 
 export interface ChatMetadata {
   chatId: string;
+  agents: ChatAgentStatus[];
+  storageType: StorageType;
+}
+
+export interface ChatAgentStatus {
+  name: string;
+  status?: 'active' | 'unknown' | 'error';
+  description?: string;
+}
+
+export const enum AgentState {
+  Active = 'active',
+  Ready = 'ready',
+  Unknown = 'unknown',
+  Error = 'error',
+}
+
+export const enum StorageType {
+  InMemory = 'in-memory',
+  Postgres = 'postgres',
 }
 
 export interface AgentMetadata {
@@ -249,6 +281,14 @@ export interface AIAgentConfigCRD {
     systemPrompt?: string;
     toolSet?: string;
   }
+  status?: {
+    conditions: {
+      error: boolean;
+      message?: string;
+    }[];
+  }
+  state?: string;
+  stateDescription?: string;
 }
 
 export interface HistoryChat {
@@ -291,4 +331,5 @@ export interface Agent {
   name: string;
   displayName: string;
   description?: string;
+  status?: string;
 }

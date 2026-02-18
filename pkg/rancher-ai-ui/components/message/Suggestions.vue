@@ -53,20 +53,35 @@ const emit = defineEmits(['select']);
   margin-bottom: 8px;
   font-weight: 600;
 }
+
 .suggestions-list {
-  padding: 0;
+  padding: 0 0 0 24px;
   margin: 0;
-  padding-left: 24px;
+  list-style-position: outside;
+  list-style-type: disc;
 
   li {
     padding: 0;
     margin: 0;
+
+    &::marker {
+      color: var(--primary);
+      font-size: 15px;
+    }
+
+    .btn-sm {
+      margin-bottom: 2px;
+      line-height: 24px;
+      min-height: 24px;
+    }
   }
 }
+
 .suggestion-item {
   padding: 0;
   margin: 0;
 }
+
 .rc-button-label {
   word-break: break-word;
   white-space: pre-line;

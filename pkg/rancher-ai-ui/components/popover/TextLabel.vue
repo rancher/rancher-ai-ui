@@ -43,6 +43,12 @@ const props = defineProps({
 
 <style lang='scss' scoped>
 .textlabel-popper {
+  :deep() .dropdownTarget {
+    padding: 0;
+  }
+  :deep() .popperContainer .v-popper__popper .v-popper__wrapper .v-popper__inner {
+    padding: 16px;
+  }
   :deep() .v-popper__popper {
     display: flex;
     align-items: center;
@@ -50,7 +56,7 @@ const props = defineProps({
     border: none;
   }
   :deep() .v-popper__inner {
-    padding: 16px !important;
+    opacity: 0.95; /* semi-transparent background */
     border: 1.5px solid var(--border);
   }
   :deep() .v-popper__wrapper {

@@ -13,6 +13,7 @@ import Suggestions from './Suggestions.vue';
 import ContextTag from '../context/ContextTag.vue';
 import UserAvatar from './avatar/UserAvatar.vue';
 import SystemAvatar from './avatar/SystemAvatar.vue';
+import BubbleButton from './BubbleButton.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
 
 const store = useStore();
@@ -108,7 +109,7 @@ onBeforeUnmount(() => {
     class="chat-message"
     :class="{
       'chat-message-user': props.message.role === RoleEnum.User,
-      disabled: props.disabled
+      'disabled-panel': props.disabled
     }"
   >
     <component
@@ -128,41 +129,24 @@ onBeforeUnmount(() => {
           v-if="!props.disabled"
           class="chat-msg-bubble-actions"
         >
-          <button
+          <BubbleButton
             v-if="props.message.role === RoleEnum.Assistant && !!props.message.thinkingContent"
-            v-clean-tooltip="props.message.showThinking ? t('ai.message.actions.tooltip.hideThinking') : t('ai.message.actions.tooltip.showThinking')"
-            class="bubble-action-btn btn header-btn role-tertiary"
             data-testid="rancher-ai-ui-chat-message-show-thinking-button"
-            type="button"
-            role="button"
+            :icon="'icon-thinking-process'"
+            :tooltip="props.message.showThinking ? t('ai.message.actions.tooltip.hideThinking') : t('ai.message.actions.tooltip.showThinking')"
             @click="handleShowThinking"
-          >
-            <i class="icon icon-thinking-process" />
-          </button>
-          <button
-            v-clean-tooltip="t('ai.message.actions.tooltip.copy')"
-            class="bubble-action-btn btn header-btn role-tertiary"
-            type="button"
-            role="button"
+          />
+          <BubbleButton
+            :icon="showCopySuccess ? 'icon-checkmark' : 'icon-copy'"
+            :tooltip="t('ai.message.actions.tooltip.copy')"
             @click="handleCopy"
-          >
-            <i
-              :class="{
-                'icon icon-checkmark': showCopySuccess,
-                'icon icon-copy': !showCopySuccess
-              }"
-            />
-          </button>
-          <button
+          />
+          <BubbleButton
             v-if="props.message.role === RoleEnum.User && !pendingConfirmation"
-            v-clean-tooltip="t('ai.message.actions.tooltip.resend')"
-            class="bubble-action-btn btn header-btn role-tertiary"
-            type="button"
-            role="button"
+            :icon="'icon-backup'"
+            :tooltip="t('ai.message.actions.tooltip.resend')"
             @click="handleResendMessage"
-          >
-            <i class="icon icon-backup" />
-          </button>
+          />
         </div>
         <div class="chat-msg-text">
           <div
@@ -353,56 +337,14 @@ onBeforeUnmount(() => {
 
 .chat-msg-bubble-actions {
   position: absolute;
-  top: -15px;
-  right: -15px;
+  top: -24px;
+  right: -8px;
   display: flex;
-  gap: 5px;
+  gap: 4px;
   z-index: 2;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
-}
-
-.bubble-action-btn {
-  background: var(--body-bg);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  padding: 2px 4px;
-  box-shadow: 0 1px 4px 0 rgba(0,0,0,0.04);
-  cursor: pointer;
-  transition: border 0.15s, box-shadow 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  min-height: 24px;
-  width: 24px;
-  height: 24px;
-}
-
-.bubble-action-btn .icon {
-  font-size: 14px;
-  width: 14px;
-  height: 14px;
-}
-
-.bubble-action-btn.header-btn {
-  padding: 2px;
-  min-width: 20px;
-  min-height: 20px;
-  width: 25px;
-  height: 25px;
-}
-
-.bubble-action-btn.header-btn .icon {
-  font-size: 12px;
-  width: 12px;
-  height: 12px;
-}
-
-.bubble-action-btn:hover {
-  border: solid 1px var(--secondary-border, var(--primary));
-  box-shadow: 0 2px 8px 0 rgba(61,152,211,0.10);
 }
 
 .chat-msg-text, :deep() pre {

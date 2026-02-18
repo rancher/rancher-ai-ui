@@ -1,10 +1,13 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
 import {
-  onMounted, onBeforeUnmount, computed, nextTick, ref
+  onMounted, onBeforeUnmount, computed, nextTick, ref,
+  watch
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
-import { HistoryChat, MessagePhase } from '../types';
+import {
+  Agent, AgentState, AIServiceState, ChatMetadata, ConnectionPhase, HistoryChat, Message, MessagePhase, Role, StorageType
+} from '../types';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
 import { useContextComposable } from '../composables/useContextComposable';
@@ -14,6 +17,7 @@ import { useChatHistoryComposable } from '../composables/useChatHistoryComposabl
 import { useAgentComposable } from '../composables/useAgentComposable';
 import Header from '../components/panels/Header.vue';
 import Messages from '../components/panels/Messages.vue';
+import Processing from '../components/Processing.vue';
 import Context from '../components/panels/Context.vue';
 import Console from '../components/panels/Console.vue';
 import History from '../components/panels/History.vue';
@@ -26,7 +30,11 @@ import Chat from '../handlers/chat';
 const CHAT_ID = 'default';
 const store = useStore();
 
-const { llmConfig, error: aiServiceError } = useAIServiceComposable();
+const {
+  aiAgentDeploymentState,
+  llmConfig,
+  error: aiServiceError,
+} = useAIServiceComposable();
 
 const {
   agents,
@@ -38,13 +46,15 @@ const {
   messages,
   onopen,
   onmessage,
+  onclose,
   sendMessage,
   updateMessage,
   confirmMessage,
   downloadMessages,
   loadMessages,
   selectContext,
-  resetChatError,
+  resetErrors: resetMessageErrors,
+  isChatInitialized,
   phase: messagePhase,
   error: messageError
 } = useChatMessageComposable(CHAT_ID, agents, agentName, selectAgent);
@@ -60,10 +70,13 @@ const {
   ws,
   connect,
   disconnect,
+  setPhase,
+  phase: connectionPhase,
   error: wsError
 } = useConnectionComposable({
   onopen,
   onmessage,
+  onclose,
 });
 
 const { context } = useContextComposable();
@@ -71,13 +84,25 @@ const { context } = useContextComposable();
 const {
   resize,
   close: closePanel,
-  restore,
+  restore: restorePanel,
 } = useHeaderComposable();
 
 const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
-const activeChatId = computed(() => {
-  return store.getters['rancher-ai-ui/chat/metadata']?.activeChatId || null;
+
+const chatMetadata = computed<ChatMetadata>(() => {
+  return store.getters['rancher-ai-ui/chat/metadata'] || {};
+});
+
+const chatAgents = computed<Agent[]>(() => {
+  return agents.value.map((agent) => {
+    const chatAgent = chatMetadata.value.agents?.find((a) => a.name === agent?.name);
+
+    return {
+      ...agent,
+      status: (chatAgent && chatAgent.status !== AgentState.Active) || agent.status !== AgentState.Ready ? AgentState.Error : AgentState.Active,
+    };
+  });
 });
 
 // AI service's errors are priority over websocket and message errors
@@ -92,34 +117,25 @@ const errors = computed(() => {
   }
 });
 
+const disabled = computed(() => {
+  return aiAgentDeploymentState.value !== AIServiceState.Active ||
+    errors.value.length > 0 ||
+    messagePhase.value === MessagePhase.AwaitingConfirmation;
+});
+
 function close() {
-  resetChatError();
+  resetMessageErrors();
   closePanel();
 }
 
 async function toggleHistoryPanel() {
-  if (errors.value.length > 0) {
+  if (disabled.value) {
     return;
   }
   if (!showHistory.value) {
     chatHistory.value = await fetchChats();
   }
   showHistory.value = !showHistory.value;
-}
-
-async function loadChat(chatId: string | null) {
-  showHistory.value = false;
-  if (chatId && chatId === activeChatId.value) {
-    return;
-  }
-
-  resetChatError();
-  disconnect({ showError: false });
-  loadMessages(chatId ? await fetchMessages(chatId) : []);
-  nextTick(() => {
-    store.commit('rancher-ai-ui/chat/setMetadata', { activeChatId: chatId });
-    connect(chatId);
-  });
 }
 
 async function updateChat(args:{ id: string, payload: Partial<HistoryChat> }) {
@@ -133,10 +149,65 @@ async function updateChat(args:{ id: string, payload: Partial<HistoryChat> }) {
 async function deleteChat(id: string) {
   await deleteHistoryChat(id);
 
-  if (id === activeChatId.value) {
-    loadChat(null);
+  if (id === chatMetadata.value.chatId) {
+    ensureReconnectionAndLoadChat(null);
   } else {
     chatHistory.value = await fetchChats();
+  }
+}
+
+async function ensureReconnectionAndLoadChat(chatId: string | null) {
+  showHistory.value = false;
+
+  if (chatId && chatId === chatMetadata.value.chatId) {
+    return;
+  }
+
+  resetMessageErrors();
+
+  const initChat = async() => {
+    loadMessages(chatId ? await fetchMessages(chatId) : []);
+    nextTick(() => {
+      store.commit('rancher-ai-ui/chat/setMetadata', { chatId });
+      connect(chatId);
+    });
+  };
+
+  if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
+    await initChat();
+  } else {
+    const unwatch = watch(
+      () => ws.value,
+      async(newWs) => {
+        if (!newWs) {
+          await initChat();
+          unwatch();
+        }
+      }
+    );
+
+    disconnect(ConnectionPhase.Idle);
+  }
+}
+
+function ensureConnectionAndSendMessage(data: string | Message, add = true) {
+  if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
+    resetMessageErrors();
+    setPhase(ConnectionPhase.Reconnecting);
+
+    const unwatch = watch(
+      () => ws.value,
+      (newWs) => {
+        if (newWs && newWs.readyState === WebSocket.OPEN) {
+          sendMessage(data, ws.value, add);
+          unwatch();
+        }
+      }
+    );
+
+    connect(chatMetadata.value.chatId);
+  } else {
+    sendMessage(data, ws.value, add);
   }
 }
 
@@ -147,8 +218,57 @@ function routeToSettings() {
   });
 }
 
+watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
+  const {
+    chatId = null,
+    storageType = StorageType.InMemory
+  } = chatMetadata.value;
+
+  /**
+   * AI agent became active on mount or after a service state update - connect to the existing chat if there is one in memory, otherwise start a new one
+   */
+  if (oldState !== AIServiceState.Active && newState === AIServiceState.Active) {
+    resetMessageErrors();
+
+    connect(storageType === StorageType.InMemory ? null : chatId);
+  }
+
+  /**
+   * AI agent became inactive - disconnect and clear chat if it was stored in memory
+   */
+  if (oldState === AIServiceState.Active && newState !== AIServiceState.Active) {
+    showHistory.value = false;
+
+    if (storageType === StorageType.InMemory) {
+      store.commit('rancher-ai-ui/chat/setMetadata', {
+        chatId:      '',
+        agents:      null,
+        storageType: null
+      });
+    }
+
+    disconnect();
+  }
+
+  /**
+   * Set the connection phase
+   */
+  if (!newState || newState === AIServiceState.NotFound) {
+    setPhase(ConnectionPhase.Disconnected);
+  } else if (newState !== AIServiceState.Active) {
+    setPhase(!oldState || oldState === AIServiceState.NotFound ? ConnectionPhase.Connecting : ConnectionPhase.Reconnecting);
+  }
+});
+
+watch(messages, (newMessages) => {
+  const lastMessage = newMessages[newMessages.length - 1];
+
+  if (lastMessage && lastMessage.role === Role.User && lastMessage.labels?.from === 'hook') {
+    ensureConnectionAndSendMessage(lastMessage, false);
+  }
+}, { immediate: true });
+
 onMounted(() => {
-  connect();
   // Ensure disconnection on browser refresh/close
   window.addEventListener('beforeunload', unmount);
 });
@@ -160,10 +280,10 @@ onBeforeUnmount(() => {
 
 function unmount() {
   // Clear connection when websocket is disconnected and chat is manually closed
-  if ((!Chat.isOpen(store) && ws.value?.readyState !== WebSocket.OPEN)) {
+  if ((!Chat.isOpen(store) && !isChatInitialized.value)) {
     disconnect();
   }
-  restore();
+  restorePanel();
 }
 </script>
 
@@ -179,43 +299,54 @@ function unmount() {
     />
     <div
       class="chat-panel"
-      :data-testid="`rancher-ai-ui-chat-panel-${ ws?.readyState === 1 ? 'ready' : 'not-ready' }`"
+      :data-testid="`rancher-ai-ui-chat-panel-${ isChatInitialized ? 'ready' : 'not-ready' }`"
     >
       <Header
-        :disabled="errors.length > 0"
+        :disabled="disabled"
         @close:chat="close"
         @config:chat="routeToSettings"
         @download:chat="downloadMessages"
         @toggle:history="toggleHistoryPanel"
       />
       <Messages
+        :active-chat-id="chatMetadata.chatId"
         :messages="messages"
         :errors="errors"
+        :disabled="errors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active"
         :message-phase="messagePhase"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
       />
+      <Processing
+        class="connection-processing-label text-label"
+        :phase="connectionPhase"
+        :show-progress="![
+          ConnectionPhase.Connected,
+          ConnectionPhase.Disconnected,
+          ConnectionPhase.ConnectionClosed,
+        ].includes(connectionPhase)"
+      />
       <Context
         :value="context"
-        :disabled="errors.length > 0"
+        :disabled="disabled"
         @select="selectContext"
       />
       <Console
         :llm-config="llmConfig"
-        :agents="agents"
+        :agents="chatAgents"
         :agent-name="agentName"
-        :disabled="!ws || ws.readyState === 3 || errors.length > 0 || messagePhase === MessagePhase.AwaitingConfirmation"
-        @input:content="sendMessage($event, ws)"
+        :disabled="disabled"
+        @input:content="ensureConnectionAndSendMessage($event)"
         @select:agent="selectAgent"
       />
       <History
         :chats="chatHistory"
-        :active-chat-id="activeChatId"
-        :open="showHistory && !errors.length"
+        :active-chat-id="chatMetadata.chatId"
+        :open="showHistory && !disabled"
         @close:panel="showHistory = false"
-        @create:chat="loadChat(null)"
-        @open:chat="loadChat"
+        @create:chat="ensureReconnectionAndLoadChat(null)"
+        @open:chat="ensureReconnectionAndLoadChat"
         @update:chat="updateChat"
         @delete:chat="deleteChat"
       />
@@ -230,6 +361,11 @@ function unmount() {
   height: calc(100vh - 55px);
   position: relative;
   z-index: 20;
+
+  :deep(.disabled-panel) {
+    opacity: 0.5;
+    pointer-events: none;
+  }
 }
 
 .chat-panel {
@@ -259,11 +395,13 @@ function unmount() {
     opacity: 1;
   }
 }
-</style>
 
-<style lang='scss'>
-.disabled {
-  opacity: 0.5;
-  pointer-events: none;
+.connection-processing-label {
+  color: #9fabc6;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+  padding: 16px;
 }
 </style>

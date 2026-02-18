@@ -49,7 +49,7 @@ const emit = defineEmits(['remove']);
   gap: 8px;
   height: 24px;
   line-height: 1;
-  margin-right: 5px;
+  margin-right: 0;
   margin-left: 0;
   padding: 0 8px;
   overflow: hidden;
@@ -61,7 +61,7 @@ const emit = defineEmits(['remove']);
   .tag-content {
     display: flex;
     justify-content: center;
-    gap: 5px;
+    gap: 4px;
   }
 
   .vs__deselect {
@@ -70,7 +70,8 @@ const emit = defineEmits(['remove']);
 }
 
 .vs__selected {
-  border: solid 1px var(--active-nav);
+  line-height: 2px;
+  border: none;
   color: var(--active-nav);
 }
 

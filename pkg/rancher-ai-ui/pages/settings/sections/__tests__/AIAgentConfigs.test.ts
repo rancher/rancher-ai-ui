@@ -143,6 +143,87 @@ describe('AIAgentConfigs.vue', () => {
     });
   });
 
+  describe('Agent Status', () => {
+    it('should return true for isAgentUnavailable when agent has error condition', () => {
+      const errorMsg = 'Agent failed to connect';
+      const agentWithStatus = mockAgent({
+        status: {
+          conditions: [
+            {
+              error:   true,
+              message: errorMsg
+            }
+          ]
+        }
+      });
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [agentWithStatus] }
+      });
+      const vm = wrapper.vm as any;
+
+      expect(vm.isAgentUnavailable).toBe(true);
+    });
+
+    it('should return correct error message from getAgentErrorMessage', () => {
+      const errorMsg = 'Agent failed to connect';
+      const agentWithStatus = mockAgent({
+        status: {
+          conditions: [
+            {
+              error:   true,
+              message: errorMsg
+            }
+          ]
+        }
+      });
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [agentWithStatus] }
+      });
+      const vm = wrapper.vm as any;
+
+      expect(vm.getAgentErrorMessage(agentWithStatus)).toBe(errorMsg);
+    });
+
+    it('should return correct icon from tabLabelIcon for error, disabled, and enabled states', () => {
+      const errorMsg = 'Agent failed to connect';
+      const agentWithStatus = mockAgent({
+        status: {
+          conditions: [
+            {
+              error:   true,
+              message: errorMsg
+            }
+          ]
+        }
+      });
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [agentWithStatus] }
+      });
+      const vm = wrapper.vm as any;
+
+      // Error state
+      expect(vm.tabLabelIcon(agentWithStatus)).toBe('icon-endpoints_disconnected');
+
+      // Disabled state (icon-close is used as a placeholder for disabled state)
+      const disabledAgent = mockAgent({
+        spec: {
+          ...agentWithStatus.spec,
+          enabled: false
+        }
+      });
+
+      expect(vm.tabLabelIcon(disabledAgent)).toBe('icon-close');
+
+      // Enabled state
+      const enabledAgent = mockAgent();
+
+      expect(vm.tabLabelIcon(enabledAgent)).toBe('icon-confirmation-alt');
+    });
+  });
+
   describe('Agent Selection and Locking', () => {
     it('should select first agent by default', () => {
       const wrapper = shallowMount(AIAgentConfigs, {
