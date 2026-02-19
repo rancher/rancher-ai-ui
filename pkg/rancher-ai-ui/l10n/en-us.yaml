@@ -161,7 +161,10 @@ ai:
         notFound: Rancher AI Agent not found. Please ensure the agent chart is installed.
         notActive: Rancher AI Agent is not active. Please ensure the agent is running properly.
     agent:
-      unavailable: 'This AI agent is currently unavailable.<br>{message}'
+      unavailable:
+        label: 'This AI agent is currently unavailable.<br>{message}'
+        tooltip: This AI agent is currently unavailable.
+
   menu:
     options:
       chat:

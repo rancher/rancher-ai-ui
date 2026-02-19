@@ -185,20 +185,6 @@ function getAgentErrorMessage(agent: AIAgentConfigCRD) {
 }
 
 function tabLabelIcon(agent: AIAgentConfigCRD) {
-  if (agent.spec?.enabled === false) {
-    return 'icon-close';
-  }
-
-  const errorMessage = getAgentErrorMessage(agent);
-
-  if (errorMessage) {
-    return 'icon-endpoints_disconnected';
-  }
-
-  if (validationErrors.value[agent.metadata?.name]) {
-    return 'icon-close';
-  }
-
   if (agent.spec?.enabled) {
     return 'icon-confirmation-alt';
   }
@@ -409,7 +395,9 @@ watch(validationErrors, (errors) => {
         :label-icon="tabLabelIcon(agent)"
         :weight="99 - index"
         :show-header="false"
+        :display-alert-icon="getAgentErrorMessage(agent)?.length"
         :error="validationErrors[agent.metadata?.name]"
+        :error-icon-tooltip="!validationErrors[agent.metadata?.name] && getAgentErrorMessage(agent)?.length ? t('ai.error.agent.unavailable.tooltip') : ''"
         class="form-values"
       >
         <div
@@ -421,7 +409,7 @@ watch(validationErrors, (errors) => {
             color="error"
           >
             <span
-              v-clean-html="t('ai.error.agent.unavailable', { message: getAgentErrorMessage(selectedAgent) }, true)"
+              v-clean-html="t('ai.error.agent.unavailable.label', { message: getAgentErrorMessage(selectedAgent) }, true)"
             />
           </Banner>
         </div>
@@ -687,5 +675,9 @@ watch(validationErrors, (errors) => {
   .icon-close {
     visibility: hidden;
   }
+}
+
+:deep(.conditions-alert-icon) {
+  margin-left: auto;
 }
 </style>
