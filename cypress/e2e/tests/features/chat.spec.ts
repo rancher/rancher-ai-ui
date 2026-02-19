@@ -125,10 +125,10 @@ describe('Chat', () => {
 
       // Check for the reconnecting phase
       chat.isNotReady();
-      chat.phase('Reconnecting').should('be.visible');
+      chat.phase('Connecting').should('be.visible');
 
       chat.isReady(20000);
-      chat.phase('Reconnecting').should('not.exist');
+      chat.phase('Connecting').should('not.exist');
 
       // Check that the chat is working after reconnection
       chat.sendMessage('User request after reconnection');
@@ -179,7 +179,7 @@ describe('Chat', () => {
 
       // Check for the reconnecting phase
       chat.isNotReady();
-      chat.phase('Reconnecting').should('be.visible');
+      chat.phase('Connecting').should('be.visible');
 
       chat.close();
       chat.open();
