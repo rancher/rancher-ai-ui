@@ -16,7 +16,7 @@ interface AgentOption {
   name: string;
   displayName: string;
   description?: string;
-  disabled: boolean;
+  error: boolean;
   tooltip: string;
 }
 
@@ -42,29 +42,47 @@ const props = defineProps({
 
 const emit = defineEmits(['select']);
 
-const options = computed<AgentOption[]>(() => [
-  {
-    name:        ADAPTIVE_MODE_ID,
-    displayName: t('ai.agents.items.default.displayName'),
-    disabled:    false,
-    tooltip:     t('ai.agents.items.default.description'),
-  },
-  ...props.agents.map((agent) => ({
-    name:        agent.name,
-    displayName: agent.displayName || agent.name,
-    disabled:    agent.status !== 'active',
-    tooltip:     agent.status !== 'active' ? t('ai.agents.items.unavailable', {}, true) : t('ai.agents.items.default.description'),
-  }))
-]);
+const activeAgentNames = computed(() => props.agents.filter((agent) => agent.status === 'active').map((agent) => agent.name));
+
+const options = computed<AgentOption[]>(() => {
+  const defaultOptions = activeAgentNames.value.length > 1 ? [
+    {
+      name:        ADAPTIVE_MODE_ID,
+      displayName: t('ai.agents.items.default.displayName'),
+      error:       false,
+      tooltip:     t('ai.agents.items.default.description'),
+    }
+  ] : [];
+
+  return [
+    ...defaultOptions,
+    ...props.agents.map((agent) => ({
+      name:        agent.name,
+      displayName: agent.displayName || agent.name,
+      error:       agent.status !== 'active',
+      tooltip:     agent.status !== 'active' ? t('ai.agents.items.unavailable', {}, true) : t('ai.agents.items.default.description'),
+    }))
+  ];
+});
 
 const selectedAgentName = computed<string>(() => {
-  const agentName = props.agentName;
-
-  if (!agentName || props.agents.find((agent) => agent.name === agentName)?.status !== 'active') {
+  if (activeAgentNames.value.length === 0) {
     return ADAPTIVE_MODE_ID;
   }
 
-  return agentName;
+  if (activeAgentNames.value.length === 1) {
+    return activeAgentNames.value[0];
+  }
+
+  if (!props.agentName) {
+    return ADAPTIVE_MODE_ID;
+  }
+
+  if (!activeAgentNames.value.find((name) => name === props.agentName)) {
+    return ADAPTIVE_MODE_ID;
+  }
+
+  return props.agentName;
 });
 
 const debouncedSelectAgent = debounce((id: string) => {
@@ -107,14 +125,14 @@ const isOpen = ref(false);
           v-clean-tooltip="{ content: opt.tooltip, delay: { show: 500 } }"
           :data-testid="`rancher-ai-ui-multi-agent-select-option-${opt.name}`"
           class="agent-label"
-          :disabled="opt.disabled"
+          :disabled="opt.error"
           @click="debouncedSelectAgent(opt.name)"
         >
           <span class="agent-label-display-name">
             {{ opt.displayName || opt.name }}
           </span>
           <i
-            v-if="opt.disabled"
+            v-if="opt.error"
             class="icon icon-error"
           />
           <i
