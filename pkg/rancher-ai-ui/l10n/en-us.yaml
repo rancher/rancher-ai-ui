@@ -210,7 +210,7 @@ ai:
       default:
         displayName: Adaptive Agent Selection
         description: Automatically selects the best available agent based on your configuration and environment
-      unavailable: 'This AI agent is currently unavailable.<br>Please check its status in the AI Agents configuration and ensure it is properly configured.'
+      unavailable: 'This AI agent is currently unavailable.<br>Please check its status in the AI Agents configuration<br>and ensure it is properly configured.'
       unknown: Unknown Agent
 
   generic:

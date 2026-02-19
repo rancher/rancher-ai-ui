@@ -110,7 +110,9 @@ const isOpen = ref(false);
           :disabled="opt.disabled"
           @click="debouncedSelectAgent(opt.name)"
         >
-          <span>{{ opt.displayName || opt.name }}</span>
+          <span class="agent-label-display-name">
+            {{ opt.displayName || opt.name }}
+          </span>
           <i
             v-if="opt.disabled"
             class="icon icon-error"
@@ -157,6 +159,12 @@ const isOpen = ref(false);
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  .agent-label-display-name {
+    max-width: 200px;
+    word-break: break-word;
+    white-space: pre-line;
+  }
 
   .icon {
     color: var(--active-nav);
