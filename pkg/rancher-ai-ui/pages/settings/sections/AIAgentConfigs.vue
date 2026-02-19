@@ -157,7 +157,7 @@ const adaptiveModeBanner = computed(() => {
     return null;
   }
 
-  const show = agents.value.filter((c: AIAgentConfigCRD) => c.spec.enabled).length > 1;
+  const show = agents.value.filter((c: AIAgentConfigCRD) => c.spec.enabled && !c.stateDescription).length > 1;
 
   if (show) {
     return {
