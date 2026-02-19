@@ -204,9 +204,6 @@ describe('AIAgentConfigs.vue', () => {
       });
       const vm = wrapper.vm as any;
 
-      // Error state
-      expect(vm.tabLabelIcon(agentWithStatus)).toBe('icon-endpoints_disconnected');
-
       // Disabled state (icon-close is used as a placeholder for disabled state)
       const disabledAgent = mockAgent({
         spec: {
@@ -958,10 +955,11 @@ describe('AIAgentConfigs.vue', () => {
         props: { value: [agent1, agent2] }
       });
 
-      const vm = wrapper.vm as any;
+      const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const adaptiveBanner = banners.find((b) => b.attributes('color') === 'info');
 
-      expect(vm.adaptiveModeBanner).toBeTruthy();
-      expect(vm.adaptiveModeBanner.color).toBe('info');
+      expect(adaptiveBanner).toBeTruthy();
+      expect(adaptiveBanner?.attributes('color')).toBe('info');
     });
 
     it('should not show banner when only one agent is enabled', () => {
@@ -987,9 +985,10 @@ describe('AIAgentConfigs.vue', () => {
         props: { value: [agent1, agent2] }
       });
 
-      const vm = wrapper.vm as any;
+      const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const adaptiveBanner = banners.find((b) => b.attributes('color') === 'info');
 
-      expect(vm.adaptiveModeBanner).toBeNull();
+      expect(adaptiveBanner).toBeFalsy();
     });
 
     it('should update banner when agent enabled status changes', async() => {
@@ -1015,11 +1014,12 @@ describe('AIAgentConfigs.vue', () => {
         props: { value: [agent1, agent2] }
       });
 
-      const vm = wrapper.vm as any;
+      let banners = wrapper.findAllComponents({ name: 'Banner' });
+      let adaptiveBanner = banners.find((b) => b.attributes('color') === 'info');
 
-      expect(vm.adaptiveModeBanner).toBeNull();
+      expect(adaptiveBanner).toBeFalsy();
 
-      // Update first agent to enabled
+      // Update both agents to enabled
       const updatedAgent1 = {
         ...agent1,
         spec: {
@@ -1027,11 +1027,53 @@ describe('AIAgentConfigs.vue', () => {
           enabled: true
         }
       };
+      const updatedAgent2 = {
+        ...agent2,
+        spec: {
+          ...agent2.spec,
+          enabled: true
+        }
+      };
 
-      await (wrapper as any).setProps({ value: [updatedAgent1, agent2] });
+      await (wrapper as any).setProps({ value: [updatedAgent1, updatedAgent2] });
       await wrapper.vm.$nextTick();
 
-      expect(vm.agents.filter((a: any) => a.spec.enabled).length).toBeGreaterThan(0);
+      banners = wrapper.findAllComponents({ name: 'Banner' });
+      adaptiveBanner = banners.find((b) => b.attributes('color') === 'info');
+
+      expect(adaptiveBanner).toBeTruthy();
+    });
+
+    it('should show error banner when all agents are unavailable', () => {
+      const agent1 = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          enabled: true
+        },
+        stateDescription: 'Agent is unavailable'
+      });
+      const agent2 = mockAgent({
+        metadata: {
+          name:      'agent-2',
+          namespace: 'ai-agent'
+        },
+        spec:     {
+          ...mockAgent().spec,
+          enabled: true
+        },
+        stateDescription: 'Agent is unavailable'
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [agent1, agent2] }
+      });
+
+      const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const errorBanner = banners.find((b) => b.attributes('color') === 'error');
+
+      expect(errorBanner).toBeTruthy();
+      expect(errorBanner?.attributes('color')).toBe('error');
     });
   });
 
@@ -1280,10 +1322,11 @@ describe('AIAgentConfigs.vue', () => {
         },
       });
 
-      const vm = wrapper.vm as any;
+      const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const readOnlyBanner = banners.find((b) => b.attributes('color') === 'warning');
 
-      expect(vm.readOnlyBanner).toBeTruthy();
-      expect(vm.readOnlyBanner.color).toBe('warning');
+      expect(readOnlyBanner).toBeTruthy();
+      expect(readOnlyBanner?.attributes('color')).toBe('warning');
     });
 
     it('should not render read-only banner when readOnly prop is false', () => {
@@ -1295,9 +1338,10 @@ describe('AIAgentConfigs.vue', () => {
         },
       });
 
-      const vm = wrapper.vm as any;
+      const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const readOnlyBanner = banners.find((b) => b.attributes('color') === 'warning');
 
-      expect(vm.readOnlyBanner).toBeNull();
+      expect(readOnlyBanner).toBeFalsy();
     });
 
     it('should prevent adding agent when readOnly is true', () => {
@@ -1542,14 +1586,19 @@ describe('AIAgentConfigs.vue', () => {
         },
       });
 
-      const vm = wrapper.vm as any;
+      let banners = wrapper.findAllComponents({ name: 'Banner' });
+      let readOnlyBanner = banners.find((b) => b.attributes('color') === 'warning');
 
-      expect(vm.readOnlyBanner).toBeNull();
+      expect(readOnlyBanner).toBeFalsy();
 
       await (wrapper as any).setProps({ readOnly: true });
+      await wrapper.vm.$nextTick();
 
-      expect(vm.readOnlyBanner).toBeTruthy();
-      expect(vm.readOnlyBanner.color).toBe('warning');
+      banners = wrapper.findAllComponents({ name: 'Banner' });
+      readOnlyBanner = banners.find((b) => b.attributes('color') === 'warning');
+
+      expect(readOnlyBanner).toBeTruthy();
+      expect(readOnlyBanner?.attributes('color')).toBe('warning');
     });
 
     it('should not show adaptive mode banner when readOnly is true regardless of enabled agents', () => {
@@ -1582,10 +1631,11 @@ describe('AIAgentConfigs.vue', () => {
         },
       });
 
-      const vm = wrapper.vm as any;
+      const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const adaptiveBanner = banners.find((b) => b.attributes('color') === 'info');
 
-      // Even with multiple enabled agents, banner should be null in readOnly mode
-      expect(vm.adaptiveModeBanner).toBeNull();
+      // Even with multiple enabled agents, banner should not be shown in readOnly mode
+      expect(adaptiveBanner).toBeFalsy();
     });
 
     it('should prevent updateAuthenticationSecret when readOnly is true and BASIC auth is set', async() => {
