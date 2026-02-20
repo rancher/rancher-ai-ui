@@ -3374,10 +3374,10 @@
   resolved "https://registry.yarnpkg.com/@rancher/icons/-/icons-2.0.55.tgz#394159bddbf786c17a12bc38e59b88346b30dcf4"
   integrity sha512-hPcmsvfYNO36dJ7/lb3JbJC5BOnHbwBylic7HRqhSCSIcFlFaKnRt9aB/hvv3ip0Wo6J5yVEv2o7oXGErXkWFw==
 
-"@rancher/shell@3.0.9-rc.4":
-  version "3.0.9-rc.4"
-  resolved "https://registry.yarnpkg.com/@rancher/shell/-/shell-3.0.9-rc.4.tgz#657a9eb8df08f4f940fef8457d795745cb46577f"
-  integrity sha512-vnTqANfFpNpj/3wO9QW/Tn9tYkmaExLgUDzZpiy9LTU5/aCoqiC8YdM3gcU2RewcjP9A9XecmdnGd5sdSzGJ2A==
+"@rancher/shell@3.0.9-rc.5":
+  version "3.0.9-rc.5"
+  resolved "https://registry.yarnpkg.com/@rancher/shell/-/shell-3.0.9-rc.5.tgz#19f7a69d91f482da3de703c7f5ebae4893fed390"
+  integrity sha512-HUjrGZ9oKCcD9mSqqnQPOEaNTeWJjjpC0w1ywM5yP28j4Tazl2/GH7sliT+LXgxrp5qUfuJik/Tpdl/jEoBNVw==
   dependencies:
     "@aws-sdk/client-ec2" "3.863.0"
     "@aws-sdk/client-eks" "3.879.0"
