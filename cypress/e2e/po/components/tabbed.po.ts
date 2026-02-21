@@ -12,4 +12,8 @@ export default class TabbedPo extends DefaultTabbedPo {
   removeTab() {
     return this.self().get('[data-testid="tab-list-remove"]').click();
   }
+
+  assertTabHasLabelIcon(selector: string, iconName: string) {
+    return this.self().find(`${ selector } > a > .conditions-alert-icon.${ iconName }`).should('exist');
+  }
 }

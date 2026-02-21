@@ -1,6 +1,6 @@
 import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
-import TooltipPo from './components/tooltip.po';
+import TooltipPo from '@/cypress/e2e/po/components/tooltip.po';
 
 export class HistoryChatItemMenuActionPo extends ComponentPo {
   constructor(actionId: string) {

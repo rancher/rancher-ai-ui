@@ -12,6 +12,10 @@ class AgentItemPo extends ComponentPo {
   checkSelected() {
     this.self().find('.icon-checkmark').should('exist');
   }
+
+  checkNotSelected() {
+    this.self().find('.icon-checkmark').should('not.exist');
+  }
 }
 
 class SelectAgentPo extends ComponentPo {

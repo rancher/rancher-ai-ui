@@ -5,6 +5,7 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import debounce from 'lodash/debounce';
 import { NORMAN } from '@shell/config/types';
+import { PRODUCT_NAME } from '../product';
 import { useContextComposable } from './useContextComposable';
 import {
   ActionType,
@@ -16,7 +17,8 @@ import {
   formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationAction, formatSuggestionActions, formatFileMessages,
   formatErrorMessage, formatSourceLinks,
   formatChatMetadata,
-  formatAgentMetadata
+  formatAgentMetadata,
+  formatChatErrorMessage
 } from '../utils/format';
 import { downloadFile } from '@shell/utils/download';
 
@@ -247,6 +249,27 @@ export function useChatMessageComposable(
     const data = event.data;
 
     try {
+      processChatErrors(data);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Error initiating chat:', err);
+      store.commit('rancher-ai-ui/chat/setError', {
+        chatId,
+        error: {
+          message: (err as ChatError).message,
+          action:  {
+            label:    t('ai.settings.goToAgents'),
+            type:     ActionType.Button,
+            resource: {
+              cluster:        'local',
+              detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
+            }
+          }
+        },
+      });
+    }
+
+    try {
       if (!messages.value.find((msg) => msg.completed)) {
         setPhase(MessagePhase.Initializing);
         processChatMetadata(data);
@@ -266,11 +289,19 @@ export function useChatMessageComposable(
     }
   }
 
+  function processChatErrors(data: string) {
+    if (data.startsWith(Tag.ChatErrorStart) && data.endsWith(Tag.ChatErrorEnd)) {
+      const errorMessage = formatChatErrorMessage(data);
+
+      throw errorMessage;
+    }
+  }
+
   function processChatMetadata(data: string) {
     const metadata = formatChatMetadata(data);
 
     if (metadata) {
-      store.commit('rancher-ai-ui/chat/setMetadata', { activeChatId: metadata?.chatId });
+      store.commit('rancher-ai-ui/chat/setMetadata', metadata);
     }
   }
 

@@ -11,6 +11,7 @@ import {
   AIAgentConfigCRD,
   Agent,
   MessageLabelKey,
+  ChatError,
 } from '../types';
 import { validateActionResource } from './validator';
 
@@ -53,6 +54,22 @@ export function formatWSInputMessage(args: WSInputMessageArgs): string {
   });
 }
 
+export function formatChatErrorMessage(data: string): ChatError {
+  const cleaned = data.replaceAll(Tag.ChatErrorStart, '').replaceAll(Tag.ChatErrorEnd, '').replace(/'([^']*)'/g, '"');
+
+  if (cleaned) {
+    try {
+      const parsed = JSON.parse(cleaned);
+
+      return parsed;
+    } catch (e) {
+      console.error('Failed to parse chat error message:', e); /* eslint-disable-line no-console */
+    }
+  }
+
+  return { message: 'An error occurred.' };
+}
+
 export function formatChatMetadata(data: string): ChatMetadata | null {
   if (data.startsWith(Tag.ChatMetadataStart) && data.endsWith(Tag.ChatMetadataEnd)) {
     const cleaned = data.replaceAll(Tag.ChatMetadataStart, '').replaceAll(Tag.ChatMetadataEnd, '').trim();
@@ -72,6 +89,7 @@ export function formatAgentFromCRD(config: AIAgentConfigCRD): Agent {
     name:        config.metadata.name,
     displayName: config.spec.displayName,
     description: config.spec.description,
+    status:      config.state || 'unknown',
   };
 }
 
@@ -214,7 +232,7 @@ export function formatSourceLinks(links: string[], value: string): string[] {
   ];
 }
 
-export function formatErrorMessage(value: string): { message: string } {
+export function formatErrorMessage(value: string): ChatError {
   value = value.replaceAll(Tag.ErrorStart, '').replaceAll(Tag.ErrorEnd, '').replace(/'([^']*)'/g, '"');
 
   if (value) {

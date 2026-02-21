@@ -114,10 +114,14 @@ describe('AI Assistant Configuration', () => {
       // Check that Save button is disabled since the new agent has validation errors -> missing MCP URL
       settingsPage.settings().saveButton().should('be.disabled');
 
+      // Fill the MCP URL for the custom agent and check that the Save button is enabled
       aiAgentConfigs.mcpUrlInput().set('http://my-mcp-url:8080');
       settingsPage.settings().saveButton().should('be.enabled');
 
       settingsPage.settings().saveButton().click();
+
+      // Check that the new agent tab is showing error status due to invalid MCP URL
+      aiAgentConfigs.tabs().assertTabHasLabelIcon(`[data-testid="${ updatedValues.customAgent }"]`, 'icon-error');
 
       // Revisit the page to check if the settings were saved correctly
       settingsPage.goTo();
@@ -125,6 +129,9 @@ describe('AI Assistant Configuration', () => {
 
       aiAgentConfigs.tabs().assertTabIsActive(`[data-testid="${ updatedValues.customAgent }"]`);
       aiAgentConfigs.mcpUrlInput().value().should('eq', 'http://my-mcp-url:8080');
+
+      // Check that the new agent tab is showing error status due to invalid MCP URL
+      aiAgentConfigs.tabs().assertTabHasLabelIcon(`[data-testid="${ updatedValues.customAgent }"]`, 'icon-error');
 
       // Remove the custom AI Agent
       aiAgentConfigs.tabs().removeTab();

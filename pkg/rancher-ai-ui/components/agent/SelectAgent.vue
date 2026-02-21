@@ -10,6 +10,16 @@ import {
   RcDropdownItem,
 } from '@components/RcDropdown';
 
+const ADAPTIVE_MODE_ID = '__adaptive__';
+
+interface AgentOption {
+  name: string;
+  displayName: string;
+  description?: string;
+  error: boolean;
+  tooltip: string;
+}
+
 const store = useStore();
 const { t } = useI18n(store);
 
@@ -32,19 +42,51 @@ const props = defineProps({
 
 const emit = defineEmits(['select']);
 
-const options = computed<Agent[]>(() => [
-  {
-    name:          'default',
-    displayName:   t('ai.agents.items.default.displayName'),
-    description: t('ai.agents.items.default.description'),
-  },
-  ...props.agents,
-]);
+const activeAgentNames = computed(() => props.agents.filter((agent) => agent.status === 'active').map((agent) => agent.name));
 
-const selectedAgentName = computed<string>(() => props.agentName || 'default');
+const options = computed<AgentOption[]>(() => {
+  const defaultOptions = activeAgentNames.value.length > 1 ? [
+    {
+      name:        ADAPTIVE_MODE_ID,
+      displayName: t('ai.agents.items.default.displayName'),
+      error:       false,
+      tooltip:     t('ai.agents.items.default.description'),
+    }
+  ] : [];
+
+  return [
+    ...defaultOptions,
+    ...props.agents.map((agent) => ({
+      name:        agent.name,
+      displayName: agent.displayName || agent.name,
+      error:       agent.status !== 'active',
+      tooltip:     agent.status !== 'active' ? t('ai.agents.items.unavailable', {}, true) : t('ai.agents.items.default.description'),
+    }))
+  ];
+});
+
+const selectedAgentName = computed<string>(() => {
+  if (activeAgentNames.value.length === 0) {
+    return ADAPTIVE_MODE_ID;
+  }
+
+  if (activeAgentNames.value.length === 1) {
+    return activeAgentNames.value[0];
+  }
+
+  if (!props.agentName) {
+    return ADAPTIVE_MODE_ID;
+  }
+
+  if (!activeAgentNames.value.find((name) => name === props.agentName)) {
+    return ADAPTIVE_MODE_ID;
+  }
+
+  return props.agentName;
+});
 
 const debouncedSelectAgent = debounce((id: string) => {
-  emit('select', id === 'default' ? '' : id);
+  emit('select', id === ADAPTIVE_MODE_ID ? '' : id);
 }, 100);
 
 const isOpen = ref(false);
@@ -80,13 +122,21 @@ const isOpen = ref(false);
         <rc-dropdown-item
           v-for="(opt, i) in options"
           :key="i"
-          v-clean-tooltip="{ content: opt.description, delay: { show: 500 } }"
+          v-clean-tooltip="{ content: opt.tooltip, delay: { show: 500 } }"
           :data-testid="`rancher-ai-ui-multi-agent-select-option-${opt.name}`"
           class="agent-label"
+          :disabled="opt.error"
           @click="debouncedSelectAgent(opt.name)"
         >
-          <span>{{ opt.displayName || opt.name }}</span>
+          <span class="agent-label-display-name">
+            {{ opt.displayName || opt.name }}
+          </span>
           <i
+            v-if="opt.error"
+            class="icon icon-error"
+          />
+          <i
+            v-else
             class="icon icon-checkmark"
             :class="{ hidden: opt.name !== selectedAgentName }"
           />
@@ -128,12 +178,22 @@ const isOpen = ref(false);
   justify-content: space-between;
   align-items: center;
 
+  .agent-label-display-name {
+    max-width: 200px;
+    word-break: break-word;
+    white-space: pre-line;
+  }
+
   .icon {
     color: var(--active-nav);
 
     &.hidden {
       visibility: hidden;
     }
+  }
+
+  .icon-error {
+    color: var(--error);
   }
 }
 
