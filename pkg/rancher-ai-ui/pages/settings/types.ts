@@ -25,7 +25,6 @@ export enum Settings {
   LANGFUSE_HOST = 'LANGFUSE_HOST',
   LANGFUSE_PUBLIC_KEY = 'LANGFUSE_PUBLIC_KEY',
   LANGFUSE_SECRET_KEY = 'LANGFUSE_SECRET_KEY',
-  MODEL = 'MODEL',
   OLLAMA_MODEL = 'OLLAMA_MODEL',
   GEMINI_MODEL = 'GEMINI_MODEL',
   OPENAI_MODEL = 'OPENAI_MODEL',
@@ -48,7 +47,6 @@ export interface SettingsFormData {
   [Settings.LANGFUSE_HOST]?: string;
   [Settings.LANGFUSE_PUBLIC_KEY]?: string;
   [Settings.LANGFUSE_SECRET_KEY]?: string;
-  [Settings.MODEL]?: string;
   [Settings.OLLAMA_MODEL]?: string;
   [Settings.GEMINI_MODEL]?: string;
   [Settings.OPENAI_MODEL]?: string;
