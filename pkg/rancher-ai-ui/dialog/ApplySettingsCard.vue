@@ -42,7 +42,6 @@ const warningMessage = computed(() => {
 
 function confirm() {
   props.onConfirm();
-  emit('confirm');
   emit('close');
 }
 
