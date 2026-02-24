@@ -62,12 +62,6 @@ export function useAIServiceComposable() {
 
         model = base64Decode(data[modelKey] || '');
       }
-
-      if (!model) {
-        const { MODEL } = data;
-
-        model = base64Decode(MODEL || '');
-      }
     } catch (err) {
       warn(`Error decoding model for ${ activeLLM }:`, err);
     }

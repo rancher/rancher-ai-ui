@@ -207,7 +207,7 @@ describe('Settings.vue', () => {
 
   describe('Fetching AI Agent Settings', () => {
     it('should fetch settings from secret', async() => {
-      const secretData = { [SettingsEnum.MODEL]: 'Z3B0LTQ=' };
+      const secretData = { [SettingsEnum.OPENAI_MODEL]: 'Z3B0LTQ=' };
 
       const dispatch = jest.fn((action: string) => {
         if (action === 'management/find') {
@@ -249,7 +249,7 @@ describe('Settings.vue', () => {
     });
 
     it('should decode base64 secret data', async() => {
-      const secretData = { [SettingsEnum.MODEL]: 'Z3B0LTRv' };
+      const secretData = { [SettingsEnum.OPENAI_MODEL]: 'Z3B0LTRv' };
 
       const dispatch = jest.fn((action: string) => {
         if (action === 'management/find') {
@@ -268,7 +268,7 @@ describe('Settings.vue', () => {
 
       const vm = wrapper.vm as any;
 
-      expect(vm.aiAgentSettings[SettingsEnum.MODEL]).toBe('gpt-4o');
+      expect(vm.aiAgentSettings[SettingsEnum.OPENAI_MODEL]).toBe('gpt-4o');
     });
   });
 
@@ -366,11 +366,11 @@ describe('Settings.vue', () => {
       const wrapper = shallowMount(Settings, initSettings({ dispatch }));
       const vm = wrapper.vm as any;
 
-      vm.aiAgentSettings = { [SettingsEnum.MODEL]: 'gpt-4' };
+      vm.aiAgentSettings = { [SettingsEnum.OPENAI_MODEL]: 'gpt-4' };
       await vm.saveAgentSettings();
 
       expect(secret.save).toHaveBeenCalled();
-      expect((secret.data as any)[SettingsEnum.MODEL]).toBe('Z3B0LTQ=');
+      expect((secret.data as any)[SettingsEnum.OPENAI_MODEL]).toBe('Z3B0LTQ=');
     });
 
     it('should handle save errors gracefully', async() => {
@@ -392,7 +392,7 @@ describe('Settings.vue', () => {
       const wrapper = shallowMount(Settings, initSettings({ dispatch }));
       const vm = wrapper.vm as any;
 
-      vm.aiAgentSettings = { [SettingsEnum.MODEL]: 'gpt-4' };
+      vm.aiAgentSettings = { [SettingsEnum.OPENAI_MODEL]: 'gpt-4' };
       await expect(vm.saveAgentSettings()).resolves.not.toThrow();
     });
   });
@@ -460,7 +460,7 @@ describe('Settings.vue', () => {
       const wrapper = shallowMount(Settings, initSettings());
       const vm = wrapper.vm as any;
 
-      const newSettings = { [SettingsEnum.MODEL]: 'gpt-4o' };
+      const newSettings = { [SettingsEnum.OPENAI_MODEL]: 'gpt-4o' };
 
       vm.aiAgentSettings = newSettings;
 
@@ -560,7 +560,7 @@ describe('Settings.vue', () => {
       const wrapper = shallowMount(Settings, initSettings({ dispatch }));
       const vm = wrapper.vm as any;
 
-      vm.aiAgentSettings = { [SettingsEnum.MODEL]: 'gpt-4' };
+      vm.aiAgentSettings = { [SettingsEnum.OPENAI_MODEL]: 'gpt-4' };
       const callback = jest.fn();
 
       await vm.save(callback);
@@ -627,7 +627,7 @@ describe('Settings.vue', () => {
       const wrapper = shallowMount(Settings, initSettings({ dispatch }));
       const vm = wrapper.vm as any;
 
-      vm.aiAgentSettings = { [SettingsEnum.MODEL]: 'gpt-4' };
+      vm.aiAgentSettings = { [SettingsEnum.OPENAI_MODEL]: 'gpt-4' };
       const callback = jest.fn();
 
       await vm.openApplySettingsDialog(callback);
