@@ -99,10 +99,6 @@ const selectedAgentName = ref(agents.value[0]?.metadata?.name || '');
 const selectedAgent = computed(() => agents.value.find((a) => a.metadata?.name === selectedAgentName.value) || agents.value[0]);
 const isAgentLocked = computed(() => selectedAgent.value?.spec.builtIn);
 const isAgentUnavailable = computed(() => {
-  if (selectedAgent.value?.spec.enabled === false) {
-    return false;
-  }
-
   const errorMessage = getAgentErrorMessage(selectedAgent.value);
 
   return !!errorMessage;
