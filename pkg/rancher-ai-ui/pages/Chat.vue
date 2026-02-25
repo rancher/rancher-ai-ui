@@ -389,11 +389,11 @@ function unmount() {
 }
 
 .connection-processing-label {
-  color: #9fabc6;
+  color: var(--active-nav);
   font-family: "Inter", Arial, sans-serif;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   margin: 0;
-  padding: 16px;
+  padding: 12px 18px;
 }
 </style>

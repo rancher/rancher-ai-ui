@@ -261,6 +261,7 @@ onBeforeUnmount(() => {
   font-size: 0.875rem;
   font-weight: 500;
   margin: 0;
+  padding-left: 4px;
 
   &.sticky-bottom {
     margin-top: auto;
