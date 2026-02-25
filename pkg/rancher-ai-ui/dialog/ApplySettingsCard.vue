@@ -4,12 +4,13 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { Card } from '@components/Card';
 import RcButton from '@components/RcButton/RcButton.vue';
+import { StorageType } from '../types';
 
 const store = useStore();
 const { t } = useI18n(store);
 
 const props = defineProps({
-  name: {
+  storageType: {
     type:    String,
     default: '',
   },
@@ -17,7 +18,7 @@ const props = defineProps({
     type:     Function,
     required: true,
   },
-  onClose: {
+  onCancel: {
     type:    Function,
     default: () => {},
   }
@@ -28,52 +29,43 @@ const emit = defineEmits([
   'close',
 ]);
 
-const nameLabel = computed(() => {
-  const name = props.name;
-
-  if (!name) {
-    return '';
+const warningMessage = computed(() => {
+  if (!props.storageType) {
+    return t('aiConfig.dialog.applySettings.warning.unknownStorage', {}, true);
+  }
+  if (props.storageType === StorageType.InMemory) {
+    return t('aiConfig.dialog.applySettings.warning.inMemory', {}, true);
   }
 
-  return name.length > 13 ? `${ name.substring(0, 10) }...` : name;
+  return '';
 });
 
 function confirm() {
   props.onConfirm();
-  emit('confirm');
-  close();
+  emit('close');
 }
 
 function close() {
-  props.onClose();
+  props.onCancel();
   emit('close');
 }
 </script>
 
 <template>
   <Card
-    class="prompt-remove"
+    class="prompt-apply-settings"
     :show-highlight-border="false"
   >
     <template #title>
       <h4 class="text-default-text">
-        {{ t('promptRemove.title') }}
+        {{ t('aiConfig.dialog.applySettings.title') }}
       </h4>
     </template>
     <template #body>
       <div
         class="mb-10"
       >
-        <span>
-          {{ t('ai.history.chat.delete.modal.message') }}
-        </span>
-        <span v-if="props.name">
-          <b>{{ nameLabel }}</b>
-        </span>
-        <br>
-        <span>
-          {{ t('ai.history.chat.delete.modal.warning') }}
-        </span>
+        <span v-clean-html="warningMessage" />
       </div>
     </template>
     <template #actions>
@@ -81,22 +73,22 @@ function close() {
         class="btn role-secondary"
         @click="close"
       >
-        {{ t('ai.history.chat.delete.modal.cancel') }}
+        {{ t('aiConfig.dialog.applySettings.cancel') }}
       </button>
       <div class="spacer" />
       <RcButton
         class="btn bg-error ml-10"
-        data-testid="prompt-remove-confirm-button"
+        data-testid="prompt-apply-settings-confirm-button"
         @click="confirm"
       >
-        {{ t('ai.history.chat.delete.modal.confirm') }}
+        {{ t('aiConfig.dialog.applySettings.confirm') }}
       </RcButton>
     </template>
   </Card>
 </template>
 
 <style lang="scss" scoped>
-  .prompt-remove {
+  .prompt-apply-settings {
     &.card-container {
       box-shadow: none;
     }
@@ -106,12 +98,10 @@ function close() {
       margin-left: 3px;
     }
 
-    .actions {
-      text-align: right;
+    :deep(.card-wrap) {
+      .card-actions {
+        justify-content: space-between;
+      }
     }
-  }
-
-  button.bg-error {
-    background-color: var(--error);
   }
 </style>

@@ -165,6 +165,42 @@ describe('AIAgentConfigs.vue', () => {
       expect(vm.isAgentUnavailable).toBe(true);
     });
 
+    it('should return false for isAgentUnavailable when agent has no error', () => {
+      const agentWithoutError = mockAgent();
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [agentWithoutError] }
+      });
+      const vm = wrapper.vm as any;
+
+      expect(vm.isAgentUnavailable).toBe(false);
+    });
+
+    it('should return true for isAgentUnavailable even when agent is disabled but has error', () => {
+      const errorMsg = 'Agent failed to connect';
+      const agentWithError = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          enabled: false
+        },
+        status: {
+          conditions: [
+            {
+              error:   true,
+              message: errorMsg
+            }
+          ]
+        }
+      });
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [agentWithError] }
+      });
+      const vm = wrapper.vm as any;
+
+      expect(vm.isAgentUnavailable).toBe(true);
+    });
+
     it('should return correct error message from getAgentErrorMessage', () => {
       const errorMsg = 'Agent failed to connect';
       const agentWithStatus = mockAgent({
@@ -204,7 +240,10 @@ describe('AIAgentConfigs.vue', () => {
       });
       const vm = wrapper.vm as any;
 
-      // Disabled state (icon-close is used as a placeholder for disabled state)
+      // Error state should show error icon
+      expect(vm.tabLabelIcon(agentWithStatus)).toBe('icon-confirmation-alt');
+
+      // Disabled state (icon-close is used for disabled state)
       const disabledAgent = mockAgent({
         spec: {
           ...agentWithStatus.spec,

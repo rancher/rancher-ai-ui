@@ -172,9 +172,7 @@ watch(() => text.value, () => {
       <LlmModelLabel
         :llm-config="props.llmConfig"
       />
-      <VerifyResultsDisclaimer
-        :disabled="props.disabled"
-      />
+      <VerifyResultsDisclaimer />
     </div>
   </div>
 </template>

@@ -142,9 +142,10 @@ ai:
     confirming: 'Confirming'
     finalizing: 'Finalizing results'
     connecting: 'Connecting'
+    reconnecting: 'Connecting'
     connected: 'Connected'
     disconnected: 'Disconnected'
-    reconnecting: 'Reconnecting'
+    connectionClosed: 'Connection closed'
   error:
     message:
       processing: 'Error processing messages: '
@@ -153,13 +154,12 @@ ai:
       connection: Failed to connect to Rancher AI Agent. Please try again later.
       disconnected: Connection closed.
     services:
-      secret:
+      settings:
         noPermission: You do not have permission to access the Rancher AI Agent configuration. Please contact your administrator.
         missingConfig: Rancher AI Agent configuration is missing. Please go to Global [Settings > AI Assistant] and configure the agent.
       deployment:
         noPermission: You do not have permission to access the Rancher AI Agent. Please contact your administrator.
-        notFound: Rancher AI Agent not found. Please ensure the agent chart is installed.
-        notActive: Rancher AI Agent is not active. Please ensure the agent is running properly.
+        notFound: Rancher AI Agent pod not found. Please ensure the Rancher AI assistant services are correctly installed.
     agent:
       unavailable:
         label: 'This AI agent is currently unavailable.<br>{message}'
@@ -220,7 +220,11 @@ aiConfig:
   label: AI Assistant
   form:
     header: AI Assistant Configuration
-    description: Configure the AI model and provider for your assistant
+    description: Configure the AI model and provider for your assistantv
+    warning:
+      inMemoryStorage: 'The AI Assistant uses in-memory storage, all messages will be lost after applying the new settings.'
+    save:
+      apiError: 'Failed to save settings. {error}'
     section:
       provider:
         header: AI Provider
@@ -245,7 +249,7 @@ aiConfig:
         allAgentsFailedBanner: 'None of your enabled AI agents are currently available.'
         adaptiveModeBanner: 'Because you have multiple AI agents enabled, you will be able to choose between “Adaptive Mode” (the most suitable AI agent will be selected for you automatically) and “Manual Mode” (you have to select a specific AI agent) each time you prompt the AI assistant. Whilst powerful, the “Adaptive Mode” might take longer to respond - in this case, we recommend you to <b>select "Manual Mode" for faster responses</b>.'
         noPermission:
-          list: You do not have permission to view or edit AI Agents. Please contact your administrator.
+          list: You do not have permission to view or edit the AI Agents configuration. Please contact your administrator.
           edit: You do not have permission to edit the AI Agents configuration. Please contact your administrator.
         locked: 'This AI agent is locked - you cannot remove it or change it, but <b>you can enable or disable it</b>.'
         sections:
@@ -329,8 +333,6 @@ aiConfig:
     OPENAI_API_KEY:
       label: OpenAI Key
       description: The key to authenticate requests to OpenAI’s services
-    SYSTEM_PROMPT:
-      label: System Prompt
     ACTIVE_LLM:
       label: AI Chatbot
       options:
@@ -349,12 +351,14 @@ aiConfig:
     AWS_REGION:
       label: AWS Region
       description: The AWS region where your Bedrock instance is hosted
-    AWS_SECRET_ACCESS_KEY:
-      label: AWS Secret Access Key
-      description: The secret key to authenticate requests to AWS Bedrock
-    AWS_ACCESS_KEY_ID:
-      label: AWS Access Key ID
-      description: The access key ID to authenticate requests to AWS Bedrock
     AWS_BEARER_TOKEN_BEDROCK:
       label: AWS Bedrock Bearer Token
-      description: (Optional) The bearer token to authenticate requests to AWS Bedrock
+      description: The bearer token to authenticate requests to AWS Bedrock
+  dialog:
+    applySettings:
+      title: Are you sure?
+      cancel: Cancel
+      confirm: Confirm
+      warning:
+        unknownStorage: 'If the AI Agent is using in-memory storage, <b>all messages might be lost</b> after applying the new settings.<br>Do you want to continue?'
+        inMemory: 'The AI agent is using in-memory storage, <b>all messages will be lost</b> after applying the new settings.<br>Do you want to continue?'

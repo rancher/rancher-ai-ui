@@ -27,8 +27,12 @@ export default class ChatPo extends ComponentPo {
     return new ConsolePo();
   }
 
-  isReady() {
-    return this.self().get('[data-testid="rancher-ai-ui-chat-panel-ready"]').should('exist');
+  isReady(timeout = 10000) {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-panel-ready"]', { timeout }).should('exist');
+  }
+
+  isNotReady(timeout = 10000) {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-panel-not-ready"]', { timeout }).should('exist');
   }
 
   isOpen(): Cypress.Chainable<boolean> {

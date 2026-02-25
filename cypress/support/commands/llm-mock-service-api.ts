@@ -1,4 +1,4 @@
-import { LlmResponseArgs, McpTool } from '../../globals';
+import { LlmResponseArgs } from '@/cypress/globals';
 
 /**
  * Enqueue a response to be sent by the llm mock service.

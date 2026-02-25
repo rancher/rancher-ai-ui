@@ -1,9 +1,6 @@
-import {
-  ref, computed, onMounted, watch, ComputedRef
-} from 'vue';
+import { ref, computed, onMounted, ComputedRef } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import debounce from 'lodash/debounce';
 import { NORMAN } from '@shell/config/types';
 import { PRODUCT_NAME } from '../product';
 import { useContextComposable } from './useContextComposable';
@@ -50,14 +47,9 @@ export function useChatMessageComposable(
   const currentMsg = ref<Message>({} as Message);
   const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
-  // Get phase from store with debounce to avoid rapid changes
-  const _phase = computed(() => store.getters['rancher-ai-ui/chat/phase'](chatId));
-  const phase = ref(_phase.value || MessagePhase.Initializing);
-  const applyPhase = debounce((v: MessagePhase) => {
-    phase.value = v;
-  }, 150);
+  const isChatInitialized = computed(() => !!store.getters['rancher-ai-ui/chat/metadata']?.chatId);
 
-  watch(_phase, (v) => applyPhase(v), { immediate: true });
+  const phase = computed(() => store.getters['rancher-ai-ui/chat/phase'](chatId) || MessagePhase.Initializing);
 
   // Set phase in store
   const setPhase = (phase: MessagePhase) => {
@@ -248,45 +240,55 @@ export function useChatMessageComposable(
   async function onmessage(event: MessageEvent) {
     const data = event.data;
 
-    try {
-      processChatErrors(data);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Error initiating chat:', err);
-      store.commit('rancher-ai-ui/chat/setError', {
-        chatId,
-        error: {
-          message: (err as ChatError).message,
-          action:  {
-            label:    t('ai.settings.goToAgents'),
-            type:     ActionType.Button,
-            resource: {
-              cluster:        'local',
-              detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
-            }
-          }
-        },
-      });
-    }
-
-    try {
-      if (!messages.value.find((msg) => msg.completed)) {
-        setPhase(MessagePhase.Initializing);
+    if (!isChatInitialized.value) {
+      try {
+        processChatErrors(data);
         processChatMetadata(data);
-        await processWelcomeData(data);
-      } else {
-        await processMessageData(data);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error initiating chat:', err);
+        store.commit('rancher-ai-ui/chat/setError', {
+          chatId,
+          error: {
+            message: (err as ChatError).message,
+            action:  {
+              label:    t('ai.settings.goToAgents'),
+              type:     ActionType.Button,
+              resource: {
+                cluster:        'local',
+                detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
+              }
+            }
+          },
+        });
       }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Error processing messages:', err);
-      store.commit('rancher-ai-ui/chat/setError', {
-        chatId,
-        error: { message: `${ t('ai.error.message.processing') } ${ (err as ChatError).message || err || '' }` }
-      });
+    } else {
+      try {
+        if (!messages.value.find((msg) => msg.completed)) {
+          setPhase(MessagePhase.Initializing);
+          await processWelcomeData(data);
+        } else {
+          await processMessageData(data);
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error processing messages:', err);
+        store.commit('rancher-ai-ui/chat/setError', {
+          chatId,
+          error: { message: `${ t('ai.error.message.processing') } ${ (err as ChatError).message || err || '' }` }
+        });
 
-      setPhase(MessagePhase.Idle);
+        setPhase(MessagePhase.Idle);
+      }
     }
+  }
+
+  function onclose() {
+    if (currentMsg.value) {
+      currentMsg.value.completed = true;
+    }
+
+    setPhase(MessagePhase.Idle);
   }
 
   function processChatErrors(data: string) {
@@ -451,13 +453,6 @@ export function useChatMessageComposable(
     }
   }
 
-  function resetChatError() {
-    store.commit('rancher-ai-ui/chat/setError', {
-      chatId,
-      error: null
-    });
-  }
-
   function downloadMessages() {
     downloadFile(
       `Rancher-liz-chat-${ chatId }_${ new Date().toISOString().slice(0, 10) }.txt`,
@@ -476,6 +471,13 @@ export function useChatMessageComposable(
     store.commit('rancher-ai-ui/chat/resetMessages', chatId);
   }
 
+  function resetErrors() {
+    store.commit('rancher-ai-ui/chat/setError', {
+      chatId,
+      error: null
+    });
+  }
+
   onMounted(() => {
     store.commit('rancher-ai-ui/chat/init', chatId);
   });
@@ -483,16 +485,18 @@ export function useChatMessageComposable(
   return {
     onopen,
     onmessage,
+    onclose,
     messages,
     sendMessage,
     addMessage,
     updateMessage,
     confirmMessage,
     selectContext,
-    resetChatError,
+    resetErrors,
     downloadMessages,
     loadMessages,
     resetMessages,
+    isChatInitialized,
     phase,
     error
   };

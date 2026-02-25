@@ -162,9 +162,7 @@ describe('History Panel', () => {
 
       history.chatItem(i).menu().doAction('delete-chat');
 
-      const deleteChatPrompt = new DeleteChatPromptPo();
-
-      deleteChatPrompt.confirm();
+      new DeleteChatPromptPo().confirm();
 
       history.chatItems().should('have.length', i);
     }
@@ -193,9 +191,7 @@ describe('History Panel', () => {
     chatItem.isActive();
     chatItem.menu().doAction('delete-chat');
 
-    const deleteChatPrompt = new DeleteChatPromptPo();
-
-    deleteChatPrompt.confirm();
+    new DeleteChatPromptPo().confirm();
 
     // When the active chat is deleted, the chat panel initializes a new chat
     chat.isReady();
