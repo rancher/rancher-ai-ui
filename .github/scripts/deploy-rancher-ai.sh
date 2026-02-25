@@ -63,7 +63,7 @@ helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
   --create-namespace \
   --set googleApiKey=empty \
   --set ollamaUrl="" \
-  --set llmModel=ollama \
+  --set ollamaLlmModel=ollama \
   --set activeLlm=ollama \
   --set llmMock.enabled=true \
   --set llmMock.url=http://llm-mock \
