@@ -3,7 +3,7 @@ import { ref, computed, PropType, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { AGENT_NAMESPACE } from '../../../product';
-import { AIAgentConfigCRD, AIAgentConfigHumanValidationTools } from '../../../types';
+import { AIAgentConfigCRD } from '../../../types';
 import { AIAgentConfigAuthType, AiAgentConfigSecretPayload, AIAgentConfigValidationType } from '../types';
 import Tabbed from '@shell/components/Tabbed/index.vue';
 import Tab from '@shell/components/Tabbed/Tab.vue';
@@ -201,38 +201,6 @@ function updateAuthenticationSecret(value: AiAgentConfigSecretPayload) {
   }
 
   emit('update:authentication-secrets', agentSecrets.value);
-}
-
-function updateValidationTools(index: number, field: string, val: string) {
-  const humanValidationTools = [...(selectedAgent.value.spec.humanValidationTools || [])];
-
-  humanValidationTools[index] = {
-    ...humanValidationTools[index],
-    [field]: val
-  };
-
-  updateAgent({
-    spec: {
-      ...selectedAgent.value.spec,
-      humanValidationTools
-    }
-  });
-}
-
-function removeValidationTools(args: { row: { value: AIAgentConfigHumanValidationTools } }) {
-  const humanValidationTools = [...(selectedAgent.value.spec.humanValidationTools || [])];
-  const index = humanValidationTools.indexOf(args.row.value);
-
-  if (index > -1) {
-    humanValidationTools.splice(index, 1);
-
-    updateAgent({
-      spec: {
-        ...selectedAgent.value.spec,
-        humanValidationTools
-      }
-    });
-  }
 }
 
 function updateAgent(patch: Partial<AIAgentConfigCRD>) {
@@ -498,41 +466,12 @@ watch(validationErrors, (errors) => {
             :disabled="isAgentLocked || props.readOnly"
             :remove-allowed="!isAgentLocked && !props.readOnly"
             :add-allowed="!isAgentLocked && !props.readOnly"
-            :show-header="true"
             :add-label="t('aiConfig.form.section.aiAgent.fields.humanValidationTools.addLabel')"
-            @remove="removeValidationTools"
+            :show-header="true"
+            :value-label="''"
+            :value-placeholder="t('aiConfig.form.section.aiAgent.fields.humanValidationTools.placeholder')"
+            @update:value="(value: string[]) => updateAgent({ spec: { ...selectedAgent.spec, humanValidationTools: value } })"
           >
-            <template #column-headers>
-              <div class="array-list-headers">
-                <div class="row">
-                  <span class="col span-6 text-label">
-                    {{ t('aiConfig.form.section.aiAgent.fields.humanValidationTools.fields.name.label') }}
-                  </span>
-                  <span class="col span-6 text-label">
-                    {{ t('aiConfig.form.section.aiAgent.fields.humanValidationTools.fields.type.label') }}
-                  </span>
-                </div>
-              </div>
-            </template>
-            <template #columns="{ row, i }">
-              <div class="row">
-                <div class="col span-6">
-                  <LabeledInput
-                    :value="row.value.name"
-                    :disabled="isAgentLocked || props.readOnly"
-                    @update:value="updateValidationTools(i, 'name', $event)"
-                  />
-                </div>
-                <div class="col span-6">
-                  <LabeledSelect
-                    :value="row.value.type"
-                    :options="validationTypes"
-                    :disabled="isAgentLocked || props.readOnly"
-                    @update:value="updateValidationTools(i, 'type', $event)"
-                  />
-                </div>
-              </div>
-            </template>
             <template #empty>
               <div class="row">
                 <span class="col span-12 text-label tools-empty-label">
