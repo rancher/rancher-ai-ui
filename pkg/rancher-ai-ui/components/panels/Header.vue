@@ -48,6 +48,7 @@ function toggleHistory() {
             ghost
             class="btn-open-history"
             data-testid="rancher-ai-ui-chat-history-button"
+            :disabled="props.disabled"
             @click="toggleHistory"
             @keydown.enter.stop="toggleHistory"
             @keydown.space.enter.stop="toggleHistory"
@@ -146,7 +147,7 @@ function toggleHistory() {
   margin: 0 !important;
 }
 
-.icon-close, .icon-menu {
+.icon {
   width: 32px;
 }
 </style>

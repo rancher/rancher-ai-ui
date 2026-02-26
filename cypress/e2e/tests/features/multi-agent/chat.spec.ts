@@ -188,9 +188,8 @@ describe('Multi Agent Chat', () => {
 
     chat.open();
 
-    chat.getErrorMessage(1).containsText('Connection closed');
-    chat.getErrorMessage(2).containsText('Failed to load MCP tools for all enabled agents.');
-    chat.getErrorMessage(2).containsText('Please check the AI Agents configuration and ensure the MCP server is accessible with the provided connection details.');
+    chat.getErrorMessage(1).containsText('Failed to load MCP tools for all enabled agents.');
+    chat.getErrorMessage(1).containsText('Please check the AI Agents configuration and ensure the MCP server is accessible with the provided connection details.');
   });
 
   after(() => {

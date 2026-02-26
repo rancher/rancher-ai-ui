@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useStore } from 'vuex';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_WS_API_PATH } from '../product';
 import { ConnectionPhase } from '../types';
@@ -21,7 +21,7 @@ export function useConnectionComposable(options: {
   const store = useStore();
 
   const ws = computed(() => store.getters['rancher-ai-ui/connection/ws']);
-  const phase = ref<ConnectionPhase>(ConnectionPhase.Idle); // Not handled at the moment
+  const phase = computed(() => store.getters['rancher-ai-ui/connection/phase']);
   const error = computed(() => store.getters['rancher-ai-ui/connection/error']);
 
   const baseUrl = `wss://${ window.location.host }/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_WS_API_PATH }`;
@@ -35,18 +35,16 @@ export function useConnectionComposable(options: {
       url,
       onopen,
       onmessage,
-      onclose: onclose || (() => {
-        store.commit('rancher-ai-ui/connection/setError', { key: 'ai.error.websocket.disconnected' });
-      })
+      onclose,
     });
   }
 
-  function disconnect(args: { showError?: boolean } = { showError: true }) {
-    if (args && args.showError !== undefined && !options.onclose && !args.showError) {
-      ws.value.onclose = null;
-    }
+  function disconnect(phase?: ConnectionPhase) {
+    store.commit('rancher-ai-ui/connection/close', { phase });
+  }
 
-    store.commit('rancher-ai-ui/connection/close');
+  function setPhase(phase: ConnectionPhase) {
+    store.commit('rancher-ai-ui/connection/setPhase', phase);
   }
 
   return {
@@ -54,6 +52,7 @@ export function useConnectionComposable(options: {
     phase,
     error,
     connect,
-    disconnect
+    disconnect,
+    setPhase
   };
 }

@@ -39,6 +39,10 @@ const props = defineProps({
   messagePhase: {
     type:    String,
     default: '',
+  },
+  disabled: {
+    type:    Boolean,
+    default: false,
   }
 });
 
@@ -74,8 +78,6 @@ const errorMessages = computed<FormattedMessage[]>(() => {
     actions:                 error.action ? [error.action] : []
   }));
 });
-
-const disabled = computed(() => props.errors.length > 0);
 
 function getMessageTemplate(component: MessageTemplateComponent) {
   switch (component) {
@@ -193,7 +195,7 @@ onBeforeUnmount(() => {
         }"
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
-        :disabled="disabled"
+        :disabled="props.disabled"
         :message="message"
         @update:message="emit('update:message', $event)"
         @send:message="emit('send:message', $event)"
@@ -203,7 +205,7 @@ onBeforeUnmount(() => {
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
         :message="message"
-        :disabled="disabled"
+        :disabled="props.disabled"
         :pending-confirmation="messagePhase === MessagePhase.AwaitingConfirmation"
         @update:message="emit('update:message', $event)"
         @confirm:message="emit('confirm:message', $event)"
@@ -217,7 +219,7 @@ onBeforeUnmount(() => {
       :message="error"
     />
     <Processing
-      v-if="!disabled"
+      v-if="!props.disabled"
       class="chat-message-processing-label text-label"
       :class="{
         /* It avoids pushing the System messages up (Welcome template) */
@@ -226,7 +228,7 @@ onBeforeUnmount(() => {
       :phase="messagePhase"
     />
     <ScrollButton
-      v-if="fastScrollEnabled && !disabled"
+      v-if="fastScrollEnabled && !props.disabled"
       class="chat-message-fast-scroll"
       @scroll="scrollToBottom"
     />
@@ -259,6 +261,7 @@ onBeforeUnmount(() => {
   font-size: 0.875rem;
   font-weight: 500;
   margin: 0;
+  padding-left: 4px;
 
   &.sticky-bottom {
     margin-top: auto;

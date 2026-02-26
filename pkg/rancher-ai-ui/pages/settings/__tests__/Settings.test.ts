@@ -6,14 +6,8 @@ import { Settings as SettingsEnum, AIAgentConfigAuthType } from '../types';
 import { AIAgentConfigCRD } from '../../../types';
 
 // Mock components with external dependencies
-jest.mock('../sections/AIAgentSettings.vue', () => ({
-  default: {
-    name:     'AIAgentSettings',
-    template: '<div class="ai-agent-settings"><slot /></div>',
-    props:    ['value'],
-    emits:    ['update:value']
-  }
-}));
+jest.mock('../sections/AIAgentSettings.vue', () => ({}));
+jest.mock('../../../dialog/ApplySettingsCard.vue', () => ({}));
 
 jest.mock('dayjs', () => ({
   __esModule: true,
@@ -28,6 +22,10 @@ jest.mock('vuex', () => {
     useStore: jest.fn()
   };
 });
+jest.mock('@shell/apis', () => ({ useShell: jest.fn(() => ({ modal: { open: jest.fn() } })) }));
+
+// Mock global fetch for all tests
+globalThis.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve() })) as jest.Mock;
 
 jest.mock('../../../utils/log', () => ({ warn: jest.fn() }));
 
@@ -591,6 +589,52 @@ describe('Settings.vue', () => {
       await vm.save(callback);
 
       expect(callback).toHaveBeenCalled();
+    });
+
+    it('should call save function when openApplySettingsDialog onConfirm is triggered', async() => {
+      const secret = mockSecret();
+      const deployment = {
+        type: 'apps.deployment',
+        spec: { template: { metadata: { annotations: {} } } },
+        save: jest.fn().mockResolvedValue({})
+      };
+
+      const dispatch = jest.fn((action: string, options?: any) => {
+        if (action === 'management/find' && options?.id?.includes(AGENT_NAME)) {
+          return Promise.resolve(deployment);
+        }
+        if (action === `management/find`) {
+          return Promise.resolve(secret);
+        }
+        if (action === `management/findAll`) {
+          return Promise.resolve([]);
+        }
+
+        return Promise.resolve(null);
+      });
+
+      const { useShell } = require('@shell/apis'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      let capturedOnConfirm: any;
+
+      (useShell as jest.Mock).mockReturnValue({
+        modal: {
+          open: jest.fn((component, options) => {
+            capturedOnConfirm = options.props.onConfirm;
+          })
+        }
+      });
+
+      const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+      const vm = wrapper.vm as any;
+
+      vm.aiAgentSettings = { [SettingsEnum.MODEL]: 'gpt-4' };
+      const callback = jest.fn();
+
+      await vm.openApplySettingsDialog(callback);
+
+      await capturedOnConfirm();
+
+      expect(secret.save).toHaveBeenCalled();
     });
   });
 

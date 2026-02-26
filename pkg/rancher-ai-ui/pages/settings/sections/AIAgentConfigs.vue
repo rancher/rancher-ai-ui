@@ -331,7 +331,7 @@ watch(validationErrors, (errors) => {
 
 <template>
   <div class="ai-agent-container">
-    <div v-if="availableAgentsCount === 0">
+    <div v-if="agents?.length > 0 && availableAgentsCount === 0">
       <Banner
         class="m-0"
         :color="'error'"

@@ -2,9 +2,10 @@
 import dayjs from 'dayjs';
 import {
   ref, onBeforeMount,
-  onMounted
+  onMounted,
 } from 'vue';
 import { useStore } from 'vuex';
+import { useShell } from '@shell/apis';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_CONFIG_SECRET_NAME } from '../../product';
 import { warn } from '../../utils/log';
 import { SECRET } from '@shell/config/types';
@@ -23,6 +24,8 @@ import { AI_AGENT_LABELS } from '../../labels-annotations';
 import SettingsRow from './SettingsRow.vue';
 import AIAgentConfigs from './sections/AIAgentConfigs.vue';
 import AIAgentSettings from './sections/AIAgentSettings.vue';
+import ApplySettings from '../../dialog/ApplySettingsCard.vue';
+import { useChatApiComposable } from '../../composables/useChatApiComposable';
 
 /**
  * Settings page for configuring Rancher AI assistant.
@@ -30,6 +33,9 @@ import AIAgentSettings from './sections/AIAgentSettings.vue';
 
 const store = useStore();
 const { t } = useI18n(store);
+const shellApi = useShell();
+
+const { fetchSettings } = useChatApiComposable();
 
 const aiAgentSettings = ref<SettingsFormData | null>(null);
 const aiAgentConfigCRDs = ref<AIAgentConfigCRD[] | null>(null);
@@ -37,6 +43,11 @@ const authenticationSecrets = ref<Record<string, AiAgentConfigSecretPayload | nu
 
 const permissions = ref<SettingsPermissions | null>(null);
 const hasErrors = ref<boolean>(false);
+
+const buttonProps = ref({
+  successLabel: t('asyncButton.apply.action'),
+  successColor: 'bg-success',
+});
 
 /**
  * Fetches the AI agent settings from the llmConfig Secret.
@@ -294,6 +305,28 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
   }
 };
 
+async function openApplySettingsDialog(btnCB: (arg: boolean) => void) { // eslint-disable-line no-unused-vars
+  const chatSettings = await fetchSettings();
+
+  shellApi.modal.open(ApplySettings, {
+    props: {
+      storageType: chatSettings?.storageType || '',
+      onConfirm:   () => {
+        buttonProps.value.successLabel = t('asyncButton.done.success');
+        buttonProps.value.successColor = 'bg-success';
+        save(btnCB);
+      },
+      onCancel: () => {
+        buttonProps.value.successLabel = t('asyncButton.apply.action');
+        buttonProps.value.successColor = 'bg-primary';
+        btnCB(true);
+      },
+    },
+    closeOnClickOutside: false,
+    width:               '400px',
+  });
+}
+
 function getPermissions() {
   const canListSecrets = store.getters['management/canList'](SECRET);
   const canListAiAgentCRDS = store.getters['management/canList'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG);
@@ -355,7 +388,7 @@ onMounted(() => {
         @update:value="aiAgentSettings = $event"
       />
       <Banner
-        v-else
+        v-else-if="!permissions?.list.canListSecrets"
         class="m-0"
         color="warning"
         :label="t('aiConfig.form.section.provider.noPermission.list')"
@@ -376,7 +409,7 @@ onMounted(() => {
         @update:validation-error="hasErrors = $event"
       />
       <Banner
-        v-else
+        v-else-if="!permissions?.list.canListAiAgentCRDS"
         class="m-0"
         color="warning"
         :label="t('aiConfig.form.section.aiAgent.noPermission.list')"
@@ -388,8 +421,10 @@ onMounted(() => {
         v-if="permissions?.create.canCreateAiAgentCRDS || permissions?.create.canCreateSecrets"
         action-label="Apply"
         data-testid="rancher-ai-ui-settings-save-button"
+        :success-label="buttonProps.successLabel"
+        :success-color="buttonProps.successColor"
         :disabled="hasErrors"
-        @click="save"
+        @click="openApplySettingsDialog"
       />
     </div>
   </div>

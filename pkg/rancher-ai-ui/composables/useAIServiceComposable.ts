@@ -1,14 +1,18 @@
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { base64Decode } from '@shell/utils/crypto';
 import { warn } from '../utils/log';
 import { AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_SECRET_NAME, PRODUCT_NAME } from '../product';
 import { SECRET, WORKLOAD_TYPES } from '@shell/config/types';
-import { ActionType, ChatError, LLMConfig } from '../types';
+import { ActionType, AIServiceState, ChatError, LLMConfig } from '../types';
 
 /**
- * Composable for managing the AI service configuration.
+ * Composable for fetching AI service configuration and monitoring the AI agent state.
+ *
+ * The AI agent's deployment state is monitored to determine if the AI service is available.
+ *  - If the deployment is not found, an error is set indicating that the service is unavailable.
+ *  - If the deployment exists, the llm-config secret is fetched to determine the active LLM and model being used.
  *
  * The llm-config secret is used to determine which AI model is being used (shown in the Console panel)
  * and to handle any errors related to the AI service's availability or configuration.
@@ -19,8 +23,25 @@ export function useAIServiceComposable() {
   const store = useStore();
   const { t } = useI18n(store);
 
+  const initiated = ref(false);
   const llmConfig = ref<LLMConfig | null>(null);
   const error = ref<ChatError | null>(null);
+
+  const aiAgentDeploymentState = computed(() => {
+    const deployments = store.getters['management/all'](WORKLOAD_TYPES.DEPLOYMENT);
+
+    const deployment = deployments.find((d: any) => d.metadata?.name === AGENT_NAME && d.metadata?.namespace === AGENT_NAMESPACE);
+
+    if (!initiated.value) {
+      return undefined;
+    }
+
+    if (!deployment) {
+      return AIServiceState.NotFound;
+    }
+
+    return deployment?.state;
+  });
 
   function decodeLLM(ACTIVE_LLM: string): string {
     try {
@@ -91,97 +112,75 @@ export function useAIServiceComposable() {
     return null;
   }
 
-  async function checkAgentDeploymentAvailability() {
-    if (!store.getters['management/canList'](WORKLOAD_TYPES.DEPLOYMENT)) {
-      error.value = { key: 'ai.error.services.deployment.noPermission' };
-
-      return false;
-    } else {
-      try {
-        const agent = await store.dispatch('management/find', {
-          type: WORKLOAD_TYPES.DEPLOYMENT,
-          id:   `${ AGENT_NAMESPACE }/${ AGENT_NAME }`
-        });
-
-        if (agent && agent.state !== 'active') {
-          error.value = {
-            key:    'ai.error.services.deployment.notActive',
-            action: {
-              label:    t('ai.installation.goToDeployment'),
-              type:     ActionType.Button,
-              resource: {
-                cluster:   'local',
-                type:      WORKLOAD_TYPES.DEPLOYMENT,
-                namespace: AGENT_NAMESPACE,
-                name:      AGENT_NAME
-              }
-            }
-          };
-        }
-      } catch (e) {
-        warn('\'rancher-ai-agent\' deployment not found', e);
-        error.value = {
-          key:    'ai.error.services.deployment.notFound',
-          action: {
-            label:    t('ai.installation.goToInstall'),
-            type:     ActionType.Button,
-            resource: {
-              cluster:        'local',
-              detailLocation: { name: 'c-cluster-apps-charts' }
-            }
-          }
-        };
-      }
-    }
-
-    return !error.value;
-  }
-
-  async function getLLMConfigs() {
-    if (!store.getters['management/canList'](SECRET)) {
-      error.value = { key: 'ai.error.services.secret.noPermission' };
+  async function fetchDeployments() {
+    if (store.getters['management/canList'](WORKLOAD_TYPES.DEPLOYMENT)) {
+      await store.dispatch('management/findAll', { type: WORKLOAD_TYPES.DEPLOYMENT });
 
       return;
     }
 
-    try {
-      const secret = await store.dispatch('management/find', {
-        type:    SECRET,
-        id:      `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_SECRET_NAME }`
-      });
-
-      if (secret?.data) {
-        llmConfig.value = decodeLLMConfig(secret.data);
-      }
-    } catch (e) {
-      warn('Error fetching agent configuration secret:', e);
-    }
-
-    if (!llmConfig.value) {
-      error.value = {
-        key:    'ai.error.services.secret.missingConfig',
-        action: {
-          label:    t('ai.settings.goToSettings'),
-          type:     ActionType.Button,
-          resource: {
-            cluster:        'local',
-            detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
-          }
-        }
-      };
-    }
+    error.value = { key: 'ai.error.services.deployment.noPermission' };
   }
 
-  onMounted(async() => {
-    const available = await checkAgentDeploymentAvailability();
+  async function fetchLLMConfigs() {
+    if (store.getters['management/canList'](SECRET)) {
+      try {
+        const secret = await store.dispatch('management/find', {
+          type:    SECRET,
+          id:      `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_SECRET_NAME }`
+        });
 
-    if (available) {
-      getLLMConfigs();
+        if (secret?.data) {
+          llmConfig.value = decodeLLMConfig(secret.data);
+        }
+      } catch (e) {
+        warn('Error fetching llm-config secret:', e);
+      }
+
+      if (!llmConfig.value) {
+        error.value = {
+          key:    'ai.error.services.secret.missingConfig',
+          action: {
+            label:    t('ai.settings.goToSettings'),
+            type:     ActionType.Button,
+            resource: {
+              cluster:        'local',
+              detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
+            }
+          }
+        };
+      }
+
+      return;
+    }
+
+    error.value = { key: 'ai.error.services.secret.noPermission' };
+  }
+
+  function resetError() {
+    error.value = null;
+  }
+
+  watch(() => aiAgentDeploymentState.value, (newState) => {
+    if (newState === AIServiceState.NotFound) {
+      error.value = { key: 'ai.error.services.deployment.notFound' };
+    } else {
+      error.value = null;
+
+      fetchLLMConfigs();
     }
   });
 
+  onMounted(async() => {
+    await fetchDeployments();
+
+    initiated.value = true;
+  });
+
   return {
+    aiAgentDeploymentState,
     llmConfig,
-    error
+    error,
+    resetError
   };
 }

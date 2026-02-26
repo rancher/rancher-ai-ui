@@ -1,10 +1,37 @@
 import { ComputedRef } from 'vue';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
-import { Agent, HistoryChat, HistoryChatMessage, Message } from '../types';
+import {
+  Agent, AgentSettings, HistoryChat, HistoryChatMessage, Message
+} from '../types';
 import { buildMessageFromHistoryMessage } from '../utils/format';
 
-export function useChatHistoryComposable(agents: ComputedRef<Agent[]>) {
+/**
+ * Composable for managing the chat API interactions.
+ *
+ * Endpoints:
+ * - settings: fetch settings
+ * - chat: fetch all chats, update a chat, delete a chat
+ * - messages: fetch messages for a chat
+ *
+ * @param agents Reactive reference to the list of agents, used for message formatting in the chat messages endpoint.
+ * @returns Composable for managing chat API interactions.
+ */
+
+export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
   const apiPath = `/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_REST_API_PATH }`;
+
+  async function fetchSettings(): Promise<AgentSettings | null> {
+    try {
+      const data = await fetch(`${ apiPath }/settings`);
+
+      return await data.json();
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to fetch settings:', error);
+
+      return null;
+    }
+  }
 
   async function fetchChats(): Promise<HistoryChat[]> {
     try {
@@ -58,7 +85,7 @@ export function useChatHistoryComposable(agents: ComputedRef<Agent[]>) {
 
       const messages = await data.json() as HistoryChatMessage[];
 
-      return messages.map((msg) => buildMessageFromHistoryMessage(msg, agents.value || []));
+      return messages.map((msg) => buildMessageFromHistoryMessage(msg, agents?.value || []));
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to fetch messages:', error);
@@ -68,6 +95,7 @@ export function useChatHistoryComposable(agents: ComputedRef<Agent[]>) {
   }
 
   return {
+    fetchSettings,
     fetchChats,
     fetchMessages,
     updateChat,
