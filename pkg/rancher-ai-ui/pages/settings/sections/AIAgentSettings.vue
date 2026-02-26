@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { cloneDeep } from 'lodash';
+import { cloneDeep, debounce } from 'lodash';
 import {
   ref, computed,
-  watch,
+  onMounted,
 } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import LabeledSelect from '@shell/components/form/LabeledSelect.vue';
 import LabeledInput from '@components/Form/LabeledInput/LabeledInput.vue';
-import Checkbox from '@components/Form/Checkbox/Checkbox.vue';
 import Banner from '@components/Banner/Banner.vue';
 import { _EDIT, _VIEW } from '@shell/config/query-params';
 import AdvancedSection from '@shell/components/AdvancedSection.vue';
 import Password from '@shell/components/form/Password.vue';
-import { Settings, SettingsFormData, ChatBotEnum } from '../types';
+import { LLMProvider as ChatBotEnum } from '../../../types';
+import { Settings, SettingsFormData, ValidationStatus } from '../types';
 import ToggleGroup from '../../../components/toggle/toggle-group.vue';
+import { useChatApiComposable } from '../../../composables/useChatApiComposable';
 
 const store = useStore();
 const { t } = useI18n(store);
@@ -32,27 +33,19 @@ const props = defineProps({
 
 const emit = defineEmits(['update:value']);
 
-const models = {
-  [ChatBotEnum.Local]:  ['gpt-oss:20b'],
-  [ChatBotEnum.OpenAI]: [
-    'gpt-4o',
-    'gpt-4o-mini',
-    'o3-mini',
-    'o3',
-    'o4-mini',
-    'gpt-4.1',
-    'gpt-4',
-    'gpt-3.5-turbo',
-  ],
-  [ChatBotEnum.Gemini]: [
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-2.5-pro',
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-  ],
-  [ChatBotEnum.Bedrock]: ['global.anthropic.claude-opus-4-5-20251101-v1:0'],
-};
+const { fetchLLMModels } = useChatApiComposable();
+
+const BEDROCK_REGION_OPTIONS = [
+  'us-east-1',
+  'us-west-2',
+  'eu-west-1',
+  'eu-central-1',
+  'eu-north-1',
+  'ap-southeast-1',
+  'ap-northeast-1',
+  'ap-south-1',
+  'ca-central-1'
+];
 
 const activeChatbotOptions = [
   {
@@ -81,12 +74,32 @@ const activeChatbotOptions = [
   },
 ];
 
-function getModelKey(chatbot: ChatBotEnum) {
+function getModelKey(chatbot: ChatBotEnum | string) {
   return Settings[`${ chatbot.toUpperCase() }_MODEL` as keyof typeof Settings] as Settings.OLLAMA_MODEL | Settings.GEMINI_MODEL | Settings.OPENAI_MODEL | Settings.BEDROCK_MODEL;
 }
 
-const modelOptions = ref(models[ChatBotEnum.Local]);
-const chatbotConfigKey = ref<Settings.OLLAMA_URL | Settings.GOOGLE_API_KEY | Settings.OPENAI_API_KEY | Settings.AWS_SECRET_ACCESS_KEY>(Settings.OLLAMA_URL);
+const models = ref<Record<ChatBotEnum, string[]>>({} as Record<ChatBotEnum, string[]>);
+
+const modelValidation = ref({
+  status:  ValidationStatus.IDLE,
+  message: '',
+});
+
+const chatbotConfigKey = computed<Settings.OLLAMA_URL | Settings.GOOGLE_API_KEY | Settings.OPENAI_API_KEY | Settings.AWS_BEARER_TOKEN_BEDROCK>(() => {
+  const activeChatbot = formData.value[Settings.ACTIVE_CHATBOT];
+
+  switch (activeChatbot) {
+  case ChatBotEnum.OpenAI:
+    return Settings.OPENAI_API_KEY;
+  case ChatBotEnum.Gemini:
+    return Settings.GOOGLE_API_KEY;
+  case ChatBotEnum.Bedrock:
+    return Settings.AWS_BEARER_TOKEN_BEDROCK;
+  case ChatBotEnum.Local:
+  default:
+    return Settings.OLLAMA_URL;
+  }
+});
 
 const formData = computed<SettingsFormData>(() => {
   const activeChatbot = getActiveChatbot(props.value);
@@ -109,40 +122,63 @@ const readOnlyBanner = computed(() => {
 });
 
 /**
+ * Fetches the available models for the specified chatbot.
+ * Makes an async API call to fetch the models and updates the model options.
+ * @param chatbot The name of the chatbot provider
+ */
+async function fetchModels(chatbot: ChatBotEnum, options: Record<string, any> = {}) {
+  const chatbotOptions: Record<string, any> = {};
+
+  if (chatbot === ChatBotEnum.Local) {
+    chatbotOptions['url'] = options.url === undefined ? formData.value[Settings.OLLAMA_URL] : options.url;
+  }
+
+  if (chatbot === ChatBotEnum.Bedrock) {
+    chatbotOptions['bearerToken'] = options.bearerToken === undefined ? formData.value[Settings.AWS_BEARER_TOKEN_BEDROCK] : options.bearerToken;
+    chatbotOptions['region'] = options.region === undefined ? formData.value[Settings.AWS_REGION] : options.region;
+  }
+
+  models.value[chatbot] = [];
+  modelValidation.value.status = ValidationStatus.VALIDATING;
+  modelValidation.value.message = '';
+
+  try {
+    models.value[chatbot] = await fetchLLMModels({
+      name:    chatbot,
+      options: chatbotOptions
+    });
+    modelValidation.value.status = ValidationStatus.SUCCESS;
+    modelValidation.value.message = '';
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      modelValidation.value.status = ValidationStatus.VALIDATING;
+      modelValidation.value.message = '';
+    } else {
+      modelValidation.value.status = ValidationStatus.ERROR;
+      modelValidation.value.message = (error as Error).message || t('aiConfig.form.validation.failed', {}, true);
+    }
+  }
+
+  updateFormConfig(chatbot);
+}
+
+/**
  * Updates the form configuration based on the selected chatbot.
- * Sets the appropriate model options and config key for the selected chatbot.
- * @param chatbot The selected chatbot provider ('OpenAI', 'Gemini', or
- * 'Local').
+ * Sets the appropriate model for the selected chatbot.
+ * @param chatbot The selected chatbot provider ('OpenAI', 'Gemini', 'Bedrock', or 'Local').
  */
 const updateFormConfig = (chatbot: ChatBotEnum) => {
   const modelKey = getModelKey(chatbot);
-  const modelField = formData.value[modelKey] || models[chatbot as ChatBotEnum][0];
+  const modelField = formData.value[modelKey] || models.value[chatbot]?.[0];
 
   if (modelField) {
-    modelOptions.value = models[chatbot as ChatBotEnum];
-    formData.value[modelKey] = modelField;
-
-    switch (chatbot) {
-    case ChatBotEnum.OpenAI:
-      chatbotConfigKey.value = Settings.OPENAI_API_KEY;
-      break;
-    case ChatBotEnum.Gemini:
-      chatbotConfigKey.value = Settings.GOOGLE_API_KEY;
-      break;
-    case ChatBotEnum.Bedrock:
-      chatbotConfigKey.value = Settings.AWS_SECRET_ACCESS_KEY;
-      break;
-    case ChatBotEnum.Local:
-    default:
-      chatbotConfigKey.value = Settings.OLLAMA_URL;
-      break;
-    }
+    formData.value[modelKey] = modelValidation.value.status === ValidationStatus.SUCCESS ? modelField : formData.value[modelKey];
   }
 };
 
 /**
  * Selects the default chatbot based on values in the form data.
- * If no chatbot is currently selected, it calculates the default chatbot in the order: Ollama, Gemini and OpenAI
+ * If no chatbot is currently selected, it calculates the default chatbot
  */
 function getActiveChatbot(value: SettingsFormData): ChatBotEnum {
   const existingChatbot = [ChatBotEnum.Gemini, ChatBotEnum.OpenAI, ChatBotEnum.Local, ChatBotEnum.Bedrock].find((c) => c === value[Settings.ACTIVE_CHATBOT]);
@@ -151,30 +187,73 @@ function getActiveChatbot(value: SettingsFormData): ChatBotEnum {
     return existingChatbot;
   }
 
-  let chatBot = ChatBotEnum.Local;
-
-  if (value[Settings.OLLAMA_URL]) {
-    chatBot = ChatBotEnum.Local;
-  } else if (value[Settings.GOOGLE_API_KEY]) {
-    chatBot = ChatBotEnum.Gemini;
+  // Fallback: detect based on which credentials are filled (reverse priority)
+  if (value[Settings.AWS_BEARER_TOKEN_BEDROCK]) {
+    return ChatBotEnum.Bedrock;
   } else if (value[Settings.OPENAI_API_KEY]) {
-    chatBot = ChatBotEnum.OpenAI;
-  }  else if (value[Settings.AWS_SECRET_ACCESS_KEY]) {
-    chatBot = ChatBotEnum.Bedrock;
+    return ChatBotEnum.OpenAI;
+  } else if (value[Settings.GOOGLE_API_KEY]) {
+    return ChatBotEnum.Gemini;
+  } else if (value[Settings.OLLAMA_URL]) {
+    return ChatBotEnum.Local;
   }
 
-  return chatBot;
+  // Default to Local
+  return ChatBotEnum.Local;
 }
 
 /**
- * Watches for changes in the resource and updates the form data.
+ * Updates the active chatbot value and related form configuration when the chatbot selection changes.
+ * @param val The selected chatbot provider value.
  */
-watch(props.value, () => {
-  updateFormConfig(formData.value[Settings.ACTIVE_CHATBOT] as ChatBotEnum);
-}, {
-  immediate: true,
-  deep:      true
-});
+const updateChatbotValue = async(val: ChatBotEnum) => {
+  updateValue(Settings.ACTIVE_CHATBOT, val);
+
+  modelValidation.value.status = ValidationStatus.IDLE;
+  modelValidation.value.message = '';
+
+  // Fetch models only when they are not already fetched for the selected chatbot
+  if (models.value[val] === undefined) {
+    fetchModels(val);
+  }
+};
+
+/**
+ * Updates the Bedrock token value and triggers a model fetch when the token changes.
+ * @param key The specific AWS credential key that was updated.
+ * @param val The new value for the AWS credential.
+ */
+const updateBedrockTokenValue = debounce((key: Settings, val: string) => {
+  updateValue(key, val);
+
+  fetchModels(ChatBotEnum.Bedrock, { bearerToken: val });
+}, 500);
+
+/**
+ * Updates the Bedrock region value and triggers a model fetch when the region changes.
+ * @param key The specific AWS credential key that was updated.
+ * @param val The new value for the AWS credential.
+ */
+const updateBedrockRegionValue = (key: Settings, val: string) => {
+  updateValue(key, val);
+
+  fetchModels(ChatBotEnum.Bedrock, { region: val });
+};
+
+/**
+ * Updates the Ollama URL value and triggers a model fetch when the URL changes.
+ * @param val The new Ollama URL value.
+ */
+const updateOllamaUrlValue = debounce((val: string) => {
+  const newValue = cloneDeep(formData.value);
+
+  newValue[Settings.OLLAMA_URL] = val;
+  newValue[Settings.OLLAMA_MODEL] = '';
+
+  emit('update:value', newValue);
+
+  fetchModels(ChatBotEnum.Local, { url: val });
+}, 500);
 
 /**
  * Emits an updated form data object when a value changes.
@@ -184,20 +263,21 @@ watch(props.value, () => {
  * @param key The key in the form data to update.
  * @param val The value to set for the key.
  */
-const updateValue = (key: Settings, val: ChatBotEnum | string) => {
+const updateValue = (key: Settings, val: string) => {
   const newValue = cloneDeep(formData.value);
 
   newValue[key] = val;
-  if (key === Settings.ACTIVE_CHATBOT) {
-    const chatbot = val as ChatBotEnum;
-    const modelKey = getModelKey(chatbot);
-
-    updateFormConfig(chatbot);
-    newValue[modelKey] = newValue[modelKey] || models[chatbot][0];
-  }
 
   emit('update:value', newValue);
 };
+
+onMounted(() => {
+  const activeChatbot = formData.value[Settings.ACTIVE_CHATBOT];
+
+  if (activeChatbot) {
+    fetchModels(activeChatbot as ChatBotEnum);
+  }
+});
 </script>
 
 <template>
@@ -216,7 +296,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
       :model-value="formData[Settings.ACTIVE_CHATBOT]"
       :items="activeChatbotOptions"
       :disabled="readOnly"
-      @update:model-value="(val: string | undefined) => updateValue(Settings.ACTIVE_CHATBOT, val as ChatBotEnum)"
+      @update:model-value="(val: string | undefined) => updateChatbotValue(val as ChatBotEnum)"
     />
     <banner
       v-if="formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local && !readOnly"
@@ -230,9 +310,28 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
       </span>
     </banner>
 
-    <div class="form-field">
-      <component
-        :is="chatbotConfigKey === Settings.OLLAMA_URL ? LabeledInput : Password"
+    <div
+      v-if="formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.Local"
+      class="form-field"
+    >
+      <LabeledInput
+        :value="formData[chatbotConfigKey]"
+        :label="t(`aiConfig.form.${ chatbotConfigKey }.label`)"
+        :disabled="readOnly"
+        :mode="readOnly ? _VIEW : _EDIT"
+        data-testid="rancher-ai-ui-settings-llm-api-key-input"
+        @update:value="(val: string) => updateOllamaUrlValue(val)"
+      />
+      <label class="text-label">
+        {{ t(`aiConfig.form.${ chatbotConfigKey }.description`) }}
+      </label>
+    </div>
+
+    <div
+      v-if="formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local &&formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Bedrock"
+      class="form-field"
+    >
+      <Password
         :value="formData[chatbotConfigKey]"
         :label="t(`aiConfig.form.${ chatbotConfigKey }.label`)"
         :disabled="readOnly"
@@ -245,35 +344,25 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
       </label>
     </div>
 
-    <template v-if="formData[Settings.ACTIVE_CHATBOT] == ChatBotEnum.Bedrock">
-      <div class="form-field">
-        <Password
-          :value="formData[Settings.AWS_ACCESS_KEY_ID]"
-          :label="t(`aiConfig.form.${ Settings.AWS_ACCESS_KEY_ID}.label`)"
-          :mode="readOnly ? _VIEW : _EDIT"
-          @update:value="(val: string) => updateValue(Settings.AWS_ACCESS_KEY_ID, val)"
-        />
-        <label class="text-label">
-          {{ t(`aiConfig.form.${ Settings.AWS_ACCESS_KEY_ID}.description`) }}
-        </label>
-      </div>
+    <template v-if="formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.Bedrock">
       <div class="form-field">
         <Password
           :value="formData[Settings.AWS_BEARER_TOKEN_BEDROCK]"
           :label="t(`aiConfig.form.${ Settings.AWS_BEARER_TOKEN_BEDROCK}.label`)"
           :mode="readOnly ? _VIEW : _EDIT"
-          @update:value="(val: string) => updateValue(Settings.AWS_BEARER_TOKEN_BEDROCK, val)"
+          @update:value="(val: string) => updateBedrockTokenValue(Settings.AWS_BEARER_TOKEN_BEDROCK, val)"
         />
         <label class="text-label">
           {{ t(`aiConfig.form.${ Settings.AWS_BEARER_TOKEN_BEDROCK}.description`) }}
         </label>
       </div>
       <div class="form-field">
-        <labeled-input
+        <LabeledSelect
           :value="formData[Settings.AWS_REGION]"
           :label="t(`aiConfig.form.${ Settings.AWS_REGION}.label`)"
+          :options="BEDROCK_REGION_OPTIONS"
           :disabled="readOnly"
-          @update:value="(val: string) => updateValue(Settings.AWS_REGION, val)"
+          @update:value="(val: string) => updateBedrockRegionValue(Settings.AWS_REGION, val)"
         />
         <label class="text-label">
           {{ t(`aiConfig.form.${ Settings.AWS_REGION}.description`) }}
@@ -282,17 +371,25 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
     </template>
 
     <div class="form-field">
-      <component
-        :is="modelOptions.length > 1 ? LabeledSelect : LabeledInput"
-        :value="formData[getModelKey(formData[Settings.ACTIVE_CHATBOT] as ChatBotEnum)]"
-        :label="t(`aiConfig.form.${ Settings.MODEL }.label`)"
-        :options="modelOptions"
-        :disabled="readOnly"
-        @update:value="(val: string) => updateValue(getModelKey(formData[Settings.ACTIVE_CHATBOT] as ChatBotEnum), val)"
+      <LabeledSelect
+        :value="formData[getModelKey(formData[Settings.ACTIVE_CHATBOT])]"
+        :label="t(`aiConfig.form.${ getModelKey(formData[Settings.ACTIVE_CHATBOT]) }.label`)"
+        :options="models[formData[Settings.ACTIVE_CHATBOT] as ChatBotEnum] || []"
+        :loading="modelValidation.status === ValidationStatus.VALIDATING"
+        :disabled="readOnly || modelValidation.status === ValidationStatus.VALIDATING || (!formData[getModelKey(formData[Settings.ACTIVE_CHATBOT])] && !models[formData[Settings.ACTIVE_CHATBOT] as ChatBotEnum]?.length)"
+        @update:value="(val: string) => updateValue(getModelKey(formData[Settings.ACTIVE_CHATBOT]), val)"
       />
-      <label class="text-label">
-        {{ t(`aiConfig.form.${ Settings.MODEL }.description`) }}
-      </label>
+      <label
+        v-clean-html="t(`aiConfig.form.${ getModelKey(formData[Settings.ACTIVE_CHATBOT]) }.description`, {}, true)"
+        class="text-label"
+      />
+      <Banner
+        v-if="modelValidation.status === ValidationStatus.ERROR"
+        class="m-0"
+        color="error"
+      >
+        {{ modelValidation.message }}
+      </Banner>
     </div>
 
     <advanced-section
@@ -300,7 +397,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
       class="mt-0 font-bold"
     >
       <div
-        v-if="formData[Settings.ACTIVE_CHATBOT] == ChatBotEnum.OpenAI"
+        v-if="formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.OpenAI"
         class="form-field mt-30"
       >
         <LabeledInput
@@ -314,6 +411,7 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
         </label>
       </div>
 
+      <!-- Removed for now, will be added back in a future release when RAG support is added
       <h4 class="mt-30">
         {{ t('aiConfig.form.section.rag.header') }}
       </h4>
@@ -345,8 +443,9 @@ const updateValue = (key: Settings, val: ChatBotEnum | string) => {
             The model used to create embeddings for RAG
           </label>
         </div>
-      </div>
-      <h4>
+      </div> -->
+
+      <h4 class="mt-30">
         {{ t('aiConfig.form.section.langfuse.header') }}
       </h4>
       <label class="text-label">

@@ -1,11 +1,14 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import { base64Decode } from '@shell/utils/crypto';
 import { warn } from '../utils/log';
-import { AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_SECRET_NAME, PRODUCT_NAME } from '../product';
-import { SECRET, WORKLOAD_TYPES } from '@shell/config/types';
-import { ActionType, AIServiceState, ChatError, LLMConfig } from '../types';
+import {
+  AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_SECRET_NAME, PRODUCT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME
+} from '../product';
+import { CONFIG_MAP, SECRET, WORKLOAD_TYPES } from '@shell/config/types';
+import {
+  ActionType, AIServiceState, ChatError, LLMConfig, LLMProvider
+} from '../types';
 
 /**
  * Composable for fetching AI service configuration and monitoring the AI agent state.
@@ -43,24 +46,14 @@ export function useAIServiceComposable() {
     return deployment?.state;
   });
 
-  function decodeLLM(ACTIVE_LLM: string): string {
-    try {
-      return base64Decode(ACTIVE_LLM);
-    } catch (error) {
-      warn('Error decoding ACTIVE_LLM:', error);
-    }
-
-    return '';
-  }
-
-  function decodeModel(data: any, activeLLM: string | null) {
+  function decodeModel(configMapData: any, activeLLM: string | null) {
     let model = '';
 
     try {
       if (activeLLM) {
         const modelKey = `${ activeLLM.toUpperCase() }_MODEL`;
 
-        model = base64Decode(data[modelKey] || '');
+        model = configMapData[modelKey] || '';
       }
     } catch (err) {
       warn(`Error decoding model for ${ activeLLM }:`, err);
@@ -69,32 +62,32 @@ export function useAIServiceComposable() {
     return model;
   }
 
-  function decodeLLMConfig(data: any): LLMConfig | null {
+  function decodeLLMConfig(secretData: any, configMapData: any): LLMConfig | null {
     let activeLLM = '';
     let activeModel = '';
 
     const {
-      ACTIVE_LLM,
       OLLAMA_URL,
       GOOGLE_API_KEY,
       OPENAI_API_KEY,
-      AWS_SECRET_ACCESS_KEY,
       AWS_BEARER_TOKEN_BEDROCK,
-    } = data;
+    } = secretData;
+
+    const { ACTIVE_LLM } = configMapData;
 
     if (ACTIVE_LLM) {
-      activeLLM = decodeLLM(ACTIVE_LLM);
+      activeLLM = ACTIVE_LLM;
     } else if (OLLAMA_URL) {
-      activeLLM = 'ollama';
+      activeLLM = LLMProvider.Local;
     } else if (GOOGLE_API_KEY) {
-      activeLLM = 'gemini';
+      activeLLM = LLMProvider.Gemini;
     } else if (OPENAI_API_KEY) {
-      activeLLM = 'openai';
-    } else if (AWS_SECRET_ACCESS_KEY || AWS_BEARER_TOKEN_BEDROCK) {
-      activeLLM = 'bedrock';
+      activeLLM = LLMProvider.OpenAI;
+    } else if (AWS_BEARER_TOKEN_BEDROCK) {
+      activeLLM = LLMProvider.Bedrock;
     }
 
-    activeModel = decodeModel(data, activeLLM);
+    activeModel = decodeModel(configMapData, activeLLM);
 
     if (activeLLM && activeModel) {
       return {
@@ -117,23 +110,35 @@ export function useAIServiceComposable() {
   }
 
   async function fetchLLMConfigs() {
-    if (store.getters['management/canList'](SECRET)) {
+    if (store.getters['management/canList'](SECRET) && store.getters['management/canList'](CONFIG_MAP)) {
+      let secret;
+      let configMap;
+
       try {
-        const secret = await store.dispatch('management/find', {
+        secret = await store.dispatch('management/find', {
           type:    SECRET,
           id:      `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_SECRET_NAME }`
         });
-
-        if (secret?.data) {
-          llmConfig.value = decodeLLMConfig(secret.data);
-        }
       } catch (e) {
         warn('Error fetching llm-config secret:', e);
       }
 
+      try {
+        configMap = await store.dispatch('management/find', {
+          type:    CONFIG_MAP,
+          id:      `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_CONFIG_MAP_NAME }`
+        });
+      } catch (e) {
+        warn('Error fetching llm-config config map:', e);
+      }
+
+      if (secret?.data && configMap?.data) {
+        llmConfig.value = decodeLLMConfig(secret.data, configMap.data);
+      }
+
       if (!llmConfig.value) {
         error.value = {
-          key:    'ai.error.services.secret.missingConfig',
+          key:    'ai.error.services.settings.missingConfig',
           action: {
             label:    t('ai.settings.goToSettings'),
             type:     ActionType.Button,
@@ -148,7 +153,7 @@ export function useAIServiceComposable() {
       return;
     }
 
-    error.value = { key: 'ai.error.services.secret.noPermission' };
+    error.value = { key: 'ai.error.services.settings.noPermission' };
   }
 
   function resetError() {

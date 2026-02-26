@@ -63,6 +63,7 @@ function close() {
     </template>
     <template #body>
       <div
+        v-if="warningMessage"
         class="mb-10"
       >
         <span v-clean-html="warningMessage" />
