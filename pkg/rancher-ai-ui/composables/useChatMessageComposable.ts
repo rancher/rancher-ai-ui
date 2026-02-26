@@ -11,7 +11,7 @@ import {
   ChatError, ConfirmationResponse, ConfirmationStatus, Message, MessageLabelKey, MessagePhase, MessageTag, MessageTemplateComponent, Role, Tag
 } from '../types';
 import {
-  formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationAction, formatSuggestionActions, formatFileMessages,
+  formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationActions, formatSuggestionActions, formatFileMessages,
   formatErrorMessage, formatSourceLinks,
   formatChatMetadata,
   formatAgentMetadata,
@@ -133,8 +133,8 @@ export function useChatMessageComposable(
     updateMessage({
       id:           message.id,
       confirmation: {
-        action: message.confirmation?.action || null,
-        status: result ? ConfirmationStatus.Confirmed : ConfirmationStatus.Canceled
+        actions: message.confirmation?.actions || null,
+        status:  result ? ConfirmationStatus.Confirmed : ConfirmationStatus.Canceled
       },
     });
   }
@@ -411,12 +411,12 @@ export function useChatMessageComposable(
         }
 
         if (data.startsWith(Tag.ConfirmationStart) && data.endsWith(Tag.ConfirmationEnd)) {
-          const confirmationAction = formatConfirmationAction(data);
+          const confirmationActions = formatConfirmationActions(data);
 
-          if (confirmationAction) {
+          if (confirmationActions) {
             currentMsg.value.confirmation = {
-              action: confirmationAction,
-              status: ConfirmationStatus.Pending,
+              actions: confirmationActions,
+              status:  ConfirmationStatus.Pending,
             };
             currentMsg.value.thinking = false;
             currentMsg.value.completed = true;
