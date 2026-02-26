@@ -155,7 +155,7 @@ export function formatMessageRelatedResourcesActions(value: string, actionType =
   return [];
 }
 
-export function formatConfirmationAction(value: string): MessageConfirmationAction | null {
+export function formatConfirmationActions(value: string): MessageConfirmationAction[] | null {
   value = value.replaceAll(Tag.ConfirmationStart, '').replaceAll(Tag.ConfirmationEnd, '').replace(/'([^']*)'/g, '"');
 
   if (value) {
@@ -315,12 +315,12 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
   let confirmation = undefined;
 
   if (msg.message.startsWith(Tag.ConfirmationStart) && msg.message.endsWith(Tag.ConfirmationEnd) && msg.confirmation !== undefined) {
-    const confirmationAction = formatConfirmationAction(msg.message);
+    const confirmationActions = formatConfirmationActions(msg.message);
 
-    if (confirmationAction) {
+    if (confirmationActions) {
       confirmation = {
-        action: confirmationAction,
-        status: msg.confirmation ? ConfirmationStatus.Confirmed : ConfirmationStatus.Canceled,
+        actions: confirmationActions,
+        status:  msg.confirmation ? ConfirmationStatus.Confirmed : ConfirmationStatus.Canceled,
       };
       msg.message = '';
     }

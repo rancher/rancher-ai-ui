@@ -4,7 +4,7 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { warn } from '../../utils/log';
 import RcButton from '@components/RcButton/RcButton.vue';
-import { ConfirmationStatus, ConfirmationType, MessageConfirmation } from '../../types';
+import { ConfirmationStatus, ConfirmationActionType, MessageConfirmation } from '../../types';
 
 const store = useStore();
 const { t } = useI18n(store);
@@ -28,33 +28,55 @@ const confirmationText = computed(() => {
 
   try {
     if (!props.messageContent) {
-      const {
-        kind, name, namespace, cluster
-      } = props.value.action?.resource || {};
+      let out = '';
 
-      if (kind && name && namespace && cluster) {
-        const description = props.value.action?.payload?.reduce((acc: string, curr) => {
-          const { op, value, path } = curr || {};
+      props.value.actions?.forEach((action) => {
+        const actionType = action?.type || ConfirmationActionType.Create;
 
-          if (op && value && path) {
-            return `${ acc + t('ai.confirmation.message.description', {
-              op,
-              value: typeof value === 'string' ? value : JSON.stringify(value),
-              path,
+        const {
+          kind, name, namespace, cluster
+        } = action?.resource || {};
+
+        if (kind && name && namespace && cluster) {
+          switch (actionType) {
+          case ConfirmationActionType.Create:
+            out += `${ t(`ai.confirmation.message.operation.create.description`, {
               name,
               kind,
               namespace,
-              cluster
-            }, true) }<br>`;
+              cluster,
+              value: JSON.stringify(action.payload)
+            }, true)  }<br>`;
+            break;
+          case ConfirmationActionType.Update:
+          case ConfirmationActionType.Patch:
+            const description = action?.payload?.reduce((acc: string, curr) => {
+              const { op, value, path } = curr || {};
+
+              if (op && value && path) {
+                return `${ acc + t(`ai.confirmation.message.operation.update.description`, {
+                  op,
+                  value: typeof value === 'string' ? value : JSON.stringify(value),
+                  path,
+                  name,
+                  kind,
+                  namespace,
+                  cluster
+                }, true) }<br>`;
+              }
+
+              return acc;
+            }, '');
+
+            if (!!description?.trim()) {
+              out += `${ description }<br>`;
+            }
+            break;
           }
-
-          return acc;
-        }, '');
-
-        if (!!description?.trim()) {
-          return `${ description }<br>${ msg }`;
         }
-      }
+      });
+
+      return `${ out }${ msg }`;
     }
   } catch (e) {
     warn('Error generating confirmation description:', e);
@@ -77,7 +99,7 @@ const confirmationText = computed(() => {
       class="confirmation-buttons"
     >
       <div
-        v-if="props.value.action?.type === ConfirmationType.Delete"
+        v-if="props.value.actions?.some(action => action.type === ConfirmationActionType.Delete)"
         class="delete-confirmation"
       >
         <!-- TODO Delete confirmation buttons -->

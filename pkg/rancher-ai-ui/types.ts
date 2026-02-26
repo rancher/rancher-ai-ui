@@ -123,13 +123,13 @@ export interface ActionResource {
   detailLocation?: object;
 }
 
-export interface OperationPayload {
+export interface ConfirmationOperationPayload {
   op: string; // add, update, remove, etc.
   path: string;
   value?: any;
 };
 
-export const enum ConfirmationType {
+export const enum ConfirmationActionType {
   Patch = 'patch',
   Create = 'create',
   Update = 'update',
@@ -165,15 +165,15 @@ export interface MessageAction {
 export type MessageActionSuggestion = string;
 
 export interface MessageConfirmation {
-  action?: MessageConfirmationAction | null;
+  actions?: MessageConfirmationAction[] | null;
   status: ConfirmationStatus;
   label?: string;
   icon?: string;
 }
 
 export interface MessageConfirmationAction {
-  type: ConfirmationType | string;
-  payload?: OperationPayload[];
+  type: ConfirmationActionType | string;
+  payload?: ConfirmationOperationPayload[];
   resource: ActionResource;
 }
 
