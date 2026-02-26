@@ -282,12 +282,8 @@ aiConfig:
             placeholder: https://endpoint.mcp
           humanValidationTools:
             addLabel: Add Validation Tool
-            fields:
-              name:
-                label: Name
-              type:
-                label: Type
             emptyLabel: No human validation tools have been defined for this agent
+            placeholder: e.g. createResource
           systemPrompt:
             label: System Prompt
             placeholder: Markdown Instructions

@@ -258,11 +258,6 @@ export const enum AgentSelectionMode {
   Manual = 'manual',
 }
 
-export interface AIAgentConfigHumanValidationTools {
-  name: string;
-  type: string;
-}
-
 export interface AIAgentConfigCRD {
   metadata: {
     name: string;
@@ -276,7 +271,7 @@ export interface AIAgentConfigCRD {
     mcpURL?: string;
     authenticationType: string;
     authenticationSecret?: string;
-    humanValidationTools: AIAgentConfigHumanValidationTools[];
+    humanValidationTools?: string[];
     systemPrompt?: string;
     toolSet?: string;
   }
