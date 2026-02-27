@@ -1,6 +1,6 @@
 import { shallowMount } from '@vue/test-utils';
 import AIAgentSettings from '../AIAgentSettings.vue';
-import { Settings } from '../../types';
+import { Settings, SettingsFormData } from '../../types';
 import { LLMProvider as ChatBotEnum } from '../../../../types';
 
 // Mock Password component to avoid clipboard-polyfill dependency
@@ -40,7 +40,7 @@ describe('AIAgentSettings.vue', () => {
     it('should render the component with default local chatbot', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: {} },
+        props: { value: {} as SettingsFormData },
       });
 
       expect(wrapper.exists()).toBe(true);
@@ -50,7 +50,7 @@ describe('AIAgentSettings.vue', () => {
     it('should render toggle group with correct options', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: {} },
+        props: { value: {} as SettingsFormData },
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
@@ -63,7 +63,7 @@ describe('AIAgentSettings.vue', () => {
     it('should select Local chatbot when OLLAMA_URL is provided', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.OLLAMA_URL]: 'http://localhost:11434' } },
+        props: { value: { [Settings.OLLAMA_URL]: 'http://localhost:11434' } as SettingsFormData },
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
@@ -74,7 +74,7 @@ describe('AIAgentSettings.vue', () => {
     it('should select OpenAI chatbot when OPENAI_API_KEY is provided', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.OPENAI_API_KEY]: 'sk-xxx' } },
+        props: { value: { [Settings.OPENAI_API_KEY]: 'sk-xxx' } as SettingsFormData },
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
@@ -85,7 +85,7 @@ describe('AIAgentSettings.vue', () => {
     it('should select Gemini chatbot when GOOGLE_API_KEY is provided', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.GOOGLE_API_KEY]: 'gemini-api-key' } },
+        props: { value: { [Settings.GOOGLE_API_KEY]: 'gemini-api-key' } as SettingsFormData },
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
@@ -96,7 +96,7 @@ describe('AIAgentSettings.vue', () => {
     it('should select Bedrock chatbot when AWS_BEARER_TOKEN_BEDROCK is provided', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.AWS_BEARER_TOKEN_BEDROCK]: 'aws-bearer-token' } },
+        props: { value: { [Settings.AWS_BEARER_TOKEN_BEDROCK]: 'aws-bearer-token' } as SettingsFormData },
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
@@ -107,7 +107,7 @@ describe('AIAgentSettings.vue', () => {
     it('should emit update:value when chatbot is changed', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
@@ -125,7 +125,7 @@ describe('AIAgentSettings.vue', () => {
     it('should show warning banner for OpenAI', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData },
       });
 
       const banners = wrapper.findAllComponents({ name: 'Banner' });
@@ -136,7 +136,7 @@ describe('AIAgentSettings.vue', () => {
     it('should show warning banner for Gemini', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini } as SettingsFormData },
       });
 
       const banners = wrapper.findAllComponents({ name: 'Banner' });
@@ -147,7 +147,7 @@ describe('AIAgentSettings.vue', () => {
     it('should not show warning banner for Local chatbot', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       const banners = wrapper.findAllComponents({ name: 'Banner' });
@@ -161,7 +161,7 @@ describe('AIAgentSettings.vue', () => {
     it('should have correct model options for Local chatbot', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       await wrapper.vm.$nextTick();
@@ -178,7 +178,7 @@ describe('AIAgentSettings.vue', () => {
           value: {
             [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
             [Settings.OLLAMA_MODEL]:   'gpt-oss:20b',
-          },
+          } as SettingsFormData,
         },
       });
 
@@ -199,7 +199,7 @@ describe('AIAgentSettings.vue', () => {
     it('should use OLLAMA_URL for Local chatbot', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       await wrapper.vm.$nextTick();
@@ -209,7 +209,7 @@ describe('AIAgentSettings.vue', () => {
     it('should use OPENAI_API_KEY for OpenAI chatbot', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData },
       });
 
       await wrapper.vm.$nextTick();
@@ -219,7 +219,7 @@ describe('AIAgentSettings.vue', () => {
     it('should use GOOGLE_API_KEY for Gemini chatbot', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini } as SettingsFormData },
       });
 
       await wrapper.vm.$nextTick();
@@ -229,7 +229,7 @@ describe('AIAgentSettings.vue', () => {
     it('should use AWS_SECRET_ACCESS_KEY for Bedrock chatbot', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock } as SettingsFormData },
       });
 
       await wrapper.vm.$nextTick();
@@ -241,7 +241,7 @@ describe('AIAgentSettings.vue', () => {
     it('should render AWS fields for Bedrock chatbot', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock } as SettingsFormData },
       });
 
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
@@ -252,7 +252,7 @@ describe('AIAgentSettings.vue', () => {
     it('should not render AWS fields for other chatbots', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData },
       });
 
       const content = wrapper.text();
@@ -265,7 +265,7 @@ describe('AIAgentSettings.vue', () => {
     it('should render third party URL field for OpenAI', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData },
       });
 
       expect(wrapper.exists()).toBe(true);
@@ -277,7 +277,7 @@ describe('AIAgentSettings.vue', () => {
     it('should not render third party URL field for other chatbots', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini } as SettingsFormData },
       });
 
       const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
@@ -290,21 +290,12 @@ describe('AIAgentSettings.vue', () => {
     it('should render RAG section in advanced section', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: {} },
+        props: { value: {} as SettingsFormData },
       });
 
       const advancedSection = wrapper.findComponent({ name: 'AdvancedSection' });
 
       expect(advancedSection.exists()).toBe(true);
-    });
-
-    it('should emit update when RAG is enabled', async() => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.ENABLE_RAG]: 'false' } },
-      });
-
-      expect(wrapper.exists()).toBe(true);
     });
   });
 
@@ -312,7 +303,7 @@ describe('AIAgentSettings.vue', () => {
     it('should render Langfuse section in advanced section', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: {} },
+        props: { value: {} as SettingsFormData },
       });
 
       const advancedSection = wrapper.findComponent({ name: 'AdvancedSection' });
@@ -328,7 +319,7 @@ describe('AIAgentSettings.vue', () => {
             [Settings.LANGFUSE_HOST]:       'https://langfuse.example.com',
             [Settings.LANGFUSE_PUBLIC_KEY]: 'pk-xxx',
             [Settings.LANGFUSE_SECRET_KEY]: 'sk-xxx',
-          },
+          } as SettingsFormData,
         },
       });
 
@@ -342,7 +333,7 @@ describe('AIAgentSettings.vue', () => {
     it('should emit update:value when form value changes', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
@@ -357,8 +348,7 @@ describe('AIAgentSettings.vue', () => {
         [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
         [Settings.OPENAI_API_KEY]: 'sk-existing',
         [Settings.OPENAI_MODEL]:   'gpt-4o',
-      };
-
+      } as SettingsFormData;
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: { value: existingValue },
@@ -376,14 +366,14 @@ describe('AIAgentSettings.vue', () => {
     it('should update when props change', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       await (wrapper as any).setProps({
         value: {
           [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
           [Settings.OPENAI_API_KEY]: 'sk-xxx',
-        },
+        } as SettingsFormData,
       });
 
       await wrapper.vm.$nextTick();
@@ -396,16 +386,16 @@ describe('AIAgentSettings.vue', () => {
         props: {
           value: {
             [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
-            [Settings.ENABLE_RAG]:     'false',
-          },
+            [Settings.AWS_REGION]:     'test-region',
+          } as SettingsFormData,
         },
       });
 
       await (wrapper as any).setProps({
         value: {
           [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
-          [Settings.ENABLE_RAG]:     'true',
-        },
+          [Settings.AWS_REGION]:     'test-region',
+        } as SettingsFormData,
       });
 
       await wrapper.vm.$nextTick();
@@ -418,7 +408,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData,
           readOnly: true,
         },
       });
@@ -432,7 +422,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData,
           readOnly: false,
         },
       });
@@ -446,7 +436,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData,
           readOnly: true,
         },
       });
@@ -460,7 +450,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData,
           readOnly: false,
         },
       });
@@ -474,7 +464,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData,
           readOnly: true,
         },
       });
@@ -489,7 +479,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData,
           readOnly: false,
         },
       });
@@ -503,7 +493,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock } as SettingsFormData,
           readOnly: true,
         },
       });
@@ -522,7 +512,7 @@ describe('AIAgentSettings.vue', () => {
           value: {
             [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
             [Settings.OPENAI_API_KEY]: 'sk-xxx',
-          },
+          } as SettingsFormData,
           readOnly: true,
         },
       });
@@ -537,7 +527,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData,
           readOnly: true,
         },
       });
@@ -552,7 +542,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData,
           readOnly: false,
         },
       });
@@ -568,7 +558,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapperReadOnly = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData,
           readOnly: true,
         },
       });
@@ -578,7 +568,7 @@ describe('AIAgentSettings.vue', () => {
       const wrapperEditable = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
-          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local },
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData,
           readOnly: false,
         },
       });
