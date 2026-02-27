@@ -6,6 +6,12 @@ import { Settings as SettingsEnum, AIAgentConfigAuthType } from '../types';
 import { AIAgentConfigCRD } from '../../../types';
 
 // Mock components with external dependencies
+jest.mock('../../../composables/useChatApiComposable', () => ({
+  useChatApiComposable: jest.fn(() => ({
+    fetchSettings: jest.fn().mockResolvedValue({}),
+    saveSettings:  jest.fn().mockResolvedValue({})
+  }))
+}));
 jest.mock('../sections/AIAgentSettings.vue', () => ({}));
 jest.mock('../../../dialog/ApplySettingsCard.vue', () => ({}));
 
@@ -145,7 +151,7 @@ describe('Settings.vue', () => {
       expect(vm.aiAgentSettings).toBeDefined();
       expect(vm.aiAgentConfigCRDs).toBeDefined();
       expect(vm.authenticationSecrets).toEqual({});
-      expect(vm.hasErrors).toBe(false);
+      expect(vm.hasValidationErrors).toBe(false);
     });
   });
 
@@ -350,11 +356,18 @@ describe('Settings.vue', () => {
   });
 
   describe('Saving Agent Settings', () => {
-    it('should encode and save settings to secret', async() => {
-      const secret = mockSecret();
+    it('should call saveSettings API with form data', async() => {
+      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const mockSaveSettings = jest.fn().mockResolvedValue({});
+
+      (useChatApiComposable as jest.Mock).mockReturnValue({
+        fetchSettings: jest.fn().mockResolvedValue({}),
+        saveSettings:  mockSaveSettings
+      });
+
       const dispatch = jest.fn((action: string) => {
         if (action === `management/find`) {
-          return Promise.resolve(secret);
+          return Promise.resolve(mockSecret());
         }
         if (action === `management/findAll`) {
           return Promise.resolve([]);
@@ -369,18 +382,21 @@ describe('Settings.vue', () => {
       vm.aiAgentSettings = { [SettingsEnum.OPENAI_MODEL]: 'gpt-4' };
       await vm.saveAgentSettings();
 
-      expect(secret.save).toHaveBeenCalled();
-      expect((secret.data as any)[SettingsEnum.OPENAI_MODEL]).toBe('Z3B0LTQ=');
+      expect(mockSaveSettings).toHaveBeenCalledWith(expect.objectContaining({ [SettingsEnum.OPENAI_MODEL]: 'gpt-4' }));
     });
 
     it('should handle save errors gracefully', async() => {
-      const secret = mockSecret();
+      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const mockSaveSettings = jest.fn().mockRejectedValueOnce(new Error('Save failed'));
 
-      secret.save.mockRejectedValueOnce(new Error('Save failed'));
+      (useChatApiComposable as jest.Mock).mockReturnValue({
+        fetchSettings: jest.fn().mockResolvedValue({}),
+        saveSettings:  mockSaveSettings
+      });
 
       const dispatch = jest.fn((action: string) => {
         if (action === `management/find`) {
-          return Promise.resolve(secret);
+          return Promise.resolve(mockSecret());
         }
         if (action === `management/findAll`) {
           return Promise.resolve([]);
@@ -393,7 +409,7 @@ describe('Settings.vue', () => {
       const vm = wrapper.vm as any;
 
       vm.aiAgentSettings = { [SettingsEnum.OPENAI_MODEL]: 'gpt-4' };
-      await expect(vm.saveAgentSettings()).resolves.not.toThrow();
+      await expect(vm.saveAgentSettings()).rejects.toThrow('Save failed');
     });
   });
 
@@ -494,15 +510,6 @@ describe('Settings.vue', () => {
 
       expect(vm.authenticationSecrets).toEqual(secrets);
     });
-
-    it('should track validation errors', async() => {
-      const wrapper = shallowMount(Settings, initSettings());
-      const vm = wrapper.vm as any;
-
-      expect(vm.hasErrors).toBe(false);
-      vm.hasErrors = true;
-      expect(vm.hasErrors).toBe(true);
-    });
   });
 
   describe('Lifecycle Events', () => {
@@ -545,10 +552,17 @@ describe('Settings.vue', () => {
 
   describe('Save Operation', () => {
     it('should save all data when save method is called', async() => {
-      const secret = mockSecret();
+      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const mockSaveSettings = jest.fn().mockResolvedValue({});
+
+      (useChatApiComposable as jest.Mock).mockReturnValue({
+        fetchSettings: jest.fn().mockResolvedValue({}),
+        saveSettings:  mockSaveSettings
+      });
+
       const dispatch = jest.fn((action: string) => {
         if (action === `management/find`) {
-          return Promise.resolve(secret);
+          return Promise.resolve(mockSecret());
         }
         if (action === `management/findAll`) {
           return Promise.resolve([]);
@@ -565,7 +579,7 @@ describe('Settings.vue', () => {
 
       await vm.save(callback);
 
-      expect(secret.save).toHaveBeenCalled();
+      expect(mockSaveSettings).toHaveBeenCalledWith(expect.any(Object));
     });
 
     it('should call save callback', async() => {
@@ -592,7 +606,14 @@ describe('Settings.vue', () => {
     });
 
     it('should call save function when openApplySettingsDialog onConfirm is triggered', async() => {
-      const secret = mockSecret();
+      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const mockSaveSettings = jest.fn().mockResolvedValue({});
+
+      (useChatApiComposable as jest.Mock).mockReturnValue({
+        fetchSettings: jest.fn().mockResolvedValue({}),
+        saveSettings:  mockSaveSettings
+      });
+
       const deployment = {
         type: 'apps.deployment',
         spec: { template: { metadata: { annotations: {} } } },
@@ -604,7 +625,7 @@ describe('Settings.vue', () => {
           return Promise.resolve(deployment);
         }
         if (action === `management/find`) {
-          return Promise.resolve(secret);
+          return Promise.resolve(mockSecret());
         }
         if (action === `management/findAll`) {
           return Promise.resolve([]);
@@ -634,7 +655,7 @@ describe('Settings.vue', () => {
 
       await capturedOnConfirm();
 
-      expect(secret.save).toHaveBeenCalled();
+      expect(mockSaveSettings).toHaveBeenCalledWith(expect.any(Object));
     });
   });
 
@@ -1034,6 +1055,52 @@ describe('Settings.vue', () => {
 
       expect(vm.permissions?.create.canCreateSecrets).toBe(true);
       expect(vm.permissions?.create.canCreateAiAgentCRDS).toBe(false);
+    });
+
+    it('should display apiError banner when save fails', async() => {
+      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const mockSaveSettings = jest.fn().mockRejectedValueOnce(new Error('API Error'));
+
+      (useChatApiComposable as jest.Mock).mockReturnValue({
+        fetchSettings: jest.fn().mockResolvedValue({}),
+        saveSettings:  mockSaveSettings
+      });
+
+      const dispatch = jest.fn((action: string) => {
+        if (action === `management/find`) {
+          return Promise.resolve(mockSecret());
+        }
+        if (action === `management/findAll`) {
+          return Promise.resolve([]);
+        }
+
+        return Promise.resolve(null);
+      });
+
+      const { useShell } = require('@shell/apis'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      let capturedOnConfirm: any;
+
+      (useShell as jest.Mock).mockReturnValue({
+        modal: {
+          open: jest.fn((component, options) => {
+            capturedOnConfirm = options.props.onConfirm;
+          })
+        }
+      });
+
+      const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+      const vm = wrapper.vm as any;
+
+      vm.aiAgentSettings = { [SettingsEnum.OPENAI_MODEL]: 'gpt-4' };
+      const callback = jest.fn();
+
+      await vm.openApplySettingsDialog(callback);
+      await capturedOnConfirm();
+
+      await wrapper.vm.$nextTick();
+
+      expect(vm.apiError).toBeTruthy();
+      expect(callback).toHaveBeenCalledWith(false);
     });
   });
 });

@@ -336,3 +336,10 @@ export interface Agent {
   description?: string;
   status?: string;
 }
+
+export const enum LLMProvider {
+  Local = 'ollama',
+  OpenAI = 'openai',
+  Gemini = 'gemini',
+  Bedrock = 'bedrock',
+}

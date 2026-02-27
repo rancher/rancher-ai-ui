@@ -1,6 +1,7 @@
 import { shallowMount } from '@vue/test-utils';
 import AIAgentSettings from '../AIAgentSettings.vue';
-import { Settings, ChatBotEnum } from '../../types';
+import { Settings } from '../../types';
+import { LLMProvider as ChatBotEnum } from '../../../../types';
 
 // Mock Password component to avoid clipboard-polyfill dependency
 jest.mock('@shell/components/form/Password.vue', () => ({
@@ -92,10 +93,10 @@ describe('AIAgentSettings.vue', () => {
       expect(toggleGroup.exists()).toBe(true);
     });
 
-    it('should select Bedrock chatbot when AWS_SECRET_ACCESS_KEY is provided', () => {
+    it('should select Bedrock chatbot when AWS_BEARER_TOKEN_BEDROCK is provided', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.AWS_SECRET_ACCESS_KEY]: 'aws-secret-key' } },
+        props: { value: { [Settings.AWS_BEARER_TOKEN_BEDROCK]: 'aws-bearer-token' } },
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
@@ -256,7 +257,7 @@ describe('AIAgentSettings.vue', () => {
 
       const content = wrapper.text();
 
-      expect(content).not.toContain(Settings.AWS_ACCESS_KEY_ID);
+      expect(content).not.toContain(Settings.AWS_BEARER_TOKEN_BEDROCK);
     });
   });
 
