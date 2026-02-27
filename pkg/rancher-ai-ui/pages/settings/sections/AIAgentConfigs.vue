@@ -4,7 +4,7 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { AGENT_NAMESPACE } from '../../../product';
 import { AIAgentConfigCRD } from '../../../types';
-import { AIAgentConfigAuthType, AiAgentConfigSecretPayload, AIAgentConfigValidationType } from '../types';
+import { AIAgentConfigAuthType, AiAgentConfigSecretPayload } from '../types';
 import Tabbed from '@shell/components/Tabbed/index.vue';
 import Tab from '@shell/components/Tabbed/Tab.vue';
 import ArrayList from '@shell/components/form/ArrayList.vue';
@@ -53,21 +53,6 @@ const authOptions = [
   {
     label: t('aiConfig.form.section.aiAgent.options.mcp.authOptions.none'),
     value: AIAgentConfigAuthType.NONE
-  }
-];
-
-const validationTypes = [
-  {
-    label: t('aiConfig.form.section.aiAgent.options.mcp.validationTypes.create'),
-    value: AIAgentConfigValidationType.CREATE
-  },
-  {
-    label: t('aiConfig.form.section.aiAgent.options.mcp.validationTypes.update'),
-    value: AIAgentConfigValidationType.UPDATE
-  },
-  {
-    label: t('aiConfig.form.section.aiAgent.options.mcp.validationTypes.delete'),
-    value: AIAgentConfigValidationType.DELETE
   }
 ];
 

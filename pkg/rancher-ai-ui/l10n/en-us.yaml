@@ -128,7 +128,7 @@ ai:
       question: Are you sure you want to proceed with this action?
       operation:
         create:
-          description: 'I will create a new {kind} in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster with this payload:<br><pre><code>{value}</code></pre>'
+          description: 'I will create the new {kind} <code>{name}</code> in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster with this payload:<br><pre><code>{value}</code></pre>'
         update:
           description: 'I will <b>{op}</b> the value <code>{value}</code> in the path <code>{path}</code> to the <code>{name}</code> {kind} in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster.'
     confirm: Confirm
