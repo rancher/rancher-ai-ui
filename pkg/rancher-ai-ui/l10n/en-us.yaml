@@ -154,7 +154,7 @@ ai:
       connection: Failed to connect to Rancher AI Agent. Please try again later.
       disconnected: Connection closed.
     services:
-      secret:
+      settings:
         noPermission: You do not have permission to access the Rancher AI Agent configuration. Please contact your administrator.
         missingConfig: Rancher AI Agent configuration is missing. Please go to Global [Settings > AI Assistant] and configure the agent.
       deployment:
@@ -223,6 +223,8 @@ aiConfig:
     description: Configure the AI model and provider for your assistantv
     warning:
       inMemoryStorage: 'The AI Assistant uses in-memory storage, all messages will be lost after applying the new settings.'
+    save:
+      apiError: 'Failed to save settings. {error}'
     section:
       provider:
         header: AI Provider
@@ -319,9 +321,18 @@ aiConfig:
     LANGFUSE_SECRET_KEY:
       label: Langfuse Secret Key
       description: Private API key for server-to-server communication (keep confidential)
-    MODEL:
+    GEMINI_MODEL:
       label: Model
-      description: Choose the AI model to use for generating responses
+      description: The AI model to use for generating responses
+    OPENAI_MODEL:
+      label: Model
+      description: The AI model to use for generating responses
+    OLLAMA_MODEL:
+      label: Model
+      description: 'The AI model list fetched from your Ollama instance. Make sure to add a <b>valid Ollama URL</b> to fetch the models or try to <refreshModels>refresh</refreshModels>.'
+    BEDROCK_MODEL:
+      label: Model
+      description: 'The AI model list fetched from your Bedrock instance. Make sure to add a <b>valid AWS Region and Bearer Token</b> to fetch the models or try to <refreshModels>refresh</refreshModels>.'
     OLLAMA_URL:
       label: Ollama URL
       description: The URL where your Ollama instance is hosted
@@ -331,8 +342,6 @@ aiConfig:
     OPENAI_API_KEY:
       label: OpenAI Key
       description: The key to authenticate requests to OpenAI’s services
-    SYSTEM_PROMPT:
-      label: System Prompt
     ACTIVE_LLM:
       label: AI Chatbot
       options:
@@ -351,15 +360,9 @@ aiConfig:
     AWS_REGION:
       label: AWS Region
       description: The AWS region where your Bedrock instance is hosted
-    AWS_SECRET_ACCESS_KEY:
-      label: AWS Secret Access Key
-      description: The secret key to authenticate requests to AWS Bedrock
-    AWS_ACCESS_KEY_ID:
-      label: AWS Access Key ID
-      description: The access key ID to authenticate requests to AWS Bedrock
     AWS_BEARER_TOKEN_BEDROCK:
       label: AWS Bedrock Bearer Token
-      description: (Optional) The bearer token to authenticate requests to AWS Bedrock
+      description: The bearer token to authenticate requests to AWS Bedrock
   dialog:
     applySettings:
       title: Are you sure?
