@@ -1,7 +1,7 @@
 import { shallowMount } from '@vue/test-utils';
 import AIAgentConfigs from '../AIAgentConfigs.vue';
-import { AIAgentConfigCRD, AIAgentConfigHumanValidationTools } from '../../../../types';
-import { AIAgentConfigAuthType, AIAgentConfigValidationType } from '../../types';
+import { AIAgentConfigCRD } from '../../../../types';
+import { AIAgentConfigAuthType } from '../../types';
 
 // Mock Vuex
 jest.mock('vuex', () => {
@@ -53,12 +53,6 @@ const mockBuiltInAgent = (overrides = {}): AIAgentConfigCRD => ({
     toolSet:              '',
     builtIn:              true
   },
-  ...overrides
-});
-
-const mockValidationTool = (overrides = {}): AIAgentConfigHumanValidationTools => ({
-  name: 'test-tool',
-  type: AIAgentConfigValidationType.CREATE,
   ...overrides
 });
 
@@ -709,11 +703,11 @@ describe('AIAgentConfigs.vue', () => {
   });
 
   describe('Validation Tools Management', () => {
-    it('should add validation tool', () => {
+    it('should update human validation tools', () => {
       const agent = mockAgent({
         spec: {
           ...mockAgent().spec,
-          humanValidationTools: [mockValidationTool()]
+          humanValidationTools: ['tool-1']
         }
       });
 
@@ -724,18 +718,23 @@ describe('AIAgentConfigs.vue', () => {
 
       const vm = wrapper.vm as any;
 
-      vm.updateValidationTools(0, 'name', 'updated-name');
+      vm.updateAgent({
+        spec: {
+          ...vm.selectedAgent.spec,
+          humanValidationTools: ['tool-1', 'tool-2']
+        }
+      });
 
       const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
 
-      expect(emitted[0].spec.humanValidationTools[0].name).toBe('updated-name');
+      expect(emitted[0].spec.humanValidationTools).toContain('tool-2');
     });
 
-    it('should update validation tool type', () => {
+    it('should handle empty humanValidationTools array', () => {
       const agent = mockAgent({
         spec: {
           ...mockAgent().spec,
-          humanValidationTools: [mockValidationTool()]
+          humanValidationTools: []
         }
       });
 
@@ -746,85 +745,36 @@ describe('AIAgentConfigs.vue', () => {
 
       const vm = wrapper.vm as any;
 
-      vm.updateValidationTools(0, 'type', AIAgentConfigValidationType.UPDATE);
+      expect(Array.isArray(vm.selectedAgent.spec.humanValidationTools)).toBe(true);
+      expect(vm.selectedAgent.spec.humanValidationTools.length).toBe(0);
+    });
+
+    it('should update humanValidationTools via updateAgent', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          humanValidationTools: ['existing-tool']
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [agent] }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateAgent({
+        spec: {
+          ...vm.selectedAgent.spec,
+          humanValidationTools: ['existing-tool', 'new-tool']
+        }
+      });
 
       const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
 
-      expect(emitted[0].spec.humanValidationTools[0].type).toBe(AIAgentConfigValidationType.UPDATE);
-    });
-
-    it('should remove validation tool', () => {
-      const tool1 = mockValidationTool({ name: 'tool-1' });
-      const tool2 = mockValidationTool({ name: 'tool-2' });
-      const agent = mockAgent({
-        spec: {
-          ...mockAgent().spec,
-          humanValidationTools: [tool1, tool2]
-        }
-      });
-
-      const wrapper = shallowMount(AIAgentConfigs, {
-        ...requiredSetup(),
-        props: { value: [agent] }
-      });
-
-      const vm = wrapper.vm as any;
-
-      // Manually verify the remove logic by checking the array
-      const tools = [...(vm.selectedAgent.spec.humanValidationTools || [])];
-
-      expect(tools.length).toBe(2);
-
-      tools.splice(0, 1);
-      expect(tools.length).toBe(1);
-      expect(tools[0].name).toBe('tool-2');
-    });
-
-    it('should handle removing non-existent tool gracefully', () => {
-      const agent = mockAgent({
-        spec: {
-          ...mockAgent().spec,
-          humanValidationTools: [mockValidationTool()]
-        }
-      });
-
-      const wrapper = shallowMount(AIAgentConfigs, {
-        ...requiredSetup(),
-        props: { value: [agent] }
-      });
-
-      const vm = wrapper.vm as any;
-
-      vm.removeValidationTools({ row: { value: mockValidationTool({ name: 'non-existent' }) } });
-
-      const emitted = wrapper.emitted('update:value');
-
-      expect(emitted).toBeUndefined();
-    });
-
-    it('should preserve other validation tools when updating one', () => {
-      const tool1 = mockValidationTool({ name: 'tool-1' });
-      const tool2 = mockValidationTool({ name: 'tool-2' });
-      const agent = mockAgent({
-        spec: {
-          ...mockAgent().spec,
-          humanValidationTools: [tool1, tool2]
-        }
-      });
-
-      const wrapper = shallowMount(AIAgentConfigs, {
-        ...requiredSetup(),
-        props: { value: [agent] }
-      });
-
-      const vm = wrapper.vm as any;
-
-      vm.updateValidationTools(0, 'name', 'updated-tool-1');
-
-      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
-
-      expect(emitted[0].spec.humanValidationTools.length).toBe(2);
-      expect(emitted[0].spec.humanValidationTools[1].name).toBe('tool-2');
+      expect(emitted[0].spec.humanValidationTools?.length).toBe(2);
+      expect(emitted[0].spec.humanValidationTools).toContain('new-tool');
     });
   });
 
@@ -1509,7 +1459,7 @@ describe('AIAgentConfigs.vue', () => {
           value: [mockAgent({
             spec: {
               ...mockAgent().spec,
-              humanValidationTools: [mockValidationTool()]
+              humanValidationTools: []
             }
           })],
           readOnly: true,

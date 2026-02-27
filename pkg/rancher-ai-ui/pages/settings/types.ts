@@ -64,9 +64,3 @@ export interface AiAgentConfigSecretPayload {
   privateKey: string;
   publicKey: string;
 }
-
-export const enum AIAgentConfigValidationType {
-  CREATE = 'CREATE',
-  DELETE = 'DELETE',
-  UPDATE = 'UPDATE'
-}
