@@ -223,6 +223,7 @@ aiConfig:
     description: Configure the AI model and provider for your assistantv
     warning:
       inMemoryStorage: 'The AI Assistant uses in-memory storage, all messages will be lost after applying the new settings.'
+      noDeployment: 'The AI Assistant deployment is not available or you do not have permission to view it, the AI Assistant settings are not available. Please make sure the deployment is up and running or contact your administrator.'
     save:
       apiError: 'Failed to save settings. {error}'
     section:

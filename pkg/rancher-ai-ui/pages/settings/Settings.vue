@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import dayjs from 'dayjs';
 import {
-  ref, onBeforeMount,
+  ref,
   onMounted,
 } from 'vue';
 import { useStore } from 'vuex';
 import { useShell } from '@shell/apis';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_CONFIG_SECRET_NAME, AGENT_CONFIG_CONFIG_MAP_NAME } from '../../product';
 import { warn } from '../../utils/log';
-import { CONFIG_MAP, SECRET } from '@shell/config/types';
+import { CONFIG_MAP, SECRET, WORKLOAD_TYPES } from '@shell/config/types';
 import { SECRET_TYPES } from '@shell/config/secret';
 import { useI18n } from '@shell/composables/useI18n';
 import { base64Decode, base64Encode } from '@shell/utils/crypto';
@@ -38,6 +38,8 @@ const shellApi = useShell();
 // TODO: All settings will be fetched through the API in the future.
 const { fetchSettings, saveSettings } = useChatApiComposable();
 
+const isLoading = ref(true);
+const aiAgentDeployment = ref<Workload | null>(null);
 const aiAgentSettings = ref<SettingsFormData | null>(null);
 const aiAgentConfigCRDs = ref<AIAgentConfigCRD[] | null>(null);
 const authenticationSecrets = ref<Record<string, AiAgentConfigSecretPayload | null>>({});
@@ -52,6 +54,22 @@ const buttonProps = ref({
   successLabel: t('asyncButton.apply.action'),
   successColor: 'bg-success',
 });
+
+/**
+ * Fetches the rancher-ai-agent deployment to check if the AI agent is installed.
+ */
+async function fetchAiAgentDeployment() {
+  try {
+    return await store.dispatch('management/find', {
+      type:    WORKLOAD_TYPES.DEPLOYMENT,
+      id:      `${ AGENT_NAMESPACE }/${ AGENT_NAME }`
+    });
+  } catch (e) {
+    warn('Error fetching AI agent deployment:', e);
+  }
+
+  return null;
+}
 
 /**
  * Fetches the AI agent settings from the llmConfig Secret.
@@ -311,7 +329,7 @@ async function openApplySettingsDialog(btnCB: (arg: boolean) => void) { // eslin
   });
 }
 
-function getPermissions() {
+function fetchPermissions() {
   const canListSecrets = store.getters['management/canList'](SECRET);
   const canListAiAgentCRDS = store.getters['management/canList'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG);
 
@@ -321,7 +339,7 @@ function getPermissions() {
   schema = store.getters['management/schemaFor'](SECRET);
   const canCreateSecrets = !!schema?.resourceMethods.find((verb: any) => 'PUT' === verb);
 
-  return {
+  permissions.value = {
     list:   {
       canListSecrets,
       canListAiAgentCRDS
@@ -333,24 +351,28 @@ function getPermissions() {
   };
 }
 
-onBeforeMount(() => {
-  permissions.value = getPermissions();
-});
+onMounted(async() => {
+  aiAgentDeployment.value = await fetchAiAgentDeployment();
 
-onMounted(() => {
-  const listPermissions = permissions.value?.list;
+  isLoading.value = false;
 
-  if (listPermissions?.canListSecrets) {
+  if (aiAgentDeployment.value === null) {
+    return;
+  }
+
+  fetchPermissions();
+
+  if (permissions.value?.list?.canListSecrets) {
     fetchAiAgentSettings();
   }
-  if (listPermissions?.canListAiAgentCRDS) {
+  if (permissions.value?.list?.canListAiAgentCRDS) {
     fetchAiAgentConfigCRDs();
   }
 });
 </script>
 
 <template>
-  <loading v-if="(permissions?.list.canListSecrets && !aiAgentSettings) || (permissions?.list.canListAiAgentCRDS && !aiAgentConfigCRDs)" />
+  <loading v-if="isLoading || (permissions?.list.canListSecrets && !aiAgentSettings) || (permissions?.list.canListAiAgentCRDS && !aiAgentConfigCRDs)" />
   <div
     v-else
     class="ai-configs-container"
@@ -360,65 +382,74 @@ onMounted(() => {
       {{ t('aiConfig.form.header') }}
     </h1>
 
-    <settings-row
-      :title="t('aiConfig.form.section.provider.header')"
-      :description="t('aiConfig.form.section.provider.description')"
-      data-testid="rancher-ai-ui-settings-ai-agent-settings"
-    >
-      <AIAgentSettings
-        v-if="aiAgentSettings"
-        :value="aiAgentSettings"
-        :read-only="!permissions?.create.canCreateSecrets"
-        @update:value="aiAgentSettings = $event; apiError = ''"
-        @update:validation-error="hasAiAgentSettingsValidationErrors = $event"
-      />
-      <Banner
-        v-else-if="!permissions?.list.canListSecrets"
-        class="m-0"
-        color="warning"
-        :label="t('aiConfig.form.section.provider.noPermission.list')"
-      />
-    </settings-row>
-
-    <settings-row
-      :title="t('aiConfig.form.section.aiAgent.header')"
-      :description="t('aiConfig.form.section.aiAgent.description')"
-      data-testid="rancher-ai-ui-settings-ai-agent-configs"
-    >
-      <AIAgentConfigs
-        v-if="aiAgentConfigCRDs"
-        :value="aiAgentConfigCRDs"
-        :read-only="!permissions?.create.canCreateSecrets || !permissions?.create.canCreateAiAgentCRDS"
-        @update:value="aiAgentConfigCRDs = $event"
-        @update:authentication-secrets="authenticationSecrets = $event"
-        @update:validation-error="hasAiAgentConfigsValidationErrors = $event"
-      />
-      <Banner
-        v-else-if="!permissions?.list.canListAiAgentCRDS"
-        class="m-0"
-        color="warning"
-        :label="t('aiConfig.form.section.aiAgent.noPermission.list')"
-      />
-    </settings-row>
-
     <Banner
-      v-if="!!apiError"
+      v-if="aiAgentDeployment === null"
       class="m-0"
-      color="error"
-      :label="apiError"
+      color="warning"
+      :label="t('aiConfig.form.warning.noDeployment', { namespace: AGENT_NAMESPACE, name: AGENT_NAME })"
     />
 
-    <div class="form-footer">
-      <async-button
-        v-if="permissions?.create.canCreateAiAgentCRDS || permissions?.create.canCreateSecrets"
-        action-label="Apply"
-        data-testid="rancher-ai-ui-settings-save-button"
-        :success-label="buttonProps.successLabel"
-        :success-color="buttonProps.successColor"
-        :disabled="hasAiAgentSettingsValidationErrors || hasAiAgentConfigsValidationErrors"
-        @click="openApplySettingsDialog"
+    <template v-else>
+      <settings-row
+        :title="t('aiConfig.form.section.provider.header')"
+        :description="t('aiConfig.form.section.provider.description')"
+        data-testid="rancher-ai-ui-settings-ai-agent-settings"
+      >
+        <AIAgentSettings
+          v-if="aiAgentSettings"
+          :value="aiAgentSettings"
+          :read-only="!permissions?.create.canCreateSecrets"
+          @update:value="aiAgentSettings = $event; apiError = ''"
+          @update:validation-error="hasAiAgentSettingsValidationErrors = $event"
+        />
+        <Banner
+          v-else-if="!permissions?.list.canListSecrets"
+          class="m-0"
+          color="warning"
+          :label="t('aiConfig.form.section.provider.noPermission.list')"
+        />
+      </settings-row>
+
+      <settings-row
+        :title="t('aiConfig.form.section.aiAgent.header')"
+        :description="t('aiConfig.form.section.aiAgent.description')"
+        data-testid="rancher-ai-ui-settings-ai-agent-configs"
+      >
+        <AIAgentConfigs
+          v-if="aiAgentConfigCRDs"
+          :value="aiAgentConfigCRDs"
+          :read-only="!permissions?.create.canCreateSecrets || !permissions?.create.canCreateAiAgentCRDS"
+          @update:value="aiAgentConfigCRDs = $event"
+          @update:authentication-secrets="authenticationSecrets = $event"
+          @update:validation-error="hasAiAgentConfigsValidationErrors = $event"
+        />
+        <Banner
+          v-else-if="!permissions?.list.canListAiAgentCRDS"
+          class="m-0"
+          color="warning"
+          :label="t('aiConfig.form.section.aiAgent.noPermission.list')"
+        />
+      </settings-row>
+
+      <Banner
+        v-if="!!apiError"
+        class="m-0"
+        color="error"
+        :label="apiError"
       />
-    </div>
+
+      <div class="form-footer">
+        <async-button
+          v-if="permissions?.create.canCreateAiAgentCRDS || permissions?.create.canCreateSecrets"
+          action-label="Apply"
+          data-testid="rancher-ai-ui-settings-save-button"
+          :success-label="buttonProps.successLabel"
+          :success-color="buttonProps.successColor"
+          :disabled="hasAiAgentSettingsValidationErrors || hasAiAgentConfigsValidationErrors"
+          @click="openApplySettingsDialog"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
