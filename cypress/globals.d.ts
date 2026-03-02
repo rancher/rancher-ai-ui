@@ -7,7 +7,7 @@ export interface LlmResponseArgs {
 
 export interface McpTool {
   name: string;
-  args: Record<string, string | object>;
+  args: object | object[];
 }
 
 export interface InstallRancherAIServiceArgs {

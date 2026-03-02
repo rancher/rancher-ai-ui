@@ -24,27 +24,71 @@ import { LlmResponseArgs } from '@/cypress/globals';
  *
  *   Usage example:
  *
- *      Tool definition in MCP service:
+ *     - Fetch Kubernetes resources:
  *
- * 		    Name: "getKubernetesResource",
- *        Description: `Fetches a Kubernetes resource from the cluster.
- *        Parameters:
- *        name (string, required): The name of the Kubernetes resource.
- *        kind (string, required): The kind of the Kubernetes resource (e.g. 'Deployment', 'Service').
- *        cluster (string): The name of the Kubernetes cluster managed by Rancher.
- *        namespace (string, optional): The namespace of the resource. It must be empty for all namespaces or cluster-wide resources.
+ *        Tool definition in MCP service:
  *
- *      Enqueueing a response with tool usage in Cypress test:
+ * 		      Name: "getKubernetesResource",
+ *          Description: `Fetches a Kubernetes resource from the cluster.
+ *          Parameters:
+ *            name (string, required): The name of the Kubernetes resource.
+ *            kind (string, required): The kind of the Kubernetes resource (e.g. 'Deployment', 'Service').
+ *            cluster (string): The name of the Kubernetes cluster managed by Rancher.
+ *            namespace (string, optional): The namespace of the resource. It must be empty for all namespaces or cluster-wide resources.
  *
- *        tool: {
- *          name: "getKubernetesResource",
- *          args: {
- *            name: "my-deployment",
- *            kind: "Deployment",
- *            cluster: "my-cluster",
- *            namespace: "default"
+ *        Enqueueing a response with tool usage in Cypress test:
+ *
+ *          tool: {
+ *            name: "getKubernetesResource",
+ *            args: {
+ *              name: "my-deployment",
+ *              kind: "Deployment",
+ *              cluster: "my-cluster",
+ *              namespace: "default"
+ *            }
  *          }
- *        }
+ *
+ *     - Create Kubernetes resources:
+ *
+ *        Tool definition in MCP service:
+ *
+ * 		      Name: "createKubernetesResource",
+ *          Description: `Creates a Kubernetes resource in the cluster.
+ *          Parameters:
+ *            name (string, required): The name of the Kubernetes resource.
+ *            kind (string, required): The kind of the Kubernetes resource (e.g. 'Deployment', 'Service').
+ *            cluster (string): The name of the Kubernetes cluster managed by Rancher.
+ *            namespace (string, optional): The namespace of the resource. It must be empty for all namespaces or cluster-wide resources.
+ *            resource (object, required): The Kubernetes resource manifest to be created in the cluster.
+ *
+ *        Enqueueing a response with tool usage in Cypress test:
+ *
+ *          tool: {
+ *            name: "createKubernetesResource",
+ *            args: [
+ *              {
+ *                name: "my-deployment-1",
+ *                kind: "Deployment",
+ *                cluster: "my-cluster",
+ *                namespace: "default",
+ *                resource: {
+ *                  apiVersion: "apps/v1",
+ *                  metadata: { ... },
+ *                }
+ *              },
+*               {
+ *                name: "my-deployment-2",
+ *                kind: "Deployment",
+ *                cluster: "my-cluster",
+ *                namespace: "default",
+ *                resource: {
+ *                  apiVersion: "apps/v1",
+ *                  metadata: { ... },
+ *                }
+ *              },
+ *            ]
+ *          }
+ *
  *
  * @return void
  */

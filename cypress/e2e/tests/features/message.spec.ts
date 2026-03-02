@@ -194,7 +194,7 @@ describe('Messages', () => {
     });
   });
 
-  it('Confirm resource action', () => {
+  it('Confirm single-resource action', () => {
     chat.open();
 
     const welcomeMessage = chat.getMessage(1);
@@ -226,10 +226,12 @@ describe('Messages', () => {
 
     const userMessage = chat.getMessage(2);
 
+    userMessage.scrollIntoView();
     userMessage.containsText('Create a pod named my-pod in default namespace');
 
     const confirmationRequestMessage = chat.getMessage(3);
 
+    confirmationRequestMessage.scrollIntoView();
     confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
     confirmationRequestMessage.confirmButton().click();
     confirmationRequestMessage.isConfirmed();
@@ -240,7 +242,61 @@ describe('Messages', () => {
     resultMessage.containsText('Pod created successfully.');
   });
 
-  it('Cancel resource action', () => {
+  it('Confirm multi-resource action', () => {
+    chat.open();
+
+    const welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    /**
+     * At the moment the backend only supports 1 resource per message,
+     * but the frontend is already able to handle array of resources.
+     *
+     * TODO: add a test with multiple resources when the backend supports it.
+     */
+    cy.enqueueLLMResponse({
+      text:      'Pod created successfully.',
+      tool: {
+        name: 'createKubernetesResource',
+        args: [{
+          kind:      'Pod',
+          name:      'my-pod',
+          resource:  {
+            apiVersion: 'v1',
+            kind:       'Pod',
+            metadata:   {
+              name:      'my-pod',
+              namespace: 'default'
+            },
+          },
+          cluster:   'local',
+          namespace: 'default'
+        }]
+      },
+    });
+
+    chat.sendMessage('Create a pod named my-pod in default namespace');
+
+    const userMessage = chat.getMessage(2);
+
+    userMessage.scrollIntoView();
+    userMessage.containsText('Create a pod named my-pod in default namespace');
+
+    const confirmationRequestMessage = chat.getMessage(3);
+
+    confirmationRequestMessage.scrollIntoView();
+    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
+    confirmationRequestMessage.confirmButton().click();
+    confirmationRequestMessage.isConfirmed();
+    confirmationRequestMessage.containsText('Confirmed');
+
+    const resultMessage = chat.getMessage(4);
+
+    resultMessage.containsText('Pod created successfully.');
+  });
+
+  it('Cancel single-resource action', () => {
     chat.open();
 
     const welcomeMessage = chat.getMessage(1);
@@ -272,13 +328,17 @@ describe('Messages', () => {
 
     const userMessage = chat.getMessage(2);
 
+    userMessage.scrollIntoView();
     userMessage.containsText('Create a pod named my-pod in default namespace');
 
     const confirmationRequestMessage = chat.getMessage(3);
 
+    confirmationRequestMessage.scrollIntoView();
     confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
     confirmationRequestMessage.cancelButton().click();
     confirmationRequestMessage.isCanceled();
     confirmationRequestMessage.containsText('Canceled');
+
+    cy.clearLLMResponses();
   });
 });
