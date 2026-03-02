@@ -25,6 +25,11 @@ interface ModelValidationPayload {
   touched?: boolean;
 }
 
+const enum ErrorField {
+  BedrockRegion = 'bedrock-region', // eslint-disable-line no-unused-vars
+  BedrockToken = 'bedrock-token', // eslint-disable-line no-unused-vars
+}
+
 const validators = (key: string) => formRulesGenerator(t, { key });
 
 const store = useStore();
@@ -127,6 +132,12 @@ const isModelsLoading = computed(() => {
 
   return false;
 });
+
+/**
+ *  Some chatbot providers like Bedrock require multiple fields to be filled in,
+ *  but we want to show the error message on the specific field that is missing/invalid
+ */
+const errorField = ref<ErrorField | null>(null);
 
 const isRequiredRule = (key: string) => {
   const validator = validators(t(key));
@@ -343,6 +354,8 @@ const updateChatbotValue = async(val: ChatBotEnum) => {
  * @param val The new Bedrock region value.
  */
 const updateBedrockRegion = debounce((val: string) => {
+  errorField.value = ErrorField.BedrockRegion;
+
   updateValue(Settings.AWS_REGION, val);
 
   // If the region was empty, we don't want to trigger a model fetch since the credentials are likely not filled, which would cause an unnecessary error message.
@@ -358,6 +371,8 @@ const updateBedrockRegion = debounce((val: string) => {
  * @param val The new value for the AWS credential.
  */
 const updateBedrockTokenValue = debounce((val: string) => {
+  errorField.value = ErrorField.BedrockToken;
+
   updateValue(Settings.AWS_BEARER_TOKEN_BEDROCK, val);
 
   updateModelValidation(ChatBotEnum.Bedrock, { touched: true });
@@ -487,6 +502,13 @@ onMounted(() => {
           :required="true"
           @update:value="(val: string) => updateBedrockRegion(val)"
         />
+        <Banner
+          v-if="errorField === ErrorField.BedrockRegion && modelValidation[ChatBotEnum.Bedrock].touched && modelValidation[ChatBotEnum.Bedrock].status === ValidationStatus.ERROR"
+          class="m-0"
+          color="error"
+        >
+          {{ modelValidation[ChatBotEnum.Bedrock].message }}
+        </Banner>
         <label class="text-label">
           {{ t(`aiConfig.form.${ Settings.AWS_REGION}.description`) }}
         </label>
@@ -500,7 +522,7 @@ onMounted(() => {
           @update:value="(val: string) => updateBedrockTokenValue(val)"
         />
         <Banner
-          v-if="modelValidation[ChatBotEnum.Bedrock].touched && modelValidation[ChatBotEnum.Bedrock].status === ValidationStatus.ERROR"
+          v-if="errorField === ErrorField.BedrockToken && modelValidation[ChatBotEnum.Bedrock].touched && modelValidation[ChatBotEnum.Bedrock].status === ValidationStatus.ERROR"
           class="m-0"
           color="error"
         >
