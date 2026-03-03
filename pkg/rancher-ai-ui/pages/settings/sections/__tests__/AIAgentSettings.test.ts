@@ -40,7 +40,7 @@ describe('AIAgentSettings.vue', () => {
     it('should render the component with default local chatbot', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: {} as SettingsFormData },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       expect(wrapper.exists()).toBe(true);
@@ -50,7 +50,7 @@ describe('AIAgentSettings.vue', () => {
     it('should render toggle group with correct options', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: {} as SettingsFormData },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
@@ -60,50 +60,6 @@ describe('AIAgentSettings.vue', () => {
   });
 
   describe('Chatbot Selection', () => {
-    it('should select Local chatbot when OLLAMA_URL is provided', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.OLLAMA_URL]: 'http://localhost:11434' } as SettingsFormData },
-      });
-
-      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
-
-      expect(toggleGroup.exists()).toBe(true);
-    });
-
-    it('should select OpenAI chatbot when OPENAI_API_KEY is provided', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.OPENAI_API_KEY]: 'sk-xxx' } as SettingsFormData },
-      });
-
-      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
-
-      expect(toggleGroup.exists()).toBe(true);
-    });
-
-    it('should select Gemini chatbot when GOOGLE_API_KEY is provided', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.GOOGLE_API_KEY]: 'gemini-api-key' } as SettingsFormData },
-      });
-
-      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
-
-      expect(toggleGroup.exists()).toBe(true);
-    });
-
-    it('should select Bedrock chatbot when AWS_BEARER_TOKEN_BEDROCK is provided', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.AWS_BEARER_TOKEN_BEDROCK]: 'aws-bearer-token' } as SettingsFormData },
-      });
-
-      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
-
-      expect(toggleGroup.exists()).toBe(true);
-    });
-
     it('should emit update:value when chatbot is changed', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
@@ -371,7 +327,7 @@ describe('AIAgentSettings.vue', () => {
     it('should render advanced section', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: {} as SettingsFormData },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       const advancedSection = wrapper.findComponent({ name: 'advanced-section' });
@@ -384,7 +340,7 @@ describe('AIAgentSettings.vue', () => {
     it('should render Langfuse section in advanced section', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: {} as SettingsFormData },
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
       const advancedSection = wrapper.findComponent({ name: 'advanced-section' });
@@ -397,6 +353,7 @@ describe('AIAgentSettings.vue', () => {
         ...requiredSetup(),
         props: {
           value: {
+            [Settings.ACTIVE_CHATBOT]:      ChatBotEnum.Local,
             [Settings.LANGFUSE_HOST]:       'https://langfuse.example.com',
             [Settings.LANGFUSE_PUBLIC_KEY]: 'pk-xxx',
             [Settings.LANGFUSE_SECRET_KEY]: 'sk-xxx',

@@ -83,6 +83,10 @@ const activeChatbotOptions = [
   },
 ];
 
+const formData = computed<SettingsFormData>(() => {
+  return props.value;
+});
+
 function getModelKey(chatbot: ChatBotEnum | string) {
   return Settings[`${ chatbot.toUpperCase() }_MODEL` as keyof typeof Settings] as Settings.OLLAMA_MODEL | Settings.GEMINI_MODEL | Settings.OPENAI_MODEL | Settings.BEDROCK_MODEL;
 }
@@ -162,15 +166,6 @@ const chatbotConfigKey = computed<Settings.OLLAMA_URL | Settings.GOOGLE_API_KEY 
   default:
     return Settings.OLLAMA_URL;
   }
-});
-
-const formData = computed<SettingsFormData>(() => {
-  const activeChatbot = getActiveChatbot(props.value);
-
-  return {
-    ...props.value,
-    [Settings.ACTIVE_CHATBOT]: activeChatbot,
-  };
 });
 
 const readOnlyBanner = computed(() => {
@@ -322,32 +317,6 @@ const updateFormConfig = (chatbot: ChatBotEnum) => {
     formData.value[modelKey] = modelValidation.value[chatbot].status === ValidationStatus.SUCCESS ? modelField : formData.value[modelKey];
   }
 };
-
-/**
- * Selects the default chatbot based on values in the form data.
- * If no chatbot is currently selected, it calculates the default chatbot
- */
-function getActiveChatbot(value: SettingsFormData): ChatBotEnum {
-  const existingChatbot = [ChatBotEnum.Gemini, ChatBotEnum.OpenAI, ChatBotEnum.Local, ChatBotEnum.Bedrock].find((c) => c === value[Settings.ACTIVE_CHATBOT]);
-
-  if (!!existingChatbot) {
-    return existingChatbot;
-  }
-
-  // Fallback: detect based on which credentials are filled (reverse priority)
-  if (value[Settings.AWS_BEARER_TOKEN_BEDROCK]) {
-    return ChatBotEnum.Bedrock;
-  } else if (value[Settings.OPENAI_API_KEY]) {
-    return ChatBotEnum.OpenAI;
-  } else if (value[Settings.GOOGLE_API_KEY]) {
-    return ChatBotEnum.Gemini;
-  } else if (value[Settings.OLLAMA_URL]) {
-    return ChatBotEnum.Local;
-  }
-
-  // Default to Local
-  return ChatBotEnum.Local;
-}
 
 /**
  * Updates the active chatbot value and related form configuration when the chatbot selection changes.

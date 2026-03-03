@@ -2,23 +2,18 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { warn } from '../utils/log';
-import {
-  AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_SECRET_NAME, PRODUCT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME
-} from '../product';
-import { CONFIG_MAP, SECRET, WORKLOAD_TYPES } from '@shell/config/types';
-import {
-  ActionType, AIServiceState, ChatError, LLMConfig, LLMProvider
-} from '../types';
+import { AGENT_NAMESPACE, AGENT_NAME, PRODUCT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME } from '../product';
+import { CONFIG_MAP, WORKLOAD_TYPES } from '@shell/config/types';
+import { ActionType, AIServiceState, ChatError, LLMConfig } from '../types';
 
 /**
  * Composable for fetching AI service configuration and monitoring the AI agent state.
  *
  * The AI agent's deployment state is monitored to determine if the AI service is available.
  *  - If the deployment is not found, an error is set indicating that the service is unavailable.
- *  - If the deployment exists, the llm-config secret is fetched to determine the active LLM and model being used.
+ *  - If the deployment exists, the llm-config configMap is fetched to determine the active LLM and model being used.
  *
- * The llm-config secret is used to determine which AI model is being used (shown in the Console panel)
- * and to handle any errors related to the AI service's availability or configuration.
+ * The activeLlm and model are used to show the "{llm} ({model})" label in the Chat panel.
  *
  * @returns Composable for managing the AI service configuration.
  */
@@ -62,36 +57,13 @@ export function useAIServiceComposable() {
     return model;
   }
 
-  function decodeLLMConfig(secretData: any, configMapData: any): LLMConfig | null {
-    let activeLLM = '';
-    let activeModel = '';
+  function decodeLLMConfig(configMapData: any): LLMConfig | null {
+    const { ACTIVE_LLM: activeLlm } = configMapData;
+    const activeModel = decodeModel(configMapData, activeLlm);
 
-    const {
-      OLLAMA_URL,
-      GOOGLE_API_KEY,
-      OPENAI_API_KEY,
-      AWS_BEARER_TOKEN_BEDROCK,
-    } = secretData;
-
-    const { ACTIVE_LLM } = configMapData;
-
-    if (ACTIVE_LLM) {
-      activeLLM = ACTIVE_LLM;
-    } else if (OLLAMA_URL) {
-      activeLLM = LLMProvider.Local;
-    } else if (GOOGLE_API_KEY) {
-      activeLLM = LLMProvider.Gemini;
-    } else if (OPENAI_API_KEY) {
-      activeLLM = LLMProvider.OpenAI;
-    } else if (AWS_BEARER_TOKEN_BEDROCK) {
-      activeLLM = LLMProvider.Bedrock;
-    }
-
-    activeModel = decodeModel(configMapData, activeLLM);
-
-    if (activeLLM && activeModel) {
+    if (activeLlm && activeModel) {
       return {
-        name:  t(`ai.configurations.models.${ activeLLM }`),
+        name:  t(`ai.configurations.models.${ activeLlm }`),
         model: activeModel
       };
     }
@@ -110,18 +82,8 @@ export function useAIServiceComposable() {
   }
 
   async function fetchLLMConfigs() {
-    if (store.getters['management/canList'](SECRET) && store.getters['management/canList'](CONFIG_MAP)) {
-      let secret;
+    if (store.getters['management/canList'](CONFIG_MAP)) {
       let configMap;
-
-      try {
-        secret = await store.dispatch('management/find', {
-          type:    SECRET,
-          id:      `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_SECRET_NAME }`
-        });
-      } catch (e) {
-        warn('Error fetching llm-config secret:', e);
-      }
 
       try {
         configMap = await store.dispatch('management/find', {
@@ -132,8 +94,8 @@ export function useAIServiceComposable() {
         warn('Error fetching llm-config config map:', e);
       }
 
-      if (secret?.data && configMap?.data) {
-        llmConfig.value = decodeLLMConfig(secret.data, configMap.data);
+      if (configMap?.data) {
+        llmConfig.value = decodeLLMConfig(configMap.data);
       }
 
       if (!llmConfig.value) {
