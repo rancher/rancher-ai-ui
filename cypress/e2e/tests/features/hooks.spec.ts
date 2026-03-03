@@ -13,7 +13,7 @@ describe('Hooks', () => {
   });
 
   describe('Sliding badge hook', () => {
-    it('It should open the chat when clicking on a sliding badge', () => {
+    it('It should send a message from the sliding badge when the chat is closed and ready', () => {
       const homePage = new HomePagePo();
 
       HomePagePo.goTo();
@@ -49,6 +49,93 @@ describe('Hooks', () => {
       chatItem.tooltip().containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
       chatItem.tooltip().notContainsText('Explain what the "active" state means');
       chatItem.tooltip().containsText('Started on');
+    });
+
+    it('It should send a message from the sliding badge when the chat is closed and not ready', () => {
+      const homePage = new HomePagePo();
+
+      HomePagePo.goTo();
+
+      cy.installRancherAIService({ waitForAIServiceReady: false });
+
+      const homeClusterList = homePage.list();
+
+      const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+
+      const slidingBadge = new SlidingBadgePo(statusColumn);
+
+      slidingBadge.click();
+
+      chat.isOpen();
+
+      chat.isNotReady();
+      chat.isReady(20000);
+
+      const message = chat.getMessage(1);
+
+      message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
+      message.containsText('See More');
+
+      const response = chat.getMessage(2);
+
+      response.isCompleted();
+    });
+
+    it('It should send a message from the sliding badge when the chat is open and ready', () => {
+      const homePage = new HomePagePo();
+      const chat = new ChatPo();
+
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      const homeClusterList = homePage.list();
+
+      // Get the status column of the first row in the cluster list (local cluster)
+      const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+
+      const slidingBadge = new SlidingBadgePo(statusColumn);
+
+      slidingBadge.click();
+
+      const message = chat.getMessage(2);
+
+      message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
+      message.containsText('See More');
+
+      const response = chat.getMessage(3);
+
+      response.isCompleted();
+    });
+
+    it('It should not send a message from the sliding badge when the chat is already open but not ready', () => {
+      const homePage = new HomePagePo();
+
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      cy.installRancherAIService({ waitForAIServiceReady: false });
+
+      const homeClusterList = homePage.list();
+
+      const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+
+      const slidingBadge = new SlidingBadgePo(statusColumn);
+
+      slidingBadge.click();
+
+      chat.isReady(20000);
+
+      chat.getMessage(2).checkNotExists();
     });
   });
 });

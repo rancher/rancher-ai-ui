@@ -2,7 +2,7 @@ import { PRODUCT_NAME } from '../product';
 import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
 import {
   ChatMetadata,
-  ConfirmationStatus, Message, MessageError, MessagePhase, Role
+  ConfirmationStatus, Message, MessageInternalSource, MessagePhase, Role
 } from '../types';
 
 /**
@@ -18,13 +18,15 @@ interface Chat {
   agentName?: string;
   messages: Record<string, Message>;
   phase?: MessagePhase;
-  error?: MessageError | null;
 }
+
+type MessageBox = Record<string, Message>;
 
 interface State {
   session:  Record<string, any>;
   metadata: ChatMetadata | null;
   chats: Record<string, Chat>;
+  messageBox: MessageBox
 }
 
 const getters = {
@@ -70,9 +72,9 @@ const getters = {
 
     return MessagePhase.Idle;
   },
-  error: (state: State) => (chatId: string) => {
-    return state.chats[chatId]?.error || null;
-  }
+  messageBox: (state: State) => (chatId: string) => {
+    return state.messageBox[chatId];
+  },
 };
 
 const mutations = {
@@ -189,15 +191,26 @@ const mutations = {
     state.chats[chatId].phase = phase;
   },
 
-  setError(state: State, args: { chatId: string; error: MessageError | null }) {
-    const { chatId, error } = args;
+  addToMessageBox(state: State, args: { chatId: string; message: Message }) {
+    const { chatId, message } = args;
 
-    if (!chatId || !state.chats[chatId]) {
+    if (!chatId) {
       return;
     }
 
-    state.chats[chatId].error = error;
-  }
+    state.messageBox[chatId] = {
+      ...message,
+      source: MessageInternalSource.MessageBox
+    };
+  },
+
+  clearMessageBox(state: State, chatId: string) {
+    if (!chatId || !state.messageBox[chatId]) {
+      return;
+    }
+
+    delete state.messageBox[chatId];
+  },
 };
 
 const actions = {
@@ -235,9 +248,10 @@ const factory = (): CoreStoreSpecifics => {
   return {
     state: (): State => {
       return {
-        session:  {},
-        metadata: null,
-        chats:    {}
+        session:    {},
+        metadata:   null,
+        chats:      {},
+        messageBox: {},
       };
     },
     getters:   { ...getters },

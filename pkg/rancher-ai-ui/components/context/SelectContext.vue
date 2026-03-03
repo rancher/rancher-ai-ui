@@ -165,12 +165,16 @@ function reset() {
   min-height: 24px;
 }
 
+.context-trigger-text {
+  margin-right: 4px;
+}
+
 .context-select {
   display: flex;
   flex-wrap: wrap;
   max-width: 100%;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   color: var(--active-nav);
 }
 

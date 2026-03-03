@@ -5,7 +5,8 @@ import {
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import {
-  Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase
+  Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase,
+  MessageInternalSource
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
@@ -32,7 +33,7 @@ const props = defineProps({
     type:    Array as PropType<Message[]>,
     default: () => [],
   },
-  errors: {
+  systemErrors: {
     type:    Array as PropType<ChatError[]>,
     default: () => [],
   },
@@ -68,13 +69,13 @@ const formattedMessages = computed<FormattedMessage[]>(() => {
     .sort((a, b) => ((Number(a.timestamp) || 0) - (Number(b.timestamp) || 0)) || (`${ a.id  }`).localeCompare(`${ b.id  }`));
 });
 
-const errorMessages = computed<FormattedMessage[]>(() => {
-  return props.errors.map((error) => ({
+const systemErrorMessages = computed<FormattedMessage[]>(() => {
+  return props.systemErrors.map((error) => ({
     role:                    Role.System,
     formattedMessageContent: error.message || t(error.key as string),
     timestamp:               new Date(),
     completed:               true,
-    isError:                 true,
+    source:                  MessageInternalSource.Error,
     actions:                 error.action ? [error.action] : []
   }));
 });
@@ -149,13 +150,13 @@ watch(
   }
 );
 
-const stopErrorWatcher = watch(
-  () => props.errors,
+const stopSystemErrorsWatcher = watch(
+  () => props.systemErrors,
   (neu, old) => {
     nextTick(() => {
       if (messagesView.value && (neu || []).length > (old || []).length) {
         messagesView.value.scrollTop = messagesView.value.scrollHeight;
-        stopErrorWatcher();
+        stopSystemErrorsWatcher();
       }
     });
   },
@@ -213,10 +214,11 @@ onBeforeUnmount(() => {
       />
     </template>
     <MessageComponent
-      v-for="(error, i) in errorMessages"
+      v-for="(error, i) in systemErrorMessages"
       :key="i"
-      :data-testid="`rancher-ai-ui-chat-error-message-box-${ i + 1 }`"
+      :data-testid="`rancher-ai-ui-chat-system-error-message-box-${ i + 1 }`"
       :message="error"
+      :disabled="false"
     />
     <Processing
       v-if="!props.disabled"

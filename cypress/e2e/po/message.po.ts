@@ -81,6 +81,6 @@ export class MessagePo extends RawMessagePo {
 
 export class ErrorMessagePo extends RawMessagePo {
   constructor(id: string) {
-    super(`[data-testid="rancher-ai-ui-chat-error-message-box-${ id }"]`, id);
+    super(`[data-testid="rancher-ai-ui-chat-system-error-message-box-${ id }"]`, id);
   }
 }
