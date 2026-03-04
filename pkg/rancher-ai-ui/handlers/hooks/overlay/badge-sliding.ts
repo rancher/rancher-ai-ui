@@ -80,19 +80,27 @@ class BadgeSlidingOverlay extends HooksOverlay {
   private handleParentPositionChange(target: HTMLElement, container: HTMLElement, overlay: HTMLElement) {
     // destroy overlay if the container/parent moves (position changes)
     let lastContainerRect = container.getBoundingClientRect();
-    const onContainerPosChange = () => {
-      try {
-        const r = container.getBoundingClientRect();
+    let rafId: number | null = null;
 
-        if (r.top !== lastContainerRect.top || r.left !== lastContainerRect.left) {
-          // parent moved -> remove overlays for this target, immediately
-          this.destroy(target, true);
-        } else {
-          lastContainerRect = r;
-        }
-      } catch (e) {
-        warn('Error checking container position change', e);
+    const onContainerPosChange = () => {
+      // Debounce with RAF to avoid ResizeObserver loop errors
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
       }
+      rafId = requestAnimationFrame(() => {
+        try {
+          const r = container.getBoundingClientRect();
+
+          if (r.top !== lastContainerRect.top || r.left !== lastContainerRect.left) {
+            // parent moved -> remove overlays for this target, immediately
+            this.destroy(target, true);
+          } else {
+            lastContainerRect = r;
+          }
+        } catch (e) {
+          warn('Error checking container position change', e);
+        }
+      });
     };
 
     const containerRO = new ResizeObserver(onContainerPosChange);
@@ -112,6 +120,13 @@ class BadgeSlidingOverlay extends HooksOverlay {
 
     // attach cleanup so destroy() can call it (avoid leaks if overlay removed directly)
     (overlay as any).__parentPositionCleanup = () => {
+      try {
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+        }
+      } catch (e) {
+        warn('Error canceling RAF', e);
+      }
       try {
         containerRO.disconnect();
       } catch (e) {
