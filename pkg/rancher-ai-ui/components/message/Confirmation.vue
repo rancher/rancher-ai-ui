@@ -36,7 +36,7 @@ const confirmationText = computed(() => {
           kind, name, namespace, cluster
         } = action?.resource || {};
 
-        if (kind && name && namespace && cluster) {
+        if (kind && name && cluster) {
           switch (actionType) {
           case ConfirmationActionType.Create:
             out += `${ t(`ai.confirmation.message.operation.create.description`, {
