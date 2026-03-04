@@ -15,7 +15,9 @@ interface BedrockLLMOptions {
   bearerToken?: string;
 }
 
-type LLMOptions = OllamaLLMOptions | BedrockLLMOptions;
+type LLMConfig =
+  | { name: LLMProvider.Local; options: OllamaLLMOptions }
+  | { name: LLMProvider.Bedrock; options: BedrockLLMOptions };
 
 /**
  * Composable for managing the chat API interactions.
@@ -33,7 +35,7 @@ export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
   const apiPath = `/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_REST_API_PATH }`;
   let llmModelsAbortController: AbortController | null = null;
 
-  async function fetchLLMModels(llm: { name: LLMProvider, options?: LLMOptions }): Promise<string[]> {
+  async function fetchLLMModels(llm: LLMConfig): Promise<string[]> {
     // Abort and refresh the AbortController for fetching LLM models
     if (llmModelsAbortController) {
       llmModelsAbortController.abort();
@@ -46,19 +48,17 @@ export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
 
     switch (name) {
     case LLMProvider.Local:
-      const ollamaOptions = options as OllamaLLMOptions;
-
-      queryParams.append('url', ollamaOptions?.url);
+      if (options.url) {
+        queryParams.append('url', options.url);
+      }
       break;
 
     case LLMProvider.Bedrock:
-      const bedrockOptions = options as BedrockLLMOptions;
-
-      if (bedrockOptions.region) {
-        queryParams.append('region', bedrockOptions.region);
+      if (options.region) {
+        queryParams.append('region', options.region);
       }
-      if (bedrockOptions.bearerToken) {
-        queryParams.append('bearerToken', bedrockOptions.bearerToken);
+      if (options.bearerToken) {
+        queryParams.append('bearerToken', options.bearerToken);
       }
     default:
       break;
