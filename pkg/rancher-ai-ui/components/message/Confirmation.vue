@@ -42,9 +42,9 @@ const confirmationText = computed(() => {
             out += `${ t(`ai.confirmation.message.operation.create.description`, {
               name,
               kind,
-              namespace,
+              namespace: namespace?.trim() || null,
               cluster,
-              value: JSON.stringify(action.payload)
+              value:     JSON.stringify(action.payload)
             }, true)  }<br>`;
             break;
           case ConfirmationActionType.Update:
@@ -55,11 +55,11 @@ const confirmationText = computed(() => {
               if (op && value && path) {
                 return `${ acc + t(`ai.confirmation.message.operation.update.description`, {
                   op,
-                  value: typeof value === 'string' ? value : JSON.stringify(value),
+                  value:     typeof value === 'string' ? value : JSON.stringify(value),
                   path,
                   name,
                   kind,
-                  namespace,
+                  namespace: namespace?.trim() || null,
                   cluster
                 }, true) }<br>`;
               }

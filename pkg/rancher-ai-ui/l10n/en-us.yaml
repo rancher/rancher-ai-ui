@@ -135,7 +135,12 @@ ai:
                 other { I will create the new {kind} <code>{name}</code> in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster with this payload:<br><pre><code>{value}</code></pre> }
             }
         update:
-          description: 'I will <b>{op}</b> the value <code>{value}</code> in the path <code>{path}</code> to the <code>{name}</code> {kind} in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster.'
+          description: |-
+            {
+              namespace, select,
+                null { I will <b>{op}</b> the value <code>{value}</code> in the path <code>{path}</code> to the <code>{name}</code> {kind} in the <code>{cluster}</code> cluster. }
+                other { I will <b>{op}</b> the value <code>{value}</code> in the path <code>{path}</code> to the <code>{name}</code> {kind} in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster. }
+            }
     confirm: Confirm
     cancel: Cancel
     confirmed: Confirmed
