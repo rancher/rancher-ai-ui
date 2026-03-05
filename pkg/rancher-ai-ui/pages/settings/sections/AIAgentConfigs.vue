@@ -367,15 +367,6 @@ watch(validationErrors, (errors) => {
                 @update:value="(val: string) => updateAgent({ spec: { ...selectedAgent.spec, displayName: val } })"
               />
             </div>
-            <div class="col span-6">
-              <LabeledInput
-                :value="selectedAgent.spec.description"
-                :disabled="isAgentLocked || props.readOnly"
-                :label="t('aiConfig.form.section.aiAgent.fields.description.label')"
-                :rules="isRequiredRule('aiConfig.form.section.aiAgent.fields.description.label')"
-                @update:value="(val: string) => updateAgent({ spec: { ...selectedAgent.spec, description: val } })"
-              />
-            </div>
           </div>
           <Checkbox
             class="form-value-checkbox"
@@ -462,6 +453,30 @@ watch(validationErrors, (errors) => {
               </div>
             </template>
           </ArrayList>
+        </div>
+
+        <div class="form-values-row">
+          <h3 class="m-0">
+            {{ t('aiConfig.form.section.aiAgent.sections.description.title') }}
+            <span
+              class="required"
+              aria-hidden="true"
+            >*</span>
+            <i
+              v-clean-tooltip="t('aiConfig.form.section.aiAgent.sections.description.tooltip')"
+              class="icon icon-info tooltip-icon"
+            />
+          </h3>
+          <div class="row mb-16">
+            <div class="col span-12">
+              <LabeledInput
+                :value="selectedAgent.spec.description"
+                :disabled="isAgentLocked || props.readOnly"
+                :rules="isRequiredRule('aiConfig.form.section.aiAgent.fields.description.label')"
+                @update:value="(val: string) => updateAgent({ spec: { ...selectedAgent.spec, description: val } })"
+              />
+            </div>
+          </div>
         </div>
 
         <div class="form-values-row">

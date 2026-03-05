@@ -268,6 +268,9 @@ aiConfig:
           edit: You do not have permission to edit the AI Agents configuration. Please contact your administrator.
         locked: 'This AI agent is locked - you cannot remove it or change it, but <b>you can enable or disable it</b>.'
         sections:
+          description:
+            title: Description
+            tooltip: 'Description is used to identify the most suitable AI agent when "Adaptive Mode" is selected, so make sure to provide a clear and descriptive text.'
           mcp:
             title: MCP Configuration
           humanValidationTools:
