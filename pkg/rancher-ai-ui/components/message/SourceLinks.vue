@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import ContextTag from '../context/ContextTag.vue';
+import { SourceLinkItem } from '../../types';
 
 const store = useStore();
 const { t } = useI18n(store);
@@ -10,27 +11,31 @@ const { t } = useI18n(store);
 const isCollapsed = ref(false);
 
 interface Props {
-  links?: string[];
+  links?: SourceLinkItem[];
 }
 const { links = [] } = defineProps<Props>();
 
 const items = computed(() => {
   return links.map((value) => {
-    // Remove trailing slash if present
-    const url = value?.endsWith('/') ? value.slice(0, -1) : value;
+    if (typeof value === 'string') {
+      // Remove trailing slash if present
+      const url = value?.endsWith('/') ? value.slice(0, -1) : value;
 
-    // Extract last chunk of the URL path for label and normalize it (e.g., "my-link-name" -> "My Link Name")
-    const chunks = url?.split('/') || [];
-    const lastChunk = chunks[chunks.length - 1] || '';
-    const label = lastChunk
-      .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      // Extract last chunk of the URL path for label and normalize it (e.g., "my-link-name" -> "My Link Name")
+      const chunks = url?.split('/') || [];
+      const lastChunk = chunks[chunks.length - 1] || '';
+      const label = lastChunk
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 
-    return {
-      label: label || 'Link',
-      value
-    };
+      return {
+        label: label || 'Link',
+        value
+      };
+    } else {
+      return value;
+    }
   });
 });
 

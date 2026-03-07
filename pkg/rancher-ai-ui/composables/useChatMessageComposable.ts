@@ -8,7 +8,7 @@ import {
   ActionType,
   Agent,
   AgentSelectionMode,
-  ChatError, ConfirmationResponse, ConfirmationStatus, Message, MessageLabelKey, MessagePhase, MessageTag, MessageTemplateComponent, Role, Tag
+  ChatError, ConfirmationResponse, ConfirmationStatus, Message, MessageInternalSource, MessageLabelKey, MessagePhase, MessageTag, MessageTemplateComponent, Role, Tag
 } from '../types';
 import {
   formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationActions, formatSuggestionActions, formatFileMessages,
@@ -34,6 +34,7 @@ const DISMISS_RECOMMENDED_AGENT_KEY = 'dismissed-agent-recommendation';
  */
 export function useChatMessageComposable(
   chatId: string,
+  hasPermissions: ComputedRef<boolean>,
   agents: ComputedRef<Agent[]>,
   agentName: ComputedRef<string>,
   selectAgent: (name: string) => void // eslint-disable-line no-unused-vars
@@ -43,6 +44,7 @@ export function useChatMessageComposable(
 
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};
 
+  const messageBox = computed(() => store.getters['rancher-ai-ui/chat/messageBox'](chatId));
   const messages = computed(() => Object.values(store.getters['rancher-ai-ui/chat/messages'](chatId)) as Message[]);
   const currentMsg = ref<Message>({} as Message);
   const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
@@ -76,6 +78,7 @@ export function useChatMessageComposable(
     let messageContent = msg as string;
     let contextContent = selectedContext.value;
     let labels = undefined;
+    let source;
 
     // msg is type of Message
     if (msg && typeof msg === 'object' && msg.messageContent) {
@@ -88,6 +91,7 @@ export function useChatMessageComposable(
 
       messageContent = msg.messageContent || '';
       contextContent = msg.contextContent || [];
+      source = msg.source;
     } else { /* msg is type of string */ }
 
     wsSend(ws, formatWSInputMessage({
@@ -104,8 +108,13 @@ export function useChatMessageComposable(
       agentMetadata,
       summaryContent,
       messageContent,
-      contextContent
+      contextContent,
+      source
     });
+
+    if (source === MessageInternalSource.MessageBox) {
+      clearMessageBox();
+    }
 
     setPhase(MessagePhase.Processing);
   }
@@ -171,6 +180,20 @@ export function useChatMessageComposable(
     };
   }
 
+  function buildNoPermissionMessage(): Message {
+    return {
+      role:            Role.System,
+      templateContent: {
+        component: MessageTemplateComponent.NoPermission,
+        content:   {
+          principal,
+          message: t('ai.message.system.noPermission.info', {}, true),
+        }
+      },
+      completed: false,
+    };
+  }
+
   function buildSystemSuggestionMessage(agent?: Agent): Message {
     return {
       role:            Role.System,
@@ -212,29 +235,37 @@ export function useChatMessageComposable(
   }
 
   function onopen(event: { target: WebSocket }) {
-    // Phase is set to processing here because message could be sent outisde of wsSend function (hooks handlers)
-    setPhase(MessagePhase.Processing);
+    const ws = event.target;
 
-    // Conversation is already started
+    if (!ws) {
+      return;
+    }
+
+    // A message is in the message box, the welcome message is not required.
+    if (messageBox.value) {
+      sendMessage(messageBox.value, ws);
+
+      return;
+    }
+
+    // Conversation is already started, the welcome message is not required.
     if (messages.value.length > 0) {
       return;
     }
 
-    const ws = event.target;
+    // The chat is empty, send a welcome message with suggestions to start the conversation.
+    const initPrompt = `Hi!
+      - Send me a message with 3 ${ selectedContext.value?.length ? 'suggestions based on the context.' : 'generic suggestions.' }.
+      - DO NOT ask for any confirmation or additional information.
+    `;
 
-    if (ws) {
-      const initPrompt = `Hi!
-        - Send me a message with 3 ${ selectedContext.value?.length ? 'suggestions based on the context.' : 'generic suggestions.' }.
-        - DO NOT ask for any confirmation or additional information.
-      `;
+    wsSend(ws, formatWSInputMessage({
+      prompt:  initPrompt,
+      context: selectedContext.value,
+      tags:    [MessageTag.Ephemeral, MessageTag.Welcome]
+    }));
 
-      wsSend(ws, formatWSInputMessage({
-        prompt:  initPrompt,
-        context: selectedContext.value,
-        tags:    [MessageTag.Ephemeral, MessageTag.Welcome]
-      }));
-      setPhase(MessagePhase.Processing);
-    }
+    setPhase(MessagePhase.Processing);
   }
 
   async function onmessage(event: MessageEvent) {
@@ -245,40 +276,22 @@ export function useChatMessageComposable(
         processChatErrors(data);
         processChatMetadata(data);
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('Error initiating chat:', err);
-        store.commit('rancher-ai-ui/chat/setError', {
-          chatId,
-          error: {
-            message: (err as ChatError).message,
-            action:  {
-              label:    t('ai.settings.goToAgents'),
-              type:     ActionType.Button,
-              resource: {
-                cluster:        'local',
-                detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
-              }
-            }
-          },
-        });
+        processInitErrorData(err as Error);
       }
     } else {
       try {
-        if (!messages.value.find((msg) => msg.completed)) {
+        /**
+         * Check if the chat is empty or there is a message in the message box,
+         * it means the welcome message is being processed or not required.
+         */
+        if (!messages.value.find((msg) => msg.completed || msg.source === MessageInternalSource.MessageBox)) {
           setPhase(MessagePhase.Initializing);
           await processWelcomeData(data);
         } else {
           await processMessageData(data);
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('Error processing messages:', err);
-        store.commit('rancher-ai-ui/chat/setError', {
-          chatId,
-          error: { message: `${ t('ai.error.message.processing') } ${ (err as ChatError).message || err || '' }` }
-        });
-
-        setPhase(MessagePhase.Idle);
+        processMessageErrorData(err as Error);
       }
     }
   }
@@ -287,6 +300,8 @@ export function useChatMessageComposable(
     if (currentMsg.value) {
       currentMsg.value.completed = true;
     }
+
+    clearMessageBox();
 
     setPhase(MessagePhase.Idle);
   }
@@ -453,6 +468,36 @@ export function useChatMessageComposable(
     }
   }
 
+  function processMessageErrorData(error: Error) {
+    setPhase(MessagePhase.Idle);
+
+    addMessage({
+      role:           Role.System,
+      messageContent: `${ t('ai.error.message.processing') } ${ error.message || '' }`,
+      timestamp:      new Date(),
+      completed:      true,
+      source:         MessageInternalSource.Error,
+    });
+  }
+
+  function processInitErrorData(error: Error) {
+    addMessage({
+      role:                    Role.System,
+      messageContent:          (error as ChatError).message,
+      actions:                 [{
+        label:    t('ai.settings.goToAgents'),
+        type:     ActionType.Button,
+        resource: {
+          cluster:        'local',
+          detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
+        }
+      }],
+      timestamp: new Date(),
+      completed: true,
+      source:    MessageInternalSource.Error,
+    });
+  }
+
   function downloadMessages() {
     downloadFile(
       `Rancher-liz-chat-${ chatId }_${ new Date().toISOString().slice(0, 10) }.txt`,
@@ -471,15 +516,15 @@ export function useChatMessageComposable(
     store.commit('rancher-ai-ui/chat/resetMessages', chatId);
   }
 
-  function resetErrors() {
-    store.commit('rancher-ai-ui/chat/setError', {
-      chatId,
-      error: null
-    });
+  function clearMessageBox() {
+    store.commit('rancher-ai-ui/chat/clearMessageBox', chatId);
   }
 
   onMounted(() => {
-    store.commit('rancher-ai-ui/chat/init', chatId);
+    store.dispatch('rancher-ai-ui/chat/init', {
+      chatId,
+      messages: hasPermissions.value ? [] : [buildNoPermissionMessage()]
+    });
   });
 
   return {
@@ -487,15 +532,16 @@ export function useChatMessageComposable(
     onmessage,
     onclose,
     messages,
+    messageBox,
     sendMessage,
     addMessage,
     updateMessage,
     confirmMessage,
     selectContext,
-    resetErrors,
     downloadMessages,
     loadMessages,
     resetMessages,
+    clearMessageBox,
     isChatInitialized,
     phase,
     error

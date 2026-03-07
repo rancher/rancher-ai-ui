@@ -5,11 +5,13 @@ import {
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import {
-  Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase
+  Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase,
+  MessageInternalSource
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
 import Welcome from '../message/template/Welcome.vue';
+import NoPermission from '../message/template/NoPermissions.vue';
 import SystemSuggestion from '../message/template/SystemSuggestion.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
@@ -32,7 +34,7 @@ const props = defineProps({
     type:    Array as PropType<Message[]>,
     default: () => [],
   },
-  errors: {
+  systemErrors: {
     type:    Array as PropType<ChatError[]>,
     default: () => [],
   },
@@ -68,14 +70,15 @@ const formattedMessages = computed<FormattedMessage[]>(() => {
     .sort((a, b) => ((Number(a.timestamp) || 0) - (Number(b.timestamp) || 0)) || (`${ a.id  }`).localeCompare(`${ b.id  }`));
 });
 
-const errorMessages = computed<FormattedMessage[]>(() => {
-  return props.errors.map((error) => ({
+const systemErrorMessages = computed<FormattedMessage[]>(() => {
+  return props.systemErrors.map((error) => ({
     role:                    Role.System,
     formattedMessageContent: error.message || t(error.key as string),
     timestamp:               new Date(),
     completed:               true,
-    isError:                 true,
-    actions:                 error.action ? [error.action] : []
+    source:                  MessageInternalSource.Error,
+    actions:                 error.action ? [error.action] : [],
+    sourceLinks:             error.sourceLinks || []
   }));
 });
 
@@ -83,6 +86,8 @@ function getMessageTemplate(component: MessageTemplateComponent) {
   switch (component) {
   case MessageTemplateComponent.Welcome:
     return Welcome;
+  case MessageTemplateComponent.NoPermission:
+    return NoPermission;
   case MessageTemplateComponent.SystemSuggestion:
     return SystemSuggestion;
   default:
@@ -149,13 +154,13 @@ watch(
   }
 );
 
-const stopErrorWatcher = watch(
-  () => props.errors,
+const stopSystemErrorsWatcher = watch(
+  () => props.systemErrors,
   (neu, old) => {
     nextTick(() => {
       if (messagesView.value && (neu || []).length > (old || []).length) {
         messagesView.value.scrollTop = messagesView.value.scrollHeight;
-        stopErrorWatcher();
+        stopSystemErrorsWatcher();
       }
     });
   },
@@ -191,7 +196,7 @@ onBeforeUnmount(() => {
         :is="getMessageTemplate(message.templateContent?.component)"
         v-if="!!message.templateContent"
         :class="{
-          'chat-message-template-welcome': formattedMessages.length > 1,
+          'chat-message-template': formattedMessages.length > 1,
         }"
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
@@ -213,10 +218,11 @@ onBeforeUnmount(() => {
       />
     </template>
     <MessageComponent
-      v-for="(error, i) in errorMessages"
+      v-for="(error, i) in systemErrorMessages"
       :key="i"
-      :data-testid="`rancher-ai-ui-chat-error-message-box-${ i + 1 }`"
+      :data-testid="`rancher-ai-ui-chat-system-error-message-box-${ i + 1 }`"
       :message="error"
+      :disabled="false"
     />
     <Processing
       v-if="!props.disabled"
@@ -245,7 +251,7 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
-.chat-message-template-welcome {
+.chat-message-template {
   margin-bottom: 16px;
 }
 

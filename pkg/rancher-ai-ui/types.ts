@@ -39,6 +39,7 @@ export interface ChatError {
   key?:     string;
   message?: string;
   action?:  MessageAction;
+  sourceLinks?: SourceLinkItem[];
 }
 
 export interface ConnectionError extends ChatError {
@@ -179,6 +180,7 @@ export interface MessageConfirmationAction {
 
 export const enum MessageTemplateComponent {
   Welcome = 'welcome',
+  NoPermission = 'no-permission',
   SystemSuggestion = 'system-suggestion',
 }
 
@@ -195,6 +197,13 @@ export interface MessageTemplateContent {
 export const enum MessageLabelKey {
   Summary = 'summary',
 }
+
+export const enum MessageInternalSource {
+  MessageBox = 'messageBox',
+  Error = 'error',
+}
+
+export type SourceLinkItem = { label: string; value: string; } | string;
 
 export interface Message {
   id?: number | string;
@@ -213,14 +222,14 @@ export interface Message {
   relatedResourcesActions?: MessageAction[];
   suggestionActions?: string[];
   confirmation?: MessageConfirmation;
-  sourceLinks?: string[];
+  sourceLinks?: SourceLinkItem[];
   timestamp?: Date;
+  source?: MessageInternalSource;
 }
 
 export interface FormattedMessage extends Message {
   formattedThinkingContent?: string;
   formattedMessageContent?: string;
-  isError?: boolean;
 }
 
 export interface ChatMetadata {

@@ -3,6 +3,8 @@
 export interface SettingsPermissions {
   list: {
     canListSecrets: boolean;
+    canListConfigMaps: boolean;
+    canListDeployments: boolean;
     canListAiAgentCRDS: boolean;
   };
   create: {

@@ -168,17 +168,6 @@ const chatbotConfigKey = computed<Settings.OLLAMA_URL | Settings.GOOGLE_API_KEY 
   }
 });
 
-const readOnlyBanner = computed(() => {
-  if (props.readOnly) {
-    return {
-      color: 'warning',
-      label: t('aiConfig.form.section.provider.noPermission.edit')
-    };
-  }
-
-  return null;
-});
-
 /**
  * Validates the AI agent settings
  */
@@ -400,13 +389,13 @@ onMounted(() => {
 
 <template>
   <div
-    v-if="readOnlyBanner"
+    v-if="props.readOnly"
     class="read-only-info"
   >
     <Banner
       class="m-0"
-      :color="readOnlyBanner.color"
-      :label="readOnlyBanner.label"
+      color="warning"
+      :label="t('aiConfig.form.section.provider.noPermission.edit')"
     />
   </div>
   <div class="form-values">
@@ -454,7 +443,7 @@ onMounted(() => {
     </div>
 
     <div
-      v-if="formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local &&formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Bedrock"
+      v-if="!props.readOnly && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Bedrock"
       class="form-field"
     >
       <Password
@@ -492,7 +481,10 @@ onMounted(() => {
           {{ t(`aiConfig.form.${ Settings.AWS_REGION}.description`) }}
         </label>
       </div>
-      <div class="form-field">
+      <div
+        v-if="!props.readOnly"
+        class="form-field"
+      >
         <Password
           :value="formData[Settings.AWS_BEARER_TOKEN_BEDROCK]"
           :label="t(`aiConfig.form.${ Settings.AWS_BEARER_TOKEN_BEDROCK}.label`)"
@@ -643,7 +635,10 @@ onMounted(() => {
           </label>
         </div>
 
-        <div class="form-field">
+        <div
+          v-if="!props.readOnly"
+          class="form-field"
+        >
           <password
             :value="formData[Settings.LANGFUSE_SECRET_KEY]"
             :label="t(`aiConfig.form.${ Settings.LANGFUSE_SECRET_KEY}.label`)"

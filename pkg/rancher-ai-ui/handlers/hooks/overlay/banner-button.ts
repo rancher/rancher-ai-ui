@@ -1,13 +1,9 @@
 import { Store } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import { waitFor } from '@shell/utils/async';
-import { warn } from '../../../utils/log';
 import { Context } from '../../../types';
-import { nextTick } from 'vue';
 import TemplateMessage from '../template-message';
 import { HooksOverlay } from './index';
 import Chat from '../../chat';
-import { formatWSInputMessage } from '../../../utils/format';
 
 /**
  * Overlay that adds a button to status banners allowing
@@ -119,32 +115,14 @@ class BannerButtonOverlay extends HooksOverlay {
       }
     }, globalCtx);
 
-    store.dispatch('rancher-ai-ui/chat/init', {
-      chatId:   'default',
-      messages: [message],
+    store.commit('rancher-ai-ui/chat/addToMessageBox', {
+      chatId: 'default',
+      message,
     });
 
-    nextTick(async() => {
-      Chat.open(store);
+    Chat.open(store);
 
-      // TODO remove hacky waitFor, the WS should be already available or opened by now
-      try {
-        await waitFor(() => !!store.getters['rancher-ai-ui/connection/ws'], 'Wait for ws open', 2000, 100, false);
-      } catch (err) {
-        warn('WebSocket not available, cannot send message', err);
-      }
-
-      const ws = store.getters['rancher-ai-ui/connection/ws'];
-
-      if (!!ws) {
-        ws.send(formatWSInputMessage({
-          prompt:  message.messageContent || '',
-          context: message.contextContent || [],
-        }));
-      }
-
-      overlay.remove();
-    });
+    overlay.remove();
   }
 
   destroy(target: HTMLElement, immediate = false) {

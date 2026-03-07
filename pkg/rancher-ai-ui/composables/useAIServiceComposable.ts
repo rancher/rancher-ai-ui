@@ -2,9 +2,9 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { warn } from '../utils/log';
-import { AGENT_NAMESPACE, AGENT_NAME, PRODUCT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME } from '../product';
+import { AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME, PERMISSIONS_DOCS_URL } from '../product';
 import { CONFIG_MAP, WORKLOAD_TYPES } from '@shell/config/types';
-import { ActionType, AIServiceState, ChatError, LLMConfig } from '../types';
+import { AIServiceState, ChatError, LLMConfig } from '../types';
 
 /**
  * Composable for fetching AI service configuration and monitoring the AI agent state.
@@ -25,7 +25,18 @@ export function useAIServiceComposable() {
   const llmConfig = ref<LLMConfig | null>(null);
   const error = ref<ChatError | null>(null);
 
+  const hasPermissions = computed(() => {
+    const canListDeployments = !!store.getters['management/canList'](WORKLOAD_TYPES.DEPLOYMENT);
+    const canListConfigMaps = !!store.getters['management/canList'](CONFIG_MAP);
+
+    return canListDeployments && canListConfigMaps;
+  });
+
   const aiAgentDeploymentState = computed(() => {
+    if (!hasPermissions.value) {
+      return undefined;
+    }
+
     const deployments = store.getters['management/all'](WORKLOAD_TYPES.DEPLOYMENT);
 
     const deployment = deployments.find((d: any) => d.metadata?.name === AGENT_NAME && d.metadata?.namespace === AGENT_NAMESPACE);
@@ -40,6 +51,16 @@ export function useAIServiceComposable() {
 
     return deployment?.state;
   });
+
+  function decodeLLMConfig(configMapData: any): LLMConfig {
+    const { ACTIVE_LLM: activeLlm } = configMapData;
+    const activeModel = decodeModel(configMapData, activeLlm);
+
+    return {
+      name:  activeLlm ? t(`ai.configurations.models.${ activeLlm }`) : '',
+      model: activeModel
+    };
+  }
 
   function decodeModel(configMapData: any, activeLLM: string | null) {
     let model = '';
@@ -57,69 +78,57 @@ export function useAIServiceComposable() {
     return model;
   }
 
-  function decodeLLMConfig(configMapData: any): LLMConfig | null {
-    const { ACTIVE_LLM: activeLlm } = configMapData;
-    const activeModel = decodeModel(configMapData, activeLlm);
-
-    if (activeLlm && activeModel) {
-      return {
-        name:  t(`ai.configurations.models.${ activeLlm }`),
-        model: activeModel
+  async function fetchLLMConfigs() {
+    if (!hasPermissions.value) {
+      error.value = {
+        key:         'ai.error.services.settings.noPermission',
+        sourceLinks: [{
+          label: t('ai.error.services.docsLinkLabel'),
+          value: PERMISSIONS_DOCS_URL
+        }]
       };
+
+      return;
     }
 
-    return null;
+    let configMap;
+
+    try {
+      configMap = await store.dispatch('management/find', {
+        type:    CONFIG_MAP,
+        id:      `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_CONFIG_MAP_NAME }`
+      });
+    } catch (e) {
+      warn('Error fetching llm-config config map:', e);
+    }
+
+    if (!configMap) {
+      error.value = { key: 'ai.error.services.settings.missingConfig' };
+
+      return;
+    }
+
+    const config = decodeLLMConfig(configMap.data || {});
+
+    if (!config.name) {
+      error.value = { key: 'ai.error.services.settings.missingActiveLLM' };
+
+      return;
+    }
+
+    if (!config.model) {
+      error.value = { key: 'ai.error.services.settings.missingModel' };
+
+      return;
+    }
+
+    llmConfig.value = config;
   }
 
   async function fetchDeployments() {
-    if (store.getters['management/canList'](WORKLOAD_TYPES.DEPLOYMENT)) {
+    if (hasPermissions.value) {
       await store.dispatch('management/findAll', { type: WORKLOAD_TYPES.DEPLOYMENT });
-
-      return;
     }
-
-    error.value = { key: 'ai.error.services.deployment.noPermission' };
-  }
-
-  async function fetchLLMConfigs() {
-    if (store.getters['management/canList'](CONFIG_MAP)) {
-      let configMap;
-
-      try {
-        configMap = await store.dispatch('management/find', {
-          type:    CONFIG_MAP,
-          id:      `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_CONFIG_MAP_NAME }`
-        });
-      } catch (e) {
-        warn('Error fetching llm-config config map:', e);
-      }
-
-      if (configMap?.data) {
-        llmConfig.value = decodeLLMConfig(configMap.data);
-      }
-
-      if (!llmConfig.value) {
-        error.value = {
-          key:    'ai.error.services.settings.missingConfig',
-          action: {
-            label:    t('ai.settings.goToSettings'),
-            type:     ActionType.Button,
-            resource: {
-              cluster:        'local',
-              detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
-            }
-          }
-        };
-      }
-
-      return;
-    }
-
-    error.value = { key: 'ai.error.services.settings.noPermission' };
-  }
-
-  function resetError() {
-    error.value = null;
   }
 
   watch(() => aiAgentDeploymentState.value, (newState) => {
@@ -139,9 +148,9 @@ export function useAIServiceComposable() {
   });
 
   return {
+    hasPermissions,
     aiAgentDeploymentState,
     llmConfig,
     error,
-    resetError
   };
 }

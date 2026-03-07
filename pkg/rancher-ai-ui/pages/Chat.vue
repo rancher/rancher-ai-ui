@@ -6,7 +6,7 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ChatMetadata, ConnectionPhase, HistoryChat, MessagePhase, StorageType
+  Agent, AgentState, AIServiceState, ChatMetadata, ConnectionPhase, HistoryChat, Message, MessagePhase, StorageType
 } from '../types';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
@@ -31,6 +31,7 @@ const CHAT_ID = 'default';
 const store = useStore();
 
 const {
+  hasPermissions,
   aiAgentDeploymentState,
   llmConfig,
   error: aiServiceError,
@@ -44,6 +45,7 @@ const {
 
 const {
   messages,
+  messageBox,
   onopen,
   onmessage,
   onclose,
@@ -53,11 +55,16 @@ const {
   downloadMessages,
   loadMessages,
   selectContext,
-  resetErrors: resetMessageErrors,
+  clearMessageBox,
   isChatInitialized,
   phase: messagePhase,
-  error: messageError
-} = useChatMessageComposable(CHAT_ID, agents, agentName, selectAgent);
+} = useChatMessageComposable(
+  CHAT_ID,
+  hasPermissions,
+  agents,
+  agentName,
+  selectAgent
+);
 
 const {
   fetchChats,
@@ -105,28 +112,22 @@ const chatAgents = computed<Agent[]>(() => {
   });
 });
 
-// AI service's errors are priority over websocket and message errors
-const errors = computed(() => {
+// AI service's errors are priority over websocket
+const systemErrors = computed(() => {
   if (aiServiceError.value) {
     return [aiServiceError.value];
   } else {
     return [
-      wsError.value,
-      messageError.value
+      wsError.value
     ].filter((e) => e);
   }
 });
 
 const disabled = computed(() => {
   return aiAgentDeploymentState.value !== AIServiceState.Active ||
-    errors.value.length > 0 ||
+    systemErrors.value.length > 0 ||
     messagePhase.value === MessagePhase.AwaitingConfirmation;
 });
-
-function close() {
-  resetMessageErrors();
-  closePanel();
-}
 
 async function toggleHistoryPanel() {
   if (disabled.value) {
@@ -163,8 +164,6 @@ async function ensureReconnectionAndLoadChat(chatId: string | null) {
     return;
   }
 
-  resetMessageErrors();
-
   const initChat = async() => {
     loadMessages(chatId ? await fetchMessages(chatId) : []);
     nextTick(() => {
@@ -190,9 +189,8 @@ async function ensureReconnectionAndLoadChat(chatId: string | null) {
   }
 }
 
-function ensureConnectionAndSendMessage(data: string) {
+function ensureConnectionAndSendMessage(data: string | Message) {
   if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
-    resetMessageErrors();
     setPhase(ConnectionPhase.Reconnecting);
 
     const unwatch = watch(
@@ -228,8 +226,6 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
    * AI agent became active on mount or after a service state update - connect to the existing chat if there is one in memory, otherwise start a new one
    */
   if (oldState !== AIServiceState.Active && newState === AIServiceState.Active) {
-    resetMessageErrors();
-
     connect(storageType === StorageType.InMemory ? null : chatId);
   }
 
@@ -258,6 +254,42 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
   } else if (newState !== AIServiceState.Active) {
     setPhase(!oldState || oldState === AIServiceState.NotFound ? ConnectionPhase.Connecting : ConnectionPhase.Reconnecting);
   }
+});
+
+watch(() => [
+  messageBox.value,
+  isChatInitialized.value,
+  disabled.value
+], (newValues, oldValues) => {
+  const [oldMessage, oldIsChatInitialized, oldDisabled] = oldValues || []; // eslint-disable-line no-unused-vars
+  const [newMessage, newIsChatInitialized, newDisabled] = newValues;
+
+  const isChatOpenAndNotReady = (newDisabled === true && oldDisabled === newDisabled) &&
+    (newIsChatInitialized === false && oldIsChatInitialized === newIsChatInitialized);
+
+  /**
+   * If the chat is open but not ready (e.g. waiting for AI agent deployment),
+   * clear the message box so that the message is not sent when the chat becomes ready
+   *
+   * This is false when the chat is closed and then is open with the message box already filled.
+   */
+  if (isChatOpenAndNotReady) {
+    if (newMessage) {
+      clearMessageBox();
+    }
+
+    return;
+  }
+
+  /**
+   * If the chat is ready and the message box has content, send the message
+   */
+  if (!newDisabled && newIsChatInitialized && newMessage) {
+    ensureConnectionAndSendMessage(newMessage);
+  }
+}, {
+  immediate: true,
+  deep:      true,
 });
 
 onMounted(() => {
@@ -295,7 +327,8 @@ function unmount() {
     >
       <Header
         :disabled="disabled"
-        @close:chat="close"
+        :has-permissions="hasPermissions"
+        @close:chat="closePanel"
         @config:chat="routeToSettings"
         @download:chat="downloadMessages"
         @toggle:history="toggleHistoryPanel"
@@ -303,9 +336,9 @@ function unmount() {
       <Messages
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
-        :errors="errors"
-        :disabled="errors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active"
-        :message-phase="messagePhase"
+        :system-errors="systemErrors"
+        :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
+        :message-phase="hasPermissions ? messagePhase : MessagePhase.Idle"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
@@ -320,7 +353,7 @@ function unmount() {
         ].includes(connectionPhase)"
       />
       <Context
-        :value="context"
+        :value="!hasPermissions || systemErrors.length ? [] : context"
         :disabled="disabled"
         @select="selectContext"
       />
@@ -330,6 +363,7 @@ function unmount() {
         :agents="chatAgents"
         :agent-name="agentName"
         :disabled="disabled"
+        :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"
         @select:agent="selectAgent"
       />
