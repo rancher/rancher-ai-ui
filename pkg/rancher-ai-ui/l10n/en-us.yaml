@@ -164,8 +164,8 @@ ai:
     message:
       processing: 'Error processing messages: '
     websocket:
-      generic: WebSocket error occurred. Please try again later.
-      connection: Failed to connect to Rancher AI Agent. Please try again later.
+      generic: WebSocket error occurred.
+      connection: Failed to connect to Rancher AI Agent.
       disconnected: Connection closed.
     services:
       settings:

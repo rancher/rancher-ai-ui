@@ -196,6 +196,11 @@ export const enum MessageLabelKey {
   Summary = 'summary',
 }
 
+export const enum MessageInternalSource {
+  MessageBox = 'messageBox',
+  Error = 'error',
+}
+
 export interface Message {
   id?: number | string;
   role: Role;
@@ -215,12 +220,12 @@ export interface Message {
   confirmation?: MessageConfirmation;
   sourceLinks?: string[];
   timestamp?: Date;
+  source?: MessageInternalSource;
 }
 
 export interface FormattedMessage extends Message {
   formattedThinkingContent?: string;
   formattedMessageContent?: string;
-  isError?: boolean;
 }
 
 export interface ChatMetadata {

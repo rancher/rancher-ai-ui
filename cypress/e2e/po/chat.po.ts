@@ -62,6 +62,10 @@ export default class ChatPo extends ComponentPo {
   }
 
   getErrorMessage(index: number) {
+    return new MessagePo(index.toString());
+  }
+
+  getSystemErrorMessage(index: number) {
     return new ErrorMessagePo(index.toString());
   }
 

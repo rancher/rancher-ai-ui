@@ -4,7 +4,7 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import { FormattedMessage, MessagePhase, Role as RoleEnum } from '../../types';
+import { FormattedMessage, MessageInternalSource, MessagePhase, Role as RoleEnum } from '../../types';
 import Processing from '../Processing.vue';
 import Actions from './action/index.vue';
 import SourceLinks from './SourceLinks.vue';
@@ -122,7 +122,7 @@ onBeforeUnmount(() => {
         :class="{
           'chat-msg-bubble-user': props.message.role === RoleEnum.User,
           'chat-msg-bubble-assistant': props.message.role !== RoleEnum.User,
-          'chat-msg-bubble-error': props.message.isError
+          'chat-msg-bubble-error': props.message.source === MessageInternalSource.Error
         }"
       >
         <div

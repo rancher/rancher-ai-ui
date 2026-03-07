@@ -55,7 +55,7 @@ export function formatWSInputMessage(args: WSInputMessageArgs): string {
 }
 
 export function formatChatErrorMessage(data: string): ChatError {
-  const cleaned = data.replaceAll(Tag.ChatErrorStart, '').replaceAll(Tag.ChatErrorEnd, '').replace(/'([^']*)'/g, '"');
+  const cleaned = data.replaceAll(Tag.ChatErrorStart, '').replaceAll(Tag.ChatErrorEnd, '').trim();
 
   if (cleaned) {
     try {
@@ -120,7 +120,7 @@ export function formatAgentMetadata(data: string, agents: Agent[]): AgentMetadat
 }
 
 export function formatMessageRelatedResourcesActions(value: string, actionType = ActionType.Button): MessageAction[] {
-  value = value.replaceAll(Tag.McpResultStart, '').replaceAll(Tag.McpResultEnd, '').replace(/'([^']*)'/g, '"');
+  value = value.replaceAll(Tag.McpResultStart, '').replaceAll(Tag.McpResultEnd, '').trim();
 
   if (value) {
     try {
@@ -156,7 +156,7 @@ export function formatMessageRelatedResourcesActions(value: string, actionType =
 }
 
 export function formatConfirmationActions(value: string): MessageConfirmationAction[] | null {
-  value = value.replaceAll(Tag.ConfirmationStart, '').replaceAll(Tag.ConfirmationEnd, '').replace(/'([^']*)'/g, '"');
+  value = value.replaceAll(Tag.ConfirmationStart, '').replaceAll(Tag.ConfirmationEnd, '').trim();
 
   if (value) {
     try {
@@ -233,7 +233,7 @@ export function formatSourceLinks(links: string[], value: string): string[] {
 }
 
 export function formatErrorMessage(value: string): ChatError {
-  value = value.replaceAll(Tag.ErrorStart, '').replaceAll(Tag.ErrorEnd, '').replace(/'([^']*)'/g, '"');
+  value = value.replaceAll(Tag.ErrorStart, '').replaceAll(Tag.ErrorEnd, '').trim();
 
   if (value) {
     try {
