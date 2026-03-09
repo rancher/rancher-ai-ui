@@ -42,6 +42,10 @@ const props = defineProps({
     type:    Boolean,
     default: false,
   },
+  hasPermissions: {
+    type:    Boolean,
+    default: true,
+  }
 });
 
 const emit = defineEmits([
@@ -182,7 +186,10 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <div class="chat-console-row chat-console-chat-text-info">
+    <div
+      v-if="props.hasPermissions"
+      class="chat-console-row chat-console-chat-text-info"
+    >
       <LlmModelLabel
         :llm-config="props.llmConfig"
       />

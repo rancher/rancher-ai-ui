@@ -24,6 +24,8 @@ ai:
         results:
           confirm: Switched to <code>{agent}</code> Agent
           dismiss: Keeping adaptive selection
+      noPermission:
+        info: 'You do not have permission to access the Rancher AI Assistant. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>'
     assistant:
       thinking:
         completed: Completed

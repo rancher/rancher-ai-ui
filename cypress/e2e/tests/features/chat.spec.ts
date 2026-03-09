@@ -220,7 +220,7 @@ describe('Chat', () => {
       chat.isNotReady();
       chat.phase('Disconnected').should('be.visible');
 
-      chat.getSystemErrorMessage(1).containsText('Rancher AI Agent pod not found. Please ensure the Rancher AI assistant services are correctly installed.');
+      chat.getSystemErrorMessage(1).containsText('Rancher AI Agent pod not found. Please ensure the Rancher AI assistant services are correctly installed and you have the necessary permissions to access it.');
 
       // Check for the reconnecting phase
       chat.isNotReady();

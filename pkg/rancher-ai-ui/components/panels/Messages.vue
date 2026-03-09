@@ -11,6 +11,7 @@ import {
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
 import Welcome from '../message/template/Welcome.vue';
+import NoPermission from '../message/template/NoPermissions.vue';
 import SystemSuggestion from '../message/template/SystemSuggestion.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
@@ -85,6 +86,8 @@ function getMessageTemplate(component: MessageTemplateComponent) {
   switch (component) {
   case MessageTemplateComponent.Welcome:
     return Welcome;
+  case MessageTemplateComponent.NoPermission:
+    return NoPermission;
   case MessageTemplateComponent.SystemSuggestion:
     return SystemSuggestion;
   default:

@@ -180,6 +180,7 @@ export interface MessageConfirmationAction {
 
 export const enum MessageTemplateComponent {
   Welcome = 'welcome',
+  NoPermission = 'no-permission',
   SystemSuggestion = 'system-suggestion',
 }
 

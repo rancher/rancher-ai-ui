@@ -31,6 +31,7 @@ const CHAT_ID = 'default';
 const store = useStore();
 
 const {
+  hasPermissions,
   aiAgentDeploymentState,
   llmConfig,
   error: aiServiceError,
@@ -57,7 +58,13 @@ const {
   clearMessageBox,
   isChatInitialized,
   phase: messagePhase,
-} = useChatMessageComposable(CHAT_ID, agents, agentName, selectAgent);
+} = useChatMessageComposable(
+  CHAT_ID,
+  hasPermissions,
+  agents,
+  agentName,
+  selectAgent
+);
 
 const {
   fetchChats,
@@ -320,6 +327,7 @@ function unmount() {
     >
       <Header
         :disabled="disabled"
+        :has-permissions="hasPermissions"
         @close:chat="closePanel"
         @config:chat="routeToSettings"
         @download:chat="downloadMessages"
@@ -329,8 +337,8 @@ function unmount() {
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
         :system-errors="systemErrors"
-        :disabled="systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active"
-        :message-phase="messagePhase"
+        :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
+        :message-phase="hasPermissions ? messagePhase : MessagePhase.Idle"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
@@ -345,7 +353,7 @@ function unmount() {
         ].includes(connectionPhase)"
       />
       <Context
-        :value="systemErrors.length ? [] : context"
+        :value="!hasPermissions || systemErrors.length ? [] : context"
         :disabled="disabled"
         @select="selectContext"
       />
@@ -355,6 +363,7 @@ function unmount() {
         :agents="chatAgents"
         :agent-name="agentName"
         :disabled="disabled"
+        :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"
         @select:agent="selectAgent"
       />

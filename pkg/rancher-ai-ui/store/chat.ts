@@ -214,7 +214,11 @@ const mutations = {
 };
 
 const actions = {
-  init({ commit }: { commit: Function }, { chatId, messages }: { chatId: string; messages: Message[] }) {
+  init({ commit, state }: { commit: Function; state: State }, { chatId, messages }: { chatId: string; messages: Message[] }) {
+    if (!!state.chats[chatId]) {
+      return;
+    }
+
     commit('init', chatId);
 
     if (messages && messages.length) {

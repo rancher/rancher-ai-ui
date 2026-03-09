@@ -34,6 +34,7 @@ const DISMISS_RECOMMENDED_AGENT_KEY = 'dismissed-agent-recommendation';
  */
 export function useChatMessageComposable(
   chatId: string,
+  hasPermissions: ComputedRef<boolean>,
   agents: ComputedRef<Agent[]>,
   agentName: ComputedRef<string>,
   selectAgent: (name: string) => void // eslint-disable-line no-unused-vars
@@ -173,6 +174,20 @@ export function useChatMessageComposable(
         content:   {
           principal,
           message: t('ai.message.system.welcome.info', {}, true),
+        }
+      },
+      completed: false,
+    };
+  }
+
+  function buildNoPermissionMessage(): Message {
+    return {
+      role:            Role.System,
+      templateContent: {
+        component: MessageTemplateComponent.NoPermission,
+        content:   {
+          principal,
+          message: 'empty',
         }
       },
       completed: false,
@@ -506,7 +521,10 @@ export function useChatMessageComposable(
   }
 
   onMounted(() => {
-    store.commit('rancher-ai-ui/chat/init', chatId);
+    store.dispatch('rancher-ai-ui/chat/init', {
+      chatId,
+      messages: hasPermissions.value ? [] : [buildNoPermissionMessage()]
+    });
   });
 
   return {

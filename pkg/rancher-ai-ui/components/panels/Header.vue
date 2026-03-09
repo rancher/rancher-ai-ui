@@ -15,9 +15,13 @@ const { t } = useI18n(store);
 
 type Props = {
   disabled?: boolean;
+  hasPermissions?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), { disabled: false });
+const props = withDefaults(defineProps<Props>(), {
+  disabled:       false,
+  hasPermissions: true
+});
 
 const emit = defineEmits([
   'close:chat',
@@ -40,6 +44,7 @@ function toggleHistory() {
     <div class="chat-title">
       <div class="chat-name">
         <div
+          v-if="props.hasPermissions"
           class="chat-history-btn"
           :class="{ disabled }"
         >
@@ -58,12 +63,19 @@ function toggleHistory() {
             />
           </RcButton>
         </div>
+        <i
+          v-else
+          class="icon icon-ai"
+        />
         <span class="label">
           {{ t('ai.header.title') }}
         </span>
       </div>
     </div>
-    <div class="chat-menu">
+    <div
+      v-if="props.hasPermissions"
+      class="chat-menu"
+    >
       <ChatPanelMenu
         @download:chat="emit('download:chat')"
         @show:help="emit('show:help')"
@@ -147,7 +159,7 @@ function toggleHistory() {
   margin: 0 !important;
 }
 
-.icon {
+.icon-menu {
   width: 32px;
 }
 </style>
