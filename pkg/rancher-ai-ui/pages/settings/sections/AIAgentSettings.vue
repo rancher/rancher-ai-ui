@@ -84,7 +84,10 @@ const activeChatbotOptions = [
 ];
 
 const formData = computed<SettingsFormData>(() => {
-  return props.value;
+  return {
+    ...props.value,
+    [Settings.ACTIVE_CHATBOT]: props.value[Settings.ACTIVE_CHATBOT] || ChatBotEnum.Local,
+  };
 });
 
 function getModelKey(chatbot: ChatBotEnum | string) {
