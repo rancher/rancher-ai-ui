@@ -254,7 +254,7 @@ watch(() => [
   isChatInitialized.value,
   disabled.value
 ], (newValues, oldValues) => {
-  const [oldMessage, oldIsChatInitialized, oldDisabled] = oldValues || []; // eslint-disable-line no-unused-vars
+  const [, oldIsChatInitialized, oldDisabled] = oldValues || [];
   const [newMessage, newIsChatInitialized, newDisabled] = newValues;
 
   const isChatOpenAndNotReady = (newDisabled === true && oldDisabled === newDisabled) &&
