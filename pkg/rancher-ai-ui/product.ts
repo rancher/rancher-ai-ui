@@ -14,6 +14,8 @@ export const AGENT_CONFIG_CONFIG_MAP_NAME = 'llm-config';
 
 export const PANEL_POSITION = RIGHT;
 
+export const PERMISSIONS_DOCS_URL = 'https://rancher.github.io/rancher-ai-product-docs/rancher-ai/latest/en/how-tos/how-to-admin.html#rbac';
+
 export function init($plugin: IPlugin, store: any) {
   // Configure Settings page to include AI Assistant settings
   const {

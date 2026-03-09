@@ -305,7 +305,7 @@ watch(validationErrors, (errors) => {
     <div v-if="props.readOnly">
       <Banner
         class="m-0"
-        :color="'warning'"
+        color="warning"
         :label="t('aiConfig.form.section.aiAgent.noPermission.edit')"
       />
     </div>

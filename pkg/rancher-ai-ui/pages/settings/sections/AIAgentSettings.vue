@@ -171,17 +171,6 @@ const chatbotConfigKey = computed<Settings.OLLAMA_URL | Settings.GOOGLE_API_KEY 
   }
 });
 
-const readOnlyBanner = computed(() => {
-  if (props.readOnly) {
-    return {
-      color: 'warning',
-      label: t('aiConfig.form.section.provider.noPermission.edit')
-    };
-  }
-
-  return null;
-});
-
 /**
  * Validates the AI agent settings
  */
@@ -269,7 +258,7 @@ async function fetchModels(chatbot: ChatBotEnum, options: Record<string, any> = 
     } else {
       updateModelValidation(chatbot, {
         status:  ValidationStatus.ERROR,
-        message: (error as Error).message || t('aiConfig.form.validation.failed', {}, true)
+        message: (error as Error).message || t('aiConfig.form.fetchModels.error', {}, true)
       });
       /**
        * If fetching models fails, we want to clear the model field value,
@@ -403,13 +392,13 @@ onMounted(() => {
 
 <template>
   <div
-    v-if="readOnlyBanner"
+    v-if="props.readOnly"
     class="read-only-info"
   >
     <Banner
       class="m-0"
-      :color="readOnlyBanner.color"
-      :label="readOnlyBanner.label"
+      color="warning"
+      :label="t('aiConfig.form.section.provider.noPermission.edit')"
     />
   </div>
   <div class="form-values">
@@ -457,7 +446,7 @@ onMounted(() => {
     </div>
 
     <div
-      v-if="formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local &&formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Bedrock"
+      v-if="!props.readOnly && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Bedrock"
       class="form-field"
     >
       <Password
@@ -495,7 +484,10 @@ onMounted(() => {
           {{ t(`aiConfig.form.${ Settings.AWS_REGION}.description`) }}
         </label>
       </div>
-      <div class="form-field">
+      <div
+        v-if="!props.readOnly"
+        class="form-field"
+      >
         <Password
           :value="formData[Settings.AWS_BEARER_TOKEN_BEDROCK]"
           :label="t(`aiConfig.form.${ Settings.AWS_BEARER_TOKEN_BEDROCK}.label`)"
@@ -546,6 +538,7 @@ onMounted(() => {
       >
         <template #refreshModels="{ content }">
           <a
+            v-if="!readOnly"
             class="text-label clickable-label"
             @click="refreshModels"
           >
@@ -646,7 +639,10 @@ onMounted(() => {
           </label>
         </div>
 
-        <div class="form-field">
+        <div
+          v-if="!props.readOnly"
+          class="form-field"
+        >
           <password
             :value="formData[Settings.LANGFUSE_SECRET_KEY]"
             :label="t(`aiConfig.form.${ Settings.LANGFUSE_SECRET_KEY}.label`)"

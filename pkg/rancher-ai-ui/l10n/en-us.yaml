@@ -164,16 +164,19 @@ ai:
     message:
       processing: 'Error processing messages: '
     websocket:
-      generic: WebSocket error occurred.
+      generic: WebSocket error occurred. Please check the status of the Rancher AI Agent and ensure you have the necessary permissions to establish a connection to it.
       connection: Failed to connect to Rancher AI Agent.
       disconnected: Connection closed.
     services:
       settings:
-        noPermission: You do not have permission to access the Rancher AI Agent configuration. Please contact your administrator.
-        missingConfig: Rancher AI Agent configuration is missing. Please go to Global [Settings > AI Assistant] and configure the agent.
+        noPermission: You do not have permission to access to Rancher AI Assistant. Please contact your administrator or refer to our documentation.
+        missingConfig: Rancher AI Agent configuration is missing, llm-config ConfigMap not found. Please ensure the Rancher AI assistant services are correctly installed.
+        missingActiveLLM: Rancher AI Agent configuration error, active LLM not specified. Please ensure the Rancher AI assistant services are correctly installed and configured.
+        missingModel: Rancher AI Agent configuration error, LLM model not specified. Please ensure the Rancher AI assistant services are correctly installed and configured.
       deployment:
-        noPermission: You do not have permission to access the Rancher AI Agent. Please contact your administrator.
-        notFound: Rancher AI Agent pod not found. Please ensure the Rancher AI assistant services are correctly installed.
+        noPermission: You do not have permission to access to Rancher AI Assistant. Please contact your administrator or refer to our documentation.
+        notFound: Rancher AI Agent pod not found. Please ensure the Rancher AI assistant services are correctly installed and you have the necessary permissions to access it.
+      docsLinkLabel: 'AI Assistant Docs'
     agent:
       unavailable:
         label: 'This AI agent is currently unavailable.<br>{message}'
@@ -237,9 +240,12 @@ aiConfig:
     description: Configure the AI model and provider for your assistant
     warning:
       inMemoryStorage: 'The AI Assistant uses in-memory storage, all messages will be lost after applying the new settings.'
-      noDeployment: 'The AI Assistant deployment is not available or you do not have permission to view it, the AI Assistant settings are not available. Please make sure the deployment is up and running or contact your administrator.'
+      noDeployment: 'The AI Assistant settings are not available. The AI Agent deployment is not available. Please make sure the deployment is up and running or contact your administrator.'
+      missingPermissions: 'You do not have permission to view or edit the AI Assistant settings. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>.'
     save:
       apiError: 'Failed to save settings. {error}'
+    fetchModels:
+      error: 'Failed to refresh models list.'
     section:
       provider:
         header: AI Provider
@@ -248,8 +254,9 @@ aiConfig:
           header: "Privacy Notice:"
           description: 'When using external, third-party providers, please be aware that SUSE does not own or control this LLM and is not responsible for its output. Your prompts and data will be sent to the provider’s servers (e.g., Google’s servers for Gemini). These providers may use your data according to their own privacy policies. The additional risk with public LLMs is the much wider dataset they use for training. Your input data could potentially be incorporated into that dataset, making it accessible to other users or used for future model training.<br><br>For highly sensitive or confidential information, we strongly recommend using a local provider instead.'
         noPermission:
-          list: You do not have permission to view or edit the AI Assistant provider. Please contact your administrator.
-          edit: You do not have permission to edit the AI Assistant provider. Please contact your administrator.
+          list: You do not have permission to view or edit the AI Provider settings. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>.
+          edit: You do not have permission to edit the AI Provider settings.
+        noSecret: 'The AI Provider settings are missing. Please make sure the AI Assistant is correctly installed or contact your administrator.'
       rag:
         header: RAG (Retrieval-Augmented Generation)
         description: Enable RAG to make your chatbot smarter by giving it access to external knowledge 
@@ -264,8 +271,8 @@ aiConfig:
         allAgentsFailedBanner: 'None of your enabled AI agents are currently available.'
         adaptiveModeBanner: 'Because you have multiple AI agents enabled, you will be able to choose between “Adaptive Mode” (the most suitable AI agent will be selected for you automatically) and “Manual Mode” (you have to select a specific AI agent) each time you prompt the AI assistant. Whilst powerful, the “Adaptive Mode” might take longer to respond - in this case, we recommend you to <b>select "Manual Mode" for faster responses</b>.'
         noPermission:
-          list: You do not have permission to view or edit the AI Agents configuration. Please contact your administrator.
-          edit: You do not have permission to edit the AI Agents configuration. Please contact your administrator.
+          list: You do not have permission to view or edit the AI Agents configuration. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>.
+          edit: You do not have permission to edit the AI Agents configuration.
         locked: 'This AI agent is locked - you cannot remove it or change it, but <b>you can enable or disable it</b>.'
         sections:
           description:

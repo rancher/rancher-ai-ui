@@ -556,7 +556,7 @@ describe('AIAgentSettings.vue', () => {
 
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
 
-      expect(passwordInputs.length).toBeGreaterThan(0);
+      expect(passwordInputs.length).toBe(0);
     });
 
     it('should render form in read-only state when readOnly is true', () => {

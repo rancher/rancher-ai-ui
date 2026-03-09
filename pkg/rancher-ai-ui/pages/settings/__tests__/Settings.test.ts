@@ -1,7 +1,7 @@
 import { shallowMount } from '@vue/test-utils';
 import { flushPromises } from '@vue/test-utils';
 import Settings from '../Settings.vue';
-import { SECRET } from '@shell/config/types';
+import { SECRET, CONFIG_MAP, WORKLOAD_TYPES } from '@shell/config/types';
 import { AGENT_NAMESPACE, AGENT_CONFIG_SECRET_NAME, AGENT_NAME } from '../../../product';
 import { Settings as SettingsEnum, AIAgentConfigAuthType } from '../types';
 import { AIAgentConfigCRD } from '../../../types';
@@ -1058,6 +1058,261 @@ describe('Settings.vue', () => {
 
       expect(vm.apiError).toBeTruthy();
       expect(callback).toHaveBeenCalledWith(false);
+    });
+
+    it('should handle permissions when canList ConfigMaps is false', async() => {
+      const wrapper = shallowMount(Settings, initSettings({
+        getters: {
+          'management/canList':    jest.fn((type) => type !== CONFIG_MAP),
+          'management/schemaFor':  jest.fn(() => ({ resourceMethods: ['PUT', 'POST', 'DELETE'] })),
+        }
+      }));
+
+      await flushPromises();
+
+      const vm = wrapper.vm as any;
+
+      expect(vm.permissions?.list.canListConfigMaps).toBe(false);
+    });
+
+    it('should handle permissions when canList Deployments is false', async() => {
+      const wrapper = shallowMount(Settings, initSettings({
+        getters: {
+          'management/canList':    jest.fn((type) => type !== WORKLOAD_TYPES.DEPLOYMENT),
+          'management/schemaFor':  jest.fn(() => ({ resourceMethods: ['PUT', 'POST', 'DELETE'] })),
+        }
+      }));
+
+      await flushPromises();
+
+      const vm = wrapper.vm as any;
+
+      expect(vm.permissions?.list.canListDeployments).toBe(false);
+    });
+
+    it('should prevent settings fetch when cannot list ConfigMaps', async() => {
+      const dispatch = jest.fn((action: string, params?: any) => {
+        if (action === 'management/find' && params?.id?.includes(AGENT_NAME)) {
+          return Promise.resolve({
+            type: 'apps.deployment',
+            spec: { template: { metadata: { annotations: {} } } },
+            save: jest.fn()
+          });
+        }
+        if (action === 'management/find') {
+          throw new Error('Cannot access ConfigMap');
+        }
+        if (action === 'management/findAll') {
+          return Promise.resolve([]);
+        }
+
+        return Promise.resolve(null);
+      });
+
+      const wrapper = shallowMount(Settings, initSettings({
+        dispatch,
+        getters: {
+          'management/canList':    jest.fn((type) => type !== CONFIG_MAP),
+          'management/schemaFor':  jest.fn(() => ({ resourceMethods: ['PUT', 'POST', 'DELETE'] })),
+        }
+      }));
+
+      await flushPromises();
+
+      const vm = wrapper.vm as any;
+
+      expect(vm.permissions?.list.canListConfigMaps).toBe(false);
+      // Settings should be null or undefined when cannot list ConfigMaps
+      expect(vm.aiAgentSettings).toBeDefined();
+    });
+
+    it('should prevent CRDs fetch when cannot list AI Agent CRDs', async() => {
+      const dispatch = jest.fn((action: string, params?: any) => {
+        if (action === 'management/find' && params?.id?.includes(AGENT_NAME)) {
+          return Promise.resolve({
+            type: 'apps.deployment',
+            spec: { template: { metadata: { annotations: {} } } },
+            save: jest.fn()
+          });
+        }
+        if (action === 'management/find') {
+          return Promise.resolve(mockSecret());
+        }
+        if (action === 'management/findAll') {
+          throw new Error('Cannot access AI Agent CRDs');
+        }
+
+        return Promise.resolve(null);
+      });
+
+      const wrapper = shallowMount(Settings, initSettings({
+        dispatch,
+        getters: {
+          'management/canList':    jest.fn((type) => type === SECRET), // Can only list secrets
+          'management/schemaFor':  jest.fn(() => ({ resourceMethods: ['PUT', 'POST', 'DELETE'] })),
+        }
+      }));
+
+      await flushPromises();
+
+      const vm = wrapper.vm as any;
+
+      expect(vm.permissions?.list.canListAiAgentCRDS).toBe(false);
+    });
+
+    it('should allow full access when all permissions are granted', async() => {
+      const dispatch = jest.fn((action: string, params?: any) => {
+        if (action === 'management/find' && params?.id?.includes(AGENT_NAME)) {
+          return Promise.resolve({
+            type: 'apps.deployment',
+            spec: { template: { metadata: { annotations: {} } } },
+            save: jest.fn()
+          });
+        }
+        if (action === 'management/find') {
+          return Promise.resolve(mockSecret());
+        }
+        if (action === 'management/findAll') {
+          return Promise.resolve([mockAiAgentConfigCRD()]);
+        }
+
+        return Promise.resolve(null);
+      });
+
+      const wrapper = shallowMount(Settings, initSettings({
+        dispatch,
+        getters: {
+          'management/canList':    jest.fn(() => true),
+          'management/schemaFor':  jest.fn(() => ({ resourceMethods: ['PUT', 'POST', 'DELETE', 'GET'] })),
+        }
+      }));
+
+      await flushPromises();
+
+      const vm = wrapper.vm as any;
+
+      expect(vm.permissions?.list.canListConfigMaps).toBe(true);
+      expect(vm.permissions?.list.canListSecrets).toBe(true);
+      expect(vm.permissions?.list.canListDeployments).toBe(true);
+      expect(vm.permissions?.list.canListAiAgentCRDS).toBe(true);
+      expect(vm.permissions?.create.canCreateSecrets).toBe(true);
+      expect(vm.permissions?.create.canCreateAiAgentCRDS).toBe(true);
+    });
+
+    it('should handle mixed permission scenarios gracefully', async() => {
+      const store = {
+        dispatch:  jest.fn((action: string, params?: any) => {
+          if (action === 'management/find' && params?.id?.includes(AGENT_NAME)) {
+            return Promise.resolve({
+              type: 'apps.deployment',
+              spec: { template: { metadata: { annotations: {} } } },
+              save: jest.fn()
+            });
+          }
+          if (action === 'management/find') {
+            return Promise.resolve(mockSecret());
+          }
+          if (action === 'management/findAll') {
+            return Promise.resolve([]);
+          }
+
+          return Promise.resolve(null);
+        }),
+        commit:    jest.fn(),
+        getters:   {
+          'management/canList':    jest.fn((type) => {
+            // Can list secrets and configmaps but not deployments or CRDs
+            return type === SECRET || type === CONFIG_MAP;
+          }),
+          'management/schemaFor':  jest.fn(() => {
+            // Can create secrets but not CRDs
+            return { resourceMethods: ['PUT', 'POST', 'DELETE'] };
+          }),
+          'i18n/t': (key: string) => key
+        },
+        state: { $router: { push: jest.fn() } }
+      };
+
+      const { useStore } = require('vuex'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+
+      (useStore as jest.Mock).mockReturnValue(store);
+
+      const wrapper = shallowMount(Settings, {
+        global: {
+          mocks: {
+            $store: store,
+            $route: {
+              query: {},
+              name:  { endsWith: () => false }
+            }
+          },
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      await wrapper.vm.$nextTick();
+      await flushPromises();
+
+      expect(vm.permissions?.list.canListSecrets).toBe(true);
+      expect(vm.permissions?.list.canListConfigMaps).toBe(true);
+      expect(vm.permissions?.list.canListDeployments).toBe(false);
+      expect(vm.permissions?.create.canCreateSecrets).toBe(true);
+    });
+
+    it('should update button visibility based on permissions', async() => {
+      const dispatch = jest.fn((action: string, params?: any) => {
+        if (action === 'management/find' && params?.id?.includes(AGENT_NAME)) {
+          return Promise.resolve({
+            type: 'apps.deployment',
+            spec: { template: { metadata: { annotations: {} } } },
+            save: jest.fn()
+          });
+        }
+        if (action === 'management/find') {
+          return Promise.resolve(mockSecret());
+        }
+        if (action === 'management/findAll') {
+          return Promise.resolve([]);
+        }
+
+        return Promise.resolve(null);
+      });
+
+      const wrapper = shallowMount(Settings, initSettings({
+        dispatch,
+        getters: {
+          'management/canList':    jest.fn(() => true),
+          'management/schemaFor':  jest.fn(() => {
+            // No PUT method means no create permission
+            return { resourceMethods: ['GET', 'DELETE'] };
+          }),
+        }
+      }));
+
+      await flushPromises();
+
+      const vm = wrapper.vm as any;
+
+      // Can list but cannot create, so save button should be disabled
+      expect(vm.permissions?.list.canListSecrets).toBe(true);
+      expect(vm.permissions?.create.canCreateSecrets).toBe(false);
+    });
+
+    it('should handle null resourceMethods', async() => {
+      const wrapper = shallowMount(Settings, initSettings({
+        getters: {
+          'management/canList':    jest.fn(() => true),
+          'management/schemaFor':  jest.fn(() => ({ resourceMethods: null })),
+        }
+      }));
+
+      await flushPromises();
+
+      const vm = wrapper.vm as any;
+
+      // Null resourceMethods should not crash and default to no create permission
+      expect(vm.permissions?.create.canCreateSecrets).toBe(false);
     });
   });
 });
