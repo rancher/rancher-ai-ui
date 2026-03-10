@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
 import { useShell } from '@shell/apis';
+import { alternateKey } from '@shell/utils/platform';
 import {
   onMounted, onBeforeUnmount, computed, nextTick, ref,
   watch
@@ -347,29 +348,29 @@ function copyLastAssistantMessage() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (e.metaKey && e.shiftKey && e.key === 'o') {
+  if (e[alternateKey] && e.shiftKey && e.key === 'o') {
     e.preventDefault();
     if (!disabled.value) {
       ensureReconnectionAndLoadChat(null);
     }
   }
 
-  if (e.metaKey && e.shiftKey && e.key === 'c') {
+  if (e[alternateKey] && e.shiftKey && e.key === 'c') {
     e.preventDefault();
     copyLastAssistantMessage();
   }
 
-  if (e.metaKey && e.shiftKey && e.key === 's') {
+  if (e[alternateKey] && e.shiftKey && e.key === 's') {
     e.preventDefault();
     toggleHistoryPanel();
   }
 
-  if (e.metaKey && e.shiftKey && e.key === 'Backspace') {
+  if (e[alternateKey] && e.shiftKey && e.key === 'Backspace') {
     e.preventDefault();
     deleteCurrentChat();
   }
 
-  if (e.metaKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+  if (e[alternateKey] && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
     e.preventDefault();
     navigateChat(e.key === 'ArrowUp' ? 'prev' : 'next');
   }
