@@ -1,12 +1,13 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
+import { useShell } from '@shell/apis';
 import {
   onMounted, onBeforeUnmount, computed, nextTick, ref,
   watch
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ConnectionPhase, HistoryChat, Message, MessagePhase, StorageType
+  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, Role, StorageType
 } from '../types';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
@@ -15,6 +16,7 @@ import { useHeaderComposable } from '../composables/useHeaderComposable';
 import { useAIServiceComposable } from '../composables/useAIServiceComposable';
 import { useChatApiComposable } from '../composables/useChatApiComposable';
 import { useAgentComposable } from '../composables/useAgentComposable';
+import { extractMessageText } from '../utils/format';
 import Header from '../components/panels/Header.vue';
 import Messages from '../components/panels/Messages.vue';
 import Processing from '../components/Processing.vue';
@@ -22,6 +24,7 @@ import Context from '../components/panels/Context.vue';
 import Console from '../components/panels/Console.vue';
 import History from '../components/panels/History.vue';
 import Chat from '../handlers/chat';
+import DeleteChat from '../dialog/DeleteChatCard.vue';
 
 /**
  * Chat panel landing page.
@@ -29,6 +32,7 @@ import Chat from '../handlers/chat';
 
 const CHAT_ID = 'default';
 const store = useStore();
+const shellApi = useShell();
 
 const {
   hasPermissions,
@@ -163,11 +167,14 @@ async function ensureReconnectionAndLoadChat(chatId: string | null) {
   showHistory.value = false;
 
   if (chatId && chatId === chatMetadata.value.chatId) {
+    isNavigating.value = false;
+
     return;
   }
 
   const initChat = async() => {
     loadMessages(chatId ? await fetchMessages(chatId) : []);
+    isNavigating.value = false;
     nextTick(() => {
       resetChatMetadata({ chatId });
       connect(chatId);
@@ -292,9 +299,116 @@ watch(() => [
   deep:      true,
 });
 
+const chatContainerRef = ref<HTMLElement | null>(null);
+const isNavigating = ref(false);
+
+function openDeleteChatModal(chat: HistoryChat) {
+  shellApi.modal.open(DeleteChat, {
+    props: {
+      name:      chat.name,
+      onConfirm: () => deleteChat(chat.id),
+    },
+    width: '400px',
+  });
+}
+
+async function deleteCurrentChat() {
+  if (!chatMetadata.value.chatId) {
+    return;
+  }
+
+  let currentChat = chatHistory.value.find((c) => c.id === chatMetadata.value.chatId);
+
+  if (!currentChat) {
+    // Fetch the data to make sure the current chat is on the chat history
+    chatHistory.value = await fetchChats();
+    currentChat = chatHistory.value.find((c) => c.id === chatMetadata.value.chatId);
+  }
+
+  if (currentChat) {
+    openDeleteChatModal(currentChat);
+  }
+}
+
+function copyLastAssistantMessage() {
+  const lastAssistantMessage = ([...messages.value] as FormattedMessage[])
+    .reverse()
+    .find((m: FormattedMessage) => m.role === Role.Assistant);
+
+  if (!lastAssistantMessage) {
+    return;
+  }
+
+  const text = extractMessageText(lastAssistantMessage);
+
+  if (text) {
+    navigator.clipboard.writeText(text);
+  }
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.metaKey && e.shiftKey && e.key === 'o') {
+    e.preventDefault();
+    if (!disabled.value) {
+      ensureReconnectionAndLoadChat(null);
+    }
+  }
+
+  if (e.metaKey && e.shiftKey && e.key === 'c') {
+    e.preventDefault();
+    copyLastAssistantMessage();
+  }
+
+  if (e.metaKey && e.shiftKey && e.key === 's') {
+    e.preventDefault();
+    toggleHistoryPanel();
+  }
+
+  if (e.metaKey && e.shiftKey && e.key === 'Backspace') {
+    e.preventDefault();
+    deleteCurrentChat();
+  }
+
+  if (e.metaKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    e.preventDefault();
+    navigateChat(e.key === 'ArrowUp' ? 'prev' : 'next');
+  }
+}
+
+async function navigateChat(direction: 'prev' | 'next') {
+  if (disabled.value || isNavigating.value) {
+    return;
+  }
+
+  isNavigating.value = true;
+
+    chatHistory.value = await fetchChats();
+
+
+  if (chatHistory.value.length < 2) {
+    return;
+  }
+
+  const currentIndex = chatHistory.value.findIndex((c) => c.id === chatMetadata.value.chatId);
+  let targetIndex: number;
+
+  if (direction === 'prev') {
+    targetIndex = currentIndex <= 0 ? chatHistory.value.length - 1 : currentIndex - 1;
+  } else {
+    targetIndex = currentIndex >= chatHistory.value.length - 1 ? 0 : currentIndex + 1;
+  }
+
+  ensureReconnectionAndLoadChat(chatHistory.value[targetIndex].id);
+}
+
 onMounted(() => {
   // Ensure disconnection on browser refresh/close
   window.addEventListener('beforeunload', unmount);
+
+  // Auto-focus the chat container
+  nextTick(() => {
+    chatContainerRef.value?.focus();
+  });
 });
 
 onBeforeUnmount(() => {
@@ -313,8 +427,11 @@ function unmount() {
 
 <template>
   <div
+    ref="chatContainerRef"
     class="chat-container"
     data-testid="rancher-ai-ui-chat-container"
+    tabindex="0"
+    @keydown="handleKeydown"
   >
     <div
       class="resize-bar"
@@ -375,7 +492,7 @@ function unmount() {
         @create:chat="ensureReconnectionAndLoadChat(null)"
         @open:chat="ensureReconnectionAndLoadChat"
         @update:chat="updateChat"
-        @delete:chat="deleteChat"
+        @confirm:delete:chat="openDeleteChatModal"
       />
     </div>
   </div>
@@ -388,6 +505,7 @@ function unmount() {
   height: calc(100vh - 55px);
   position: relative;
   z-index: 20;
+  outline: none;
 
   :deep(.disabled-panel) {
     opacity: 0.5;

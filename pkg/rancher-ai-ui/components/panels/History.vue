@@ -7,7 +7,6 @@ import { HistoryChat } from '../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
 import HistoryHeader from '../history/HistoryHeader.vue';
 import HistoryChatMenu from '../history/HistoryChatMenu.vue';
-import DeleteChat from '../../dialog/DeleteChatCard.vue';
 
 const store = useStore();
 const { t } = useI18n(store);
@@ -33,6 +32,7 @@ const emit = defineEmits([
   'open:chat',
   'update:chat',
   'delete:chat',
+  'confirm:delete:chat',
 ]);
 
 const chatBtnHover = reactive<Record<string, boolean>>({});
