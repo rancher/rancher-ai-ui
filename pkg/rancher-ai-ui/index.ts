@@ -60,6 +60,8 @@ export default function(plugin: IPlugin, { store }: any): void {
       tooltipKey: 'ai.action.openChat',
       shortcut: { 
         windows: ['alt', 'k'], 
+        // Meta + Shift + K doesn't work on INPUT/textarea elements
+        // So there is a bugfix on Console.vue to close it to avoid the bug
         mac: ['meta', 'shift', 'k'] 
       },
       icon: 'icon-ai',

@@ -353,63 +353,35 @@ function handleKeydown(e: KeyboardEvent) {
     if (!disabled.value) {
       ensureReconnectionAndLoadChat(null);
     }
+
+    return;
   }
 
   if (e[alternateKey] && e.shiftKey && e.key === 'c') {
     e.preventDefault();
     copyLastAssistantMessage();
+
+    return;
   }
 
   if (e[alternateKey] && e.shiftKey && e.key === 's') {
     e.preventDefault();
     toggleHistoryPanel();
+
+    return;
   }
 
   if (e[alternateKey] && e.shiftKey && e.key === 'Backspace') {
     e.preventDefault();
     deleteCurrentChat();
-  }
 
-  if (e[alternateKey] && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-    e.preventDefault();
-    navigateChat(e.key === 'ArrowUp' ? 'prev' : 'next');
-  }
-}
-
-async function navigateChat(direction: 'prev' | 'next') {
-  if (disabled.value || isNavigating.value) {
     return;
   }
-
-  isNavigating.value = true;
-
-    chatHistory.value = await fetchChats();
-
-
-  if (chatHistory.value.length < 2) {
-    return;
-  }
-
-  const currentIndex = chatHistory.value.findIndex((c) => c.id === chatMetadata.value.chatId);
-  let targetIndex: number;
-
-  if (direction === 'prev') {
-    targetIndex = currentIndex <= 0 ? chatHistory.value.length - 1 : currentIndex - 1;
-  } else {
-    targetIndex = currentIndex >= chatHistory.value.length - 1 ? 0 : currentIndex + 1;
-  }
-
-  ensureReconnectionAndLoadChat(chatHistory.value[targetIndex].id);
 }
 
 onMounted(() => {
   // Ensure disconnection on browser refresh/close
   window.addEventListener('beforeunload', unmount);
-
-  // Auto-focus the chat container
-  nextTick(() => {
-    chatContainerRef.value?.focus();
-  });
 });
 
 onBeforeUnmount(() => {
@@ -481,6 +453,7 @@ function unmount() {
         :agents="chatAgents"
         :agent-name="agentName"
         :disabled="disabled"
+        :messages="messages"
         :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"
         @select:agent="selectAgent"
