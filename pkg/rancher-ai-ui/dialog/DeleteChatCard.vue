@@ -13,14 +13,6 @@ const props = defineProps({
     type:    String,
     default: '',
   },
-  onConfirm: {
-    type:     Function,
-    required: true,
-  },
-  onClose: {
-    type:    Function,
-    default: () => {},
-  }
 });
 
 const emit = defineEmits([
@@ -39,13 +31,11 @@ const nameLabel = computed(() => {
 });
 
 function confirm() {
-  props.onConfirm();
   emit('confirm');
   close();
 }
 
 function close() {
-  props.onClose();
   emit('close');
 }
 </script>

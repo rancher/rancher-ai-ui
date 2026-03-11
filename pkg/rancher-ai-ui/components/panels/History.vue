@@ -2,7 +2,6 @@
 import { PropType, reactive, ref, nextTick } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import AppModal from '@shell/components/AppModal.vue';
 import { HistoryChat } from '../../types';
 import RcButton from '@components/RcButton/RcButton.vue';
 import HistoryHeader from '../history/HistoryHeader.vue';
@@ -37,7 +36,6 @@ const emit = defineEmits([
 
 const chatBtnHover = reactive<Record<string, boolean>>({});
 const editingChat = ref<Partial<HistoryChat> | null>(null);
-const deletingChat = ref<HistoryChat | null>(null);
 
 function chatNameTooltip(chat: HistoryChat): string {
   let createdAt = '';
@@ -70,12 +68,8 @@ function openChat(id: string) {
   emit('open:chat', id);
 }
 
-function deleteChat() {
-  if (deletingChat.value) {
-    emit('delete:chat', deletingChat.value.id);
-
-    deletingChat.value = null;
-  }
+function openDeleteChatModal(chat: HistoryChat) {
+  emit('confirm:delete:chat', chat);
 }
 
 function updateChatName(chat: Partial<HistoryChat>) {
@@ -187,7 +181,7 @@ function dismissEdit() {
                   v-if="chatBtnHover[chat.id]"
                   @click.stop
                   @update:chat="updateChatName(chat)"
-                  @delete:chat="deletingChat = chat"
+                  @delete:chat="openDeleteChatModal(chat)"
                 />
               </RcButton>
             </div>
@@ -196,17 +190,6 @@ function dismissEdit() {
       </div>
     </div>
   </transition>
-  <app-modal
-    v-if="!!deletingChat"
-    :width="400"
-    height="auto"
-  >
-    <DeleteChat
-      :name="deletingChat.name"
-      @confirm="deleteChat"
-      @close="deletingChat = null"
-    />
-  </app-modal>
 </template>
 
 <style lang="scss" scoped>

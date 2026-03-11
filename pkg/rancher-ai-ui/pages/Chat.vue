@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
-import { useShell } from '@shell/apis';
 import { useKeyboardShortcutsComposable } from '../composables/useKeyboardShortcutsComposable';
 import {
   onMounted, onBeforeUnmount, computed, nextTick, ref,
@@ -27,6 +26,7 @@ import History from '../components/panels/History.vue';
 import Chat from '../handlers/chat';
 import DeleteChat from '../dialog/DeleteChatCard.vue';
 import KeyboardShortcuts from '../components/header/KeyboardShortcuts.vue';
+import AppModal from '@shell/components/AppModal.vue';
 
 /**
  * Chat panel landing page.
@@ -34,7 +34,6 @@ import KeyboardShortcuts from '../components/header/KeyboardShortcuts.vue';
 
 const CHAT_ID = 'default';
 const store = useStore();
-const shellApi = useShell();
 
 const {
   hasPermissions,
@@ -106,6 +105,7 @@ const {
 
 const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
+const deletingChat = ref<HistoryChat | null>(null);
 
 const chatAgents = computed<Agent[]>(() => {
   return agents.value.map((agent) => {
@@ -155,13 +155,17 @@ async function updateChat(args:{ id: string, payload: Partial<HistoryChat> }) {
   chatHistory.value = await fetchChats();
 }
 
-async function deleteChat(id: string) {
-  await deleteHistoryChat(id);
+async function deleteChat() {
+  if (deletingChat.value) {
+    const id = deletingChat.value!.id;
 
-  if (id === chatMetadata.value.chatId) {
-    ensureReconnectionAndLoadChat(null);
-  } else {
-    chatHistory.value = await fetchChats();
+    await deleteHistoryChat(id);
+
+    if (id === chatMetadata.value.chatId) {
+      ensureReconnectionAndLoadChat(null);
+    } else {
+      chatHistory.value = await fetchChats();
+    }
   }
 }
 
@@ -304,13 +308,7 @@ watch(() => [
 const isNavigating = ref(false);
 
 function openDeleteChatModal(chat: HistoryChat) {
-  shellApi.modal.open(DeleteChat, {
-    props: {
-      name:      chat.name,
-      onConfirm: () => deleteChat(chat.id),
-    },
-    width: '400px',
-  });
+  deletingChat.value = chat;
 }
 
 async function deleteCurrentChat() {
@@ -451,6 +449,17 @@ function unmount() {
       />
     </div>
   </div>
+  <app-modal
+    v-if="!!deletingChat"
+    :width="400"
+    height="auto"
+  >
+    <DeleteChat
+      :name="deletingChat.name"
+      @confirm="deleteChat"
+      @close="deletingChat = null"
+    />
+  </app-modal>
 </template>
 
 <style lang='scss' scoped>
