@@ -21,7 +21,8 @@ const props = defineProps({
 const emit = defineEmits([
   'download:chat',
   'show:help',
-  'config:chat'
+  'config:chat',
+  'shortcuts:chat',
 ]);
 
 const options = ref([
@@ -31,6 +32,14 @@ const options = ref([
     icon:        'icon-download',
     action:      () => {
       emit('download:chat');
+    },
+  },
+  {
+    label:       t('ai.menu.options.chat.shortcuts.label'),
+    description: t('ai.menu.options.chat.shortcuts.description'),
+    icon:        'icon-keyboard',
+    action:      () => {
+      emit('shortcuts:chat');
     },
   },
   {

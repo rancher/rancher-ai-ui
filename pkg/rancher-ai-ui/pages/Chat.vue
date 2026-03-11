@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useStore } from 'vuex';
 import { useShell } from '@shell/apis';
-import { alternateKey } from '@shell/utils/platform';
+import { useKeyboardShortcutsComposable } from '../composables/useKeyboardShortcutsComposable';
 import {
   onMounted, onBeforeUnmount, computed, nextTick, ref,
   watch
@@ -17,7 +17,7 @@ import { useHeaderComposable } from '../composables/useHeaderComposable';
 import { useAIServiceComposable } from '../composables/useAIServiceComposable';
 import { useChatApiComposable } from '../composables/useChatApiComposable';
 import { useAgentComposable } from '../composables/useAgentComposable';
-import { extractMessageText } from '../utils/format';
+import { extractMessageText } from '../utils/label';
 import Header from '../components/panels/Header.vue';
 import Messages from '../components/panels/Messages.vue';
 import Processing from '../components/Processing.vue';
@@ -26,6 +26,7 @@ import Console from '../components/panels/Console.vue';
 import History from '../components/panels/History.vue';
 import Chat from '../handlers/chat';
 import DeleteChat from '../dialog/DeleteChatCard.vue';
+import KeyboardShortcuts from '../components/header/KeyboardShortcuts.vue';
 
 /**
  * Chat panel landing page.
@@ -300,7 +301,6 @@ watch(() => [
   deep:      true,
 });
 
-const chatContainerRef = ref<HTMLElement | null>(null);
 const isNavigating = ref(false);
 
 function openDeleteChatModal(chat: HistoryChat) {
@@ -347,37 +347,16 @@ function copyLastAssistantMessage() {
   }
 }
 
-function handleKeydown(e: KeyboardEvent) {
-  if (e[alternateKey] && e.shiftKey && e.key === 'o') {
-    e.preventDefault();
-    if (!disabled.value) {
-      ensureReconnectionAndLoadChat(null);
-    }
-
-    return;
-  }
-
-  if (e[alternateKey] && e.shiftKey && e.key === 'c') {
-    e.preventDefault();
-    copyLastAssistantMessage();
-
-    return;
-  }
-
-  if (e[alternateKey] && e.shiftKey && e.key === 's') {
-    e.preventDefault();
-    toggleHistoryPanel();
-
-    return;
-  }
-
-  if (e[alternateKey] && e.shiftKey && e.key === 'Backspace') {
-    e.preventDefault();
-    deleteCurrentChat();
-
-    return;
-  }
-}
+const {
+  handleKeydown,
+  openShortcuts,
+} = useKeyboardShortcutsComposable({
+  disabled:          () => disabled.value,
+  onNewChat:         () => ensureReconnectionAndLoadChat(null),
+  onCopyLastMessage: copyLastAssistantMessage,
+  onToggleHistory:   toggleHistoryPanel,
+  onDeleteChat:      deleteCurrentChat,
+});
 
 onMounted(() => {
   // Ensure disconnection on browser refresh/close
@@ -400,7 +379,6 @@ function unmount() {
 
 <template>
   <div
-    ref="chatContainerRef"
     class="chat-container"
     data-testid="rancher-ai-ui-chat-container"
     tabindex="0"
@@ -421,6 +399,7 @@ function unmount() {
         @close:chat="closePanel"
         @config:chat="routeToSettings"
         @download:chat="downloadMessages"
+        @shortcuts:chat="openShortcuts"
         @toggle:history="toggleHistoryPanel"
       />
       <Messages
@@ -458,6 +437,7 @@ function unmount() {
         @input:content="ensureConnectionAndSendMessage($event)"
         @select:agent="selectAgent"
       />
+      <KeyboardShortcuts ref="keyboardShortcutsRef" />
       <History
         :chats="chatHistory"
         :active-chat-id="chatMetadata.chatId"

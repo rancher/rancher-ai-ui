@@ -1,7 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import {
   ActionType, MessageConfirmationAction, Tag, Context,
-  FormattedMessage,
   Message,
   Role,
   MessageAction,
@@ -15,35 +14,6 @@ import {
   ChatError,
   SourceLinkItem,
 } from '../types';
-
-/**
- * Extracts the copyable text content from a FormattedMessage.
- * Used by both per-message copy and the global shortcut.
- */
-export function extractMessageText(message: FormattedMessage): string {
-  if (!message.summaryContent && !message.messageContent && !message.thinkingContent && !message.formattedMessageContent) {
-    return '';
-  }
-
-  let text = '';
-
-  if (message.showThinking && message.thinkingContent) {
-    text += `${ message.thinkingContent }\n`;
-  }
-
-  if (message.summaryContent) {
-    text += message.summaryContent;
-
-    if (message.showCompleteMessage) {
-      text += `\n${ message.messageContent || '' }`;
-    }
-  } else {
-    // formattedMessageContent will contain error messages if any
-    text += (message.messageContent || message.formattedMessageContent || '');
-  }
-
-  return text.trim();
-}
 import { validateActionResource } from './validator';
 
 interface WSInputMessageArgs {

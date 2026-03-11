@@ -5,7 +5,7 @@ import {
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { FormattedMessage, MessageInternalSource, MessagePhase, Role as RoleEnum } from '../../types';
-import { extractMessageText } from '../../utils/format';
+import { extractMessageText } from '../../utils/label';
 import Processing from '../Processing.vue';
 import Actions from './action/index.vue';
 import SourceLinks from './SourceLinks.vue';

@@ -16,7 +16,7 @@ import LlmModelLabel from '../console/LlmModelLabel.vue';
 import VerifyResultsDisclaimer from '../console/VerifyResultsDisclaimer.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
 import { isMac } from '@shell/utils/platform';
-import { extractMessageText } from '../../utils/format';
+import { extractMessageText } from '../../utils/label';
 import Chat from '../../handlers/chat';
 
 /**

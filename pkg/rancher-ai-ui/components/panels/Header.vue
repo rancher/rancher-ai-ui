@@ -28,6 +28,7 @@ const emit = defineEmits([
   'download:chat',
   'show:help',
   'config:chat',
+  'shortcuts:chat',
   'toggle:history',
 ]);
 
@@ -80,6 +81,7 @@ function toggleHistory() {
         @download:chat="emit('download:chat')"
         @show:help="emit('show:help')"
         @config:chat="emit('config:chat')"
+        @shortcuts:chat="emit('shortcuts:chat')"
       />
     </div>
     <div class="chat-close-btn">

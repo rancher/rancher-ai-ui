@@ -1,8 +1,17 @@
 <script lang="ts" setup>
+import { ref } from 'vue';
 import {
   RcDropdown,
   RcDropdownTrigger,
 } from '@components/RcDropdown';
+
+const triggerEl = ref<HTMLElement | null>(null);
+
+function open() {
+  triggerEl.value?.click();
+}
+
+defineExpose({ open });
 
 const props = defineProps({
   label: {
@@ -13,11 +22,19 @@ const props = defineProps({
     type:    Boolean,
     default: false,
   },
+  // This prop is used to make the TextLabel only works as an anchor for the popover
+  hideLabel: {
+    type:    Boolean,
+    default: false,
+  },
 });
 </script>
 
 <template>
-  <div class="textlabel-popper">
+  <div
+    class="textlabel-popper"
+    :class="{ 'is-hidden': props.hideLabel }"
+  >
     <rc-dropdown
       placement="top"
     >
@@ -27,10 +44,11 @@ const props = defineProps({
         :disabled="props.disabled"
       >
         <span
+          ref="triggerEl"
           class="inline-button label text-deemphasized"
           :class="{ 'btn-disabled': props.disabled }"
         >
-          {{ label }}
+          {{ hideLabel ? '' : label }}
         </span>
       </rc-dropdown-trigger>
       <template #dropdownCollection>
@@ -42,8 +60,14 @@ const props = defineProps({
 
 <style lang='scss' scoped>
 .textlabel-popper {
+  &.is-hidden {
+    height: 0;
+    overflow: visible;
+  }
   :deep() .dropdownTarget {
     padding: 0;
+    // This will replace the default height set by RcDropdownTrigger, allowing the popover to just have auto size
+    height: auto !important;
   }
   :deep() .popperContainer .v-popper__popper .v-popper__wrapper .v-popper__inner {
     padding: 16px;
