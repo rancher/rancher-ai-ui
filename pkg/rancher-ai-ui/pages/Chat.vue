@@ -350,6 +350,7 @@ function copyLastAssistantMessage() {
 const {
   handleKeydown,
   openShortcuts,
+  keyboardShortcutsRef,
 } = useKeyboardShortcutsComposable({
   disabled:          () => disabled.value,
   onNewChat:         () => ensureReconnectionAndLoadChat(null),

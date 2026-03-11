@@ -244,7 +244,12 @@ onMounted(() => {
         v-if="completeText"
         class="chat-input-complete"
       >
-        {{ completeText }}
+        <div class="text">
+          {{ completeText }}
+        </div>
+        <div class="tab-label-box">
+          <span class="tab-label">Tab</span>
+        </div>
       </div>
       <textarea
         ref="promptTextarea"
@@ -326,15 +331,35 @@ onMounted(() => {
 }
 
 .chat-input-complete {
-  white-space: nowrap;
-  overflow: hidden;
   padding: 12px 0px 0px 16px;
   position: absolute;
   right: 16px;
-  left: 8px;
+  left: 0;
   line-height: 1.4;
-  color: var(--input-placeholder-text);
-  opacity: 0.5;
+  color: #94A3B8;
+  display: flex;
+  gap: 6px;
+  .text {
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .tab-label-box {
+    font-family: 'Lato';
+    display: flex;
+    padding: 3px 6px;
+    align-items: center;
+    border-radius: 4px;
+    border: 1px solid #BFC1D3;
+    color: #BFC1D3;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+
+    .tab-label {
+      width: 16px;
+    }
+  }
 }
 
 .chat-input {

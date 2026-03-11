@@ -109,5 +109,9 @@ defineExpose({ open });
 
 :deep(.v-popper__popper) {
   width: 100%;
+  // 4px is there to make it touch the bottom of the chat panel
+  // 2.5% is because the width is 95%, so 2.5% padding right and left, and 2.5% added to the bottom
+  top: 4px;
+  margin-top: -2.5%
 }
 </style>
