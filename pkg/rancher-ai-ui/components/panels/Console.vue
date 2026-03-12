@@ -108,7 +108,7 @@ function handleTextareaKeydown(event: KeyboardEvent) {
 
   // Fix a bug that makes the close chat not work on inputs
   // Same as the one done with IPlugin
-  if ((event.key === 'k' && event.metaKey && event.shiftKey && isMac) || (event.key === 'k' && event.altKey && !isMac)) {
+  if ((event.key?.toLowerCase() === 'k' && event.metaKey && event.shiftKey && isMac) || (event.key.toLowerCase() === 'k' && event.altKey && !isMac)) {
     event.preventDefault();
     event.stopPropagation();
     Chat.close(store);

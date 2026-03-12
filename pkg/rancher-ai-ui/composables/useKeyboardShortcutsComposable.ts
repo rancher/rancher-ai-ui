@@ -29,7 +29,7 @@ export function useKeyboardShortcutsComposable(options: KeyboardShortcutsOptions
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e[alternateKey] && e.shiftKey && e.key === 'o') {
+    if (e[alternateKey] && e.shiftKey && e.key?.toLowerCase() === 'o') {
       e.preventDefault();
       if (!disabled()) {
         onNewChat();
@@ -38,14 +38,14 @@ export function useKeyboardShortcutsComposable(options: KeyboardShortcutsOptions
       return;
     }
 
-    if (e[alternateKey] && e.shiftKey && e.key === 'c') {
+    if (e[alternateKey] && e.shiftKey && e.key?.toLowerCase() === 'c') {
       e.preventDefault();
       onCopyLastMessage();
 
       return;
     }
 
-    if (e[alternateKey] && e.shiftKey && e.key === 's') {
+    if (e[alternateKey] && e.shiftKey && e.key?.toLowerCase() === 's') {
       e.preventDefault();
       onToggleHistory();
 

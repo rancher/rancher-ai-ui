@@ -214,7 +214,7 @@ ai:
           description: Configure the AI model and provider for your assistant
         shortcuts:
           label: View Keyboard Shortcuts
-          description: View Keyboard Shortcuts for the AI Assistant
+          description: View Keyboard Shortcuts for your assistant
   history:
     chat:
       create: Start a New Chat
