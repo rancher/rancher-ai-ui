@@ -78,6 +78,7 @@ const agents = computed(() => {
   ];
 });
 
+const enabledAgentsCount = computed(() => agents.value.filter((c) => c.spec.enabled).length);
 const availableAgentsCount = computed(() => agents.value.filter((c) => c.spec.enabled && !c.stateDescription).length);
 
 const selectedAgentName = ref(agents.value[0]?.metadata?.name || '');
@@ -280,7 +281,17 @@ watch(validationErrors, (errors) => {
 
 <template>
   <div class="ai-agent-container">
-    <div v-if="agents?.length > 0 && availableAgentsCount === 0">
+    <div v-if="agents?.length > 0 && enabledAgentsCount === 0">
+      <Banner
+        class="m-0"
+        :color="'error'"
+      >
+        <span
+          v-clean-html="t('aiConfig.form.section.aiAgent.allAgentsDisabledBanner', {}, true)"
+        />
+      </Banner>
+    </div>
+    <div v-else-if="agents?.length > 0 && availableAgentsCount === 0">
       <Banner
         class="m-0"
         :color="'error'"
