@@ -5,10 +5,59 @@ import { useI18n } from '@shell/composables/useI18n';
 import { isMac } from '@shell/utils/platform';
 import TextLabelPopover from '../popover/TextLabel.vue';
 
+interface Shortcut {
+  action: string;
+  mac: string | string[];
+  windows: string | string[];
+  macSymbolIndexes?: number[];
+  windowsSymbolIndexes?: number[];
+}
+
 const store = useStore();
 const { t } = useI18n(store);
 
 const popover = ref<InstanceType<typeof TextLabelPopover> | null>(null);
+
+const shortcuts: Shortcut[] = [
+  {
+    action:               t('ai.shortcuts.items.navigateHistory'),
+    mac:                  ['↑ ↓'],
+    windows:              ['↑ ↓'],
+    macSymbolIndexes:     [0],
+    windowsSymbolIndexes: [0],
+  },
+  {
+    action:           t('ai.shortcuts.items.openChat'),
+    mac:              ['⌘', ' Shift K'],
+    windows:          'Alt K',
+    macSymbolIndexes: [0],
+  },
+  {
+    action:           t('ai.shortcuts.items.newChat'),
+    mac:              ['⌘', ' Shift O'],
+    windows:          'Ctrl Shift O',
+    macSymbolIndexes: [0],
+  },
+  {
+    action:           t('ai.shortcuts.items.copyLastMessage'),
+    mac:              ['⌘', ' Shift C'],
+    windows:          'Ctrl Shift C',
+    macSymbolIndexes: [0],
+  },
+  {
+    action:           t('ai.shortcuts.items.toggleHistory'),
+    mac:              ['⌘', ' Shift S'],
+    windows:          'Ctrl Shift S',
+    macSymbolIndexes: [0, 2],
+  },
+  {
+    action:               t('ai.shortcuts.items.deleteChat'),
+    mac:                  ['⌘', ' Shift ', '⌫'],
+    windows:              ['Ctrl Shift ', '⌫'],
+    macSymbolIndexes:     [0, 2],
+    windowsSymbolIndexes: [1],
+  },
+];
 
 function open() {
   popover.value?.open();
@@ -27,14 +76,7 @@ defineExpose({ open });
       <div class="shortcuts-section">
         <span class="shortcuts-title">{{ t('ai.shortcuts.title') }}</span>
         <div
-          v-for="(shortcut, i) in [
-            { action: t('ai.shortcuts.items.navigateHistory'), mac: ['↑ ↓'], windows: ['↑ ↓'], macSymbolIndexes: [0], windowsSymbolIndexes: [0] },
-            { action: t('ai.shortcuts.items.openChat'), mac: ['⌘', ' Shift K'], windows: 'Alt K', macSymbolIndexes: [0] },
-            { action: t('ai.shortcuts.items.newChat'), mac: ['⌘', ' Shift O'], windows: 'Ctrl Shift O', macSymbolIndexes: [0] },
-            { action: t('ai.shortcuts.items.copyLastMessage'), mac: ['⌘', ' Shift C'], windows: 'Ctrl Shift C', macSymbolIndexes: [0] },
-            { action: t('ai.shortcuts.items.toggleHistory'), mac: ['⌘', ' Shift S'], windows: 'Ctrl Shift S', macSymbolIndexes: [0, 2] },
-            { action: t('ai.shortcuts.items.deleteChat'), mac: ['⌘', ' Shift ', '⌫'], windows: ['Ctrl Shift ','⌫'], macSymbolIndexes: [0, 2], windowsSymbolIndexes: [1] },
-          ]"
+          v-for="(shortcut, i) in shortcuts"
           :key="i"
           class="shortcuts-row"
         >

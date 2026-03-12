@@ -1,5 +1,5 @@
 import { startCase } from 'lodash';
-import { FormattedMessage } from 'types';
+import { FormattedMessage } from '../types';
 
 /**
  * Converts a URL to a label by extracting and formatting the last path segment
