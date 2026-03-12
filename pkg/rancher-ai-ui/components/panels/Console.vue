@@ -336,6 +336,7 @@ onMounted(() => {
   right: 16px;
   left: 0;
   line-height: 1.4;
+  // Harcoded colors used for both themes
   color: #94A3B8;
   display: flex;
   gap: 6px;
@@ -349,6 +350,7 @@ onMounted(() => {
     padding: 3px 6px;
     align-items: center;
     border-radius: 4px;
+    // Harcoded colors used for both themes
     border: 1px solid #BFC1D3;
     color: #BFC1D3;
     font-size: 10px;

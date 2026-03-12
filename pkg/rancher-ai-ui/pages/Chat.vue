@@ -173,14 +173,11 @@ async function ensureReconnectionAndLoadChat(chatId: string | null) {
   showHistory.value = false;
 
   if (chatId && chatId === chatMetadata.value.chatId) {
-    isNavigating.value = false;
-
     return;
   }
 
   const initChat = async() => {
     loadMessages(chatId ? await fetchMessages(chatId) : []);
-    isNavigating.value = false;
     nextTick(() => {
       resetChatMetadata({ chatId });
       connect(chatId);
@@ -304,8 +301,6 @@ watch(() => [
   immediate: true,
   deep:      true,
 });
-
-const isNavigating = ref(false);
 
 function openDeleteChatModal(chat: HistoryChat) {
   deletingChat.value = chat;
