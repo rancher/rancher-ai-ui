@@ -67,11 +67,7 @@ defineExpose({ open });
 </script>
 
 <template>
-  <TextLabelPopover
-    ref="popover"
-    :hide-label="true"
-    :label="t('ai.shortcuts.button.label')"
-  >
+  <TextLabelPopover ref="popover">
     <div class="shortcuts">
       <div class="shortcuts-section">
         <span class="shortcuts-title">{{ t('ai.shortcuts.title') }}</span>

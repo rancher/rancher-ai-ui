@@ -22,18 +22,13 @@ const props = defineProps({
     type:    Boolean,
     default: false,
   },
-  // This prop is used to make the TextLabel only works as an anchor for the popover
-  hideLabel: {
-    type:    Boolean,
-    default: false,
-  },
 });
 </script>
 
 <template>
   <div
     class="textlabel-popper"
-    :class="{ 'is-hidden': props.hideLabel }"
+    :class="{ 'is-hidden': props.label === '' }"
   >
     <rc-dropdown
       placement="top"
@@ -48,7 +43,7 @@ const props = defineProps({
           class="inline-button label text-deemphasized"
           :class="{ 'btn-disabled': props.disabled }"
         >
-          {{ hideLabel ? '' : label }}
+          {{ label }}
         </span>
       </rc-dropdown-trigger>
       <template #dropdownCollection>
