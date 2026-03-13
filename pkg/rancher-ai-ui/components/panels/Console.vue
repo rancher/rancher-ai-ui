@@ -62,7 +62,9 @@ const emit = defineEmits([
   'select:agent'
 ]);
 
-const { inputText, updateInput, cleanInput } = useInputComposable();
+const {
+  inputText, updateInput, cleanInput, cleanInputAndTags
+} = useInputComposable();
 
 const promptTextarea = ref<HTMLTextAreaElement | null>(null);
 const isFocused = ref(false);
@@ -148,9 +150,11 @@ function copyUserPreviousMessage(direction: 'prev' | 'next') {
   }
 
   const message = userMessages[userMessages.length - 1 - historyIndex.value];
-  const text = extractMessageText(message);
+  let text = extractMessageText(message);
 
   if (text) {
+    text = cleanInputAndTags(text);
+
     completeText.value = text;
   }
 }

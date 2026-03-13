@@ -27,6 +27,7 @@ import Chat from '../handlers/chat';
 import DeleteChat from '../dialog/DeleteChatCard.vue';
 import KeyboardShortcuts from '../components/header/KeyboardShortcuts.vue';
 import AppModal from '@shell/components/AppModal.vue';
+import { useInputComposable } from '../composables/useInputComposable';
 
 /**
  * Chat panel landing page.
@@ -333,12 +334,18 @@ function copyLastAssistantMessage() {
     return;
   }
 
-  const text = extractMessageText(lastAssistantMessage);
+  let text = extractMessageText(lastAssistantMessage);
 
   if (text) {
+    if (lastAssistantMessage.summaryContent) {
+      text = cleanInputAndTags(text);
+    }
+
     navigator.clipboard.writeText(text);
   }
 }
+
+const { cleanInputAndTags } = useInputComposable();
 
 const {
   handleKeydown,

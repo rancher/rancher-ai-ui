@@ -16,6 +16,7 @@ import UserAvatar from './avatar/UserAvatar.vue';
 import SystemAvatar from './avatar/SystemAvatar.vue';
 import BubbleButton from './BubbleButton.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
+import { useInputComposable } from '../../composables/useInputComposable';
 
 const store = useStore();
 const { t } = useI18n(store);
@@ -43,13 +44,16 @@ const isThinking = computed(() => props.message.role === RoleEnum.Assistant &&
 );
 const showCopySuccess = ref(false);
 const timeoutCopy = ref<any>(null);
+const { cleanInputAndTags } = useInputComposable();
 
 function handleCopy() {
-  const text = extractMessageText(props.message);
+  let text = extractMessageText(props.message);
 
   if (!text) {
     return;
   }
+
+  text = cleanInputAndTags(text);
 
   navigator.clipboard.writeText(text);
   showCopySuccess.value = true;

@@ -41,7 +41,7 @@ export function extractMessageText(message: FormattedMessage): string {
   if (message.summaryContent) {
     text += message.summaryContent;
 
-    if (message.showCompleteMessage) {
+    if (message.messageContent) {
       text += `\n${ message.messageContent || '' }`;
     }
   } else {

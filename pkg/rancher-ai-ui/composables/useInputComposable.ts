@@ -22,9 +22,16 @@ export function useInputComposable() {
       .trim();
   }
 
+  function cleanInputAndTags(value: string) {
+    return cleanInput(value)
+      .replace(/<[^>]*>/g, '')
+      .trim();
+  }
+
   return {
     inputText,
     updateInput,
     cleanInput,
+    cleanInputAndTags,
   };
 }

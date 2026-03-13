@@ -47,14 +47,18 @@ export function useKeyboardShortcutsComposable(options: KeyboardShortcutsOptions
 
     if (e[alternateKey] && e.shiftKey && e.key?.toLowerCase() === 's') {
       e.preventDefault();
-      onToggleHistory();
+      if (!disabled()) {
+        onToggleHistory();
+      }
 
       return;
     }
 
     if (e[alternateKey] && e.shiftKey && e.key === 'Backspace') {
       e.preventDefault();
-      onDeleteChat();
+      if (!disabled()) {
+        onDeleteChat();
+      }
 
       return;
     }
