@@ -45,9 +45,10 @@ class TemplateMessageFactory {
         name: resource.name
       }, true);
       messageContent = t('ai.message.template.message.explainStateForResource', {
-        state: resource.state,
-        kind:  resource.kind,
-        name:  resource.name
+        state:     resource.state,
+        kind:      resource.kind,
+        name:      resource.name,
+        namespace: resource.namespace || null
       }, true);
 
       if (resource.state !== 'active' && resource.state !== 'running' && resource.state !== 'ready') {
@@ -66,9 +67,10 @@ class TemplateMessageFactory {
         issue: issueText
       }, true);
       messageContent = t('ai.message.template.message.explainStateForResource', {
-        state: resource.state,
-        kind:  resource.kind,
-        name:  resource.name
+        state:     resource.state,
+        kind:      resource.kind,
+        name:      resource.name,
+        namespace: resource.namespace || null
       }, true);
 
       if (resource.state !== 'active' && resource.state !== 'running' && resource.state !== 'ready') {

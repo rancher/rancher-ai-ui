@@ -60,7 +60,12 @@ ai:
         analyseKindAndTroubleshoot: 'Please analyse the {kind} "<strong>{name}</strong>" and troubleshoot any problems.'
         analyseBanner: 'Hey Liz, please analyse the "<strong>{label}</strong>" message and troubleshoot {issue}.'
       message:
-        explainStateForResource: 'Explain what the "{state}" state means for the {kind}: {name}.'
+        explainStateForResource: |-
+          {
+            namespace, select,
+              null { Explain what the "{state}" state means for the {kind} {name}. }
+              other { Explain what the "{state}" state means for the {kind} {name} in the {namespace} namespace. }
+          }
       bullet:
         identifyCause: 'Identify the cause of the issue: analyze the resource status and the associated events and determine the most likely reason it is in this state.'
         provideActions: 'Provide a numbered list of actions to fix the issue.'
