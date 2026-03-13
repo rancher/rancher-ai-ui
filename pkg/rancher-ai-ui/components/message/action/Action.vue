@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { onMounted, ref, type PropType } from 'vue';
+import { computed, onMounted, ref, type PropType } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { warn } from '../../../utils/log';
+import { convertTypeToManagement } from '../../../utils/schema';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { MessageAction } from '../../../types';
 import { ActionType } from '../../../types';
 
 const store = useStore();
+const { t } = useI18n(store);
 
 const props = defineProps({
   value: {
@@ -17,6 +20,17 @@ const props = defineProps({
 
 const to = ref<any>(null);
 const tooltip = ref<string>('');
+
+const label = computed(() => {
+  if (props.value.label) {
+    return props.value.label;
+  }
+
+  return t(`ai.message.actions.label`, {
+    kind: to.value ? to.value.kind : props.value.resource?.kind || '',
+    name: to.value ? (to.value.nameDisplay || to.value.name) : props.value.resource?.name || ''
+  }, true);
+});
 
 function goTo() {
   if (to.value.detailLocation) {
@@ -53,8 +67,8 @@ onMounted(async() => {
     try {
       to.value = await store.dispatch(`${ inStore }/find`, {
         cluster,
-        type,
-        id: namespace ? `${ namespace }/${ name }` : name
+        type: convertTypeToManagement(type || ''),
+        id:   namespace ? `${ namespace }/${ name }` : name
       });
     } catch (e) {
       warn('Action - Could not find resource', e);
@@ -78,7 +92,7 @@ onMounted(async() => {
       @click="goTo"
     >
       <span class="rc-button-label">
-        {{ props.value.label }}
+        {{ label }}
       </span>
     </RcButton>
   </div>
@@ -89,10 +103,10 @@ onMounted(async() => {
       class="link"
       @click="goTo"
     >
-      {{ props.value.label }}
+      {{ label }}
     </a>
     <span v-else>
-      {{ props.value.label }}
+      {{ label }}
       <template v-if="!props.value">
         <span class="text-muted">&mdash;</span>
       </template>

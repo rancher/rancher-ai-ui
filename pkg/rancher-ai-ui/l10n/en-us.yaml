@@ -37,6 +37,7 @@ ai:
     quickActions:
       label: QUICK ACTIONS
     actions:
+      label: 'View {kind}: {name}'
       more: |-
         {count, plural,
           =1 { and {count} more resource }
