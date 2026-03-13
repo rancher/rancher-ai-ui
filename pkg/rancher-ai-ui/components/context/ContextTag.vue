@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Context } from '../../types';
+import { contextLabel, contextTooltip } from '../../utils/context';
 
 type Props = {
   item?: Partial<Context>;
@@ -21,7 +22,7 @@ const emit = defineEmits(['remove']);
 
 <template>
   <div
-    v-clean-tooltip="props.item.description"
+    v-clean-tooltip="contextTooltip(props.item)"
     class="vs__selected tag"
     :class="{ ['user-context']: props.type === 'user'}"
   >
@@ -30,7 +31,7 @@ const emit = defineEmits(['remove']);
       :data-testid="`rancher-ai-ui-context-tag-${ props.item.valueLabel || props.item.value }`"
     >
       <span>
-        {{ props.item.valueLabel || props.item.value }}
+        {{ contextLabel(props.item) }}
       </span>
     </div>
     <button

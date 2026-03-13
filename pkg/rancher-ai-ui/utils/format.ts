@@ -139,7 +139,6 @@ export function formatMessageRelatedResourcesActions(value: string, actionType =
 
       return names.map((name: string) => ({
         type:     actionType,
-        label:    `View ${ parsed.kind }: ${ name }`,
         resource: {
           kind:      parsed.kind,
           type:      parsed.type,

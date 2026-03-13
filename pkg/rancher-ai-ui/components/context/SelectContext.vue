@@ -3,6 +3,7 @@ import { ref, watch, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { Context } from '../../types';
+import { contextLabel } from '../../utils/context';
 import ContextTag from './ContextTag.vue';
 import {
   RcDropdown,
@@ -109,7 +110,7 @@ function reset() {
           v-clean-tooltip="opt.description"
           @click="toggleItem(opt)"
         >
-          {{ opt.tag }}:{{ opt.valueLabel || opt.value }}
+          {{ opt.tag }}:{{ contextLabel(opt) }}
           <i
             v-if="selected.find((s: Context) => _id(s) === _id(opt))"
             :class="{

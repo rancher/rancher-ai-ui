@@ -1,6 +1,7 @@
 import { PRODUCT_NAME } from '../product';
 import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
 import { ContextTag, Context, HookContextTag } from '../types';
+import { validateContext } from '../utils/context';
 
 const enum ContextType {
   ALL       = 'all',       // eslint-disable-line no-unused-vars
@@ -81,7 +82,11 @@ const getters = {
   default: (state: State, getters: any, rootState: any, rootGetters: any) => {
     const all = rootGetters['ui-context/all'] || [];
 
-    return all.filter((c: Context) => !c.hookId);
+    const out =  all
+      .filter((c: Context) => !c.hookId)
+      .filter(validateContext);
+
+    return out;
   },
 
   transient: (state: State) => {
