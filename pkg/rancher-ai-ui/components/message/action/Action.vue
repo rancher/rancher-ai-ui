@@ -11,6 +11,8 @@ import { ActionType } from '../../../types';
 const store = useStore();
 const { t } = useI18n(store);
 
+const inStore = 'management';
+
 const props = defineProps({
   value: {
     type:    Object as PropType<MessageAction>,
@@ -18,7 +20,19 @@ const props = defineProps({
   }
 });
 
-const to = ref<any>(null);
+const to = computed(() => {
+  if (props.value.resource?.detailLocation) {
+    return props.value.resource;
+  }
+
+  const { type, namespace, name } = props.value.resource || {};
+
+  const convertedType = convertTypeToManagement(type || '');
+  const id = namespace ? `${ namespace }/${ name }` : name;
+
+  return store.getters[`${ inStore }/byId`](convertedType, id);
+});
+
 const tooltip = ref<string>('');
 
 const label = computed(() => {
@@ -53,27 +67,39 @@ function goTo() {
 }
 
 onMounted(async() => {
-  if (!!props.value.resource?.detailLocation) {
-    to.value = props.value.resource;
-  } else {
-    const inStore = 'management';
+  if (!!props.value.resource?.detailLocation || !!to.value) {
+    return;
+  }
 
-    await store.dispatch('loadManagement');
+  await store.dispatch('loadManagement');
 
-    const {
-      cluster, type, namespace, name
-    } = props.value.resource || {};
+  const {
+    cluster, type, namespace, name
+  } = props.value.resource || {};
 
-    try {
-      to.value = await store.dispatch(`${ inStore }/find`, {
+  try {
+    const convertedType = convertTypeToManagement(type || '');
+    const id = namespace ? `${ namespace }/${ name }` : name;
+
+    if (cluster === 'local') {
+      await store.dispatch(`${ inStore }/find`, {
         cluster,
-        type: convertTypeToManagement(type || ''),
-        id:   namespace ? `${ namespace }/${ name }` : name
+        type: convertedType,
+        id,
       });
-    } catch (e) {
-      warn('Action - Could not find resource', e);
-      to.value = null;
+    } else {
+      const url = `/k8s/clusters/${ cluster }/v1`;
+
+      const data = await store.dispatch(`${ inStore }/request`, { url: `${ url }/${ convertedType }s/${ id }?exclude=metadata.managedFields` });
+
+      // Convert to model and store in cache
+      await store.dispatch(`${ inStore }/load`, {
+        data,
+        invalidatePageCache: false
+      });
     }
+  } catch (e) {
+    warn(`Action - Could not find resource with { cluster: ${ cluster }, type: ${ type }, name: ${ name }, namespace: ${ namespace } }`, e);
   }
 });
 
