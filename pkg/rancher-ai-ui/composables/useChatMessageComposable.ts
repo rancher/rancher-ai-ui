@@ -188,6 +188,7 @@ export function useChatMessageComposable(
           message: t('ai.message.system.welcome.info', {}, true),
         }
       },
+      source:    MessageInternalSource.Welcome,
       completed: false,
     };
   }
@@ -303,10 +304,16 @@ export function useChatMessageComposable(
     } else {
       try {
         /**
-         * Check if the chat is empty or there is a message in the message box,
-         * it means the welcome message is being processed or not required.
+         * No messages in the chat, next message should be welcome message.
          */
-        if (!messages.value.find((msg) => msg.completed || msg.source === MessageInternalSource.MessageBox)) {
+        const isEmptyChat = messages.value.length === 0;
+
+        /**
+         * Welcome message is in progress, continue processing it.
+         */
+        const welcomeMessageInProgress = messages.value.find((msg) => msg.source === MessageInternalSource.Welcome && !msg.completed);
+
+        if (isEmptyChat || welcomeMessageInProgress) {
           setPhase(MessagePhase.Initializing);
           await processWelcomeData(data);
         } else {

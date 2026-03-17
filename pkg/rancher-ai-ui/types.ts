@@ -199,6 +199,7 @@ export const enum MessageLabelKey {
 }
 
 export const enum MessageInternalSource {
+  Welcome = 'welcome',
   MessageBox = 'messageBox',
   Error = 'error',
 }
