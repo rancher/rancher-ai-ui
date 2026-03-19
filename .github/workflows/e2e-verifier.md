@@ -9,6 +9,9 @@ on:
     workflows: ["Self-Healing E2E — Keyboard Shortcuts"]
     types:
       - completed
+    branches:
+      - main
+      - e2e-agentic
 
 if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
@@ -41,13 +44,10 @@ steps:
   - name: Download test artifacts
     uses: actions/download-artifact@v4
     with:
-      name: e2e-screenshots
-      path: /tmp/gh-aw/screenshots/
-  - name: Download test videos
-    uses: actions/download-artifact@v4
-    with:
-      name: e2e-videos
-      path: /tmp/gh-aw/videos/
+      name: e2e-results
+      path: /tmp/gh-aw/e2e-results/
+      run-id: ${{ github.event.workflow_run.id }}
+      github-token: ${{ github.token }}
 
 timeout-minutes: 10
 ---
@@ -61,8 +61,9 @@ a deterministic pass/fail report.
 ## Input
 
 Test artifacts have been downloaded to:
-- `/tmp/gh-aw/screenshots/` — screenshots taken during the test
-- `/tmp/gh-aw/videos/` — video recordings of the test run
+- `/tmp/gh-aw/e2e-results/cypress/screenshots/` — screenshots taken during the test
+- `/tmp/gh-aw/e2e-results/cypress/videos/` — video recordings of the test run
+- `/tmp/gh-aw/e2e-results/cypress-output.txt` — Cypress console output
 
 The spec file lives at: `cypress/e2e/tests/features/shortcuts.spec.ts`
 
@@ -101,10 +102,11 @@ For each test, look at the corresponding screenshots and verify:
 
 ## Process
 
-1. List all files in `/tmp/gh-aw/screenshots/` and `/tmp/gh-aw/videos/`
-2. For each check above, look for the corresponding screenshot
-3. Analyze each screenshot for evidence of the expected state
-4. Build a pass/fail report
+1. Read the Cypress output at `/tmp/gh-aw/e2e-results/cypress-output.txt`
+2. List all files in `/tmp/gh-aw/e2e-results/cypress/screenshots/` and `/tmp/gh-aw/e2e-results/cypress/videos/`
+3. For each check above, look for the corresponding screenshot
+4. Analyze each screenshot for evidence of the expected state
+5. Build a pass/fail report
 
 ## Output
 

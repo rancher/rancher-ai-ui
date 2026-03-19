@@ -22,15 +22,14 @@
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
 # Self-healing E2E testing agent for keyboard shortcuts in Rancher AI UI.
-# Manages a persistent Cypress spec — creates it if missing, fixes it if broken.
-# Deploys Rancher + AI mock service, runs the spec, and auto-heals on failure
-# by creating/fixing the spec and opening a PR.
+# Uses a hybrid approach: a regular GH Actions job runs Cypress tests first,
+# then the AI agent analyzes results and creates/fixes the spec as needed.
 #
 # Resolved workflow manifest:
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"1505989375eceed16f8af74e6afa423ca296e0489aa348c6e21c48adfbe4457d","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"a8d23be71cb3d87a294530ee75bbe17c2a5626af899c5fd0bdc03ef61c0eece4","compiler_version":"v0.57.2","strict":true}
 
 name: "Self-Healing E2E — Keyboard Shortcuts"
 "on":
@@ -53,6 +52,7 @@ run-name: "Self-Healing E2E — Keyboard Shortcuts"
 
 jobs:
   activation:
+    needs: run_tests
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -127,6 +127,8 @@ jobs:
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
+          GH_AW_NEEDS_RUN_TESTS_OUTPUTS_CYPRESS_OUTCOME: ${{ needs.run_tests.outputs.cypress_outcome }}
+          GH_AW_NEEDS_RUN_TESTS_OUTPUTS_SPEC_EXISTS: ${{ needs.run_tests.outputs.spec_exists }}
         run: |
           bash /opt/gh-aw/actions/create_prompt_first.sh
           {
@@ -188,6 +190,8 @@ jobs:
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
           GH_AW_GITHUB_EVENT_INPUTS_FORCE_RECREATE: ${{ github.event.inputs.force_recreate }}
+          GH_AW_NEEDS_RUN_TESTS_OUTPUTS_CYPRESS_OUTCOME: ${{ needs.run_tests.outputs.cypress_outcome }}
+          GH_AW_NEEDS_RUN_TESTS_OUTPUTS_SPEC_EXISTS: ${{ needs.run_tests.outputs.spec_exists }}
         with:
           script: |
             const { setupGlobals } = require('/opt/gh-aw/actions/setup_globals.cjs');
@@ -207,6 +211,8 @@ jobs:
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
+          GH_AW_NEEDS_RUN_TESTS_OUTPUTS_CYPRESS_OUTCOME: ${{ needs.run_tests.outputs.cypress_outcome }}
+          GH_AW_NEEDS_RUN_TESTS_OUTPUTS_SPEC_EXISTS: ${{ needs.run_tests.outputs.spec_exists }}
         with:
           script: |
             const { setupGlobals } = require('/opt/gh-aw/actions/setup_globals.cjs');
@@ -226,7 +232,9 @@ jobs:
                 GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: process.env.GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER,
                 GH_AW_GITHUB_REPOSITORY: process.env.GH_AW_GITHUB_REPOSITORY,
                 GH_AW_GITHUB_RUN_ID: process.env.GH_AW_GITHUB_RUN_ID,
-                GH_AW_GITHUB_WORKSPACE: process.env.GH_AW_GITHUB_WORKSPACE
+                GH_AW_GITHUB_WORKSPACE: process.env.GH_AW_GITHUB_WORKSPACE,
+                GH_AW_NEEDS_RUN_TESTS_OUTPUTS_CYPRESS_OUTCOME: process.env.GH_AW_NEEDS_RUN_TESTS_OUTPUTS_CYPRESS_OUTCOME,
+                GH_AW_NEEDS_RUN_TESTS_OUTPUTS_SPEC_EXISTS: process.env.GH_AW_NEEDS_RUN_TESTS_OUTPUTS_SPEC_EXISTS
               }
             });
       - name: Validate prompt placeholders
@@ -248,7 +256,9 @@ jobs:
           retention-days: 1
 
   agent:
-    needs: activation
+    needs:
+      - activation
+      - run_tests
     runs-on: ubuntu-latest
     permissions: read-all
     concurrency:
@@ -284,27 +294,12 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - continue-on-error: true
+        name: Download Cypress results
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          cache: yarn
-          node-version: 20
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Start Rancher
-        run: "# Ports 80/443 are reserved by the MCP Gateway, so map to 8080/8443\ndocker run -d --restart=unless-stopped -p 8080:80 -p 8443:443 \\\n  --privileged --name rancher \\\n  -e CATTLE_SERVER_URL=\"https://172.17.0.1:8443\" \\\n  -e CATTLE_BOOTSTRAP_PASSWORD=password \\\n  -e CATTLE_PASSWORD_MIN_LENGTH=3 \\\n  rancher/rancher:head\n\necho \"Waiting for Rancher to be ready...\"\nfor i in $(seq 1 60); do\n  STATUS=$(curl -sk -o /dev/null -w '%{http_code}' https://172.17.0.1:8443 || true)\n  echo \"Attempt $i - Status: $STATUS\"\n  if [ \"$STATUS\" = \"200\" ]; then break; fi\n  sleep 5\ndone\nif [ \"$STATUS\" != \"200\" ]; then echo \"Rancher did not become ready\"; exit 1; fi\necho \"Rancher is ready\"\n"
-      - name: Get kubeconfig
-        run: "RANCHER_TOKEN=$(curl -vkL \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"username\":\"admin\",\"password\":\"password\",\"responseType\":\"cookie\"}' \\\n  -X POST \\\n  https://172.17.0.1:8443/v3-public/localProviders/local?action=login 2>&1 | \\\n  awk -F'[=;]' '/Set-Cookie/{gsub(\" \",\"\",$2);print $2;exit}')\n\nHEADER=\"Cookie: R_SESS=$RANCHER_TOKEN\"\ncurl -kL \\\n  -H 'Content-Type: application/json' \\\n  -X POST \\\n  -H \"$HEADER\" \\\n  https://172.17.0.1:8443/v3/clusters/local?action=generateKubeconfig | \\\n  yq '.config' > kubeconfig.yaml\n\nkubectl --kubeconfig=kubeconfig.yaml cluster-info\n"
-      - name: Deploy Rancher AI charts with LLM mock
-        run: .github/scripts/deploy-rancher-ai.sh ${{ github.workspace }}/kubeconfig.yaml
-      - env:
-          API: https://172.17.0.1:8443
-        name: Start dev UI
-        run: |
-          nohup yarn dev > /tmp/gh-aw/dev.log 2>&1 &
-          echo $! > /tmp/gh-aw/dev.pid
-      - name: Wait for dev UI to be ready
-        run: npx wait-on https://localhost:8005
+          name: e2e-results
+          path: /tmp/gh-aw/e2e-results/
 
       - name: Configure Git credentials
         env:
@@ -998,7 +993,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           WORKFLOW_NAME: "Self-Healing E2E — Keyboard Shortcuts"
-          WORKFLOW_DESCRIPTION: "Self-healing E2E testing agent for keyboard shortcuts in Rancher AI UI.\nManages a persistent Cypress spec — creates it if missing, fixes it if broken.\nDeploys Rancher + AI mock service, runs the spec, and auto-heals on failure\nby creating/fixing the spec and opening a PR."
+          WORKFLOW_DESCRIPTION: "Self-healing E2E testing agent for keyboard shortcuts in Rancher AI UI.\nUses a hybrid approach: a regular GH Actions job runs Cypress tests first,\nthen the AI agent analyzes results and creates/fixes the spec as needed."
           HAS_PATCH: ${{ steps.collect_output.outputs.has_patch }}
         with:
           script: |
@@ -1204,6 +1199,80 @@ jobs:
             setupGlobals(core, github, context, exec, io);
             const { main } = require('/opt/gh-aw/actions/handle_create_pr_error.cjs');
             await main();
+
+  run_tests:
+    runs-on: ubuntu-latest
+    env:
+      CATTLE_BOOTSTRAP_PASSWORD: password
+      CATTLE_SERVER_URL: https://172.17.0.1
+      DEV_UI_URL: https://localhost:8005
+      KUBECONFIG_PATH: ${{ github.workspace }}/kubeconfig.yaml
+    outputs:
+      cypress_outcome: ${{ steps.cypress.outcome }}
+      spec_exists: ${{ steps.check_spec.outputs.exists }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 1
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          cache: yarn
+          node-version: 20
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Check if spec exists
+        id: check_spec
+        run: |
+          if [ -f cypress/e2e/tests/features/shortcuts.spec.ts ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Start Rancher
+        run: .github/scripts/install-rancher.sh head ${{ env.CATTLE_SERVER_URL }} ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+      - name: Deploy Rancher AI charts
+        run: .github/scripts/deploy-rancher-ai.sh ${{ env.KUBECONFIG_PATH }}
+      - name: Start dev UI
+        run: |
+          nohup yarn dev > dev.log 2>&1 &
+          echo $! > dev.pid
+        env:
+          API: ${{ env.CATTLE_SERVER_URL }}
+      - name: Wait for dev UI to be ready
+        run: npx wait-on ${{ env.DEV_UI_URL }}
+      - name: Run Cypress tests
+        id: cypress
+        if: steps.check_spec.outputs.exists == 'true'
+        run: |
+          yarn cypress:run \
+            --spec cypress/e2e/tests/features/shortcuts.spec.ts \
+            --browser chrome \
+            --config video=true,screenshotOnRunFailure=true \
+            2>&1 | tee /tmp/cypress-output.txt
+        env:
+          API: ${{ env.CATTLE_SERVER_URL }}
+          CYPRESS_BASE_URL: ${{ env.DEV_UI_URL }}
+          NODE_TLS_REJECT_UNAUTHORIZED: "0"
+          TEST_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+          TEST_SKIP: setup
+          TEST_USERNAME: admin
+        continue-on-error: true
+      - name: Upload Cypress results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          if-no-files-found: ignore
+          name: e2e-results
+          path: |
+            cypress/screenshots/
+            cypress/videos/
+            /tmp/cypress-output.txt
+          retention-days: 7
+      - name: Tear down background processes
+        if: always()
+        run: |
+          if [ -f dev.pid ]; then kill $(cat dev.pid) || true; fi
 
   safe_outputs:
     needs:
