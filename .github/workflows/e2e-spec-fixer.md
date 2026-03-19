@@ -51,6 +51,7 @@ safe-outputs:
   add-comment:
     target: "*"
     max: 1
+    hide-older-comments: true
   noop:
 
 tools:
@@ -142,7 +143,19 @@ Rules for fixes:
 - Ensure all `cy.screenshot()` calls use the exact expected names
 - Keep the same test structure (7 tests, same screenshot names)
 
-## Step 6 — Commit and Push to PR
+## Step 6 — Comment on PR
+
+**Always** post a comment on the PR explaining this fix attempt using `add-comment`:
+- **pull_request_number**: `${{ github.event.inputs.pr_number }}`
+- **body**: Include:
+  - Heading: `🔧 **E2E Spec Fixer — Attempt {next_attempt}**`
+  - Summary of what failures were identified
+  - What changes were made to the spec
+  - Next steps (pushing fix and re-triggering runner)
+
+Older comments from previous fixer runs will be automatically hidden.
+
+## Step 7 — Commit and Push to PR
 
 Commit the fix locally:
 
@@ -175,7 +188,7 @@ b. Post a comment on the PR using `add-comment` with:
 c. Use `noop` to finish — do NOT dispatch the runner yourself. The apply-patch
    workflow will handle re-triggering.
 
-## Step 7 — Re-trigger the Runner (direct push only)
+## Step 8 — Re-trigger the Runner (direct push only)
 
 **Only if Step 6 pushed directly** (no fallback), use the `e2e_shortcuts_runner`
 tool to dispatch the runner workflow with inputs:
