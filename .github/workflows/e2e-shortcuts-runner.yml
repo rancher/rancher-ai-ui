@@ -60,7 +60,7 @@ jobs:
         run: |
           npx wait-on ${{ env.DEV_UI_URL }}
 
-      - name: Run Cypress shortcuts spec
+      - name: Run Cypress tests
         id: cypress
         continue-on-error: true
         env:
@@ -68,7 +68,7 @@ jobs:
           CATTLE_BOOTSTRAP_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
           API: ${{ env.CATTLE_SERVER_URL }}
         run: |
-          yarn e2e --browser chrome --spec "cypress/e2e/tests/features/shortcuts.spec.ts"
+          yarn e2e --browser chrome
 
       - name: Save attempt metadata
         if: always()
