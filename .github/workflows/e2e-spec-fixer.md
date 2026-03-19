@@ -48,6 +48,9 @@ safe-outputs:
     labels: [ai-e2e, automation]
     expires: 2d
     max: 1
+  add-comment:
+    target: "*"
+    max: 1
   noop:
 
 tools:
@@ -60,7 +63,13 @@ tools:
     - "head *"
     - "grep *"
     - "jq *"
+    - "mkdir *"
+    - "git *"
   edit:
+  repo-memory:
+    branch-name: memory/default
+    max-file-size: 65536
+    file-glob: ["memory/default/patches/*.patch"]
 
 timeout-minutes: 15
 ---
@@ -142,12 +151,36 @@ git add cypress/e2e/tests/features/shortcuts.spec.ts
 git commit -m "fix(e2e): fix shortcuts spec — attempt $NEXT_ATTEMPT"
 ```
 
-Then use the `push_to_pull_request_branch` tool to push to the existing PR:
+Then try to use the `push_to_pull_request_branch` tool to push to the existing PR:
 - **pull_request_number**: `${{ github.event.inputs.pr_number }}`
 
-Do NOT use `git push` directly — the safe output handles pushing.
+**If the push fails** (e.g. because this repository is a fork and the safe output
+cannot push), do the following fallback instead:
 
-## Step 7 — Re-trigger the Runner
+a. Generate a patch of your changes using bash:
+   ```bash
+   mkdir -p /tmp/gh-aw/repo-memory/default/memory/default/patches
+   git diff HEAD~1 > /tmp/gh-aw/repo-memory/default/memory/default/patches/e2e-pr-${{ github.event.inputs.pr_number }}.patch
+   ```
+   This saves the patch to repo-memory. It will be auto-committed to the
+   `memory/default` branch when the workflow finishes, and a separate trigger
+   workflow will pick it up, apply it to the PR branch, and re-trigger the runner.
+
+b. Post a comment on the PR using `add-comment` with:
+   - **pull_request_number**: `${{ github.event.inputs.pr_number }}`
+   - **body**: A summary with heading `🔧 **E2E Spec Fix — Patch Saved (attempt $NEXT_ATTEMPT)**`,
+     what was fixed, and a note that a separate workflow will apply the patch and
+     re-trigger the runner automatically.
+
+c. Use `noop` to finish — do NOT dispatch the runner yourself. The apply-patch
+   workflow will handle re-triggering.
+
+## Step 7 — Re-trigger the Runner (direct push only)
+
+**Only if Step 6 pushed directly** (no fallback), use the `e2e_shortcuts_runner`
+tool to dispatch the runner workflow with inputs:
+- `pr_number`: `${{ github.event.inputs.pr_number }}`
+- `attempt`: the next attempt number (as a string)
 
 Use the `e2e_shortcuts_runner` tool to dispatch the runner workflow with inputs:
 - `pr_number`: `${{ github.event.inputs.pr_number }}`
@@ -158,6 +191,8 @@ Use the `e2e_shortcuts_runner` tool to dispatch the runner workflow with inputs:
 - ALWAYS check the loop guard FIRST. If attempt >= 3, create an issue and stop.
 - Parse the failure summary carefully — it contains specific check names and reasons.
 - Be surgical with fixes — only change what's broken.
-- Do NOT `git push` directly — use the `push_to_pull_request_branch` tool.
+- Do NOT `git push` directly — use the `push_to_pull_request_branch` tool first.
+- If `push_to_pull_request_branch` fails, use the repo-memory patch fallback.
+- If you used the patch fallback, do NOT dispatch the runner — the apply-patch workflow handles it.
+- If you pushed directly, ALWAYS dispatch the runner workflow after pushing.
 - The runner will upload new artifacts, the verifier will re-check, closing the loop.
-- After pushing via safe output, ALWAYS dispatch the runner workflow.
