@@ -66,7 +66,7 @@ tools:
     branch-name: memory/default
     max-file-size: 65536
     max-patch-size: 102400
-    file-glob: ["patches/*.patch"]
+    file-glob: ["*.patch"]
 
 timeout-minutes: 30
 ---
@@ -173,18 +173,17 @@ git add cypress/e2e/tests/features/shortcuts.spec.ts
 git commit -m "fix(e2e): fix shortcuts spec — attempt $NEXT_ATTEMPT"
 ```
 
-Then generate a patch and save it to repo-memory. **Use this EXACT sequence:**
+Then generate a patch and save it to repo-memory. **Use this EXACT command:**
 
 ```bash
-mkdir -p /tmp/gh-aw/repo-memory/default/patches
-git diff HEAD~1 > /tmp/gh-aw/repo-memory/default/patches/e2e-pr-${{ github.event.inputs.pr_number }}.patch
+git diff HEAD~1 > /tmp/gh-aw/repo-memory/default/e2e-pr-${{ github.event.inputs.pr_number }}.patch
 ```
 
-**IMPORTANT**: The patch file MUST be at exactly:
-`/tmp/gh-aw/repo-memory/default/patches/e2e-pr-<PR_NUMBER>.patch`
+**IMPORTANT**: The patch file MUST be placed directly at:
+`/tmp/gh-aw/repo-memory/default/e2e-pr-<PR_NUMBER>.patch`
 
-Do NOT put it in `memory/default/patches/` — use just `patches/` directly
-under `/tmp/gh-aw/repo-memory/default/`.
+Do NOT create any subdirectories — the sandbox blocks `mkdir` inside repo-memory.
+Put the `.patch` file directly in `/tmp/gh-aw/repo-memory/default/`.
 
 After saving, call the `push_repo_memory` tool to validate the size is within limits.
 
