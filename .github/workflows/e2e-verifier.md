@@ -5,10 +5,17 @@ description: |
   PR marking it ready. On any failure, dispatches the spec-fixer workflow.
 
 on:
-  workflow_run:
-    workflows: ["E2E Shortcuts Runner"]
-    types:
-      - completed
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number that was tested"
+        required: true
+      attempt:
+        description: "Attempt number"
+        required: true
+      runner_run_id:
+        description: "Run ID of the E2E Shortcuts Runner to download artifacts from"
+        required: true
 
 permissions: read-all
 
@@ -43,7 +50,7 @@ steps:
     with:
       name: e2e-shortcuts-results
       path: /tmp/gh-aw/e2e-results/
-      run-id: ${{ github.event.workflow_run.id }}
+      run-id: ${{ github.event.inputs.runner_run_id }}
       github-token: ${{ github.token }}
 
 timeout-minutes: 10
@@ -63,8 +70,11 @@ Read `/tmp/gh-aw/e2e-results/results/metadata.json` to get:
 - `pr_number` — the PR number that was tested
 - `outcome` — `success` or `failure`
 
-If the runner workflow conclusion was `failure` AND the metadata is missing,
-use `create-issue` to report the infrastructure failure and stop.
+These values were also passed as workflow inputs: `${{ github.event.inputs.pr_number }}`,
+`${{ github.event.inputs.attempt }}`, `${{ github.event.inputs.runner_run_id }}`.
+
+If the metadata file is missing, use `create-issue` to report the
+infrastructure failure and stop.
 
 ## Step 2 — Examine Artifacts
 
@@ -134,5 +144,6 @@ Include the full verification report.
   screenshot, mark it as failed.
 - If a screenshot is missing, mark all checks that depend on it as failed with
   reasoning "Screenshot not found".
-- If the runner workflow conclusion was `failure`, treat ALL checks as failed.
+- If the runner workflow conclusion was `failure`, treat ALL checks as failed
+  and use the metadata `outcome` field to confirm.
 - Always include the attempt number in your output.
