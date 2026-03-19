@@ -28,11 +28,15 @@ jobs:
           }
 
           # Find e2e patch files
-          PATCH_DIR="/tmp/repo-memory/memory/default/patches"
+          PATCH_DIR="/tmp/repo-memory/patches"
           if [ ! -d "$PATCH_DIR" ] || [ -z "$(ls -A "$PATCH_DIR"/e2e-pr-*.patch 2>/dev/null)" ]; then
-            echo "No e2e patch files found in repo-memory, skipping."
-            echo "This likely means the spec-fixer pushed directly via safe output."
-            exit 0
+            # Also check legacy path for backward compatibility
+            PATCH_DIR="/tmp/repo-memory/memory/default/patches"
+            if [ ! -d "$PATCH_DIR" ] || [ -z "$(ls -A "$PATCH_DIR"/e2e-pr-*.patch 2>/dev/null)" ]; then
+              echo "No e2e patch files found in repo-memory, skipping."
+              echo "This likely means the spec-fixer pushed directly via safe output."
+              exit 0
+            fi
           fi
 
           # Process each e2e patch file (named e2e-pr-<number>.patch)
