@@ -109,8 +109,9 @@ The safe output system will push the branch and create the PR.
 
 ## Step 6 — Trigger the E2E Runner
 
+After the `create_pull_request` tool succeeds, it will return the PR number.
 Use the `e2e_shortcuts_runner` tool to dispatch the runner workflow with inputs:
-- `spec_branch`: `test/e2e-shortcuts-spec`
+- `pr_number`: the PR number returned by `create_pull_request`
 - `attempt`: `1`
 
 ## Test Plan — Keyboard Shortcuts
