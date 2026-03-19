@@ -54,14 +54,50 @@ steps:
     run: yarn install --frozen-lockfile
 
   - name: Start Rancher
-    run: .github/scripts/install-rancher.sh head https://172.17.0.1 password
+    run: |
+      # Ports 80/443 are reserved by the MCP Gateway, so map to 8080/8443
+      docker run -d --restart=unless-stopped -p 8080:80 -p 8443:443 \
+        --privileged --name rancher \
+        -e CATTLE_SERVER_URL="https://172.17.0.1:8443" \
+        -e CATTLE_BOOTSTRAP_PASSWORD=password \
+        -e CATTLE_PASSWORD_MIN_LENGTH=3 \
+        rancher/rancher:head
+
+      echo "Waiting for Rancher to be ready..."
+      for i in $(seq 1 60); do
+        STATUS=$(curl -sk -o /dev/null -w '%{http_code}' https://172.17.0.1:8443 || true)
+        echo "Attempt $i - Status: $STATUS"
+        if [ "$STATUS" = "200" ]; then break; fi
+        sleep 5
+      done
+      if [ "$STATUS" != "200" ]; then echo "Rancher did not become ready"; exit 1; fi
+      echo "Rancher is ready"
+
+  - name: Get kubeconfig
+    run: |
+      RANCHER_TOKEN=$(curl -vkL \
+        -H 'Content-Type: application/json' \
+        -d '{"username":"admin","password":"password","responseType":"cookie"}' \
+        -X POST \
+        https://172.17.0.1:8443/v3-public/localProviders/local?action=login 2>&1 | \
+        awk -F'[=;]' '/Set-Cookie/{gsub(" ","",$2);print $2;exit}')
+
+      HEADER="Cookie: R_SESS=$RANCHER_TOKEN"
+      curl -kL \
+        -H 'Content-Type: application/json' \
+        -X POST \
+        -H "$HEADER" \
+        https://172.17.0.1:8443/v3/clusters/local?action=generateKubeconfig | \
+        yq '.config' > kubeconfig.yaml
+
+      kubectl --kubeconfig=kubeconfig.yaml cluster-info
 
   - name: Deploy Rancher AI charts with LLM mock
     run: .github/scripts/deploy-rancher-ai.sh ${{ github.workspace }}/kubeconfig.yaml
 
   - name: Start dev UI
     env:
-      API: https://172.17.0.1
+      API: https://172.17.0.1:8443
     run: |
       nohup yarn dev > /tmp/gh-aw/dev.log 2>&1 &
       echo $! > /tmp/gh-aw/dev.pid
@@ -94,7 +130,7 @@ This file is committed to the repo and persists across runs. It is the
 
 The full test environment is running and available:
 - **Node.js** and `node_modules` are installed
-- **Rancher** is running at `https://172.17.0.1` (user: `admin`, password: `password`)
+- **Rancher** is running at `https://172.17.0.1:8443` (user: `admin`, password: `password`)
 - **AI Agent + LLM mock** are deployed via Helm
 - **Dev UI** is running at `https://localhost:8005`
 - **Cypress** is available via `yarn cypress:run`
