@@ -1,8 +1,8 @@
 ---
 description: |
   Self-healing E2E testing agent for keyboard shortcuts in Rancher AI UI.
-  Uses a hybrid approach: a regular GH Actions job runs Cypress tests first,
-  then the AI agent analyzes results and creates/fixes the spec as needed.
+  The agent sets up the test environment, runs Cypress, and creates or
+  fixes the spec based on results — all within a single execution.
 
 on:
   workflow_dispatch:
@@ -15,15 +15,34 @@ on:
 
 permissions: read-all
 
+runtimes:
+  node:
+    version: "20"
+
 network:
   allowed:
     - defaults
     - node
+    - containers
+    - local
+    - chrome
+
+sandbox:
+  agent: false
+
+strict: false
 
 imports:
   - shared/cypress-rancher-ai.md
 
+env:
+  CATTLE_SERVER_URL: https://172.17.0.1
+  CATTLE_BOOTSTRAP_PASSWORD: password
+  KUBECONFIG_PATH: /home/runner/work/rancher-ai-ui/rancher-ai-ui/kubeconfig.yaml
+  DEV_UI_URL: https://localhost:8005
+
 safe-outputs:
+  threat-detection: false
   create-issue:
     title-prefix: "[e2e-shortcuts] "
     labels: [ai-e2e, automation]
@@ -36,93 +55,7 @@ safe-outputs:
     protected-files: fallback-to-issue
   noop:
 
-# ---------- Regular GH Actions job: runs Cypress OUTSIDE the sandbox ----------
-jobs:
-  run_tests:
-    runs-on: ubuntu-latest
-    outputs:
-      cypress_outcome: ${{ steps.cypress.outcome }}
-      spec_exists: ${{ steps.check_spec.outputs.exists }}
-    env:
-      CATTLE_SERVER_URL: https://172.17.0.1
-      CATTLE_BOOTSTRAP_PASSWORD: password
-      KUBECONFIG_PATH: ${{ github.workspace }}/kubeconfig.yaml
-      DEV_UI_URL: https://localhost:8005
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Check if spec exists
-        id: check_spec
-        run: |
-          if [ -f cypress/e2e/tests/features/shortcuts.spec.ts ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Start Rancher
-        run: .github/scripts/install-rancher.sh head ${{ env.CATTLE_SERVER_URL }} ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
-
-      - name: Deploy Rancher AI charts
-        run: .github/scripts/deploy-rancher-ai.sh ${{ env.KUBECONFIG_PATH }}
-
-      - name: Start dev UI
-        env:
-          API: ${{ env.CATTLE_SERVER_URL }}
-        run: |
-          nohup yarn dev > dev.log 2>&1 &
-          echo $! > dev.pid
-
-      - name: Wait for dev UI to be ready
-        run: npx wait-on ${{ env.DEV_UI_URL }}
-
-      - name: Run Cypress tests
-        id: cypress
-        if: steps.check_spec.outputs.exists == 'true'
-        continue-on-error: true
-        env:
-          TEST_USERNAME: admin
-          TEST_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
-          CYPRESS_BASE_URL: ${{ env.DEV_UI_URL }}
-          NODE_TLS_REJECT_UNAUTHORIZED: "0"
-          TEST_SKIP: setup
-          API: ${{ env.CATTLE_SERVER_URL }}
-        run: |
-          yarn cypress:run \
-            --spec cypress/e2e/tests/features/shortcuts.spec.ts \
-            --browser chrome \
-            --config video=true,screenshotOnRunFailure=true \
-            2>&1 | tee /tmp/cypress-output.txt
-
-      - name: Upload Cypress results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-results
-          path: |
-            cypress/screenshots/
-            cypress/videos/
-            /tmp/cypress-output.txt
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Tear down background processes
-        if: always()
-        run: |
-          if [ -f dev.pid ]; then kill $(cat dev.pid) || true; fi
-
-# ---------- Agent pre-steps: download artifacts into sandbox-visible path ----------
+# ---------- Pre-steps: checkout, install deps, start infra ----------
 steps:
   - name: Checkout repository
     uses: actions/checkout@v5
@@ -130,12 +63,48 @@ steps:
       fetch-depth: 1
       persist-credentials: false
 
-  - name: Download Cypress results
-    uses: actions/download-artifact@v4
+  - name: Install dependencies
+    run: yarn install --frozen-lockfile
+
+  - name: Start Rancher
+    run: .github/scripts/install-rancher.sh head ${{ env.CATTLE_SERVER_URL }} ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+
+  - name: Deploy Rancher AI charts
+    run: .github/scripts/deploy-rancher-ai.sh ${{ env.KUBECONFIG_PATH }}
+
+  - name: Start dev UI
+    env:
+      API: ${{ env.CATTLE_SERVER_URL }}
+    run: |
+      nohup yarn dev > /tmp/dev-ui.log 2>&1 &
+      echo $! > /tmp/dev-ui.pid
+
+  - name: Wait for dev UI
+    run: npx wait-on ${{ env.DEV_UI_URL }} --timeout 120000
+
+  - name: Verify services are reachable
+    run: |
+      echo "--- Rancher ---"
+      curl -sk -o /dev/null -w "HTTP %{http_code}\n" ${{ env.CATTLE_SERVER_URL }} || echo "WARN: Rancher not reachable"
+      echo "--- Dev UI ---"
+      curl -sk -o /dev/null -w "HTTP %{http_code}\n" ${{ env.DEV_UI_URL }} || echo "WARN: Dev UI not reachable"
+
+post-steps:
+  - name: Tear down dev UI
+    if: always()
+    run: |
+      if [ -f /tmp/dev-ui.pid ]; then kill "$(cat /tmp/dev-ui.pid)" || true; fi
+  - name: Upload Cypress artifacts
+    if: always()
+    uses: actions/upload-artifact@v4
     with:
       name: e2e-results
-      path: /tmp/gh-aw/e2e-results/
-    continue-on-error: true
+      path: |
+        cypress/screenshots/
+        cypress/videos/
+        /tmp/cypress-output.txt
+      retention-days: 7
+      if-no-files-found: ignore
 
 tools:
   github:
@@ -143,7 +112,7 @@ tools:
   bash: true
   edit:
 
-timeout-minutes: 45
+timeout-minutes: 60
 ---
 
 # Self-Healing E2E — Keyboard Shortcuts
@@ -153,74 +122,89 @@ You manage a persistent Cypress spec file that tests keyboard shortcuts.
 
 ## Architecture
 
-This workflow uses a **hybrid approach**:
-1. A regular GitHub Actions job (`run_tests`) runs Cypress tests against a live Rancher + AI mock environment
-2. You (the AI agent) analyze the results and create/fix the spec as needed
-3. You **do NOT run Cypress yourself** — the test results are already available as artifacts
+This workflow uses an **agent-driven approach**:
+1. Pre-steps (deterministic) set up the full environment: Rancher, AI mock
+   charts, dev UI server, and project dependencies
+2. You (the AI agent) check the spec, run Cypress directly, and create or
+   fix the spec based on the results
+
+## Environment — ALREADY RUNNING
+
+The pre-steps have already started:
+- **Rancher** at `https://172.17.0.1` (user: `admin`, password: `password`)
+- **Dev UI** at `https://localhost:8005`
+- **Node + Yarn** are installed; `node_modules` is ready
+- **kubeconfig** is at `$KUBECONFIG_PATH`
+
+You have full network access — no sandbox firewall. You can `curl`, run
+`yarn cypress:run`, etc.
 
 ## Spec File Location
 
 **Always use this path:** `cypress/e2e/tests/features/shortcuts.spec.ts`
 
-This file is committed to the repo and persists across runs. It is the
-**single source of truth** for keyboard shortcut E2E tests.
+This file is committed to the repo and persists across runs.
 
-## Available Data
+## Step 1 — Determine Operating Mode
 
-The `run_tests` job has already executed. Results are available at:
-- **Screenshots**: `/tmp/gh-aw/e2e-results/cypress/screenshots/` (if tests ran)
-- **Videos**: `/tmp/gh-aw/e2e-results/cypress/videos/` (if tests ran)
-- **Cypress output**: `/tmp/gh-aw/e2e-results/cypress-output.txt` (if tests ran)
-- **Job outputs** (from `run_tests` job):
-  - `spec_exists`: `${{ needs.run_tests.outputs.spec_exists }}` — whether the spec file existed
-  - `cypress_outcome`: `${{ needs.run_tests.outputs.cypress_outcome }}` — `success` or `failure` (empty if spec didn't exist)
+1. Check whether `cypress/e2e/tests/features/shortcuts.spec.ts` exists
+2. If `${{ github.event.inputs.force_recreate }}` is `true` → **CREATE** mode
+3. If the spec does **not** exist → **CREATE** mode
+4. If the spec exists → run Cypress first (Step 2), then decide FIX or NOOP
 
-## Determine Operating Mode
+## Step 2 — Run Cypress
 
-Based on the `run_tests` job outputs:
+Run the spec using bash:
 
-1. If `${{ github.event.inputs.force_recreate }}` is `true` → **CREATE** mode
-2. If `spec_exists` is `false` → **CREATE** mode (spec doesn't exist yet)
-3. If `spec_exists` is `true` and `cypress_outcome` is `failure` → **FIX** mode
-4. If `spec_exists` is `true` and `cypress_outcome` is `success` → **NOOP** mode
+```bash
+cd $GITHUB_WORKSPACE
+TEST_SKIP=setup \
+TEST_USERNAME=admin \
+TEST_PASSWORD=password \
+CYPRESS_BASE_URL=https://localhost:8005 \
+NODE_TLS_REJECT_UNAUTHORIZED=0 \
+API=https://172.17.0.1 \
+yarn cypress:run \
+  --spec cypress/e2e/tests/features/shortcuts.spec.ts \
+  --browser chrome \
+  --config video=true,screenshotOnRunFailure=true \
+  2>&1 | tee /tmp/cypress-output.txt
+```
+
+- If all tests pass → **NOOP** mode
+- If tests fail → **FIX** mode (read the output to determine root cause)
 
 ## Mode: CREATE
 
-The spec file does not exist (or force-recreate was requested). You must:
-
 1. Read the test plan below
-2. Read the Cypress skill reference imported from the shared fragment
+2. Read the Cypress skill reference from the shared fragment
 3. Study existing specs (`cypress/e2e/tests/features/chat.spec.ts`,
    `cypress/e2e/tests/features/history/chat.spec.ts`) for patterns
 4. Create `cypress/e2e/tests/features/shortcuts.spec.ts`
-5. Create a pull request with the new spec file
-6. Commit message format: `test(e2e): create keyboard shortcuts spec`
-
-> **Note:** You do NOT need to run Cypress. The next workflow run will execute the new spec.
+5. **Run Cypress** to validate the spec (Step 2)
+6. If tests fail, fix and re-run (up to 3 attempts)
+7. Create a pull request with the spec
+8. Commit message: `test(e2e): create keyboard shortcuts spec`
 
 ## Mode: FIX
 
-The spec file exists but Cypress tests failed. You must:
-
-1. Read the Cypress output at `/tmp/gh-aw/e2e-results/cypress-output.txt`
-2. Check screenshots at `/tmp/gh-aw/e2e-results/cypress/screenshots/`
-3. Read the current spec at `cypress/e2e/tests/features/shortcuts.spec.ts`
-4. Read the Cypress skill reference
-5. Check the source Vue components for any changed `data-testid` selectors
-6. Identify the root cause (selector changed? timing? new UI layout?)
-7. Update **only the broken parts** — do not rewrite the entire spec
-8. Create a pull request with the fixed spec file
-9. Commit message format: `test(e2e): fix keyboard shortcuts spec`
-
-> **Note:** The fix will be validated on the next workflow run.
+1. Read `/tmp/cypress-output.txt` for failure details
+2. Check screenshots in `cypress/screenshots/`
+3. Read the current spec
+4. Check source Vue components for changed `data-testid` selectors
+5. Identify root cause (selector changed? timing? new UI layout?)
+6. Update **only the broken parts** — do not rewrite the entire spec
+7. **Re-run Cypress** to validate the fix
+8. Repeat up to 3 times; if still failing, create an issue
+9. Create a pull request with the fixed spec
+10. Commit message: `test(e2e): fix keyboard shortcuts spec`
 
 ## Mode: NOOP
 
-The spec exists and all tests passed. Use the `noop` safe-output. Nothing to do.
+Spec exists and all tests passed. Use the `noop` safe-output.
 
 ## Test Plan — Keyboard Shortcuts
 
-When creating or fixing the spec, ensure it covers all of these tests.
 Each test should take at least one `cy.screenshot()` for verification.
 
 ### Test 1: Open / Close Chat Panel (Alt+K)
@@ -262,8 +246,6 @@ Each test should take at least one `cy.screenshot()` for verification.
 
 ## Spec Conventions
 
-When writing or editing the spec, follow these conventions:
-
 ```typescript
 // Imports
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
@@ -280,7 +262,6 @@ const isMac = Cypress.platform === 'darwin';
 
 // Keyboard shortcuts
 cy.get('body').type(isMac ? '{meta}{shift}k' : '{alt}k');  // Open/close chat
-// Inside chat container:
 cy.get('[data-testid="rancher-ai-ui-chat-container"]')
   .type(isMac ? '{meta}{shift}o' : '{ctrl}{shift}o');       // New chat
 
@@ -293,7 +274,7 @@ chat.sendMessage('Hello');
 
 - **Never delete the spec file** — always update it in place.
 - If fixing, make **minimal changes** — don't rewrite working tests.
-- Always run the spec after changes to confirm it passes.
+- **Always run Cypress** after creating or editing the spec to validate.
 - Maximum 3 fix attempts. If still failing after 3 tries, create an issue
   reporting the failure with details and commit whatever progress was made.
 - Screenshots go to `cypress/screenshots/` and videos to `cypress/videos/`.
