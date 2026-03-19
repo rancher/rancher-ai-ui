@@ -65,14 +65,17 @@ tools:
     max-file-size: 65536
     file-glob: ["memory/default/patches/*.patch"]
 
-timeout-minutes: 15
+timeout-minutes: 30
 ---
 
 # E2E Spec Fixer
 
 You are a **spec-fixing agent** for the Rancher AI UI extension. The E2E
-test spec has failures and you need to fix them, then push the fix to the
-existing PR and re-trigger the runner.
+test spec has failures and you need to fix them, then save a patch.
+
+**CRITICAL: You have a limited time budget. Do NOT spend more than 5 minutes
+reading files. Focus on the failure summary, read only the files directly
+relevant to the failures, make the fix, and save the patch.**
 
 ## Context
 
@@ -110,20 +113,16 @@ Common failure categories:
 5. **Screenshot name mismatch** — Screenshot taken with wrong name
 6. **Logic error** — Test flow doesn't match the actual UI behavior
 
-## Step 4 — Study the Codebase for Fixes
+## Step 4 — Read Only What You Need
 
-Read the relevant source files to understand the correct behavior:
+**Be targeted.** Read at most 2-3 files based on the failure summary:
 
-- `cypress/e2e/tests/features/shortcuts.spec.ts` — the current (failing) spec
-- `pkg/rancher-ai-ui/composables/useInputComposable.ts` — keyboard shortcut bindings
-- `pkg/rancher-ai-ui/pages/Chat.vue` — main chat page
-- `cypress/e2e/po/chat.po.ts` — ChatPo page object
-- `cypress/e2e/po/history.po.ts` — HistoryPo page object
-- `cypress/e2e/po/console.po.ts` — ConsolePo page object
-- Other page objects and components as needed
+1. **Always read first:** `cypress/e2e/tests/features/shortcuts.spec.ts` — the spec to fix
+2. **If selector issues:** Read the specific page object or component mentioned in the error
+3. **If pattern issues:** Read `cypress/e2e/tests/features/chat.spec.ts` for working patterns
 
-Also read working specs for patterns:
-- `cypress/e2e/tests/features/chat.spec.ts`
+Do NOT read every file in the project. The imported `cypress-rancher-ai.md`
+context already contains the page objects, selectors, and custom commands.
 
 ## Step 5 — Fix the Spec
 
