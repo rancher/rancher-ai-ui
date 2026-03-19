@@ -536,18 +536,12 @@ jobs:
                     "type": "string"
                   },
                   "pr_number": {
-                    "default": "",
-                    "description": "PR number for the spec branch",
-                    "type": "string"
-                  },
-                  "spec_branch": {
-                    "default": "test/e2e-shortcuts-spec",
-                    "description": "Branch containing the spec to test",
+                    "description": "PR number containing the spec to test",
                     "type": "string"
                   }
                 },
                 "required": [
-                  "spec_branch"
+                  "pr_number"
                 ],
                 "type": "object"
               },

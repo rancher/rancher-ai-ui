@@ -29,7 +29,7 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"773d575b081f2e22d5fae793a7ec2edf8da2c0d648aa66ef10d36a8c3148f51f","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"21d9a7008154b43d6f91ffe22488166ebf0c22f9e7694076edbd9b8d3f82f32a","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Spec Fixer"
 "on":
@@ -46,10 +46,6 @@ name: "E2E Spec Fixer"
         type: string
       pr_number:
         description: PR number to push fixes to
-        required: true
-        type: string
-      spec_branch:
-        description: Branch containing the spec to fix
         required: true
         type: string
 
@@ -133,7 +129,6 @@ jobs:
           GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT: ${{ github.event.inputs.attempt }}
           GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY: ${{ github.event.inputs.failure_summary }}
           GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: ${{ github.event.inputs.pr_number }}
-          GH_AW_GITHUB_EVENT_INPUTS_SPEC_BRANCH: ${{ github.event.inputs.spec_branch }}
           GH_AW_GITHUB_EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
@@ -205,7 +200,6 @@ jobs:
           GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT: ${{ github.event.inputs.attempt }}
           GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY: ${{ github.event.inputs.failure_summary }}
           GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: ${{ github.event.inputs.pr_number }}
-          GH_AW_GITHUB_EVENT_INPUTS_SPEC_BRANCH: ${{ github.event.inputs.spec_branch }}
         with:
           script: |
             const { setupGlobals } = require('/opt/gh-aw/actions/setup_globals.cjs');
@@ -222,7 +216,6 @@ jobs:
           GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT: ${{ github.event.inputs.attempt }}
           GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY: ${{ github.event.inputs.failure_summary }}
           GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: ${{ github.event.inputs.pr_number }}
-          GH_AW_GITHUB_EVENT_INPUTS_SPEC_BRANCH: ${{ github.event.inputs.spec_branch }}
           GH_AW_GITHUB_EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
@@ -245,7 +238,6 @@ jobs:
                 GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT: process.env.GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT,
                 GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY: process.env.GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY,
                 GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: process.env.GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER,
-                GH_AW_GITHUB_EVENT_INPUTS_SPEC_BRANCH: process.env.GH_AW_GITHUB_EVENT_INPUTS_SPEC_BRANCH,
                 GH_AW_GITHUB_EVENT_ISSUE_NUMBER: process.env.GH_AW_GITHUB_EVENT_ISSUE_NUMBER,
                 GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: process.env.GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER,
                 GH_AW_GITHUB_REPOSITORY: process.env.GH_AW_GITHUB_REPOSITORY,
@@ -554,18 +546,12 @@ jobs:
                     "type": "string"
                   },
                   "pr_number": {
-                    "default": "",
-                    "description": "PR number for the spec branch",
-                    "type": "string"
-                  },
-                  "spec_branch": {
-                    "default": "test/e2e-shortcuts-spec",
-                    "description": "Branch containing the spec to test",
+                    "description": "PR number containing the spec to test",
                     "type": "string"
                   }
                 },
                 "required": [
-                  "spec_branch"
+                  "pr_number"
                 ],
                 "type": "object"
               },

@@ -60,9 +60,8 @@ the spec fixer** (any test fails).
 
 Read `/tmp/gh-aw/e2e-results/results/metadata.json` to get:
 - `attempt` — current attempt number
-- `branch` — the branch with the spec
-- `outcome` — `success` or `failure`
 - `pr_number` — the PR number that was tested
+- `outcome` — `success` or `failure`
 
 If the runner workflow conclusion was `failure` AND the metadata is missing,
 use `create-issue` to report the infrastructure failure and stop.
@@ -121,7 +120,6 @@ Then use `noop` with a message confirming all tests passed.
 
 ### ANY check fails (attempt < 3)
 Use the `e2e_spec_fixer` tool to dispatch the spec fixer workflow with inputs:
-- `spec_branch`: value from metadata `branch`
 - `pr_number`: value from metadata `pr_number`
 - `attempt`: value from metadata `attempt`
 - `failure_summary`: A JSON string containing the list of failed checks, their screenshot names, and the reason each failed.

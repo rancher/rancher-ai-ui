@@ -526,6 +526,10 @@ jobs:
                     "description": "JSON string with failed checks from the verifier",
                     "type": "string"
                   },
+                  "pr_number": {
+                    "description": "PR number to push fixes to",
+                    "type": "string"
+                  },
                   "spec_branch": {
                     "description": "Branch containing the spec to fix",
                     "type": "string"
@@ -534,6 +538,7 @@ jobs:
                 "required": [
                   "attempt",
                   "failure_summary",
+                  "pr_number",
                   "spec_branch"
                 ],
                 "type": "object"

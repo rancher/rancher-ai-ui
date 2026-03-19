@@ -7,10 +7,6 @@ description: |
 on:
   workflow_dispatch:
     inputs:
-      spec_branch:
-        description: "Branch containing the spec to fix"
-        required: true
-        type: string
       pr_number:
         description: "PR number to push fixes to"
         required: true
@@ -77,7 +73,6 @@ existing PR and re-trigger the runner.
 
 ## Context
 
-- **Branch:** `${{ github.event.inputs.spec_branch }}`
 - **PR Number:** `${{ github.event.inputs.pr_number }}`
 - **Attempt:** `${{ github.event.inputs.attempt }}`
 - **Failure Summary:** `${{ github.event.inputs.failure_summary }}`
@@ -93,8 +88,11 @@ If the next attempt would be **> 3**, do NOT re-trigger. Instead:
 
 ## Step 2 — Checkout the PR Branch
 
+Use the GitHub tool to look up PR #`${{ github.event.inputs.pr_number }}` and
+get the head branch name. Then check it out:
+
 ```bash
-git checkout ${{ github.event.inputs.spec_branch }}
+git checkout <head-branch-from-PR>
 ```
 
 ## Step 3 — Analyze Failures
@@ -152,7 +150,7 @@ Do NOT use `git push` directly — the safe output handles pushing.
 ## Step 7 — Re-trigger the Runner
 
 Use the `e2e_shortcuts_runner` tool to dispatch the runner workflow with inputs:
-- `spec_branch`: `${{ github.event.inputs.spec_branch }}`
+- `pr_number`: `${{ github.event.inputs.pr_number }}`
 - `attempt`: the next attempt number (as a string)
 
 ## Important Rules
