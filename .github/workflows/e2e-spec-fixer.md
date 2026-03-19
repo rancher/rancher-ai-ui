@@ -2,12 +2,17 @@
 description: |
   Agentic workflow that reads E2E test failure artifacts and the verifier's
   analysis, fixes the Cypress spec, and re-triggers the runner workflow.
+  Uses push-to-pull-request-branch to push fixes to the existing PR.
 
 on:
   workflow_dispatch:
     inputs:
       spec_branch:
         description: "Branch containing the spec to fix"
+        required: true
+        type: string
+      pr_number:
+        description: "PR number to push fixes to"
         required: true
         type: string
       attempt:
@@ -30,7 +35,17 @@ network:
 imports:
   - shared/cypress-rancher-ai.md
 
+checkout:
+  fetch: ["*"]
+  fetch-depth: 0
+
 safe-outputs:
+  push-to-pull-request-branch:
+    target: "*"
+    title-prefix: "test(e2e): "
+    allowed-files:
+      - "cypress/**"
+    max: 1
   dispatch-workflow: [e2e-shortcuts-runner]
   create-issue:
     title-prefix: "[e2e-spec-fixer] "
@@ -48,7 +63,6 @@ tools:
     - "find *"
     - "head *"
     - "grep *"
-    - "git *"
     - "jq *"
   edit:
 
@@ -58,11 +72,13 @@ timeout-minutes: 15
 # E2E Spec Fixer
 
 You are a **spec-fixing agent** for the Rancher AI UI extension. The E2E
-test spec has failures and you need to fix them.
+test spec has failures and you need to fix them, then push the fix to the
+existing PR and re-trigger the runner.
 
 ## Context
 
 - **Branch:** `${{ github.event.inputs.spec_branch }}`
+- **PR Number:** `${{ github.event.inputs.pr_number }}`
 - **Attempt:** `${{ github.event.inputs.attempt }}`
 - **Failure Summary:** `${{ github.event.inputs.failure_summary }}`
 
@@ -75,10 +91,9 @@ If the next attempt would be **> 3**, do NOT re-trigger. Instead:
 2. Include the full failure summary
 3. Use `create-issue` and stop
 
-## Step 2 — Checkout the Branch
+## Step 2 — Checkout the PR Branch
 
 ```bash
-git fetch origin ${{ github.event.inputs.spec_branch }}
 git checkout ${{ github.event.inputs.spec_branch }}
 ```
 
@@ -120,17 +135,23 @@ Rules for fixes:
 - Ensure all `cy.screenshot()` calls use the exact expected names
 - Keep the same test structure (7 tests, same screenshot names)
 
-## Step 6 — Commit and Push
+## Step 6 — Commit and Push to PR
+
+Commit the fix locally:
 
 ```bash
 git add cypress/e2e/tests/features/shortcuts.spec.ts
 git commit -m "fix(e2e): fix shortcuts spec — attempt $NEXT_ATTEMPT"
-git push origin ${{ github.event.inputs.spec_branch }}
 ```
+
+Then use the `push_to_pull_request_branch` tool to push to the existing PR:
+- **pull_request_number**: `${{ github.event.inputs.pr_number }}`
+
+Do NOT use `git push` directly — the safe output handles pushing.
 
 ## Step 7 — Re-trigger the Runner
 
-Use `dispatch_workflow` to trigger `e2e-shortcuts-runner` with inputs:
+Use the `e2e_shortcuts_runner` tool to dispatch the runner workflow with inputs:
 - `spec_branch`: `${{ github.event.inputs.spec_branch }}`
 - `attempt`: the next attempt number (as a string)
 
@@ -139,5 +160,6 @@ Use `dispatch_workflow` to trigger `e2e-shortcuts-runner` with inputs:
 - ALWAYS check the loop guard FIRST. If attempt >= 3, create an issue and stop.
 - Parse the failure summary carefully — it contains specific check names and reasons.
 - Be surgical with fixes — only change what's broken.
+- Do NOT `git push` directly — use the `push_to_pull_request_branch` tool.
 - The runner will upload new artifacts, the verifier will re-check, closing the loop.
-- After committing and pushing, ALWAYS trigger the runner workflow.
+- After pushing via safe output, ALWAYS dispatch the runner workflow.

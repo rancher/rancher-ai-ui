@@ -1,7 +1,7 @@
 ---
 description: |
   Agentic workflow that creates or recreates the keyboard shortcuts E2E spec.
-  Commits to a working branch and triggers the E2E runner workflow.
+  Uses create-pull-request to push changes, then dispatches the runner.
 
 on:
   workflow_dispatch:
@@ -23,6 +23,14 @@ imports:
   - shared/cypress-rancher-ai.md
 
 safe-outputs:
+  create-pull-request:
+    title-prefix: "test(e2e): "
+    labels: [ai-e2e, automation]
+    draft: true
+    base-branch: e2e-agentic
+    allowed-files:
+      - "cypress/**"
+    max: 1
   dispatch-workflow: [e2e-shortcuts-runner]
   create-issue:
     title-prefix: "[e2e-spec-writer] "
@@ -40,7 +48,6 @@ tools:
     - "find *"
     - "head *"
     - "grep *"
-    - "git *"
   edit:
 
 timeout-minutes: 15
@@ -50,8 +57,8 @@ timeout-minutes: 15
 
 You are a **spec-writing agent** for the Rancher AI UI extension.
 Your job is to create (or recreate) the Cypress E2E spec that tests
-keyboard shortcuts, commit it to a working branch, and trigger the
-E2E test runner.
+keyboard shortcuts, then create a pull request with the changes and
+trigger the E2E test runner.
 
 ## Step 1 — Check Current State
 
@@ -79,18 +86,30 @@ Read these files to understand patterns:
 Create `cypress/e2e/tests/features/shortcuts.spec.ts` covering all 7 tests
 from the test plan below. Follow the conventions in the shared fragment.
 
-## Step 4 — Commit to Branch
+## Step 4 — Commit Changes Locally
+
+Create a local branch and commit the new spec file:
 
 ```bash
 git checkout -b test/e2e-shortcuts-spec
 git add cypress/e2e/tests/features/shortcuts.spec.ts
 git commit -m "test(e2e): create keyboard shortcuts spec"
-git push origin test/e2e-shortcuts-spec --force
 ```
 
-## Step 5 — Trigger the E2E Runner
+Do NOT push. The `create_pull_request` safe output will handle pushing.
 
-Use the `dispatch_workflow` tool to trigger `e2e-shortcuts-runner` with inputs:
+## Step 5 — Create the Pull Request
+
+Use the `create_pull_request` tool to create a draft PR with:
+- **title**: `add keyboard shortcuts E2E spec`
+- **body**: A summary of the 7 tests created
+- **branch**: `test/e2e-shortcuts-spec`
+
+The safe output system will push the branch and create the PR.
+
+## Step 6 — Trigger the E2E Runner
+
+Use the `e2e_shortcuts_runner` tool to dispatch the runner workflow with inputs:
 - `spec_branch`: `test/e2e-shortcuts-spec`
 - `attempt`: `1`
 
@@ -161,5 +180,6 @@ chat.sendMessage('Hello');
 - Create a COMPLETE spec covering all 7 tests.
 - Always take `cy.screenshot()` with the specified names.
 - Do NOT run Cypress — the runner workflow will handle that.
-- Commit message: `test(e2e): create keyboard shortcuts spec`
-- After committing and pushing, ALWAYS trigger the runner workflow.
+- Do NOT `git push` — the `create_pull_request` safe output handles pushing.
+- Commit locally with: `test(e2e): create keyboard shortcuts spec`
+- After committing locally, call `create_pull_request`, then dispatch the runner.
