@@ -1,0 +1,89 @@
+name: E2E Shortcuts Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec_branch:
+        description: "Branch containing the spec to test"
+        required: true
+        type: string
+        default: "test/e2e-shortcuts-spec"
+      attempt:
+        description: "Attempt number for the test loop"
+        required: false
+        type: string
+        default: "1"
+
+env:
+  RANCHER_VERSION: head
+  CATTLE_SERVER_URL: https://172.17.0.1
+  CATTLE_BOOTSTRAP_PASSWORD: password
+  KUBECONFIG_PATH: ${{ github.workspace }}/kubeconfig.yaml
+  DEV_UI_URL: https://localhost:8005
+
+jobs:
+  e2e-shortcuts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.spec_branch }}
+          fetch-depth: 1
+
+      - name: Setup Node env
+        uses: ./.github/actions/setup
+
+      - name: Start Rancher
+        run: .github/scripts/install-rancher.sh ${{ env.RANCHER_VERSION }} ${{ env.CATTLE_SERVER_URL }} ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+
+      - name: Deploy Rancher AI charts
+        run: .github/scripts/deploy-rancher-ai.sh ${{ env.KUBECONFIG_PATH }}
+
+      - name: Start dev UI
+        env:
+          API: ${{ env.CATTLE_SERVER_URL }}
+        run: |
+          nohup yarn dev > dev.log 2>&1 & echo $! > dev.pid
+
+      - name: Wait for dev UI to be ready
+        run: |
+          npx wait-on ${{ env.DEV_UI_URL }}
+
+      - name: Run Cypress shortcuts spec
+        id: cypress
+        continue-on-error: true
+        env:
+          TEST_USERNAME: admin
+          CATTLE_BOOTSTRAP_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+          API: ${{ env.CATTLE_SERVER_URL }}
+        run: |
+          yarn e2e --browser chrome --spec "cypress/e2e/tests/features/shortcuts.spec.ts"
+
+      - name: Save attempt metadata
+        if: always()
+        run: |
+          mkdir -p cypress/results
+          echo '{"attempt": ${{ github.event.inputs.attempt }}, "branch": "${{ github.event.inputs.spec_branch }}", "outcome": "${{ steps.cypress.outcome }}"}' > cypress/results/metadata.json
+
+      - name: Upload E2E results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-shortcuts-results
+          path: |
+            cypress/screenshots/
+            cypress/videos/
+            cypress/results/
+          retention-days: 7
+
+      - name: Tear down background processes
+        if: always()
+        run: |
+          if [ -f dev.pid ]; then kill $(cat dev.pid) || true; fi
+
+      - name: Report outcome
+        if: always()
+        run: |
+          echo "Cypress outcome: ${{ steps.cypress.outcome }}"
+          echo "Attempt: ${{ github.event.inputs.attempt }}"
+          echo "Branch: ${{ github.event.inputs.spec_branch }}"

@@ -1,33 +1,28 @@
 ---
 description: |
   QA verification agent that reviews E2E test screenshots and Cypress output
-  to produce a structured pass/fail report. Triggers after the main E2E
-  workflow completes. Checks screenshot evidence and reports findings.
+  from the E2E Shortcuts Runner workflow. On all-pass, creates a PR.
+  On any failure, dispatches the spec-fixer workflow to fix and retry.
 
 on:
   workflow_run:
-    workflows: ["Self-Healing E2E — Keyboard Shortcuts"]
+    workflows: ["E2E Shortcuts Runner"]
     types:
       - completed
-    branches:
-      - main
-      - e2e-agentic
-
-if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
 permissions: read-all
 
 network: defaults
 
 safe-outputs:
+  create-pull-request:
+    max: 1
+  dispatch-workflow: [e2e-spec-fixer]
   create-issue:
     title-prefix: "[e2e-verifier] "
     labels: [ai-e2e, qa-review]
     expires: 2d
     max: 1
-  add-comment:
-    max: 1
-    target: "*"
   noop:
 
 tools:
@@ -39,12 +34,13 @@ tools:
     - "find *"
     - "head *"
     - "wc *"
+    - "jq *"
 
 steps:
   - name: Download test artifacts
     uses: actions/download-artifact@v4
     with:
-      name: e2e-results
+      name: e2e-shortcuts-results
       path: /tmp/gh-aw/e2e-results/
       run-id: ${{ github.event.workflow_run.id }}
       github-token: ${{ github.token }}
@@ -55,19 +51,30 @@ timeout-minutes: 10
 # E2E QA Verifier
 
 You are a **QA Verification Agent** for the Rancher AI UI extension. Your job
-is to review screenshots and Cypress output from the E2E test run and produce
-a deterministic pass/fail report.
+is to review screenshots and Cypress output from the E2E Shortcuts Runner and
+decide the next action: **create a PR** (all tests pass) or **dispatch the
+spec fixer** (any test fails).
 
-## Input
+## Step 1 — Read Metadata
 
-Test artifacts have been downloaded to:
-- `/tmp/gh-aw/e2e-results/cypress/screenshots/` — screenshots taken during the test
-- `/tmp/gh-aw/e2e-results/cypress/videos/` — video recordings of the test run
-- `/tmp/gh-aw/e2e-results/cypress-output.txt` — Cypress console output
+Read `/tmp/gh-aw/e2e-results/results/metadata.json` to get:
+- `attempt` — current attempt number
+- `branch` — the branch with the spec
+- `outcome` — `success` or `failure`
 
-The spec file lives at: `cypress/e2e/tests/features/shortcuts.spec.ts`
+If the runner workflow conclusion was `failure` AND the metadata is missing,
+use `create-issue` to report the infrastructure failure and stop.
 
-## Verification Checklist
+## Step 2 — Examine Artifacts
+
+Test artifacts are at:
+- `/tmp/gh-aw/e2e-results/screenshots/` — screenshots taken during the test
+- `/tmp/gh-aw/e2e-results/videos/` — video recordings
+- `/tmp/gh-aw/e2e-results/results/metadata.json` — run metadata
+
+List all files and read any Cypress error screenshots (those with ` (failed)` in the name).
+
+## Step 3 — Verification Checklist
 
 For each test, look at the corresponding screenshots and verify:
 
@@ -100,46 +107,24 @@ For each test, look at the corresponding screenshots and verify:
 - **[MENU_OPEN]** `14-menu-opened.png` shows the chat dropdown menu
 - **[SHORTCUTS_VISIBLE]** `15-shortcuts-popover.png` shows the keyboard shortcuts reference
 
-## Process
+## Step 4 — Decision
 
-1. Read the Cypress output at `/tmp/gh-aw/e2e-results/cypress-output.txt`
-2. List all files in `/tmp/gh-aw/e2e-results/cypress/screenshots/` and `/tmp/gh-aw/e2e-results/cypress/videos/`
-3. For each check above, look for the corresponding screenshot
-4. Analyze each screenshot for evidence of the expected state
-5. Build a pass/fail report
+### ALL checks pass
+Use `create-pull-request` to open a PR:
+- **Head branch:** value from metadata `branch` (e.g. `test/e2e-shortcuts-spec`)
+- **Base branch:** `e2e-agentic`
+- **Title:** `test(e2e): add keyboard shortcuts spec`
+- **Body:** Include the QA verification report table showing all checks passed.
 
-## Output
+### ANY check fails (attempt < 3)
+Use `dispatch-workflow` to trigger `e2e-spec-fixer` with inputs:
+- `spec_branch`: value from metadata `branch`
+- `attempt`: value from metadata `attempt`
+- `failure_summary`: A JSON string containing the list of failed checks, their screenshot names, and the reason each failed.
 
-Create a report and use the appropriate safe-output:
-
-### If all checks pass
-Use `noop` — everything is fine.
-
-### If any checks fail
-Create an issue with this format:
-
-**Title:** `QA Report — <N> of 14 checks failed — Run #${{ github.run_number }}`
-
-**Body:**
-```markdown
-## 🔍 E2E QA Verification Report
-
-| Check | Screenshot | Result | Confidence | Notes |
-|-------|-----------|--------|------------|-------|
-| OPEN_CHAT | 01-chat-opened.png | ✅/❌ | 95% | ... |
-| ... | ... | ... | ... | ... |
-
-### Summary
-- **Total checks:** 14
-- **Passed:** X
-- **Failed:** Y
-
-### Recommendations
-- [If selector-related] Suggest triggering the `e2e-keyboard-shortcuts` workflow in FIX mode
-- [If timing-related] Suggest adding wait commands
-
-_Triggered by workflow run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_
-```
+### ANY check fails (attempt >= 3)
+Use `create-issue` to report that the spec could not be fixed after 3 attempts.
+Include the full verification report.
 
 ## Rules
 
@@ -147,6 +132,7 @@ _Triggered by workflow run [${{ github.run_id }}](${{ github.server_url }}/${{ g
   screenshot, mark it as failed.
 - If a screenshot is missing, mark all checks that depend on it as failed with
   reasoning "Screenshot not found".
-- Assign a confidence score (0–100) to each check.
+- If the runner workflow conclusion was `failure`, treat ALL checks as failed.
+- Always include the attempt number in your output.
 - If multiple checks fail with selector-related errors, note that the spec
   may need updating.
