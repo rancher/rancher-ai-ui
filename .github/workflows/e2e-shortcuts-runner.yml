@@ -68,13 +68,15 @@ jobs:
           CATTLE_BOOTSTRAP_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
           API: ${{ env.CATTLE_SERVER_URL }}
         run: |
-          yarn e2e --browser chrome
+          yarn e2e --browser chrome 2>&1 | tee cypress/results/cypress-output.txt
 
       - name: Save attempt metadata
         if: always()
         run: |
           mkdir -p cypress/results
           echo '{"attempt": ${{ github.event.inputs.attempt }}, "pr_number": "${{ github.event.inputs.pr_number }}", "outcome": "${{ steps.cypress.outcome }}"}' > cypress/results/metadata.json
+          # If the output file doesn't exist (e.g. install failed), create an empty one
+          touch cypress/results/cypress-output.txt
 
       - name: Upload E2E results
         if: always()

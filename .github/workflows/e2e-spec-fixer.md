@@ -108,10 +108,18 @@ Parse the `failure_summary` input (JSON) to understand which checks failed and w
 Common failure categories:
 1. **Selector not found** — The `data-testid` or CSS selector doesn't match the actual DOM
 2. **Timing issue** — Element not ready when assertion runs (needs `cy.wait` or `should('be.visible')`)
-3. **Wrong key combo** — The keyboard shortcut key sequence is incorrect
+3. **Wrong key combo** — Keyboard shortcuts MUST use combined modifier syntax:
+   `{alt+k}`, `{ctrl+shift+o}`, NOT `{alt}k` or `{ctrl}{shift}o`.
+   Each modifier+key press must be in a SINGLE brace group.
 4. **Missing mock** — Need to call `cy.enqueueLLMResponse()` before sending a message
-5. **Screenshot name mismatch** — Screenshot taken with wrong name
-6. **Logic error** — Test flow doesn't match the actual UI behavior
+5. **Screenshot blank** — Screenshots must be taken on the chat container element:
+   `cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('name')`
+   and always add `cy.wait(500)` before each screenshot call.
+6. **Clipboard permission denied** — In headless CI, `navigator.clipboard.writeText()`
+   fails. Must stub it: `cy.window().then(win => cy.stub(win.navigator.clipboard, 'writeText').resolves())`
+7. **{tab} not supported** — `cy.type('{tab}')` is NOT valid Cypress. Never use it.
+   Instead, verify textarea value directly.
+8. **Logic error** — Test flow doesn't match the actual UI behavior
 
 ## Step 4 — Read Only What You Need
 
@@ -133,6 +141,12 @@ Rules for fixes:
 - Add appropriate waits (`cy.get(...).should('be.visible')`) for timing issues
 - Use correct `data-testid` selectors from the actual components
 - Ensure all `cy.screenshot()` calls use the exact expected names
+- **Screenshots MUST be taken on the chat container element**, not the viewport:
+  `cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('name')`
+- **Add `cy.wait(500)` before every `cy.screenshot()`** to ensure DOM stability
+- **Keyboard shortcuts MUST use combined modifier syntax**: `{alt+k}`, `{ctrl+shift+o}`
+- **Stub clipboard** before copy tests: `cy.stub(win.navigator.clipboard, 'writeText').resolves()`
+- **Never use `{tab}`** in `cy.type()` — it is not supported
 - Keep the same test structure (7 tests, same screenshot names)
 
 ## Step 6 — Comment on PR
