@@ -90,8 +90,8 @@ existing PR and re-trigger the runner.
 
 Calculate the next attempt number: `current_attempt + 1`.
 
-If the next attempt would be **> 3**, do NOT re-trigger. Instead:
-1. Create an issue explaining the spec could not be auto-fixed after 3 attempts
+If the next attempt would be **> 5**, do NOT re-trigger. Instead:
+1. Create an issue explaining the spec could not be auto-fixed after 5 attempts
 2. Include the full failure summary
 3. Use `create-issue` and stop
 
@@ -188,7 +188,7 @@ Use the `e2e_shortcuts_runner` tool to dispatch the runner workflow with inputs:
 
 ## Important Rules
 
-- ALWAYS check the loop guard FIRST. If attempt >= 3, create an issue and stop.
+- ALWAYS check the loop guard FIRST. If attempt >= 5, create an issue and stop.
 - Parse the failure summary carefully — it contains specific check names and reasons.
 - Be surgical with fixes — only change what's broken.
 - Do NOT `git push` directly — use the `push_to_pull_request_branch` tool first.

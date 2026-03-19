@@ -128,14 +128,14 @@ Use `add-comment` to post a verification report on the PR:
 
 Then use `noop` with a message confirming all tests passed.
 
-### ANY check fails (attempt < 3)
+### ANY check fails (attempt < 5)
 Use the `e2e_spec_fixer` tool to dispatch the spec fixer workflow with inputs:
 - `pr_number`: value from metadata `pr_number`
 - `attempt`: value from metadata `attempt`
 - `failure_summary`: A JSON string containing the list of failed checks, their screenshot names, and the reason each failed.
 
-### ANY check fails (attempt >= 3)
-Use `create-issue` to report that the spec could not be fixed after 3 attempts.
+### ANY check fails (attempt >= 5)
+Use `create-issue` to report that the spec could not be fixed after 5 attempts.
 Include the full verification report.
 
 ## Rules
