@@ -30,7 +30,7 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"eab383532f5e1c0de6902f2d662b7783292f3c327f63fc6c60699d063a77a819","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"a7a3dc43af22b4a87290c4020a81143cf9435ea037805a85ba430e94db207cf7","compiler_version":"v0.57.2","strict":true}
 
 name: "Self-Healing E2E — Keyboard Shortcuts"
 "on":
@@ -285,12 +285,10 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24'
-          cache: 'yarn'
-          node-version-file: '.nvmrc'
-          package-manager-cache: false
+          cache: yarn
+          node-version: 20
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Start Rancher
