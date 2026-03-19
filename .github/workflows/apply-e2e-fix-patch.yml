@@ -1,0 +1,149 @@
+name: Apply E2E spec-fixer patch to fork PRs
+
+on:
+  workflow_run:
+    workflows: ["E2E Spec Fixer"]
+    types: [completed]
+
+jobs:
+  apply-patch:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      actions: write
+    steps:
+      - name: Check for patches in repo-memory and apply
+        env:
+          GH_TOKEN: ${{ secrets.MAINTAINER_PAT }}
+        run: |
+          REPO="${{ github.repository }}"
+
+          # Clone the repo-memory branch to look for patch files
+          git clone --depth 1 --branch memory/default \
+            "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" \
+            /tmp/repo-memory 2>/dev/null || {
+            echo "No memory/default branch found, skipping."
+            exit 0
+          }
+
+          # Find e2e patch files
+          PATCH_DIR="/tmp/repo-memory/memory/default/patches"
+          if [ ! -d "$PATCH_DIR" ] || [ -z "$(ls -A "$PATCH_DIR"/e2e-pr-*.patch 2>/dev/null)" ]; then
+            echo "No e2e patch files found in repo-memory, skipping."
+            echo "This likely means the spec-fixer pushed directly via safe output."
+            exit 0
+          fi
+
+          # Process each e2e patch file (named e2e-pr-<number>.patch)
+          for PATCH_FILE in "$PATCH_DIR"/e2e-pr-*.patch; do
+            FILENAME=$(basename "$PATCH_FILE")
+            PR_NUMBER=$(echo "$FILENAME" | sed 's/e2e-pr-\([0-9]*\)\.patch/\1/')
+
+            echo "Found e2e patch for PR #$PR_NUMBER: $FILENAME"
+
+            # Verify patch file is not empty
+            if [ ! -s "$PATCH_FILE" ]; then
+              echo "Patch file is empty, skipping."
+              continue
+            fi
+
+            PATCH_SIZE=$(wc -c < "$PATCH_FILE")
+            echo "Patch size: $PATCH_SIZE bytes"
+
+            # Get PR details
+            PR_DATA=$(gh pr view "$PR_NUMBER" --repo "$REPO" \
+              --json headRefName,headRepository,headRepositoryOwner,maintainerCanModify,state 2>/dev/null) || {
+              echo "PR #$PR_NUMBER not found or not accessible, skipping."
+              continue
+            }
+
+            PR_STATE=$(echo "$PR_DATA" | jq -r '.state')
+            if [ "$PR_STATE" != "OPEN" ]; then
+              echo "PR #$PR_NUMBER is $PR_STATE, cleaning up patch and skipping."
+              rm "$PATCH_FILE"
+              continue
+            fi
+
+            HEAD_REF=$(echo "$PR_DATA" | jq -r '.headRefName')
+            HEAD_OWNER=$(echo "$PR_DATA" | jq -r '.headRepositoryOwner.login')
+            HEAD_REPO_NAME=$(echo "$PR_DATA" | jq -r '.headRepository.name')
+            CAN_MODIFY=$(echo "$PR_DATA" | jq -r '.maintainerCanModify')
+
+            REPO_OWNER=$(echo "$REPO" | cut -d'/' -f1)
+
+            echo "PR #$PR_NUMBER is from $HEAD_OWNER/$HEAD_REPO_NAME, branch $HEAD_REF"
+            echo "Maintainer can modify: $CAN_MODIFY"
+
+            if [ "$CAN_MODIFY" != "true" ]; then
+              echo "Maintainer edits not allowed on this PR. Cannot push to fork."
+              gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                --body "⚠️ **E2E auto-apply failed**: This PR does not allow maintainer edits, so the patch cannot be pushed automatically. You can retrieve the patch from the \`memory/default\` branch at \`memory/default/patches/$FILENAME\` and apply it with \`git apply\`."
+              continue
+            fi
+
+            # Clone the fork, apply the patch, and push
+            FORK_DIR="/tmp/fork-$PR_NUMBER"
+            FORK_URL="https://x-access-token:${GH_TOKEN}@github.com/$HEAD_OWNER/$HEAD_REPO_NAME.git"
+            git clone --depth 1 --branch "$HEAD_REF" "$FORK_URL" "$FORK_DIR" || {
+              echo "Failed to clone fork, skipping."
+              gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                --body "⚠️ **E2E auto-apply failed**: Could not clone the fork branch. You can retrieve the patch from the \`memory/default\` branch at \`memory/default/patches/$FILENAME\` and apply it with \`git apply\`."
+              continue
+            }
+
+            cd "$FORK_DIR"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            if git apply "$PATCH_FILE"; then
+              echo "Patch applied successfully"
+              git add -A
+              git commit -m "fix(e2e): apply spec-fixer patch
+
+          Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+
+              if git push origin "$HEAD_REF"; then
+                echo "Patch pushed successfully to fork branch"
+                gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                  --body "✅ **E2E spec-fix applied** — the fix has been pushed to the PR branch. Re-triggering the E2E runner."
+
+                # Clean up the patch file from repo-memory
+                rm "$PATCH_FILE"
+
+                # Read the attempt number from the patch comment or default to next
+                # We parse attempt from the commit message if available, otherwise use 2
+                ATTEMPT=$(git log -1 --format=%s | grep -oP 'attempt \K[0-9]+' || echo "2")
+
+                # Dispatch the E2E runner to re-test
+                gh workflow run e2e-shortcuts-runner.yml \
+                  --repo "$REPO" \
+                  --ref e2e-agentic \
+                  -f pr_number="$PR_NUMBER" \
+                  -f attempt="$ATTEMPT"
+                echo "Dispatched E2E Shortcuts Runner for PR #$PR_NUMBER, attempt $ATTEMPT"
+              else
+                echo "Push to fork failed"
+                gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                  --body "⚠️ **E2E auto-apply failed**: Could not push to the fork branch. You can retrieve the patch from the \`memory/default\` branch at \`memory/default/patches/$FILENAME\` and apply it with \`git apply\`."
+              fi
+            else
+              echo "Patch apply failed (possible conflicts)"
+              gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                --body "⚠️ **E2E auto-apply failed**: The patch could not be applied cleanly. You can retrieve the patch from the \`memory/default\` branch at \`memory/default/patches/$FILENAME\` and apply it with \`git apply\`."
+            fi
+
+            cd /tmp
+          done
+
+          # Push cleanup changes back to repo-memory (remove applied patches)
+          cd /tmp/repo-memory
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git add -A && git diff --cached --quiet; then
+            echo "No patches to clean up."
+          else
+            git commit -m "chore: clean up applied e2e spec-fixer patches"
+            git push origin memory/default
+            echo "Cleaned up applied patches from repo-memory."
+          fi
