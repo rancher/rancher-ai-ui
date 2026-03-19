@@ -23,6 +23,9 @@ env:
 jobs:
   e2e-shortcuts:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     steps:
       - name: Resolve PR head ref
         id: pr
@@ -95,3 +98,16 @@ jobs:
           echo "Cypress outcome: ${{ steps.cypress.outcome }}"
           echo "Attempt: ${{ github.event.inputs.attempt }}"
           echo "PR: #${{ github.event.inputs.pr_number }}"
+
+      - name: Dispatch E2E Verifier
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run e2e-verifier.lock.yml \
+            --repo ${{ github.repository }} \
+            --ref e2e-agentic \
+            -f pr_number="${{ github.event.inputs.pr_number }}" \
+            -f attempt="${{ github.event.inputs.attempt }}" \
+            -f runner_run_id="${{ github.run_id }}"
+          echo "Dispatched E2E Verifier with run_id=${{ github.run_id }}"
