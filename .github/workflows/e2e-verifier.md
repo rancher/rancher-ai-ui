@@ -9,8 +9,6 @@ on:
     workflows: ["Self-Healing E2E — Keyboard Shortcuts"]
     types:
       - completed
-    branches:
-      - main
 
 if: ${{ github.event.workflow_run.conclusion == 'success' }}
 

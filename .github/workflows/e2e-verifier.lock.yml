@@ -25,14 +25,12 @@
 # to produce a structured pass/fail report. Triggers after the main E2E
 # workflow completes. Checks screenshot evidence and reports findings.
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"950234b243bd5f79bfe073fc3dc94b5ddcf9d04c78e79f5f36524db91284a8b1","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"bc0ee494373538242018524f5ad04dbd792d806708b4e6c93a6961024a5011a4","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E QA Verifier"
 "on":
   workflow_run:
     # zizmor: ignore[dangerous-triggers] - workflow_run trigger is secured with role and fork validation
-    branches:
-    - main
     types:
     - completed
     workflows:
