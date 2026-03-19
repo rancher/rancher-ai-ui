@@ -25,6 +25,7 @@ safe-outputs:
   add-comment:
     target: "*"
     max: 1
+    hide-older-comments: true
   dispatch-workflow: [e2e-spec-fixer]
   create-issue:
     title-prefix: "[e2e-verifier] "
@@ -118,24 +119,31 @@ For each test, look at the corresponding screenshots and verify:
 - **[MENU_OPEN]** `14-menu-opened.png` shows the chat dropdown menu
 - **[SHORTCUTS_VISIBLE]** `15-shortcuts-popover.png` shows the keyboard shortcuts reference
 
-## Step 4 — Decision
+## Step 4 — Comment on PR
+
+**Always** post a comment on the PR explaining the verification result using `add-comment`:
+- **pull_request_number**: value from metadata `pr_number`
+- **body**: Include:
+  - Heading: `🔍 **E2E Verifier — Attempt {attempt}**`
+  - The full verification checklist table with ✅/❌ for each check
+  - A summary of the outcome
+  - What action will be taken next (pass → ready for review, fail → dispatching fixer, fail at max → creating issue)
+
+Older comments from previous verifier runs will be automatically hidden.
+
+## Step 5 — Decision
 
 ### ALL checks pass
-Use `add-comment` to post a verification report on the PR:
-- **pull_request_number**: value from metadata `pr_number`
-- **body**: Include the QA verification report table showing all checks passed,
-  with a note that the PR is ready for human review.
-
-Then use `noop` with a message confirming all tests passed.
+After commenting, use `noop` with a message confirming all tests passed.
 
 ### ANY check fails (attempt < 5)
-Use the `e2e_spec_fixer` tool to dispatch the spec fixer workflow with inputs:
+After commenting, use the `e2e_spec_fixer` tool to dispatch the spec fixer workflow with inputs:
 - `pr_number`: value from metadata `pr_number`
 - `attempt`: value from metadata `attempt`
 - `failure_summary`: A JSON string containing the list of failed checks, their screenshot names, and the reason each failed.
 
 ### ANY check fails (attempt >= 5)
-Use `create-issue` to report that the spec could not be fixed after 5 attempts.
+After commenting, use `create-issue` to report that the spec could not be fixed after 5 attempts.
 Include the full verification report.
 
 ## Rules
