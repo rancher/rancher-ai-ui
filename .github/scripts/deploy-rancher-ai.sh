@@ -37,11 +37,7 @@ rm -rf rancher-ai-llm-mock
 echo ""
 echo "Cloning rancher-ai-agent chart repository..."
 
-# TODO unpin backend chart
-git clone https://github.com/torchiaf/rancher-ai-agent.git
-cd rancher-ai-agent
-git checkout ui-e2e
-cd ..
+git clone https://github.com/rancher/rancher-ai-agent.git
 
 echo ""
 echo "Cloning llm-mock chart repository..."
@@ -65,6 +61,7 @@ echo "Deploying Rancher AI Helm chart with LLM mock configuration..."
 helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
   --namespace cattle-ai-agent-system \
   --create-namespace \
+  --set global.cattle.systemDefaultRegistry=stgregistry.suse.com \
   --set googleApiKey=empty \
   --set ollamaUrl="http://localhost:11434" \
   --set ollamaLlmModel=ollama \
