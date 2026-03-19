@@ -30,7 +30,7 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"5491e226ea51337d01f7f2ae73f44ef6c90265e435b24078a91a68fb1d537f51","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"eab383532f5e1c0de6902f2d662b7783292f3c327f63fc6c60699d063a77a819","compiler_version":"v0.57.2","strict":true}
 
 name: "Self-Healing E2E — Keyboard Shortcuts"
 "on":
@@ -277,19 +277,34 @@ jobs:
         uses: github/gh-aw/actions/setup@32b3a711a9ee97d38e3989c90af0385aff0066a7 # v0.57.2
         with:
           destination: /opt/gh-aw/actions
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
       - name: Create gh-aw temp directory
         run: bash /opt/gh-aw/actions/create_gh_aw_tmp_dir.sh
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - name: Checkout repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          cache: yarn
-          node-version: 20
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '24'
+          cache: 'yarn'
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+      - name: Start Rancher
+        run: .github/scripts/install-rancher.sh head https://172.17.0.1 password
+      - name: Deploy Rancher AI charts with LLM mock
+        run: .github/scripts/deploy-rancher-ai.sh ${{ github.workspace }}/kubeconfig.yaml
+      - env:
+          API: https://172.17.0.1
+        name: Start dev UI
+        run: |
+          nohup yarn dev > /tmp/gh-aw/dev.log 2>&1 &
+          echo $! > /tmp/gh-aw/dev.pid
+      - name: Wait for dev UI to be ready
+        run: npx wait-on https://localhost:8005
 
       - name: Configure Git credentials
         env:
@@ -770,7 +785,7 @@ jobs:
       - name: Execute GitHub Copilot CLI
         id: agentic_execution
         # Copilot CLI tool arguments (sorted):
-        timeout-minutes: 30
+        timeout-minutes: 45
         run: |
           set -o pipefail
           touch /tmp/gh-aw/agent-step-summary.md
@@ -1150,7 +1165,7 @@ jobs:
           GH_AW_CODE_PUSH_FAILURE_COUNT: ${{ needs.safe_outputs.outputs.code_push_failure_count }}
           GH_AW_GROUP_REPORTS: "false"
           GH_AW_FAILURE_REPORT_AS_ISSUE: "true"
-          GH_AW_TIMEOUT_MINUTES: "30"
+          GH_AW_TIMEOUT_MINUTES: "45"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
