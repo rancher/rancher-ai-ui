@@ -1,8 +1,8 @@
 ---
 description: |
   QA verification agent that reviews E2E test screenshots and Cypress output
-  from the E2E Shortcuts Runner workflow. On all-pass, creates a PR.
-  On any failure, dispatches the spec-fixer workflow to fix and retry.
+  from the E2E Shortcuts Runner workflow. On all-pass, adds a comment to the
+  PR marking it ready. On any failure, dispatches the spec-fixer workflow.
 
 on:
   workflow_run:
@@ -15,7 +15,8 @@ permissions: read-all
 network: defaults
 
 safe-outputs:
-  create-pull-request:
+  add-comment:
+    target: "*"
     max: 1
   dispatch-workflow: [e2e-spec-fixer]
   create-issue:
@@ -52,8 +53,8 @@ timeout-minutes: 10
 
 You are a **QA Verification Agent** for the Rancher AI UI extension. Your job
 is to review screenshots and Cypress output from the E2E Shortcuts Runner and
-decide the next action: **create a PR** (all tests pass) or **dispatch the
-spec fixer** (any test fails).
+decide the next action: **comment on the PR** (all tests pass) or **dispatch
+the spec fixer** (any test fails).
 
 ## Step 1 — Read Metadata
 
@@ -61,6 +62,7 @@ Read `/tmp/gh-aw/e2e-results/results/metadata.json` to get:
 - `attempt` — current attempt number
 - `branch` — the branch with the spec
 - `outcome` — `success` or `failure`
+- `pr_number` — the PR number that was tested
 
 If the runner workflow conclusion was `failure` AND the metadata is missing,
 use `create-issue` to report the infrastructure failure and stop.
@@ -110,15 +112,17 @@ For each test, look at the corresponding screenshots and verify:
 ## Step 4 — Decision
 
 ### ALL checks pass
-Use `create-pull-request` to open a PR:
-- **Head branch:** value from metadata `branch` (e.g. `test/e2e-shortcuts-spec`)
-- **Base branch:** `e2e-agentic`
-- **Title:** `test(e2e): add keyboard shortcuts spec`
-- **Body:** Include the QA verification report table showing all checks passed.
+Use `add-comment` to post a verification report on the PR:
+- **pull_request_number**: value from metadata `pr_number`
+- **body**: Include the QA verification report table showing all checks passed,
+  with a note that the PR is ready for human review.
+
+Then use `noop` with a message confirming all tests passed.
 
 ### ANY check fails (attempt < 3)
-Use `dispatch-workflow` to trigger `e2e-spec-fixer` with inputs:
+Use the `e2e_spec_fixer` tool to dispatch the spec fixer workflow with inputs:
 - `spec_branch`: value from metadata `branch`
+- `pr_number`: value from metadata `pr_number`
 - `attempt`: value from metadata `attempt`
 - `failure_summary`: A JSON string containing the list of failed checks, their screenshot names, and the reason each failed.
 
@@ -134,5 +138,3 @@ Include the full verification report.
   reasoning "Screenshot not found".
 - If the runner workflow conclusion was `failure`, treat ALL checks as failed.
 - Always include the attempt number in your output.
-- If multiple checks fail with selector-related errors, note that the spec
-  may need updating.
