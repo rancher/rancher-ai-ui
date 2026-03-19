@@ -37,6 +37,15 @@ safe-outputs:
     protected-files: fallback-to-issue
   noop:
 
+steps:
+  - name: Setup Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: 20
+      cache: yarn
+  - name: Install dependencies
+    run: yarn install --frozen-lockfile
+
 tools:
   github:
     toolsets: [default]
@@ -58,14 +67,23 @@ You manage a persistent Cypress spec file that tests keyboard shortcuts.
 This file is committed to the repo and persists across runs. It is the
 **single source of truth** for keyboard shortcut E2E tests.
 
+## Environment
+
+Node.js and `node_modules` are already installed (via pre-steps). You have
+access to `yarn`, `npx`, and the Cypress binary. However, there is **no
+running Rancher instance** or dev server in this environment — you cannot
+execute the full E2E tests. Instead, validate specs by:
+- Type-checking with `npx tsc --noEmit` (or check for syntax errors)
+- Reviewing patterns from existing passing specs (`chat.spec.ts`, etc.)
+
 ## Determine Operating Mode
 
 First, determine which mode to operate in:
 
 1. Check if `${{ github.event.inputs.force_recreate }}` is `true` → **CREATE** mode
 2. Check if the spec file exists at the path above → if missing → **CREATE** mode
-3. If the spec exists, run it. If tests fail → **FIX** mode
-4. If the spec exists and tests pass → **NOOP** (exit with `noop` safe-output)
+3. If the spec exists, type-check it and review for obvious errors → if broken → **FIX** mode
+4. If the spec exists and looks correct → **NOOP** (exit with `noop` safe-output)
 
 ## Mode: CREATE
 
@@ -73,29 +91,25 @@ The spec file does not exist (or force-recreate was requested). You must:
 
 1. Read the test plan below
 2. Read the Cypress skill reference imported from the shared fragment
-3. Create `cypress/e2e/tests/features/shortcuts.spec.ts`
-4. Run it to verify it passes:
-   ```
-   TEST_SKIP=setup TEST_PASSWORD=admin1234 TEST_USERNAME=admin \
-   CYPRESS_BASE_URL=https://localhost:8005 NODE_TLS_REJECT_UNAUTHORIZED=0 \
-   yarn cypress:run --spec cypress/e2e/tests/features/shortcuts.spec.ts \
-   --config video=true,screenshotOnRunFailure=true
-   ```
-5. If it fails, debug and fix until it passes (max 3 attempts)
-6. Create a pull request with the new spec file
-7. Commit message format: `test(e2e): create keyboard shortcuts spec`
+3. Study existing specs (`cypress/e2e/tests/features/chat.spec.ts`,
+   `cypress/e2e/tests/features/history/chat.spec.ts`) for patterns
+4. Create `cypress/e2e/tests/features/shortcuts.spec.ts`
+5. Validate it type-checks: `npx tsc --noEmit --project cypress/tsconfig.json 2>&1 | head -40`
+6. If type errors, fix them (max 3 attempts)
+7. Create a pull request with the new spec file
+8. Commit message format: `test(e2e): create keyboard shortcuts spec`
 
 ## Mode: FIX
 
-The spec file exists but tests failed. You must:
+The spec file exists but has issues (type errors, stale selectors, etc.). You must:
 
-1. Read the Cypress error output from the test run
-2. Read the current spec at `cypress/e2e/tests/features/shortcuts.spec.ts`
-3. Read the Cypress skill reference
-4. Identify the root cause (selector changed? timing issue? new UI layout?)
+1. Read the current spec at `cypress/e2e/tests/features/shortcuts.spec.ts`
+2. Read the Cypress skill reference
+3. Check the source Vue components for any changed `data-testid` selectors
+4. Identify the root cause (selector changed? API changed? new UI layout?)
 5. Update **only the broken parts** — do not rewrite the entire spec
-6. Run the updated spec to verify it passes
-7. If it still fails, try a different fix (max 3 attempts)
+6. Validate it type-checks: `npx tsc --noEmit --project cypress/tsconfig.json 2>&1 | head -40`
+7. If it still has errors, try a different fix (max 3 attempts)
 8. Create a pull request with the fixed spec file
 9. Commit message format: `test(e2e): fix keyboard shortcuts spec`
 

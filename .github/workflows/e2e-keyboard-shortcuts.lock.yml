@@ -30,7 +30,7 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"2afd4dff0df2b0d5c9d891615afe36acfc9f71047da936a1ddf306abc56c6288","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"5491e226ea51337d01f7f2ae73f44ef6c90265e435b24078a91a68fb1d537f51","compiler_version":"v0.57.2","strict":true}
 
 name: "Self-Healing E2E — Keyboard Shortcuts"
 "on":
@@ -283,6 +283,14 @@ jobs:
           persist-credentials: false
       - name: Create gh-aw temp directory
         run: bash /opt/gh-aw/actions/create_gh_aw_tmp_dir.sh
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          cache: yarn
+          node-version: 20
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
       - name: Configure Git credentials
         env:
           REPO_NAME: ${{ github.repository }}
