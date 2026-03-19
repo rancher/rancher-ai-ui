@@ -29,7 +29,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          HEAD_REF=$(gh pr view ${{ github.event.inputs.pr_number }} --json headRefName -q .headRefName)
+          HEAD_REF=$(gh pr view ${{ github.event.inputs.pr_number }} --repo ${{ github.repository }} --json headRefName -q .headRefName)
           echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
           echo "Resolved PR #${{ github.event.inputs.pr_number }} head ref: $HEAD_REF"
 
