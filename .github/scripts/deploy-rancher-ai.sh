@@ -12,6 +12,12 @@ else
   WAIT_FOR_AI_SERVICE_READY=$2
 fi
 
+if [ -z "$3" ]; then
+  FETCH_REPOS=true
+else
+  FETCH_REPOS=$3
+fi
+
 HELM_WAIT_FLAGS=""
 if [ "$WAIT_FOR_AI_SERVICE_READY" = "true" ]; then
   HELM_WAIT_FLAGS="--wait --timeout 2m"
@@ -31,21 +37,14 @@ export KUBECONFIG="$KUBECONFIG_PATH"
 
 helm uninstall ai-agent -n cattle-ai-agent-system || true
 helm uninstall llm-mock -n cattle-ai-agent-system || true
-rm -rf rancher-ai-agent
-rm -rf rancher-ai-llm-mock
 
-echo ""
-echo "Cloning rancher-ai-agent chart repository..."
+if [ "$FETCH_REPOS" = "true" ]; then
+  rm -rf rancher-ai-agent
+  rm -rf rancher-ai-llm-mock
 
-git clone https://github.com/rancher/rancher-ai-agent.git
-
-echo ""
-echo "Cloning llm-mock chart repository..."
-
-git clone https://github.com/rancher-sandbox/rancher-ai-llm-mock.git
-
-echo ""
-echo "Deploying LLM mock service..."
+  git clone https://github.com/rancher/rancher-ai-agent.git
+  git clone https://github.com/rancher-sandbox/rancher-ai-llm-mock.git
+fi
 
 helm upgrade --install llm-mock ./rancher-ai-llm-mock/chart/llm-mock \
   --namespace cattle-ai-agent-system \
@@ -54,9 +53,6 @@ helm upgrade --install llm-mock ./rancher-ai-llm-mock/chart/llm-mock \
 
 kubectl -n cattle-ai-agent-system rollout status deployment/llm-mock --timeout=1m
 kubectl -n cattle-ai-agent-system wait --for=condition=available --timeout=1m deployment/llm-mock
-
-echo ""
-echo "Deploying Rancher AI Helm chart with LLM mock configuration..."
 
 helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
   --namespace cattle-ai-agent-system \
