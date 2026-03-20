@@ -2,13 +2,9 @@ name: Apply E2E spec-fixer patch to fork PRs
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["E2E Spec Fixer"]
-    types: [completed]
 
 jobs:
   apply-patch:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
