@@ -10,7 +10,8 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: read
+      contents: write
+      pull-requests: write
       actions: write
     steps:
       - name: Check for patches in repo-memory and apply
@@ -79,15 +80,18 @@ jobs:
 
             echo "PR #$PR_NUMBER is from $HEAD_OWNER/$HEAD_REPO_NAME, branch $HEAD_REF"
             echo "Maintainer can modify: $CAN_MODIFY"
+            echo "Repo owner: $REPO_OWNER"
 
-            if [ "$CAN_MODIFY" != "true" ]; then
-              echo "Maintainer edits not allowed on this PR. Cannot push to fork."
+            # If same-repo PR, we can always push (PAT has access).
+            # Only block if it's a true cross-fork PR AND maintainerCanModify is false.
+            if [ "$HEAD_OWNER" != "$REPO_OWNER" ] && [ "$CAN_MODIFY" != "true" ]; then
+              echo "Cross-fork PR with maintainer edits not allowed. Cannot push."
               gh pr comment "$PR_NUMBER" --repo "$REPO" \
-                --body "⚠️ **E2E auto-apply failed**: This PR does not allow maintainer edits, so the patch cannot be pushed automatically. You can retrieve the patch from the \`memory/default\` branch at \`memory/default/patches/$FILENAME\` and apply it with \`git apply\`."
+                --body "⚠️ **E2E auto-apply failed**: This PR does not allow maintainer edits, so the patch cannot be pushed automatically. You can retrieve the patch from the \`memory/default\` branch and apply it with \`git apply\`."
               continue
             fi
 
-            # Clone the fork, apply the patch, and push
+            # Clone the target branch — use the HEAD repo for the push
             FORK_DIR="/tmp/fork-$PR_NUMBER"
             FORK_URL="https://x-access-token:${GH_TOKEN}@github.com/$HEAD_OWNER/$HEAD_REPO_NAME.git"
             git clone --depth 1 --branch "$HEAD_REF" "$FORK_URL" "$FORK_DIR" || {
