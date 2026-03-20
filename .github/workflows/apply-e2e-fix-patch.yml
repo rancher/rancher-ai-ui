@@ -102,41 +102,48 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
 
-            if git apply "$PATCH_FILE"; then
-              echo "Patch applied successfully"
-              git add -A
-              git commit -m "fix(e2e): apply spec-fixer patch
+            if git apply --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied successfully (git apply)"
+            elif git apply --ignore-whitespace --3way "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied successfully (git apply --3way)"
+            elif patch -p1 < "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied successfully (patch -p1 fallback)"
+            else
+              echo "Patch apply failed (all methods)"
+              gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                --body "⚠️ **E2E auto-apply failed**: The patch could not be applied cleanly. You can retrieve the patch from the \`memory/default\` branch and apply it manually with \`git apply\`."
+              cd /tmp
+              continue
+            fi
+
+            git add -A
+            git commit -m "fix(e2e): apply spec-fixer patch
 
           Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
 
-              if git push origin "$HEAD_REF"; then
-                echo "Patch pushed successfully to fork branch"
-                gh pr comment "$PR_NUMBER" --repo "$REPO" \
-                  --body "✅ **E2E spec-fix applied** — the fix has been pushed to the PR branch. Re-triggering the E2E runner."
-
-                # Clean up the patch file from repo-memory
-                rm "$PATCH_FILE"
-
-                # Read the attempt number from the patch comment or default to next
-                # We parse attempt from the commit message if available, otherwise use 2
-                ATTEMPT=$(git log -1 --format=%s | grep -oP 'attempt \K[0-9]+' || echo "2")
-
-                # Dispatch the E2E runner to re-test (use GITHUB_TOKEN which has actions:write)
-                GH_TOKEN="${{ github.token }}" gh workflow run e2e-shortcuts-runner.yml \
-                  --repo "$REPO" \
-                  --ref e2e-agentic \
-                  -f pr_number="$PR_NUMBER" \
-                  -f attempt="$ATTEMPT" || echo "Warning: Failed to dispatch runner, may need manual trigger"
-                echo "Dispatched E2E Shortcuts Runner for PR #$PR_NUMBER, attempt $ATTEMPT"
-              else
-                echo "Push to fork failed"
-                gh pr comment "$PR_NUMBER" --repo "$REPO" \
-                  --body "⚠️ **E2E auto-apply failed**: Could not push to the fork branch. You can retrieve the patch from the \`memory/default\` branch at \`memory/default/patches/$FILENAME\` and apply it with \`git apply\`."
-              fi
-            else
-              echo "Patch apply failed (possible conflicts)"
+            if git push origin "$HEAD_REF"; then
+              echo "Patch pushed successfully to fork branch"
               gh pr comment "$PR_NUMBER" --repo "$REPO" \
-                --body "⚠️ **E2E auto-apply failed**: The patch could not be applied cleanly. You can retrieve the patch from the \`memory/default\` branch at \`memory/default/patches/$FILENAME\` and apply it with \`git apply\`."
+                --body "✅ **E2E spec-fix applied** — the fix has been pushed to the PR branch. Re-triggering the E2E runner."
+
+              # Clean up the patch file from repo-memory
+              rm "$PATCH_FILE"
+
+              # Read the attempt number from the patch comment or default to next
+              # We parse attempt from the commit message if available, otherwise use 2
+              ATTEMPT=$(git log -1 --format=%s | grep -oP 'attempt \K[0-9]+' || echo "2")
+
+              # Dispatch the E2E runner to re-test (use GITHUB_TOKEN which has actions:write)
+              GH_TOKEN="${{ github.token }}" gh workflow run e2e-shortcuts-runner.yml \
+                --repo "$REPO" \
+                --ref e2e-agentic \
+                -f pr_number="$PR_NUMBER" \
+                -f attempt="$ATTEMPT" || echo "Warning: Failed to dispatch runner, may need manual trigger"
+              echo "Dispatched E2E Shortcuts Runner for PR #$PR_NUMBER, attempt $ATTEMPT"
+            else
+              echo "Push to fork failed"
+              gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                --body "⚠️ **E2E auto-apply failed**: Could not push to the fork branch. You can retrieve the patch from the \`memory/default\` branch and apply it manually with \`git apply\`."
             fi
 
             cd /tmp
