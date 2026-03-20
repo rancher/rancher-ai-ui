@@ -45,6 +45,7 @@ safe-outputs:
     target: "*"
     max: 1
     hide-older-comments: true
+  dispatch-workflow: [apply-e2e-fix-patch]
   noop:
 
 tools:
@@ -188,10 +189,17 @@ Put the `.patch` file directly in `/tmp/gh-aw/repo-memory/default/`.
 After saving, call the `push_repo_memory` tool to validate the size is within limits.
 
 This saves the patch to repo-memory. It will be auto-committed to the
-`memory/default` branch when the workflow finishes. A separate `apply-e2e-fix-patch`
-workflow will then pick it up, push it to the PR branch, and re-trigger the runner.
+`memory/default` branch when the workflow finishes.
 
-Finally, use `noop` to finish. Do NOT try to push or dispatch the runner yourself.
+## Step 8 — Dispatch the apply-patch workflow
+
+After saving the patch to repo-memory, dispatch the `apply-e2e-fix-patch` workflow
+so it picks up the patch, pushes it to the PR branch, and re-triggers the runner.
+
+Use the `dispatch-workflow` safe output:
+- workflow: `apply-e2e-fix-patch`
+
+Do NOT try to `git push` or dispatch the runner yourself — the apply-patch workflow handles that.
 
 ## Important Rules
 
@@ -199,5 +207,5 @@ Finally, use `noop` to finish. Do NOT try to push or dispatch the runner yoursel
 - Parse the failure summary carefully — it contains specific check names and reasons.
 - Be surgical with fixes — only change what's broken.
 - Do NOT use `git push` — save the patch to repo-memory instead.
-- Do NOT dispatch the runner — the `apply-e2e-fix-patch` workflow handles pushing and re-triggering.
+- Do NOT dispatch the runner directly — dispatch `apply-e2e-fix-patch` which handles pushing and re-triggering.
 - The apply-patch workflow will push the fix, dispatch the runner, and the verifier will re-check, closing the loop.
