@@ -125,12 +125,12 @@ jobs:
                 # We parse attempt from the commit message if available, otherwise use 2
                 ATTEMPT=$(git log -1 --format=%s | grep -oP 'attempt \K[0-9]+' || echo "2")
 
-                # Dispatch the E2E runner to re-test
-                gh workflow run e2e-shortcuts-runner.yml \
+                # Dispatch the E2E runner to re-test (use GITHUB_TOKEN which has actions:write)
+                GH_TOKEN="${{ github.token }}" gh workflow run e2e-shortcuts-runner.yml \
                   --repo "$REPO" \
                   --ref e2e-agentic \
                   -f pr_number="$PR_NUMBER" \
-                  -f attempt="$ATTEMPT"
+                  -f attempt="$ATTEMPT" || echo "Warning: Failed to dispatch runner, may need manual trigger"
                 echo "Dispatched E2E Shortcuts Runner for PR #$PR_NUMBER, attempt $ATTEMPT"
               else
                 echo "Push to fork failed"
