@@ -174,11 +174,23 @@ git add cypress/e2e/tests/features/shortcuts.spec.ts
 git commit -m "fix(e2e): fix shortcuts spec — attempt $NEXT_ATTEMPT"
 ```
 
-Then generate a patch and save it to repo-memory. **Use this EXACT command:**
+Then generate a patch and save it to repo-memory.
+
+**CRITICAL**: You MUST commit your changes first, then use `git diff` to generate the patch.
+Do NOT use the `diff` command — only `git diff` produces the correct format.
 
 ```bash
-git diff HEAD~1 > /tmp/gh-aw/repo-memory/default/e2e-pr-${{ github.event.inputs.pr_number }}.patch
+git add cypress/e2e/tests/features/shortcuts.spec.ts
+git commit -m "fix(e2e): fix shortcuts spec — attempt $NEXT_ATTEMPT"
+git diff HEAD~1 -- cypress/e2e/tests/features/shortcuts.spec.ts > /tmp/gh-aw/repo-memory/default/e2e-pr-${{ github.event.inputs.pr_number }}.patch
 ```
+
+Verify the patch starts with `diff --git` (not `---` with timestamps):
+```bash
+head -3 /tmp/gh-aw/repo-memory/default/e2e-pr-${{ github.event.inputs.pr_number }}.patch
+```
+
+If the first line does NOT start with `diff --git`, delete it and regenerate using the exact command above.
 
 **IMPORTANT**: The patch file MUST be placed directly at:
 `/tmp/gh-aw/repo-memory/default/e2e-pr-<PR_NUMBER>.patch`
