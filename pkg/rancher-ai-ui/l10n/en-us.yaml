@@ -257,6 +257,14 @@ ai:
   generic:
     opensInNewTab: Opens in a new tab
 
+  staging:
+    title: Edit YAML
+    unknownResource: Unknown Resource
+    showChanges: Show Changes
+    hideChanges: Hide Changes
+    cancel: Cancel
+    apply: Apply to Cluster
+
 aiConfig:
   label: AI Assistant
   form:
