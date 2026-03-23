@@ -14,7 +14,7 @@ import { useChatMessageComposable } from '../composables/useChatMessageComposabl
 import { useContextComposable } from '../composables/useContextComposable';
 import { useHeaderComposable } from '../composables/useHeaderComposable';
 import { useAIServiceComposable } from '../composables/useAIServiceComposable';
-import { useChatApiComposable } from '../composables/useChatApiComposable';
+import { useAIAgentApiComposable } from '../composables/useAIAgentApiComposable';
 import { useAgentComposable } from '../composables/useAgentComposable';
 import { extractMessageText } from '../utils/label';
 import Header from '../components/panels/Header.vue';
@@ -81,7 +81,7 @@ const {
   fetchMessages,
   updateChat: updateHistoryChat,
   deleteChat: deleteHistoryChat,
-} = useChatApiComposable(agents);
+} = useAIAgentApiComposable(agents);
 
 const {
   ws,

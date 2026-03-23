@@ -18,9 +18,11 @@ interface LLMConfig {
 }
 
 /**
- * Composable for managing the chat API interactions.
+ * Composable for managing the AI agent API interactions.
  *
  * Endpoints:
+ * 
+ * - llm: fetch available models for the active LLM, with query parameters based on the active LLM.
  * - settings: fetch settings
  * - chat: fetch all chats, update a chat, delete a chat
  * - messages: fetch messages for a chat
@@ -29,7 +31,7 @@ interface LLMConfig {
  * @returns Composable for managing chat API interactions.
  */
 
-export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
+export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
   const apiPath = `/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_REST_API_PATH }`;
   let llmModelsAbortController: AbortController | null = null;
 

@@ -29,7 +29,7 @@ import SettingsRow from './SettingsRow.vue';
 import AIAgentConfigs from './sections/AIAgentConfigs.vue';
 import AIAgentSettings from './sections/AIAgentSettings.vue';
 import ApplySettings from '../../dialog/ApplySettingsCard.vue';
-import { useChatApiComposable } from '../../composables/useChatApiComposable';
+import { useAIAgentApiComposable } from '../../composables/useAIAgentApiComposable';
 
 /**
  * Settings page for configuring Rancher AI assistant.
@@ -40,7 +40,7 @@ const { t } = useI18n(store);
 // const shellApi = useShell();
 
 // TODO: All settings will be fetched through the API in the future.
-const { fetchSettings, saveSettings } = useChatApiComposable();
+const { fetchSettings, saveSettings } = useAIAgentApiComposable();
 
 const isLoading = ref(true);
 const isSaving = ref(false);
