@@ -80,5 +80,4 @@ export default function(plugin: IPlugin, { store }: any): void {
   // Inject hooks in the main window
   Hooks.inject(BadgeSlidingOverlay, store);
   Hooks.inject(BannerButtonOverlay, store);
-  // Add more overlays here
 }

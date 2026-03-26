@@ -1,11 +1,6 @@
 /* eslint-disable no-unused-vars */
 
 /**
- * Rancher AI schema types.
- */
-export const RANCHER_AI_SCHEMA = { AI_AGENT_CONFIG: 'ai.cattle.io.aiagentconfig' };
-
-/**
  * Tags used in Rancher AI Chat messages.
  */
 
