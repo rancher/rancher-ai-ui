@@ -214,10 +214,12 @@ class BadgeSlidingOverlay extends HooksOverlay {
 
     const container = (target.parentElement || target) as HTMLElement;
 
-    container.appendChild(overlay);
+    // Append to body instead of container to avoid affecting tables layout
+    document.body.appendChild(overlay);
 
     // Animate width expansion after a short delay
     setTimeout(() => {
+      // TODO fix calculation to avoid magic numbers and ensure it fits the text + icon exactly
       overlay.style.width = `${ parseInt(overlay.style.width) + 30 }px`;
     }, 10);
 
@@ -257,7 +259,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
   }
 
   destroy(target: HTMLElement, immediate = false) {
-    (target.parentElement as HTMLElement).querySelectorAll(`.${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`).forEach((overlay: any) => {
+    document.body.querySelectorAll(`.${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`).forEach((overlay: any) => {
       if (overlay) {
         if (immediate) {
           this.cleanupParentPosition(overlay);
