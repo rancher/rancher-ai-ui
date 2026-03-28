@@ -533,13 +533,11 @@ jobs:
                     "type": "string"
                   },
                   "pr_number": {
-                    "description": "PR number containing the spec to test",
+                    "default": "",
+                    "description": "PR number containing the spec to test (auto-detected if empty)",
                     "type": "string"
                   }
                 },
-                "required": [
-                  "pr_number"
-                ],
                 "type": "object"
               },
               "name": "e2e_shortcuts_runner"
