@@ -4,9 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: "PR number containing the spec to test"
-        required: true
+        description: "PR number containing the spec to test (auto-detected if empty)"
+        required: false
         type: string
+        default: ""
       attempt:
         description: "Attempt number for the test loop"
         required: false
@@ -32,9 +33,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          HEAD_REF=$(gh pr view ${{ github.event.inputs.pr_number }} --repo ${{ github.repository }} --json headRefName -q .headRefName)
+          PR_NUM="${{ github.event.inputs.pr_number }}"
+          if [ -z "$PR_NUM" ]; then
+            echo "No PR number provided, finding latest e2e-shortcuts PR..."
+            PR_NUM=$(gh pr list --repo ${{ github.repository }} \
+              --label ai-e2e --state open --json number,headRefName \
+              --jq '[.[] | select(.headRefName | startswith("test/e2e-shortcuts-spec"))] | sort_by(.number) | last | .number')
+            if [ -z "$PR_NUM" ] || [ "$PR_NUM" = "null" ]; then
+              echo "::error::Could not find an open e2e-shortcuts PR"
+              exit 1
+            fi
+            echo "Auto-detected PR #$PR_NUM"
+          fi
+          echo "pr_number=$PR_NUM" >> "$GITHUB_OUTPUT"
+          HEAD_REF=$(gh pr view "$PR_NUM" --repo ${{ github.repository }} --json headRefName -q .headRefName)
           echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
-          echo "Resolved PR #${{ github.event.inputs.pr_number }} head ref: $HEAD_REF"
+          echo "Resolved PR #$PR_NUM head ref: $HEAD_REF"
 
       - uses: actions/checkout@v5
         with:
@@ -83,7 +97,7 @@ jobs:
         if: always()
         run: |
           mkdir -p cypress/results
-          echo '{"attempt": ${{ github.event.inputs.attempt }}, "pr_number": "${{ github.event.inputs.pr_number }}", "outcome": "${{ steps.cypress.outcome }}"}' > cypress/results/metadata.json
+          echo '{"attempt": ${{ github.event.inputs.attempt }}, "pr_number": "${{ steps.pr.outputs.pr_number }}", "outcome": "${{ steps.cypress.outcome }}"}' > cypress/results/metadata.json
           # If the output file doesn't exist (e.g. install failed), create an empty one
           touch cypress/results/cypress-output.txt
 
@@ -108,7 +122,7 @@ jobs:
         run: |
           echo "Cypress outcome: ${{ steps.cypress.outcome }}"
           echo "Attempt: ${{ github.event.inputs.attempt }}"
-          echo "PR: #${{ github.event.inputs.pr_number }}"
+          echo "PR: #${{ steps.pr.outputs.pr_number }}"
 
       - name: Dispatch E2E Verifier
         if: always()
@@ -118,7 +132,7 @@ jobs:
           gh workflow run e2e-verifier.lock.yml \
             --repo ${{ github.repository }} \
             --ref e2e-agentic \
-            -f pr_number="${{ github.event.inputs.pr_number }}" \
+            -f pr_number="${{ steps.pr.outputs.pr_number }}" \
             -f attempt="${{ github.event.inputs.attempt }}" \
             -f runner_run_id="${{ github.run_id }}"
           echo "Dispatched E2E Verifier with run_id=${{ github.run_id }}"
