@@ -17,26 +17,45 @@ jobs:
         run: |
           REPO="${{ github.repository }}"
 
-          # Clone the repo-memory branch to look for patch files
-          git clone --depth 1 --branch memory/default \
-            "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" \
-            /tmp/repo-memory 2>/dev/null || {
-            echo "No memory/default branch found, skipping."
-            exit 0
-          }
-
-          # Find e2e patch files — check root level first, then legacy paths
-          PATCH_DIR="/tmp/repo-memory"
-          if [ -z "$(ls -A "$PATCH_DIR"/e2e-pr-*.patch 2>/dev/null)" ]; then
-            PATCH_DIR="/tmp/repo-memory/patches"
-            if [ ! -d "$PATCH_DIR" ] || [ -z "$(ls -A "$PATCH_DIR"/e2e-pr-*.patch 2>/dev/null)" ]; then
-              PATCH_DIR="/tmp/repo-memory/memory/default/patches"
-              if [ ! -d "$PATCH_DIR" ] || [ -z "$(ls -A "$PATCH_DIR"/e2e-pr-*.patch 2>/dev/null)" ]; then
-                echo "No e2e patch files found in repo-memory, skipping."
-                exit 0
+          # Wait for push_repo_memory to finish (it runs in parallel with safe_outputs
+          # which dispatches this workflow, so the patch may not be on the branch yet)
+          PATCH_FOUND=false
+          for i in 1 2 3 4 5 6; do
+            echo "Attempt $i: cloning memory/default branch..."
+            rm -rf /tmp/repo-memory
+            git clone --depth 1 --branch memory/default \
+              "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" \
+              /tmp/repo-memory 2>/dev/null || {
+              echo "No memory/default branch found."
+              if [ "$i" -lt 6 ]; then
+                echo "Waiting 15s before retry..."
+                sleep 15
+                continue
               fi
+              echo "Giving up after $i attempts, skipping."
+              exit 0
+            }
+
+            # Check for patch files at root level
+            if ls /tmp/repo-memory/e2e-pr-*.patch 1>/dev/null 2>&1; then
+              PATCH_FOUND=true
+              echo "Found patch files on attempt $i"
+              break
             fi
+
+            echo "No patch files found yet on attempt $i"
+            if [ "$i" -lt 6 ]; then
+              echo "Waiting 15s for push_repo_memory to complete..."
+              sleep 15
+            fi
+          done
+
+          if [ "$PATCH_FOUND" != "true" ]; then
+            echo "No e2e patch files found in repo-memory after 6 attempts, skipping."
+            exit 0
           fi
+
+          PATCH_DIR="/tmp/repo-memory"
 
           # Process each e2e patch file (named e2e-pr-<number>.patch)
           for PATCH_FILE in "$PATCH_DIR"/e2e-pr-*.patch; do
