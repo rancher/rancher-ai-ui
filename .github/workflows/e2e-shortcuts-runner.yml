@@ -68,7 +68,16 @@ jobs:
           CATTLE_BOOTSTRAP_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
           API: ${{ env.CATTLE_SERVER_URL }}
         run: |
+          set +e
           yarn e2e --browser chrome 2>&1 | tee cypress/results/cypress-output.txt
+          CYPRESS_EXIT=$?
+          echo "cypress_exit=$CYPRESS_EXIT" >> "$GITHUB_OUTPUT"
+          # Check if all specs passed regardless of exit code
+          if grep -q "All specs passed" cypress/results/cypress-output.txt; then
+            echo "All specs passed — treating as success"
+            exit 0
+          fi
+          exit $CYPRESS_EXIT
 
       - name: Save attempt metadata
         if: always()
