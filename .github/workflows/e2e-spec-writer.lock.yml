@@ -28,13 +28,10 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"3a115ffbe3d071f03848d02c35f17a2cce644d0beeaab76230e5bd204a319131","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"98e9fc5f427e75612abf449155b57deec08aba8306bea18990b145b296c43759","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Spec Writer — Keyboard Shortcuts"
 "on":
-  schedule:
-  - cron: "31 14 * * 0"
-    # Friendly format: weekly (scattered)
   workflow_dispatch:
     inputs:
       force_recreate:

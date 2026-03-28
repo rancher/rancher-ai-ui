@@ -10,7 +10,6 @@ on:
         description: "Force recreate the spec from scratch"
         type: boolean
         default: false
-  schedule: weekly
 
 permissions: read-all
 
