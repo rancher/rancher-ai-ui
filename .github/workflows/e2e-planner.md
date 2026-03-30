@@ -1,8 +1,8 @@
 ---
 description: |
   Agentic workflow that analyzes the Rancher AI UI codebase, identifies
-  features lacking E2E test coverage, and creates a test plan document.
-  Dispatches the generic spec-writer when a plan is ready.
+  features lacking E2E test coverage, and creates a PR with a detailed
+  test plan document. Dispatches the planner verifier for review.
 
 on:
   workflow_dispatch:
@@ -29,7 +29,15 @@ imports:
   - shared/cypress-rancher-ai.md
 
 safe-outputs:
-  dispatch-workflow: [e2e-generic-spec-writer]
+  create-pull-request:
+    title-prefix: "test(e2e): "
+    labels: [ai-e2e, e2e-plan]
+    draft: true
+    base-branch: e2e-agentic
+    allowed-files:
+      - "cypress/**"
+    max: 1
+  dispatch-workflow: [e2e-planner-verifier]
   create-issue:
     title-prefix: "[e2e-planner] "
     labels: [ai-e2e, planning]
@@ -50,11 +58,7 @@ tools:
     - "wc *"
     - "jq *"
     - "diff *"
-  repo-memory:
-    branch-name: memory/default
-    max-file-size: 65536
-    max-patch-size: 102400
-    file-glob: ["*.md"]
+  edit:
 
 timeout-minutes: 15
 ---
@@ -63,9 +67,9 @@ timeout-minutes: 15
 
 You are an **E2E test planner agent** for the Rancher AI UI extension. Your
 job is to analyze the codebase, identify features that lack E2E test coverage,
-create a detailed test plan, and dispatch the generic spec-writer workflow.
+create a detailed test plan document, and create a PR with it.
 
-## Step 1 — Determine Feature Area
+## Step 1 - Determine Feature Area
 
 If `${{ github.event.inputs.feature_area }}` is provided, use that.
 
@@ -92,17 +96,16 @@ Priority order:
 2. Features with complex interactions (multiple composables)
 3. Features with settings/configuration pages
 
-## Step 2 — Check for Existing Test Plan
+## Step 2 - Check for Existing Test Plan
 
-Check if a test plan already exists in repo-memory:
 ```bash
-ls /tmp/gh-aw/repo-memory/default/test-plan-*.md 2>/dev/null
+find cypress/e2e -name "test-plan-*.md" -type f 2>/dev/null
 ```
 
-If a plan for this feature area exists AND `force` is not true, use `noop`
-with a message explaining the plan already exists.
+If a plan for this feature area already exists AND `force` is not true,
+use `noop` with a message explaining the plan already exists.
 
-## Step 3 — Analyze the Feature
+## Step 3 - Analyze the Feature
 
 Read the relevant source files to understand the feature deeply:
 
@@ -120,9 +123,12 @@ Focus on:
 - What visual elements should be verified
 - What custom Cypress commands exist (in `cypress/support/commands/`)
 
-## Step 4 — Create the Test Plan
+## Step 4 - Create the Test Plan
 
-Write a comprehensive test plan document. The plan MUST include:
+Create the test plan document at:
+`cypress/e2e/tests/features/test-plan-<FEATURE_AREA>.md`
+
+The plan MUST include:
 
 ### Header
 - Feature area name
@@ -155,31 +161,32 @@ For each test case, specify:
 - The exact path where the spec file should be created
   (always `cypress/e2e/tests/features/<feature_area>.spec.ts`)
 
-## Step 5 — Save the Test Plan
+## Step 5 - Create the Pull Request
 
-Save the test plan to repo-memory:
+Use the `create-pull-request` safe output:
+- **title**: `plan ${{ github.event.inputs.feature_area }} E2E test coverage`
+- **branch**: `test/e2e-<FEATURE_AREA>-spec`
+- **body**: Include:
+  - Summary of the feature area analyzed
+  - Number of test cases planned
+  - Note that this is a test plan awaiting verification
 
-```bash
-cat > /tmp/gh-aw/repo-memory/default/test-plan-<FEATURE_AREA>.md << 'EOF'
-<test plan content>
-EOF
-```
+Include these files in the PR:
+- The test plan document
 
-**IMPORTANT**: Place the file directly in `/tmp/gh-aw/repo-memory/default/`.
-Do NOT create subdirectories — the sandbox blocks `mkdir` inside repo-memory.
+## Step 6 - Dispatch the Planner Verifier
 
-After saving, call the `push_repo_memory` tool to persist.
+After the PR is created, dispatch the `e2e-planner-verifier` workflow:
 
-## Step 6 — Dispatch the Spec Writer
-
-After saving the test plan, dispatch the generic spec-writer:
-
-Use the `dispatch-workflow` safe output for `e2e-generic-spec-writer` with inputs:
+Use the `dispatch-workflow` safe output for `e2e-planner-verifier` with inputs:
 - `feature_area`: the feature area name (lowercase, hyphenated)
+- `attempt`: `1`
+
+Do NOT include `pr_number` - the verifier will auto-detect it.
 
 ## Rules
 
-- Be thorough in analysis — the test plan is the foundation for test creation
+- Be thorough in analysis - the test plan is the foundation for test creation
 - Use only `data-testid` selectors that actually exist in the components
 - Reference existing patterns from `chat.spec.ts` and other working specs
 - Each test plan should have 5-10 test cases
