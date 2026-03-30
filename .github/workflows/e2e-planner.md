@@ -59,6 +59,10 @@ tools:
     - "jq *"
     - "diff *"
   edit:
+  repo-memory:
+    branch-name: memory/default
+    max-file-size: 65536
+    file-glob: ["*.md"]
 
 timeout-minutes: 60
 ---
@@ -68,6 +72,16 @@ timeout-minutes: 60
 You are an **E2E test planner agent** for the Rancher AI UI extension. Your
 job is to analyze the codebase, identify features that lack E2E test coverage,
 create a detailed test plan document, and create a PR with it.
+
+## Step 0 - Read Learnings
+
+Read `/tmp/gh-aw/repo-memory/default/e2e-planner.learning.md` if it exists.
+This file contains accumulated learnings from the planner verifier — common
+plan issues, selector verification results, coverage gaps, and component
+mapping. **Use this knowledge** to produce a higher-quality test plan from
+the start.
+
+If the file does not exist, skip this step.
 
 ## Step 1 - Determine Feature Area
 

@@ -68,7 +68,7 @@ tools:
     branch-name: memory/default
     max-file-size: 65536
     max-patch-size: 102400
-    file-glob: ["*.patch"]
+    file-glob: ["*.patch", "*.md"]
 
 timeout-minutes: 60
 ---
@@ -79,6 +79,16 @@ You are an **E2E spec-writing agent** for the Rancher AI UI extension. Your
 job is to read the test plan from the PR branch and create a complete Cypress
 spec for `${{ github.event.inputs.feature_area }}`, then save it as a patch
 to be pushed to the existing PR.
+
+## Step 0 - Read Learnings
+
+Read `/tmp/gh-aw/repo-memory/default/e2e-generic.learning.md` if it exists.
+This file contains accumulated learnings from the verifier — common failure
+patterns, correct selectors, Cypress best practices, and feature-specific
+notes. **Use this knowledge** to write better specs from the start and avoid
+known pitfalls.
+
+If the file does not exist, skip this step.
 
 ## Step 1 - Find the PR
 

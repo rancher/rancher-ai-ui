@@ -92,6 +92,16 @@ relevant to the failures, make the fix, and save the patch.**
 - **Attempt:** `${{ github.event.inputs.attempt }}`
 - **Failure Summary:** `${{ github.event.inputs.failure_summary }}`
 
+## Step 0 - Read Learnings
+
+Read `/tmp/gh-aw/repo-memory/default/e2e-generic.learning.md` if it exists.
+This file contains accumulated learnings from the verifier — common failure
+patterns, correct selectors, Cypress best practices, and feature-specific
+notes. **Use this knowledge** to make better fixes and avoid repeating
+known mistakes.
+
+If the file does not exist, skip this step.
+
 ## Step 1 - Loop Guard
 
 Calculate the next attempt number: current_attempt + 1.
