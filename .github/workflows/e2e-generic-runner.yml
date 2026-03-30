@@ -89,7 +89,7 @@ jobs:
           API: ${{ env.CATTLE_SERVER_URL }}
         run: |
           set +e
-          yarn e2e --spec "cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts" --browser chrome 2>&1 | tee cypress/results/cypress-output.txt
+          yarn e2e --spec "cypress/e2e/tests/setup/rancher-setup.spec.ts,cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts" --browser chrome 2>&1 | tee cypress/results/cypress-output.txt
           CYPRESS_EXIT=$?
           echo "cypress_exit=$CYPRESS_EXIT" >> "$GITHUB_OUTPUT"
           # Check if all specs passed regardless of exit code
