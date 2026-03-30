@@ -60,7 +60,7 @@ tools:
     - "diff *"
   edit:
 
-timeout-minutes: 15
+timeout-minutes: 60
 ---
 
 # E2E Test Planner

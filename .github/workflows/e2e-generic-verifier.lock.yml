@@ -26,7 +26,7 @@
 # On all-pass, comments on the PR. On failure, dispatches the generic fixer.
 # Works for any feature area.
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"83ebc9db14e9ffbc6b8dec2d9c2c09172c47fa2d2cafd84fde4d9e3b367bbb21","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"0d3ee1b8845f526a965da2e885811b1a338f37389ab5bc6df886693bf4284805","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Generic QA Verifier"
 "on":
@@ -842,7 +842,7 @@ jobs:
         # --allow-tool shell(wc)
         # --allow-tool shell(yq)
         # --allow-tool write
-        timeout-minutes: 10
+        timeout-minutes: 60
         run: |
           set -o pipefail
           touch /tmp/gh-aw/agent-step-summary.md
@@ -1221,7 +1221,7 @@ jobs:
           GH_AW_INFERENCE_ACCESS_ERROR: ${{ needs.agent.outputs.inference_access_error }}
           GH_AW_GROUP_REPORTS: "false"
           GH_AW_FAILURE_REPORT_AS_ISSUE: "true"
-          GH_AW_TIMEOUT_MINUTES: "10"
+          GH_AW_TIMEOUT_MINUTES: "60"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |

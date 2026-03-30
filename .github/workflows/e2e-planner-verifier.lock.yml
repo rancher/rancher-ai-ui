@@ -29,7 +29,7 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"e3de0faeaa9db534972ff67eaba73da00d6b9b46c2a8b1289d1ee9cbce41a8bb","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"ccf5cd6fd4b7ac9937a73976203fc50b541dc515ce7cd35e8257c189ba694e83","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Planner Verifier"
 "on":
@@ -602,6 +602,10 @@ jobs:
                     "default": false,
                     "description": "Force recreation of the spec even if it already exists",
                     "type": "boolean"
+                  },
+                  "pr_number": {
+                    "description": "PR number containing the test plan (auto-detected if empty)",
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -871,7 +875,7 @@ jobs:
         # --allow-tool shell(wc)
         # --allow-tool shell(yq)
         # --allow-tool write
-        timeout-minutes: 15
+        timeout-minutes: 60
         run: |
           set -o pipefail
           touch /tmp/gh-aw/agent-step-summary.md
@@ -1250,7 +1254,7 @@ jobs:
           GH_AW_INFERENCE_ACCESS_ERROR: ${{ needs.agent.outputs.inference_access_error }}
           GH_AW_GROUP_REPORTS: "false"
           GH_AW_FAILURE_REPORT_AS_ISSUE: "true"
-          GH_AW_TIMEOUT_MINUTES: "15"
+          GH_AW_TIMEOUT_MINUTES: "60"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |

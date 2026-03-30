@@ -62,7 +62,7 @@ steps:
       run-id: ${{ github.event.inputs.runner_run_id }}
       github-token: ${{ github.token }}
 
-timeout-minutes: 10
+timeout-minutes: 60
 ---
 
 # E2E Generic QA Verifier
