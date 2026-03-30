@@ -1,0 +1,168 @@
+name: E2E Generic Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_area:
+        description: "Feature area to test"
+        required: true
+        type: string
+      pr_number:
+        description: "PR number to test (auto-detected if empty)"
+        required: false
+        type: string
+      attempt:
+        description: "Attempt number"
+        required: false
+        type: string
+        default: "1"
+
+jobs:
+  run-e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: write
+    timeout-minutes: 30
+    env:
+      RANCHER_URL: https://localhost:8005
+      RANCHER_PASSWORD: password
+      CATTLE_BOOTSTRAP_PASSWORD: password
+      API_PORT: 3031
+      TEST_BASE_URL: https://localhost:8005
+
+    steps:
+      - name: Detect PR number
+        id: detect-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER="${{ github.event.inputs.pr_number }}"
+          FEATURE_AREA="${{ github.event.inputs.feature_area }}"
+
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No PR number provided, auto-detecting..."
+            PR_NUMBER=$(gh pr list --repo "${{ github.repository }}" \
+              --label ai-e2e \
+              --state open \
+              --json number,headRefName \
+              --jq ".[] | select(.headRefName | startswith(\"test/e2e-${FEATURE_AREA}-spec\")) | .number" \
+              | head -1)
+
+            if [ -z "$PR_NUMBER" ]; then
+              echo "Could not auto-detect PR number for feature_area=$FEATURE_AREA"
+              echo "Looking for branch prefix: test/e2e-${FEATURE_AREA}-spec"
+              echo "Available ai-e2e PRs:"
+              gh pr list --repo "${{ github.repository }}" --label ai-e2e --state open --json number,headRefName
+              exit 1
+            fi
+
+            echo "Auto-detected PR #$PR_NUMBER"
+          fi
+
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Get PR branch
+        id: pr-info
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_DATA=$(gh pr view "${{ steps.detect-pr.outputs.pr_number }}" \
+            --repo "${{ github.repository }}" \
+            --json headRefName)
+          BRANCH=$(echo "$PR_DATA" | jq -r '.headRefName')
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "Testing PR #${{ steps.detect-pr.outputs.pr_number }}, branch: $BRANCH"
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr-info.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile || yarn install
+          cd mock-agent && npm install && cd ..
+
+      - name: Start mock Rancher + LLM service
+        run: |
+          cd mock-agent && npx ts-node index.ts &
+          echo "Waiting for mock service..."
+          for i in $(seq 1 30); do
+            if curl -sk https://localhost:8005 > /dev/null 2>&1; then
+              echo "Mock service ready"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Run Cypress E2E tests
+        id: cypress
+        run: |
+          mkdir -p cypress/results cypress/screenshots
+
+          set +e
+          npx cypress run \
+            --spec "cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts" \
+            --config baseUrl=https://localhost:8005 \
+            --browser chrome \
+            --headless 2>&1 | tee cypress/results/cypress-output.txt
+          CYPRESS_EXIT=$?
+          set -e
+
+          if grep -q "All specs passed" cypress/results/cypress-output.txt 2>/dev/null; then
+            echo "outcome=success" >> "$GITHUB_OUTPUT"
+            echo "All specs passed!"
+          elif [ $CYPRESS_EXIT -eq 0 ]; then
+            echo "outcome=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "outcome=failure" >> "$GITHUB_OUTPUT"
+            echo "Some tests failed (exit code: $CYPRESS_EXIT)"
+          fi
+
+      - name: Save metadata
+        if: always()
+        run: |
+          mkdir -p cypress/results
+          cat > cypress/results/metadata.json << EOF
+          {
+            "pr_number": "${{ steps.detect-pr.outputs.pr_number }}",
+            "branch": "${{ steps.pr-info.outputs.branch }}",
+            "feature_area": "${{ github.event.inputs.feature_area }}",
+            "attempt": "${{ github.event.inputs.attempt || '1' }}",
+            "outcome": "${{ steps.cypress.outputs.outcome }}",
+            "run_id": "${{ github.run_id }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-generic-results
+          path: |
+            cypress/results/
+            cypress/screenshots/
+          retention-days: 7
+
+      - name: Dispatch verifier
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run e2e-generic-verifier.lock.yml \
+            --repo "${{ github.repository }}" \
+            --ref e2e-agentic \
+            -f feature_area="${{ github.event.inputs.feature_area }}" \
+            -f pr_number="${{ steps.detect-pr.outputs.pr_number }}" \
+            -f attempt="${{ github.event.inputs.attempt || '1' }}" \
+            -f runner_run_id="${{ github.run_id }}" || \
+          echo "Warning: Failed to dispatch verifier"
