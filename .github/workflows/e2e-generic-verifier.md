@@ -52,6 +52,10 @@ tools:
     - "wc *"
     - "jq *"
     - "grep *"
+  repo-memory:
+    branch-name: memory/default
+    max-file-size: 65536
+    file-glob: ["*.md"]
 
 steps:
   - name: Download test artifacts
@@ -76,6 +80,15 @@ the generic spec fixer** (any test fails).
 
 **IMPORTANT:** You CANNOT view PNG screenshots — they are binary files. Your
 verification is based ENTIRELY on the Cypress text output log and metadata.
+
+## Step 0 — Read Learnings
+
+Read `/tmp/gh-aw/repo-memory/default/e2e-generic.learning.md` if it exists.
+This file contains accumulated learnings from previous verification runs —
+common failure patterns, selector issues, timing problems, and other insights.
+Use this knowledge to improve your analysis and provide better feedback.
+
+If the file does not exist, skip this step.
 
 ## Step 1 — Read Metadata
 
@@ -153,6 +166,27 @@ After commenting, dispatch `e2e-generic-fixer` with:
 ### ANY test fails (attempt >= 5)
 After commenting, use `create-issue` to report that the spec could not be
 fixed after 5 attempts. Include the full test output.
+
+## Step 7 — Update Learnings
+
+After completing verification, update the learnings file at:
+`/tmp/gh-aw/repo-memory/default/e2e-generic.learning.md`
+
+**Amend** the file — do NOT delete and rewrite it. Read the current content
+first, then update it with new insights from this run. Keep the file concise
+and well-organized. Include:
+
+- **Common failure patterns** you have observed (selector mismatches, timing
+  issues, missing mocks, etc.)
+- **Selector corrections** — map wrong selectors to correct ones
+- **Cypress best practices** learned from fixing failures
+- **Feature-specific notes** — anything useful about the feature area
+- **Anti-patterns** — things the spec writer or fixer should avoid
+
+Remove outdated entries. The goal is a compact, high-value reference that
+helps the fixer and spec writer produce better code on the first attempt.
+
+After writing, call the `push_repo_memory` tool to save.
 
 ## Rules
 

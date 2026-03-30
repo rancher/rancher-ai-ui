@@ -56,6 +56,10 @@ tools:
     - "grep *"
     - "wc *"
     - "jq *"
+  repo-memory:
+    branch-name: memory/default
+    max-file-size: 65536
+    file-glob: ["*.md"]
 
 timeout-minutes: 60
 ---
@@ -67,6 +71,15 @@ by the E2E Planner. Your job is to ensure the test plan is high quality
 before it proceeds to spec writing.
 
 **Feature area**: `${{ github.event.inputs.feature_area }}`
+
+## Step 0 - Read Learnings
+
+Read `/tmp/gh-aw/repo-memory/default/e2e-planner.learning.md` if it exists.
+This file contains accumulated learnings from previous plan verification
+runs — common plan quality issues, selector verification failures, coverage
+gaps, and other insights. Use this knowledge to improve your review.
+
+If the file does not exist, skip this step.
 
 ## Step 1 - Find the PR
 
@@ -167,6 +180,26 @@ Dispatch `e2e-planner-fixer` with:
 
 ### ANY check fails (attempt >= 5)
 Use `create-issue` to report the plan could not be verified after 5 attempts.
+
+## Step 7 - Update Learnings
+
+After completing verification, update the learnings file at:
+`/tmp/gh-aw/repo-memory/default/e2e-planner.learning.md`
+
+**Amend** the file — do NOT delete and rewrite it. Read the current content
+first, then update it with new insights from this run. Keep the file concise
+and well-organized. Include:
+
+- **Common plan issues** — structure problems, missing sections, vague steps
+- **Selector verification results** — selectors that were wrong vs correct
+- **Coverage gaps** — feature behaviors commonly missed in plans
+- **Component mapping** — which components map to which feature areas
+- **Anti-patterns** — things the planner should avoid
+
+Remove outdated entries. The goal is a compact, high-value reference that
+helps the planner and planner-fixer produce better plans on the first attempt.
+
+After writing, call the `push_repo_memory` tool to save.
 
 ## Rules
 

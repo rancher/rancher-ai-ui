@@ -67,7 +67,7 @@ tools:
     branch-name: memory/default
     max-file-size: 65536
     max-patch-size: 102400
-    file-glob: ["*.patch"]
+    file-glob: ["*.patch", "*.md"]
 
 timeout-minutes: 60
 ---
@@ -87,6 +87,15 @@ and save the patch.**
 - **PR Number:** `${{ github.event.inputs.pr_number }}`
 - **Attempt:** `${{ github.event.inputs.attempt }}`
 - **Failure Summary:** `${{ github.event.inputs.failure_summary }}`
+
+## Step 0 - Read Learnings
+
+Read `/tmp/gh-aw/repo-memory/default/e2e-planner.learning.md` if it exists.
+This file contains accumulated learnings from the planner verifier — common
+plan issues, correct selectors, coverage gaps, and component mapping.
+**Use this knowledge** to make better fixes and avoid repeating known mistakes.
+
+If the file does not exist, skip this step.
 
 ## Step 1 - Loop Guard
 
