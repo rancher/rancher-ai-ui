@@ -2,6 +2,12 @@ name: Apply E2E spec-fixer patch to fork PRs
 
 on:
   workflow_dispatch:
+    inputs:
+      attempt:
+        description: "Next attempt number"
+        required: false
+        type: string
+        default: "2"
 
 jobs:
   apply-patch:
@@ -148,9 +154,8 @@ jobs:
               # Clean up the patch file from repo-memory
               rm "$PATCH_FILE"
 
-              # Read the attempt number from the patch comment or default to next
-              # We parse attempt from the commit message if available, otherwise use 2
-              ATTEMPT=$(git log -1 --format=%s | grep -oP 'attempt \K[0-9]+' || echo "2")
+              # Use attempt from workflow input
+              ATTEMPT="${{ github.event.inputs.attempt }}"
 
               # Dispatch the E2E runner to re-test (use GITHUB_TOKEN which has actions:write)
               GH_TOKEN="${{ github.token }}" gh workflow run e2e-shortcuts-runner.yml \

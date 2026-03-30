@@ -213,6 +213,12 @@ re-triggers the generic runner.
 
 Use the dispatch-workflow safe output:
 - workflow: apply-e2e-generic-patch
+- feature_area: ${{ github.event.inputs.feature_area }}
+- attempt: the **incremented** attempt number (current attempt + 1, as a string)
+
+**CRITICAL**: You MUST pass the incremented attempt number. If the current
+attempt is 2, pass "3". If it is 3, pass "4". This is how the pipeline
+tracks retry count.
 
 Do NOT try to git push or dispatch the runner yourself - the apply-patch
 workflow handles that.
