@@ -26,7 +26,7 @@
 # On all-pass, comments on the PR. On failure, dispatches the generic fixer.
 # Works for any feature area.
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"6ed64fd7f4df5dbab85227f0aa902dcd43ff9148eccb0326f9b7b7d3fc504860","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"83ebc9db14e9ffbc6b8dec2d9c2c09172c47fa2d2cafd84fde4d9e3b367bbb21","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Generic QA Verifier"
 "on":
@@ -141,7 +141,7 @@ jobs:
           cat "/opt/gh-aw/prompts/safe_outputs_prompt.md"
           cat << 'GH_AW_PROMPT_EOF'
           <safe-output-tools>
-          Tools: add_comment, create_issue, dispatch_workflow, missing_tool, missing_data, noop
+          Tools: add_comment, create_issue, add_labels, dispatch_workflow, missing_tool, missing_data, noop
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -336,7 +336,7 @@ jobs:
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
           cat > /opt/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_EOF'
-          {"add_comment":{"max":1,"target":"*"},"create_issue":{"expires":48,"max":1},"dispatch_workflow":{"max":1,"workflow_files":{"e2e-generic-fixer":".lock.yml"},"workflows":["e2e-generic-fixer"]},"missing_data":{},"missing_tool":{},"noop":{"max":1}}
+          {"add_comment":{"max":1,"target":"*"},"add_labels":{"max":3,"target":"*"},"create_issue":{"expires":48,"max":1},"dispatch_workflow":{"max":1,"workflow_files":{"e2e-generic-fixer":".lock.yml"},"workflows":["e2e-generic-fixer"]},"missing_data":{},"missing_tool":{},"noop":{"max":1}}
           GH_AW_SAFE_OUTPUTS_CONFIG_EOF
           cat > /opt/gh-aw/safeoutputs/tools.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_EOF'
           [
@@ -425,6 +425,35 @@ jobs:
                 "type": "object"
               },
               "name": "add_comment"
+            },
+            {
+              "description": "Add labels to an existing GitHub issue or pull request for categorization and filtering. Labels must already exist in the repository. For creating new issues with labels, use create_issue with the labels property instead. CONSTRAINTS: Target: *.",
+              "inputSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "integrity": {
+                    "description": "Trustworthiness level of the message source (e.g., \"low\", \"medium\", \"high\").",
+                    "type": "string"
+                  },
+                  "item_number": {
+                    "description": "Issue or PR number to add labels to. This is the numeric ID from the GitHub URL (e.g., 456 in github.com/owner/repo/issues/456). If omitted, adds labels to the issue or PR that triggered this workflow. Only works for issue or pull_request event triggers. For schedule, workflow_dispatch, or other triggers, item_number is required — omitting it will silently skip the label operation.",
+                    "type": "number"
+                  },
+                  "labels": {
+                    "description": "Label names to add (e.g., ['bug', 'priority-high']). Labels must exist in the repository.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "secrecy": {
+                    "description": "Confidentiality level of the message content (e.g., \"public\", \"internal\", \"private\").",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "name": "add_labels"
             },
             {
               "description": "Report that a tool or capability needed to complete the task is not available, or share any information you deem important about missing functionality or limitations. Use this when you cannot accomplish what was requested because the required functionality is missing or access is restricted.",
@@ -568,6 +597,25 @@ jobs:
                 },
                 "item_number": {
                   "issueOrPRNumber": true
+                },
+                "repo": {
+                  "type": "string",
+                  "maxLength": 256
+                }
+              }
+            },
+            "add_labels": {
+              "defaultMax": 5,
+              "fields": {
+                "item_number": {
+                  "issueOrPRNumber": true
+                },
+                "labels": {
+                  "required": true,
+                  "type": "array",
+                  "itemType": "string",
+                  "itemSanitize": true,
+                  "itemMaxLength": 128
                 },
                 "repo": {
                   "type": "string",
@@ -1252,7 +1300,7 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,github.com,host.docker.internal,json-schema.org,json.schemastore.org,keyserver.ubuntu.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.npmjs.org,s.symcb.com,s.symcd.com,security.ubuntu.com,telemetry.enterprise.githubcopilot.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"hide_older_comments\":true,\"max\":1,\"target\":\"*\"},\"create_issue\":{\"expires\":48,\"labels\":[\"ai-e2e\",\"qa-review\"],\"max\":1,\"title_prefix\":\"[e2e-verifier] \"},\"dispatch_workflow\":{\"max\":1,\"workflow_files\":{\"e2e-generic-fixer\":\".lock.yml\"},\"workflows\":[\"e2e-generic-fixer\"]},\"missing_data\":{},\"missing_tool\":{}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"hide_older_comments\":true,\"max\":1,\"target\":\"*\"},\"add_labels\":{\"target\":\"*\"},\"create_issue\":{\"expires\":48,\"labels\":[\"ai-e2e\",\"qa-review\"],\"max\":1,\"title_prefix\":\"[e2e-verifier] \"},\"dispatch_workflow\":{\"max\":1,\"workflow_files\":{\"e2e-generic-fixer\":\".lock.yml\"},\"workflows\":[\"e2e-generic-fixer\"]},\"missing_data\":{},\"missing_tool\":{}}"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |

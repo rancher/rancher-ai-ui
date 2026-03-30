@@ -30,6 +30,8 @@ safe-outputs:
     target: "*"
     max: 1
     hide-older-comments: true
+  add-labels:
+    target: "*"
   dispatch-workflow: [e2e-generic-fixer]
   create-issue:
     title-prefix: "[e2e-verifier] "
@@ -133,7 +135,9 @@ For each failure, extract:
 ## Step 6 — Decision
 
 ### ALL tests in the target spec pass
-After commenting, use `noop` with a message confirming all tests passed.
+After commenting:
+1. Use `add-labels` to add the label **`e2e-passed`** to PR `${{ github.event.inputs.pr_number }}`.
+2. Then use `noop` with a message confirming all tests passed.
 
 ### ANY test fails (attempt < 5)
 After commenting, dispatch `e2e-generic-fixer` with:
