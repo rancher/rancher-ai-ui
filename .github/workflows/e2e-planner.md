@@ -96,14 +96,35 @@ Priority order:
 2. Features with complex interactions (multiple composables)
 3. Features with settings/configuration pages
 
-## Step 2 - Check for Existing Test Plan
+## Step 2 - Check for Existing Coverage and Open PRs
 
+First, check for open PRs that already cover E2E test planning or spec writing
+for any feature area. This prevents duplicate work:
+
+```bash
+gh pr list --repo "$GITHUB_REPOSITORY" \
+  --label ai-e2e \
+  --state open \
+  --json number,headRefName,title \
+  --jq '.[] | "\(.number) \(.headRefName) \(.title)"'
+```
+
+Parse the output to build a list of feature areas that already have open PRs.
+Any branch matching `test/e2e-<FEATURE>-spec` means that feature area is
+already in progress.
+
+If the chosen feature area (from Step 1 or from the input) already has an
+open PR, skip it and choose the next highest-priority untested area instead.
+If ALL candidate areas already have open PRs, use `noop` with a message
+listing the in-progress PRs.
+
+Also check for existing test plans already merged on the current branch:
 ```bash
 find cypress/e2e -name "test-plan-*.md" -type f 2>/dev/null
 ```
 
-If a plan for this feature area already exists AND `force` is not true,
-use `noop` with a message explaining the plan already exists.
+If a plan for this feature area already exists on the branch AND `force` is
+not true, skip it and choose the next candidate.
 
 ## Step 3 - Analyze the Feature
 
