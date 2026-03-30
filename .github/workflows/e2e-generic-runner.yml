@@ -11,158 +11,144 @@ on:
         description: "PR number to test (auto-detected if empty)"
         required: false
         type: string
+        default: ""
       attempt:
-        description: "Attempt number"
+        description: "Attempt number for the test loop"
         required: false
         type: string
         default: "1"
+
+env:
+  RANCHER_VERSION: head
+  CATTLE_SERVER_URL: https://172.17.0.1
+  CATTLE_BOOTSTRAP_PASSWORD: password
+  KUBECONFIG_PATH: ${{ github.workspace }}/kubeconfig.yaml
+  DEV_UI_URL: https://localhost:8005
 
 jobs:
   run-e2e:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
       actions: write
-    timeout-minutes: 30
-    env:
-      RANCHER_URL: https://localhost:8005
-      RANCHER_PASSWORD: password
-      CATTLE_BOOTSTRAP_PASSWORD: password
-      API_PORT: 3031
-      TEST_BASE_URL: https://localhost:8005
-
     steps:
-      - name: Detect PR number
-        id: detect-pr
+      - name: Resolve PR head ref
+        id: pr
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PR_NUMBER="${{ github.event.inputs.pr_number }}"
+          PR_NUM="${{ github.event.inputs.pr_number }}"
           FEATURE_AREA="${{ github.event.inputs.feature_area }}"
 
-          if [ -z "$PR_NUMBER" ]; then
-            echo "No PR number provided, auto-detecting..."
-            PR_NUMBER=$(gh pr list --repo "${{ github.repository }}" \
-              --label ai-e2e \
-              --state open \
-              --json number,headRefName \
-              --jq ".[] | select(.headRefName | startswith(\"test/e2e-${FEATURE_AREA}-spec\")) | .number" \
-              | head -1)
-
-            if [ -z "$PR_NUMBER" ]; then
-              echo "Could not auto-detect PR number for feature_area=$FEATURE_AREA"
-              echo "Looking for branch prefix: test/e2e-${FEATURE_AREA}-spec"
-              echo "Available ai-e2e PRs:"
-              gh pr list --repo "${{ github.repository }}" --label ai-e2e --state open --json number,headRefName
+          if [ -z "$PR_NUM" ]; then
+            echo "No PR number provided, finding latest e2e PR for $FEATURE_AREA..."
+            PR_NUM=$(gh pr list --repo ${{ github.repository }} \
+              --label ai-e2e --state open --json number,headRefName \
+              --jq "[.[] | select(.headRefName | startswith(\"test/e2e-${FEATURE_AREA}-spec\"))] | sort_by(.number) | last | .number")
+            if [ -z "$PR_NUM" ] || [ "$PR_NUM" = "null" ]; then
+              echo "::error::Could not find an open e2e PR for feature_area=$FEATURE_AREA"
               exit 1
             fi
-
-            echo "Auto-detected PR #$PR_NUMBER"
+            echo "Auto-detected PR #$PR_NUM"
           fi
+          echo "pr_number=$PR_NUM" >> "$GITHUB_OUTPUT"
+          HEAD_REF=$(gh pr view "$PR_NUM" --repo ${{ github.repository }} --json headRefName -q .headRefName)
+          echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+          echo "Resolved PR #$PR_NUM head ref: $HEAD_REF"
 
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.pr.outputs.head_ref }}
+          fetch-depth: 1
 
-      - name: Get PR branch
-        id: pr-info
+      - name: Setup Node env
+        uses: ./.github/actions/setup
+
+      - name: Start Rancher
+        run: .github/scripts/install-rancher.sh ${{ env.RANCHER_VERSION }} ${{ env.CATTLE_SERVER_URL }} ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+
+      - name: Deploy Rancher AI charts
+        run: .github/scripts/deploy-rancher-ai.sh ${{ env.KUBECONFIG_PATH }}
+
+      - name: Start dev UI
         env:
-          GH_TOKEN: ${{ github.token }}
+          API: ${{ env.CATTLE_SERVER_URL }}
         run: |
-          PR_DATA=$(gh pr view "${{ steps.detect-pr.outputs.pr_number }}" \
-            --repo "${{ github.repository }}" \
-            --json headRefName)
-          BRANCH=$(echo "$PR_DATA" | jq -r '.headRefName')
-          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          echo "Testing PR #${{ steps.detect-pr.outputs.pr_number }}, branch: $BRANCH"
+          nohup yarn dev > dev.log 2>&1 & echo $! > dev.pid
 
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pr-info.outputs.branch }}
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
+      - name: Wait for dev UI to be ready
         run: |
-          yarn install --frozen-lockfile || yarn install
-          cd mock-agent && npm install && cd ..
+          npx wait-on ${{ env.DEV_UI_URL }}
 
-      - name: Start mock Rancher + LLM service
-        run: |
-          cd mock-agent && npx ts-node index.ts &
-          echo "Waiting for mock service..."
-          for i in $(seq 1 30); do
-            if curl -sk https://localhost:8005 > /dev/null 2>&1; then
-              echo "Mock service ready"
-              break
-            fi
-            sleep 2
-          done
-
-      - name: Run Cypress E2E tests
+      - name: Run Cypress tests
         id: cypress
+        continue-on-error: true
+        env:
+          TEST_USERNAME: admin
+          CATTLE_BOOTSTRAP_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+          API: ${{ env.CATTLE_SERVER_URL }}
         run: |
-          mkdir -p cypress/results cypress/screenshots
-
           set +e
-          npx cypress run \
-            --spec "cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts" \
-            --config baseUrl=https://localhost:8005 \
-            --browser chrome \
-            --headless 2>&1 | tee cypress/results/cypress-output.txt
+          yarn e2e --spec "cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts" --browser chrome 2>&1 | tee cypress/results/cypress-output.txt
           CYPRESS_EXIT=$?
-          set -e
-
-          if grep -q "All specs passed" cypress/results/cypress-output.txt 2>/dev/null; then
-            echo "outcome=success" >> "$GITHUB_OUTPUT"
-            echo "All specs passed!"
-          elif [ $CYPRESS_EXIT -eq 0 ]; then
-            echo "outcome=success" >> "$GITHUB_OUTPUT"
-          else
-            echo "outcome=failure" >> "$GITHUB_OUTPUT"
-            echo "Some tests failed (exit code: $CYPRESS_EXIT)"
+          echo "cypress_exit=$CYPRESS_EXIT" >> "$GITHUB_OUTPUT"
+          # Check if all specs passed regardless of exit code
+          if grep -q "All specs passed" cypress/results/cypress-output.txt; then
+            echo "All specs passed — treating as success"
+            exit 0
           fi
+          exit $CYPRESS_EXIT
 
-      - name: Save metadata
+      - name: Save attempt metadata
         if: always()
         run: |
           mkdir -p cypress/results
           cat > cypress/results/metadata.json << EOF
           {
-            "pr_number": "${{ steps.detect-pr.outputs.pr_number }}",
-            "branch": "${{ steps.pr-info.outputs.branch }}",
+            "attempt": ${{ github.event.inputs.attempt }},
+            "pr_number": "${{ steps.pr.outputs.pr_number }}",
             "feature_area": "${{ github.event.inputs.feature_area }}",
-            "attempt": "${{ github.event.inputs.attempt || '1' }}",
-            "outcome": "${{ steps.cypress.outputs.outcome }}",
-            "run_id": "${{ github.run_id }}",
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            "outcome": "${{ steps.cypress.outcome }}",
+            "run_id": "${{ github.run_id }}"
           }
           EOF
+          # If the output file doesn't exist (e.g. install failed), create an empty one
+          touch cypress/results/cypress-output.txt
 
-      - name: Upload test results
+      - name: Upload E2E results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-generic-results
           path: |
-            cypress/results/
             cypress/screenshots/
+            cypress/videos/
+            cypress/results/
           retention-days: 7
 
-      - name: Dispatch verifier
+      - name: Tear down background processes
+        if: always()
+        run: |
+          if [ -f dev.pid ]; then kill $(cat dev.pid) || true; fi
+
+      - name: Report outcome
+        if: always()
+        run: |
+          echo "Cypress outcome: ${{ steps.cypress.outcome }}"
+          echo "Attempt: ${{ github.event.inputs.attempt }}"
+          echo "Feature: ${{ github.event.inputs.feature_area }}"
+          echo "PR: #${{ steps.pr.outputs.pr_number }}"
+
+      - name: Dispatch E2E Verifier
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run e2e-generic-verifier.lock.yml \
-            --repo "${{ github.repository }}" \
+            --repo ${{ github.repository }} \
             --ref e2e-agentic \
             -f feature_area="${{ github.event.inputs.feature_area }}" \
-            -f pr_number="${{ steps.detect-pr.outputs.pr_number }}" \
-            -f attempt="${{ github.event.inputs.attempt || '1' }}" \
-            -f runner_run_id="${{ github.run_id }}" || \
-          echo "Warning: Failed to dispatch verifier"
+            -f pr_number="${{ steps.pr.outputs.pr_number }}" \
+            -f attempt="${{ github.event.inputs.attempt }}" \
+            -f runner_run_id="${{ github.run_id }}"
+          echo "Dispatched E2E Generic Verifier with run_id=${{ github.run_id }}"
