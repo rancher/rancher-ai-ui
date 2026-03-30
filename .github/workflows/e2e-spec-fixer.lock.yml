@@ -576,7 +576,13 @@ jobs:
               "description": "Dispatch the 'apply-e2e-fix-patch' workflow with workflow_dispatch trigger. This workflow must support workflow_dispatch and be in .github/workflows/ directory in the same repository.",
               "inputSchema": {
                 "additionalProperties": false,
-                "properties": {},
+                "properties": {
+                  "attempt": {
+                    "default": "2",
+                    "description": "Next attempt number",
+                    "type": "string"
+                  }
+                },
                 "type": "object"
               },
               "name": "apply_e2e_fix_patch"

@@ -7,6 +7,11 @@ on:
         description: "Feature area being tested"
         required: false
         type: string
+      attempt:
+        description: "Next attempt number"
+        required: false
+        type: string
+        default: "2"
 
 jobs:
   apply-patch:
@@ -161,8 +166,8 @@ jobs:
               # Clean up the patch file from repo-memory
               rm "$PATCH_FILE"
 
-              # Read attempt number from commit message or default to 2
-              ATTEMPT=$(git log -1 --format=%s | grep -oP 'attempt \K[0-9]+' || echo "2")
+              # Use attempt from workflow input
+              ATTEMPT="${{ github.event.inputs.attempt }}"
 
               # Dispatch the generic E2E runner (use GITHUB_TOKEN which has actions:write)
               GH_TOKEN="${{ github.token }}" gh workflow run e2e-generic-runner.yml \

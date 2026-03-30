@@ -585,6 +585,11 @@ jobs:
               "inputSchema": {
                 "additionalProperties": false,
                 "properties": {
+                  "attempt": {
+                    "default": "2",
+                    "description": "Next attempt number",
+                    "type": "string"
+                  },
                   "feature_area": {
                     "description": "Feature area being tested",
                     "type": "string"
