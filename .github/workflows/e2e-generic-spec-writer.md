@@ -1,8 +1,8 @@
 ---
 description: |
-  Generic agentic workflow that reads a test plan from repo-memory and
-  creates a Cypress E2E spec for any feature area. Creates a PR and
-  dispatches the generic runner workflow.
+  Generic agentic workflow that reads a test plan from the PR branch and
+  creates a Cypress E2E spec. Saves a patch to repo-memory and dispatches
+  the apply-spec-writer-patch workflow to push the spec to the existing PR.
 
 on:
   workflow_dispatch:
@@ -10,6 +10,10 @@ on:
       feature_area:
         description: "Feature area to create spec for (must match test plan name)"
         required: true
+        type: string
+      pr_number:
+        description: "PR number containing the test plan (auto-detected if empty)"
+        required: false
         type: string
       force_recreate:
         description: "Force recreation of the spec even if it already exists"
@@ -32,15 +36,11 @@ checkout:
   fetch-depth: 0
 
 safe-outputs:
-  create-pull-request:
-    title-prefix: "test(e2e): "
-    labels: [ai-e2e]
-    draft: true
-    base-branch: e2e-agentic
-    allowed-files:
-      - "cypress/**"
+  add-comment:
+    target: "*"
     max: 1
-  dispatch-workflow: [e2e-generic-runner]
+    hide-older-comments: true
+  dispatch-workflow: [apply-e2e-spec-writer-patch]
   create-issue:
     title-prefix: "[e2e-generic-spec-writer] "
     labels: [ai-e2e, automation]
@@ -62,12 +62,13 @@ tools:
     - "node *"
     - "npx *"
     - "npm *"
+    - "git *"
   edit:
   repo-memory:
     branch-name: memory/default
     max-file-size: 65536
     max-patch-size: 102400
-    file-glob: ["*.md"]
+    file-glob: ["*.patch"]
 
 timeout-minutes: 30
 ---
@@ -75,21 +76,45 @@ timeout-minutes: 30
 # E2E Generic Spec Writer
 
 You are an **E2E spec-writing agent** for the Rancher AI UI extension. Your
-job is to read the test plan from repo-memory and create a complete Cypress
-spec for the `${{ github.event.inputs.feature_area }}` feature.
+job is to read the test plan from the PR branch and create a complete Cypress
+spec for `${{ github.event.inputs.feature_area }}`, then save it as a patch
+to be pushed to the existing PR.
 
-## Step 1 — Read the Test Plan
+## Step 1 - Find the PR
 
-Read the test plan document from repo-memory:
+If `${{ github.event.inputs.pr_number }}` is provided, use that.
 
+Otherwise, auto-detect:
 ```bash
-cat /tmp/gh-aw/repo-memory/default/test-plan-${{ github.event.inputs.feature_area }}.md
+gh pr list --repo "$GITHUB_REPOSITORY" \
+  --label ai-e2e \
+  --label plan-approved \
+  --state open \
+  --json number,headRefName \
+  --jq '.[] | select(.headRefName | startswith("test/e2e-${{ github.event.inputs.feature_area }}")) | .number' \
+  | head -1
 ```
 
-If the test plan does not exist, create an issue reporting the missing
-plan and stop.
+## Step 2 - Checkout the PR Branch
 
-## Step 2 — Check for Existing Spec
+```bash
+PR_DATA=$(gh pr view $PR_NUMBER --json headRefName)
+BRANCH=$(echo "$PR_DATA" | jq -r '.headRefName')
+git checkout "$BRANCH"
+```
+
+## Step 3 - Read the Test Plan
+
+Read the test plan document from the PR branch:
+
+```bash
+PLAN_FILE=$(find cypress/e2e -name "test-plan-${{ github.event.inputs.feature_area }}*" -type f)
+cat "$PLAN_FILE"
+```
+
+If the test plan does not exist, create an issue and stop.
+
+## Step 4 - Check for Existing Spec
 
 ```bash
 find cypress/e2e/tests/features -name "*${{ github.event.inputs.feature_area }}*" -type f
@@ -99,7 +124,7 @@ If a spec already exists and `force_recreate` is not true:
 - Use `noop` explaining the spec already exists
 - Stop
 
-## Step 3 — Study Existing Patterns
+## Step 5 - Study Existing Patterns
 
 Read working specs to understand established patterns:
 
@@ -119,16 +144,14 @@ Key patterns to follow:
 - Screenshots on the chat container: `cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('name')`
 - Add `cy.wait(500)` before screenshots
 - Use `.should('be.visible')` for element existence checks
-- Mock LLM responses with `cy.enqueueLLMResponse('response text')`
 
-## Step 4 — Read Relevant Source Components
+## Step 6 - Read Relevant Source Components
 
 Based on the test plan, read the source components to verify:
 - Correct `data-testid` attributes
 - Actual component behavior and state management
-- Available props and events
 
-## Step 5 — Create the Spec File
+## Step 7 - Create the Spec File
 
 Create the spec at: `cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts`
 
@@ -153,46 +176,60 @@ describe('Feature: ${{ github.event.inputs.feature_area }}', () => {
 });
 ```
 
-## Step 6 — Create any needed Page Objects
+## Step 8 - Create any needed Page Objects
 
 If the test plan specifies new page objects, create them in:
 `cypress/e2e/po/<name>.po.ts`
 
-Follow the existing PO patterns (see `cypress/e2e/po/chat.po.ts`).
+## Step 9 - Comment on PR
 
-## Step 7 — Create the Pull Request
-
-Use the `create-pull-request` safe output:
-- **title**: `add ${{ github.event.inputs.feature_area }} E2E spec`
-- **branch**: `test/e2e-${{ github.event.inputs.feature_area }}-spec`
+Post a comment on the PR using add-comment:
+- **pull_request_number**: the PR number
 - **body**: Include:
-  - Summary of what feature this tests
+  - Summary of spec created
   - Number of test cases
-  - Link to the test plan concept
-  - Note that this was auto-generated by the E2E planner pipeline
+  - Files created
+  - Note that the spec will be pushed and then the runner triggered
 
-Include these files in the PR:
-- The spec file
-- Any new page object files
+## Step 10 - Commit and Save Patch
 
-## Step 8 — Dispatch the Runner
+Commit all new files and generate a patch:
 
-After the PR is created, dispatch the `e2e-generic-runner` workflow:
+```bash
+git add cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts
+# Also add any new PO files
+git add cypress/e2e/po/ 2>/dev/null || true
+git commit -m "test(e2e): add ${{ github.event.inputs.feature_area }} spec"
+git diff HEAD~1 > /tmp/gh-aw/repo-memory/default/e2e-spec-pr-$PR_NUMBER.patch
+```
 
-Use the `dispatch-workflow` safe output for `e2e-generic-runner` with inputs:
-- `feature_area`: `${{ github.event.inputs.feature_area }}`
-- `attempt`: `1`
+Verify the patch starts with `diff --git`:
+```bash
+head -3 /tmp/gh-aw/repo-memory/default/e2e-spec-pr-$PR_NUMBER.patch
+```
 
-Do NOT include `pr_number` — the runner will auto-detect it from the branch name and label.
+**IMPORTANT**: Place the patch directly at:
+`/tmp/gh-aw/repo-memory/default/e2e-spec-pr-<PR_NUMBER>.patch`
+
+Do NOT create subdirectories. After saving, call push_repo_memory.
+
+## Step 11 - Dispatch apply-spec-writer-patch
+
+Dispatch `apply-e2e-spec-writer-patch` to push the spec to the PR and trigger the runner.
+
+Use the dispatch-workflow safe output:
+- workflow: apply-e2e-spec-writer-patch
 
 ## Rules
 
-- Follow the test plan EXACTLY — it was specifically designed for this feature
+- Follow the test plan EXACTLY
 - Use only selectors that actually exist in the source components
 - Every test MUST have a screenshot at the end
 - Use `cy.wait(500)` before every screenshot
 - Screenshots on the container element, not viewport
 - Mock all LLM interactions with `cy.enqueueLLMResponse()`
-- Do not use `cy.type('{tab}')` — it is unsupported
+- Do not use `cy.type('{tab}')` - unsupported
 - Keyboard shortcuts must use combined syntax: `{alt+k}`, `{ctrl+shift+o}`
 - Stub clipboard before copy tests
+- Do NOT create a new PR - save patch to repo-memory instead
+- Do NOT use git push - the apply-patch workflow handles that
