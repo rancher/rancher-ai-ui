@@ -88,16 +88,20 @@ jobs:
           CATTLE_BOOTSTRAP_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
           API: ${{ env.CATTLE_SERVER_URL }}
         run: |
-          set +e
           mkdir -p cypress/results
           yarn e2e --spec "cypress/e2e/tests/setup/rancher-setup.spec.ts,cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts" --browser chrome 2>&1 | tee cypress/results/cypress-output.txt
-          CYPRESS_EXIT=$?
-          echo "cypress_exit=$CYPRESS_EXIT" >> "$GITHUB_OUTPUT"
-          if grep -q "All specs passed" cypress/results/cypress-output.txt; then
-            echo "All specs passed — treating as success"
-            exit 0
+
+      - name: Check Cypress results
+        id: check
+        if: always()
+        run: |
+          if [ -f cypress/results/cypress-output.txt ] && grep -q "All specs passed" cypress/results/cypress-output.txt; then
+            echo "result=passed" >> "$GITHUB_OUTPUT"
+            echo "All specs passed"
+          else
+            echo "result=failed" >> "$GITHUB_OUTPUT"
+            echo "Some specs failed or output missing"
           fi
-          exit $CYPRESS_EXIT
 
       - name: Save attempt metadata
         if: always()
