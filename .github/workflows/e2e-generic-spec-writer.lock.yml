@@ -29,7 +29,7 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"a928fb75bddabd011b29ece1309e5bbcdf3c110cf80949f91fdb2d9a68313fac","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"ac4858f64898dec3b991328d3b6634e8617177a91bd60be3afaba57e2efb426a","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Generic Spec Writer"
 "on":
@@ -828,7 +828,7 @@ jobs:
         # --allow-tool shell(wc)
         # --allow-tool shell(yq)
         # --allow-tool write
-        timeout-minutes: 30
+        timeout-minutes: 60
         run: |
           set -o pipefail
           touch /tmp/gh-aw/agent-step-summary.md
@@ -1221,7 +1221,7 @@ jobs:
           GH_AW_REPO_MEMORY_PATCH_SIZE_EXCEEDED_default: ${{ needs.push_repo_memory.outputs.patch_size_exceeded_default }}
           GH_AW_GROUP_REPORTS: "false"
           GH_AW_FAILURE_REPORT_AS_ISSUE: "true"
-          GH_AW_TIMEOUT_MINUTES: "30"
+          GH_AW_TIMEOUT_MINUTES: "60"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |

@@ -57,7 +57,7 @@ tools:
     - "wc *"
     - "jq *"
 
-timeout-minutes: 15
+timeout-minutes: 60
 ---
 
 # E2E Planner Verifier

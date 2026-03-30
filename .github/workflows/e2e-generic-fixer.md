@@ -72,7 +72,7 @@ tools:
     max-patch-size: 102400
     file-glob: ["*.patch", "*.md"]
 
-timeout-minutes: 30
+timeout-minutes: 60
 ---
 
 # E2E Generic Spec Fixer

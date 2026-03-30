@@ -29,7 +29,7 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"e27dac366fd0b96c26703e43fc2ae22a0fc3d1c9b9238f9afe223b7b23abcd0c","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"c5b4b581770f1d59c9e7cdd1216811f788d42b0f050f4ca7465ed2360959c3f7","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Test Planner"
 "on":
@@ -830,7 +830,7 @@ jobs:
         # --allow-tool shell(wc)
         # --allow-tool shell(yq)
         # --allow-tool write
-        timeout-minutes: 15
+        timeout-minutes: 60
         run: |
           set -o pipefail
           touch /tmp/gh-aw/agent-step-summary.md
@@ -1211,7 +1211,7 @@ jobs:
           GH_AW_CODE_PUSH_FAILURE_COUNT: ${{ needs.safe_outputs.outputs.code_push_failure_count }}
           GH_AW_GROUP_REPORTS: "false"
           GH_AW_FAILURE_REPORT_AS_ISSUE: "true"
-          GH_AW_TIMEOUT_MINUTES: "15"
+          GH_AW_TIMEOUT_MINUTES: "60"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
