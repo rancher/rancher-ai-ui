@@ -29,7 +29,7 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"cfb0ad84c330ad06279d80e8c4fdf4d8a3a76ef6e4560e1bc068ea335e4a770e","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"66f0730999276c3aad56ec83fece52f6879a4adb608b15201e9a136f026f023e","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Generic Spec Fixer"
 "on":
@@ -228,7 +228,7 @@ jobs:
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_MEMORY_BRANCH_NAME: 'memory/default'
-          GH_AW_MEMORY_CONSTRAINTS: "\n\n**Constraints:**\n- **Allowed Files**: Only files matching patterns: *.patch, *.md\n- **Max File Size**: 65536 bytes (0.06 MB) per file\n- **Max File Count**: 100 files per commit\n- **Max Patch Size**: 65536 bytes (64 KB) total per push (max: 100 KB)\n"
+          GH_AW_MEMORY_CONSTRAINTS: "\n\n**Constraints:**\n- **Allowed Files**: Only files matching patterns: *.patch, *.md\n- **Max File Size**: 102400 bytes (0.10 MB) per file\n- **Max File Count**: 100 files per commit\n- **Max Patch Size**: 102400 bytes (100 KB) total per push (max: 100 KB)\n"
           GH_AW_MEMORY_DESCRIPTION: ''
           GH_AW_MEMORY_DIR: '/tmp/gh-aw/repo-memory/default/'
           GH_AW_MEMORY_TARGET_REPO: ' of the current repository'
@@ -381,7 +381,7 @@ jobs:
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
           cat > /opt/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_EOF'
-          {"add_comment":{"max":1,"target":"*"},"create_issue":{"expires":48,"max":1},"dispatch_workflow":{"max":1,"workflow_files":{"apply-e2e-generic-patch":".yml"},"workflows":["apply-e2e-generic-patch"]},"missing_data":{},"missing_tool":{},"noop":{"max":1},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/default","id":"default","max_file_count":100,"max_file_size":65536,"max_patch_size":65536}]}}
+          {"add_comment":{"max":1,"target":"*"},"create_issue":{"expires":48,"max":1},"dispatch_workflow":{"max":1,"workflow_files":{"apply-e2e-generic-patch":".yml"},"workflows":["apply-e2e-generic-patch"]},"missing_data":{},"missing_tool":{},"noop":{"max":1},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/default","id":"default","max_file_count":100,"max_file_size":102400,"max_patch_size":102400}]}}
           GH_AW_SAFE_OUTPUTS_CONFIG_EOF
           cat > /opt/gh-aw/safeoutputs/tools.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_EOF'
           [
@@ -1313,9 +1313,9 @@ jobs:
           MEMORY_ID: default
           TARGET_REPO: ${{ github.repository }}
           BRANCH_NAME: memory/default
-          MAX_FILE_SIZE: 65536
+          MAX_FILE_SIZE: 102400
           MAX_FILE_COUNT: 100
-          MAX_PATCH_SIZE: 65536
+          MAX_PATCH_SIZE: 102400
           ALLOWED_EXTENSIONS: '[]'
           FILE_GLOB_FILTER: "*.patch *.md"
         with:
