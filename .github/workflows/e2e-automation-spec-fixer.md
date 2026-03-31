@@ -1,6 +1,6 @@
 ---
 description: |
-  Generic agentic workflow that reads E2E test failure artifacts and the
+  E2E Automation agentic workflow that reads E2E test failure artifacts and the
   verifier analysis, fixes the Cypress spec for any feature area, and
   saves a patch to repo-memory. Dispatches the spec apply-patch workflow.
 
@@ -75,7 +75,7 @@ tools:
 timeout-minutes: 60
 ---
 
-# E2E Generic Spec Fixer
+# E2E Automation Spec Fixer
 
 You are a **spec-fixing agent** for the Rancher AI UI extension. The E2E
 test spec for `${{ github.event.inputs.feature_area }}` has failures and you
