@@ -66,13 +66,6 @@ steps:
       run-id: ${{ github.event.inputs.runner_run_id }}
       github-token: ${{ github.token }}
 
-  - name: Checkout learning files
-    uses: actions/checkout@v5
-    with:
-      ref: learnings/e2e
-      path: learnings
-      persist-credentials: false
-
 timeout-minutes: 60
 ---
 
@@ -90,13 +83,19 @@ verification is based ENTIRELY on the Cypress text output log and metadata.
 
 ## Step 0 — Read Learnings
 
-Read `learnings/e2e-learnings/generic.md` if it
-exists. This file contains accumulated learnings from previous verification
-runs — common failure patterns, selector issues, timing problems, and other
+Fetch and read the generic learnings from the `learnings/e2e` branch:
+
+```bash
+git fetch origin learnings/e2e 2>/dev/null
+git show origin/learnings/e2e:e2e-learnings/generic.md 2>/dev/null || echo "No generic learnings file found yet"
+```
+
+This file contains accumulated learnings from previous verification runs —
+common failure patterns, selector issues, timing problems, and other
 insights. Use this knowledge to improve your analysis and provide better
 feedback to the fixer.
 
-If the file does not exist, skip this step.
+If the command fails or returns nothing, skip this step.
 
 ## Step 1 — Read Metadata
 
@@ -192,7 +191,8 @@ Update the learnings file with insights from this verification run.
 
 1. **Copy** the current learnings file to repo-memory so you can edit it:
    ```bash
-   cp learnings/e2e-learnings/generic.md /tmp/gh-aw/repo-memory/default/generic.md
+   git show origin/learnings/e2e:e2e-learnings/generic.md > /tmp/gh-aw/repo-memory/default/generic.md 2>/dev/null || touch /tmp/gh-aw/repo-memory/default/generic.md
+   cp /tmp/gh-aw/repo-memory/default/generic.md /tmp/gh-aw/repo-memory/default/generic-orig.md
    ```
 
 2. **Read** the current content and **amend** it — do NOT delete and rewrite.
@@ -208,11 +208,11 @@ Update the learnings file with insights from this verification run.
 
 4. **Generate a patch** and save it to repo-memory:
    ```bash
-   diff -u learnings/e2e-learnings/generic.md /tmp/gh-aw/repo-memory/default/generic.md > /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch || true
+   diff -u /tmp/gh-aw/repo-memory/default/generic-orig.md /tmp/gh-aw/repo-memory/default/generic.md > /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch || true
    ```
    Then fix the patch paths so `git apply` works:
    ```bash
-   sed -i 's|learnings/||g; s|/tmp/gh-aw/repo-memory/default/generic.md|e2e-learnings/generic.md|g' /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch
+   sed -i 's|/tmp/gh-aw/repo-memory/default/generic-orig.md|e2e-learnings/generic.md|g; s|/tmp/gh-aw/repo-memory/default/generic.md|e2e-learnings/generic.md|g' /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch
    ```
 
 5. Verify the patch is not empty and starts with `---`:
