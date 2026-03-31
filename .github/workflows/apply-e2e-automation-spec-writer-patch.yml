@@ -116,12 +116,16 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
 
-            if git apply --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
+            PATCH_COMMITTED=false
+            if git am --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (git am)"
+              PATCH_COMMITTED=true
+            elif git apply --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
               echo "Patch applied (git apply)"
             elif git apply --ignore-whitespace --3way "$PATCH_FILE" 2>/dev/null; then
               echo "Patch applied (git apply --3way)"
-            elif patch -p1 < "$PATCH_FILE" 2>/dev/null; then
-              echo "Patch applied (patch -p1)"
+            elif patch -p1 --fuzz=3 < "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (patch --fuzz=3)"
             else
               echo "Patch apply failed"
               gh pr comment "$PR_NUMBER" --repo "$REPO" \
@@ -130,10 +134,12 @@ jobs:
               continue
             fi
 
-            git add -A
-            git commit -m "test(e2e): add $FEATURE_AREA spec
-
-          Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+            if [ "$PATCH_COMMITTED" != "true" ]; then
+              git add -A
+              git commit -m "test(e2e): add $FEATURE_AREA spec
+              
+              Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+            fi
 
             if git push origin "$HEAD_REF"; then
               echo "Spec pushed successfully"
