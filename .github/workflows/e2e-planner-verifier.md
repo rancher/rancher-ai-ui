@@ -36,7 +36,7 @@ safe-outputs:
     hide-older-comments: true
   add-labels:
     target: "*"
-  dispatch-workflow: [e2e-planner-fixer, e2e-generic-spec-writer, apply-e2e-learnings-patch]
+  dispatch-workflow: [e2e-planner-fixer, e2e-generic-spec-writer]
   create-issue:
     title-prefix: "[e2e-planner-verifier] "
     labels: [ai-e2e, qa-review]
@@ -74,18 +74,17 @@ before it proceeds to spec writing.
 
 ## Step 0 - Read Learnings
 
-Fetch and read the planner learnings from the `learnings/e2e` branch:
+Read the planner learnings from repo-memory:
 
 ```bash
-git fetch origin learnings/e2e 2>/dev/null
-git show origin/learnings/e2e:e2e-learnings/planner.md 2>/dev/null || echo "No planner learnings file found yet"
+cat /tmp/gh-aw/repo-memory/default/planner.md 2>/dev/null || echo "No planner learnings file found yet"
 ```
 
 This file contains accumulated learnings from previous plan verification
 runs — common plan quality issues, selector verification failures, coverage
 gaps, and other insights. Use this knowledge to improve your review.
 
-If the command fails or returns nothing, skip this step.
+If the file does not exist or is empty, skip this step.
 
 ## Step 1 - Find the PR
 
@@ -189,15 +188,18 @@ Use `create-issue` to report the plan could not be verified after 5 attempts.
 
 ## Step 7 - Update Learnings
 
-Update the learnings file with insights from this verification run.
+Update the learnings file in repo-memory with insights from this verification run.
 
-1. **Copy** the current learnings file to repo-memory so you can edit it:
+1. **Read** the current learnings file:
    ```bash
-   git show origin/learnings/e2e:e2e-learnings/planner.md > /tmp/gh-aw/repo-memory/default/planner.md 2>/dev/null || touch /tmp/gh-aw/repo-memory/default/planner.md
-   cp /tmp/gh-aw/repo-memory/default/planner.md /tmp/gh-aw/repo-memory/default/planner-orig.md
+   cat /tmp/gh-aw/repo-memory/default/planner.md 2>/dev/null || echo ""
+   ```
+   If the file does not exist, create it with a header:
+   ```bash
+   echo "# E2E Planner Learnings" > /tmp/gh-aw/repo-memory/default/planner.md
    ```
 
-2. **Read** the current content and **amend** it — do NOT delete and rewrite.
+2. **Amend** the file — do NOT delete and rewrite the entire content.
    Add new insights under the appropriate sections:
    - **Selector Verification** — map verified selectors
    - **Common Plan Issues** — structure problems, missing sections
@@ -208,25 +210,11 @@ Update the learnings file with insights from this verification run.
 3. Remove outdated or redundant entries. Keep it well-organized with bullet
    points. The goal is a compact, high-value reference.
 
-4. **Generate a patch** and save it to repo-memory:
-   ```bash
-   diff -u /tmp/gh-aw/repo-memory/default/planner-orig.md /tmp/gh-aw/repo-memory/default/planner.md > /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch || true
-   ```
-   Then fix the patch paths so `git apply` works:
-   ```bash
-   sed -i 's|/tmp/gh-aw/repo-memory/default/planner-orig.md|e2e-learnings/planner.md|g; s|/tmp/gh-aw/repo-memory/default/planner.md|e2e-learnings/planner.md|g' /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch
-   ```
+4. Write the updated content back to the file at
+   `/tmp/gh-aw/repo-memory/default/planner.md`.
 
-5. Verify the patch is not empty and starts with `---`:
-   ```bash
-   head -3 /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch
-   ```
-   If empty (no changes), skip saving and dispatching.
-
-6. Call `push_repo_memory` to save the patch.
-
-7. Dispatch `apply-e2e-learnings-patch` with:
-   - `learning_type`: `planner`
+5. Call `push_repo_memory` to save the updated learnings file.
+   It will be auto-committed to the `memory/default` branch.
 
 ## Rules
 

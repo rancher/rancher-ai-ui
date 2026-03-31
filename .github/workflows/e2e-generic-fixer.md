@@ -94,14 +94,13 @@ relevant to the failures, make the fix, and save the patch.**
 
 ## Step 0 - Read Learnings
 
-Fetch and read the generic learnings from the `learnings/e2e` branch:
+Read the generic learnings from repo-memory:
 
 ```bash
-git fetch origin learnings/e2e 2>/dev/null
-git show origin/learnings/e2e:e2e-learnings/generic.md 2>/dev/null || echo "No generic learnings file found yet"
+cat /tmp/gh-aw/repo-memory/default/generic.md 2>/dev/null || echo "No generic learnings file found yet"
 ```
 
-Read the output. The file This file contains accumulated learnings from the verifier — common
+Read the output. This file contains accumulated learnings from the verifier — common
 failure patterns, correct selectors, Cypress best practices, and
 feature-specific notes. **Use this knowledge** to make better fixes and
 avoid repeating known mistakes.
