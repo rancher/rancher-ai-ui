@@ -75,8 +75,14 @@ create a detailed test plan document, and create a PR with it.
 
 ## Step 0 - Read Learnings
 
-Read `.github/e2e-learnings/planner.md` from the checked-out repo if it
-exists. This file contains accumulated learnings from the planner verifier —
+Fetch and read the planner learnings from the `learnings/e2e` branch:
+
+```bash
+git fetch origin learnings/e2e 2>/dev/null
+git show origin/learnings/e2e:e2e-learnings/planner.md 2>/dev/null || echo "No planner learnings file found yet"
+```
+
+Read the output. The file This file contains accumulated learnings from the planner verifier —
 common plan issues, selector verification results, coverage gaps, and
 component mapping. **Use this knowledge** to produce a higher-quality test
 plan from the start.
