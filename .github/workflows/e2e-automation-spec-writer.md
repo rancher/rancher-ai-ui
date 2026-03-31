@@ -62,6 +62,7 @@ tools:
     - "node *"
     - "npx *"
     - "npm *"
+    - "cd *"
     - "git *"
   edit:
   repo-memory:
