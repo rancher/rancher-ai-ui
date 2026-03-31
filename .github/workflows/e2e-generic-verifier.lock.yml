@@ -26,7 +26,7 @@
 # On all-pass, comments on the PR. On failure, dispatches the generic fixer.
 # Works for any feature area.
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"636647b5af2a1de1b9ca6a133a20eb054f73c9f386e1836f1989505e9ed48946","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"dc86ce73d892dd82bea95987186f0bb43f9bfa48155d6beb22375f303772ec0b","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Generic QA Verifier"
 "on":
@@ -293,6 +293,10 @@ jobs:
         uses: github/gh-aw/actions/setup@32b3a711a9ee97d38e3989c90af0385aff0066a7 # v0.57.2
         with:
           destination: /opt/gh-aw/actions
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Create gh-aw temp directory
         run: bash /opt/gh-aw/actions/create_gh_aw_tmp_dir.sh
       - name: Download test artifacts
@@ -302,12 +306,6 @@ jobs:
           name: e2e-generic-results
           path: /tmp/gh-aw/e2e-results/
           run-id: ${{ github.event.inputs.runner_run_id }}
-      - name: Checkout learning files
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-        with:
-          path: learnings
-          persist-credentials: false
-          ref: learnings/e2e
 
       # Repo memory git-based storage configuration from frontmatter processed below
       - name: Clone repo-memory branch (default)
