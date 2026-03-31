@@ -30,8 +30,7 @@ network:
     - defaults
     - playwright
     - node
-    - "localhost"
-    - "127.0.0.1"
+    - local
     - "172.17.0.1"
     - "registry.suse.com"
 
@@ -68,6 +67,15 @@ steps:
   - name: Wait for dev UI to be ready
     run: |
       npx wait-on ${{ env.DEV_UI_URL }}
+
+  - name: Free port 80 for MCP Gateway
+    run: |
+      # Rancher Docker binds port 80 (HTTP redirect) but we only need 443.
+      # The MCP Gateway needs port 80, so remove the Docker DNAT rule for it.
+      sudo iptables -t nat -S DOCKER | grep -- '-p tcp' | grep -- '--dport 80' | while IFS= read -r rule; do
+        sudo iptables -t nat $(echo "$rule" | sed 's/^-A/-D/')
+      done
+      echo "Freed port 80 for MCP Gateway"
 
 safe-outputs:
   add-comment:
