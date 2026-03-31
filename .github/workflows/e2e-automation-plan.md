@@ -48,16 +48,6 @@ safe-outputs:
 tools:
   github:
     toolsets: [all]
-  bash:
-    - "cat *"
-    - "ls *"
-    - "find *"
-    - "head *"
-    - "tail *"
-    - "grep *"
-    - "wc *"
-    - "jq *"
-    - "diff *"
   edit:
   repo-memory:
     branch-name: memory/default
