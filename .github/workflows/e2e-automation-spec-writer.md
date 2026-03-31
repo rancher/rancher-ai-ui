@@ -50,7 +50,7 @@ safe-outputs:
 
 tools:
   github:
-    toolsets: [default]
+    toolsets: [all]
   bash:
     - "cat *"
     - "ls *"
