@@ -47,7 +47,7 @@ safe-outputs:
 
 tools:
   playwright:
-    args: ["--ignore-https-errors"]
+    args: ["--ignore-https-errors", "--isolated"]
   web-fetch:
   github:
     toolsets: [all]

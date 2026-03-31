@@ -100,7 +100,7 @@ safe-outputs:
 
 tools:
   playwright:
-    args: ["--ignore-https-errors", "--save-session", "--caps=devtools"]
+    args: ["--ignore-https-errors", "--save-session", "--caps=devtools", "--isolated"]
   web-fetch:
   github:
     toolsets: [all]
