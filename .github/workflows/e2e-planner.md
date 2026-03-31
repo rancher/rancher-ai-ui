@@ -75,11 +75,11 @@ create a detailed test plan document, and create a PR with it.
 
 ## Step 0 - Read Learnings
 
-Read `/tmp/gh-aw/repo-memory/default/e2e-planner.learning.md` if it exists.
-This file contains accumulated learnings from the planner verifier — common
-plan issues, selector verification results, coverage gaps, and component
-mapping. **Use this knowledge** to produce a higher-quality test plan from
-the start.
+Read `.github/e2e-learnings/planner.md` from the checked-out repo if it
+exists. This file contains accumulated learnings from the planner verifier —
+common plan issues, selector verification results, coverage gaps, and
+component mapping. **Use this knowledge** to produce a higher-quality test
+plan from the start.
 
 If the file does not exist, skip this step.
 

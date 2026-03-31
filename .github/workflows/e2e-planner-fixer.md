@@ -90,10 +90,11 @@ and save the patch.**
 
 ## Step 0 - Read Learnings
 
-Read `/tmp/gh-aw/repo-memory/default/e2e-planner.learning.md` if it exists.
-This file contains accumulated learnings from the planner verifier — common
-plan issues, correct selectors, coverage gaps, and component mapping.
-**Use this knowledge** to make better fixes and avoid repeating known mistakes.
+Read `.github/e2e-learnings/planner.md` from the checked-out repo if it
+exists. This file contains accumulated learnings from the planner verifier —
+common plan issues, correct selectors, coverage gaps, and component mapping.
+**Use this knowledge** to make better fixes and avoid repeating known
+mistakes.
 
 If the file does not exist, skip this step.
 

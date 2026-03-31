@@ -32,7 +32,7 @@ safe-outputs:
     hide-older-comments: true
   add-labels:
     target: "*"
-  dispatch-workflow: [e2e-generic-fixer]
+  dispatch-workflow: [e2e-generic-fixer, apply-e2e-learnings-patch]
   create-issue:
     title-prefix: "[e2e-verifier] "
     labels: [ai-e2e, qa-review]
@@ -66,6 +66,14 @@ steps:
       run-id: ${{ github.event.inputs.runner_run_id }}
       github-token: ${{ github.token }}
 
+  - name: Checkout e2e-agentic for learning files
+    uses: actions/checkout@v5
+    with:
+      ref: e2e-agentic
+      path: /tmp/gh-aw/e2e-agentic-checkout/
+      sparse-checkout: .github/e2e-learnings
+      persist-credentials: false
+
 timeout-minutes: 60
 ---
 
@@ -83,10 +91,11 @@ verification is based ENTIRELY on the Cypress text output log and metadata.
 
 ## Step 0 — Read Learnings
 
-Read `/tmp/gh-aw/repo-memory/default/e2e-generic.learning.md` if it exists.
-This file contains accumulated learnings from previous verification runs —
-common failure patterns, selector issues, timing problems, and other insights.
-Use this knowledge to improve your analysis and provide better feedback.
+Read `/tmp/gh-aw/e2e-agentic-checkout/.github/e2e-learnings/generic.md` if it
+exists. This file contains accumulated learnings from previous verification
+runs — common failure patterns, selector issues, timing problems, and other
+insights. Use this knowledge to improve your analysis and provide better
+feedback to the fixer.
 
 If the file does not exist, skip this step.
 
@@ -169,29 +178,43 @@ fixed after 5 attempts. Include the full test output.
 
 ## Step 7 — Update Learnings
 
-After completing verification, update the learnings file at:
-`/tmp/gh-aw/repo-memory/default/e2e-generic.learning.md`
+Update the learnings file with insights from this verification run.
 
-**Amend** the file — do NOT delete and rewrite it. Read the current content
-first, then update it with new insights from this run. Keep the file concise
-and well-organized. Include:
+1. **Copy** the current learnings file to repo-memory so you can edit it:
+   ```bash
+   cp /tmp/gh-aw/e2e-agentic-checkout/.github/e2e-learnings/generic.md /tmp/gh-aw/repo-memory/default/generic.md
+   ```
 
-- **Common failure patterns** you have observed (selector mismatches, timing
-  issues, missing mocks, etc.)
-- **Selector corrections** — map wrong selectors to correct ones
-- **Cypress best practices** learned from fixing failures
-- **Feature-specific notes** — anything useful about the feature area
-- **Anti-patterns** — things the spec writer or fixer should avoid
+2. **Read** the current content and **amend** it — do NOT delete and rewrite.
+   Add new insights under the appropriate sections:
+   - **Selector Corrections** — map wrong selectors to correct ones
+   - **Common Failure Patterns** — patterns that cause repeated failures
+   - **Cypress Best Practices** — lessons learned from fixing failures
+   - **Feature-Specific Notes** — anything useful about this feature area
+   - **Anti-Patterns** — things the spec writer or fixer should avoid
 
-Remove outdated entries. The goal is a compact, high-value reference that
-helps the fixer and spec writer produce better code on the first attempt.
+3. Remove outdated or redundant entries. Keep it well-organized with bullet
+   points. The goal is a compact, high-value reference.
 
-**SIZE LIMIT**: The file MUST stay under **2KB**. The repo-memory branch has
-a hard 12KB git history limit. If the file is getting long, aggressively
-remove outdated or redundant entries. Prefer bullet points over paragraphs.
-Only keep actionable, high-value insights.
+4. **Generate a patch** and save it to repo-memory:
+   ```bash
+   diff -u /tmp/gh-aw/e2e-agentic-checkout/.github/e2e-learnings/generic.md /tmp/gh-aw/repo-memory/default/generic.md > /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch || true
+   ```
+   Then fix the patch paths so `git apply` works:
+   ```bash
+   sed -i 's|/tmp/gh-aw/e2e-agentic-checkout/||g; s|/tmp/gh-aw/repo-memory/default/generic.md|.github/e2e-learnings/generic.md|g' /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch
+   ```
 
-After writing, call the `push_repo_memory` tool to save.
+5. Verify the patch is not empty and starts with `---`:
+   ```bash
+   head -3 /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch
+   ```
+   If empty (no changes), skip saving and dispatching.
+
+6. Call `push_repo_memory` to save the patch.
+
+7. Dispatch `apply-e2e-learnings-patch` with:
+   - `learning_type`: `generic`
 
 ## Rules
 

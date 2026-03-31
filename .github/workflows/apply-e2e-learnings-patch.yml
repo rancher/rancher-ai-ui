@@ -1,0 +1,128 @@
+name: Apply E2E learnings patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      learning_type:
+        description: "Type of learning file: generic or planner"
+        required: false
+        type: string
+
+jobs:
+  apply-learnings:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Apply learnings patch from repo-memory
+        env:
+          GH_TOKEN: ${{ secrets.MAINTAINER_PAT }}
+        run: |
+          REPO="${{ github.repository }}"
+
+          # Wait for push_repo_memory to finish
+          PATCH_FOUND=false
+          for i in 1 2 3 4 5 6; do
+            echo "Attempt $i: cloning memory/default branch..."
+            rm -rf /tmp/repo-memory
+            git clone --depth 1 --branch memory/default \
+              "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" \
+              /tmp/repo-memory 2>/dev/null || {
+              echo "No memory/default branch found."
+              if [ "$i" -lt 6 ]; then
+                echo "Waiting 15s before retry..."
+                sleep 15
+                continue
+              fi
+              echo "Giving up after $i attempts."
+              exit 0
+            }
+
+            # Check for learning patch files
+            if ls /tmp/repo-memory/e2e-learning-*.patch 1>/dev/null 2>&1; then
+              PATCH_FOUND=true
+              echo "Found learning patch files on attempt $i"
+              break
+            fi
+
+            echo "No learning patch files found yet on attempt $i"
+            if [ "$i" -lt 6 ]; then
+              echo "Waiting 15s for push_repo_memory to complete..."
+              sleep 15
+            fi
+          done
+
+          if [ "$PATCH_FOUND" != "true" ]; then
+            echo "No learning patch files found in repo-memory after 6 attempts, skipping."
+            exit 0
+          fi
+
+          # Clone e2e-agentic branch to apply patches
+          TARGET_DIR="/tmp/e2e-agentic"
+          git clone --depth 1 --branch e2e-agentic \
+            "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" \
+            "$TARGET_DIR" || {
+            echo "Failed to clone e2e-agentic branch"
+            exit 1
+          }
+
+          cd "$TARGET_DIR"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          APPLIED=false
+          for PATCH_FILE in /tmp/repo-memory/e2e-learning-*.patch; do
+            FILENAME=$(basename "$PATCH_FILE")
+            echo "Applying learning patch: $FILENAME"
+
+            if [ ! -s "$PATCH_FILE" ]; then
+              echo "Patch file is empty, skipping."
+              continue
+            fi
+
+            if git apply --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (git apply)"
+              APPLIED=true
+            elif git apply --ignore-whitespace --3way "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (git apply --3way)"
+              APPLIED=true
+            elif patch -p1 < "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (patch -p1)"
+              APPLIED=true
+            else
+              echo "WARNING: Could not apply $FILENAME — the file may have changed. Trying direct copy..."
+              # Fallback: extract the target file path and content from the patch
+              # For learning files, we can just overwrite since verifiers amend content
+              TARGET_FILE=$(grep '^+++ b/' "$PATCH_FILE" | head -1 | sed 's|^+++ b/||')
+              if [ -n "$TARGET_FILE" ] && [ -f "$TARGET_FILE" ]; then
+                echo "Skipping $FILENAME — cannot apply cleanly and fallback not safe."
+              else
+                echo "Skipping $FILENAME — target file not found."
+              fi
+              continue
+            fi
+
+            # Clean up applied patch from repo-memory
+            rm "$PATCH_FILE"
+          done
+
+          if [ "$APPLIED" = "true" ]; then
+            git add -A
+            git commit -m "docs: update e2e learnings from verifier"
+            git push origin e2e-agentic
+            echo "Learnings pushed to e2e-agentic"
+          else
+            echo "No patches were applied."
+          fi
+
+          # Clean up applied patches from repo-memory
+          cd /tmp/repo-memory
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git add -A && git diff --cached --quiet; then
+            echo "No patches to clean up."
+          else
+            git commit -m "chore: clean up applied learning patches"
+            git push origin memory/default
+            echo "Cleaned up learning patches from repo-memory."
+          fi
