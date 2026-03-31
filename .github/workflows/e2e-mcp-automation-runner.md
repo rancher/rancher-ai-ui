@@ -104,16 +104,6 @@ tools:
   web-fetch:
   github:
     toolsets: [all]
-  bash:
-    - "cat *"
-    - "ls *"
-    - "find *"
-    - "head *"
-    - "tail *"
-    - "grep *"
-    - "wc *"
-    - "jq *"
-    - "curl *"
   repo-memory:
     branch-name: memory/default
     max-file-size: 102400
