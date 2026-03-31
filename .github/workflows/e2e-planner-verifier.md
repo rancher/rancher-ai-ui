@@ -58,8 +58,8 @@ tools:
     - "jq *"
   repo-memory:
     branch-name: memory/default
-    max-file-size: 65536
-    max-patch-size: 65536
+    max-file-size: 102400
+    max-patch-size: 102400
     file-glob: ["*.patch", "*.md"]
 
 timeout-minutes: 60
