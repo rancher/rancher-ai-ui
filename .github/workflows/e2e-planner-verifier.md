@@ -74,13 +74,18 @@ before it proceeds to spec writing.
 
 ## Step 0 - Read Learnings
 
-Read `.github/e2e-learnings/planner.md` from the checked-out repo if it
-exists. This file contains accumulated learnings from previous plan
-verification runs — common plan quality issues, selector verification
-failures, coverage gaps, and other insights. Use this knowledge to improve
-your review.
+Fetch and read the planner learnings from the `learnings/e2e` branch:
 
-If the file does not exist, skip this step.
+```bash
+git fetch origin learnings/e2e 2>/dev/null
+git show origin/learnings/e2e:e2e-learnings/planner.md 2>/dev/null || echo "No planner learnings file found yet"
+```
+
+This file contains accumulated learnings from previous plan verification
+runs — common plan quality issues, selector verification failures, coverage
+gaps, and other insights. Use this knowledge to improve your review.
+
+If the command fails or returns nothing, skip this step.
 
 ## Step 1 - Find the PR
 
@@ -188,7 +193,8 @@ Update the learnings file with insights from this verification run.
 
 1. **Copy** the current learnings file to repo-memory so you can edit it:
    ```bash
-   cp .github/e2e-learnings/planner.md /tmp/gh-aw/repo-memory/default/planner.md
+   git show origin/learnings/e2e:e2e-learnings/planner.md > /tmp/gh-aw/repo-memory/default/planner.md 2>/dev/null || touch /tmp/gh-aw/repo-memory/default/planner.md
+   cp /tmp/gh-aw/repo-memory/default/planner.md /tmp/gh-aw/repo-memory/default/planner-orig.md
    ```
 
 2. **Read** the current content and **amend** it — do NOT delete and rewrite.
@@ -204,11 +210,11 @@ Update the learnings file with insights from this verification run.
 
 4. **Generate a patch** and save it to repo-memory:
    ```bash
-   diff -u .github/e2e-learnings/planner.md /tmp/gh-aw/repo-memory/default/planner.md > /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch || true
+   diff -u /tmp/gh-aw/repo-memory/default/planner-orig.md /tmp/gh-aw/repo-memory/default/planner.md > /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch || true
    ```
    Then fix the patch paths so `git apply` works:
    ```bash
-   sed -i 's|/tmp/gh-aw/repo-memory/default/planner.md|.github/e2e-learnings/planner.md|g' /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch
+   sed -i 's|/tmp/gh-aw/repo-memory/default/planner-orig.md|e2e-learnings/planner.md|g; s|/tmp/gh-aw/repo-memory/default/planner.md|e2e-learnings/planner.md|g' /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch
    ```
 
 5. Verify the patch is not empty and starts with `---`:

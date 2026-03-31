@@ -57,9 +57,9 @@ jobs:
             exit 0
           fi
 
-          # Clone e2e-agentic branch to apply patches
-          TARGET_DIR="/tmp/e2e-agentic"
-          git clone --depth 1 --branch e2e-agentic \
+          # Clone learnings/e2e branch to apply patches
+          TARGET_DIR="/tmp/learnings-branch"
+          git clone --depth 1 --branch learnings/e2e \
             "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" \
             "$TARGET_DIR" || {
             echo "Failed to clone e2e-agentic branch"
@@ -109,8 +109,8 @@ jobs:
           if [ "$APPLIED" = "true" ]; then
             git add -A
             git commit -m "docs: update e2e learnings from verifier"
-            git push origin e2e-agentic
-            echo "Learnings pushed to e2e-agentic"
+            git push origin learnings/e2e
+            echo "Learnings pushed to learnings/e2e"
           else
             echo "No patches were applied."
           fi

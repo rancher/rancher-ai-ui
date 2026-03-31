@@ -66,12 +66,11 @@ steps:
       run-id: ${{ github.event.inputs.runner_run_id }}
       github-token: ${{ github.token }}
 
-  - name: Checkout e2e-agentic for learning files
+  - name: Checkout learning files
     uses: actions/checkout@v5
     with:
-      ref: e2e-agentic
-      path: /tmp/gh-aw/e2e-agentic-checkout/
-      sparse-checkout: .github/e2e-learnings
+      ref: learnings/e2e
+      path: /tmp/gh-aw/learnings/
       persist-credentials: false
 
 timeout-minutes: 60
@@ -91,7 +90,7 @@ verification is based ENTIRELY on the Cypress text output log and metadata.
 
 ## Step 0 — Read Learnings
 
-Read `/tmp/gh-aw/e2e-agentic-checkout/.github/e2e-learnings/generic.md` if it
+Read `/tmp/gh-aw/learnings/e2e-learnings/generic.md` if it
 exists. This file contains accumulated learnings from previous verification
 runs — common failure patterns, selector issues, timing problems, and other
 insights. Use this knowledge to improve your analysis and provide better
@@ -182,7 +181,7 @@ Update the learnings file with insights from this verification run.
 
 1. **Copy** the current learnings file to repo-memory so you can edit it:
    ```bash
-   cp /tmp/gh-aw/e2e-agentic-checkout/.github/e2e-learnings/generic.md /tmp/gh-aw/repo-memory/default/generic.md
+   cp /tmp/gh-aw/learnings/e2e-learnings/generic.md /tmp/gh-aw/repo-memory/default/generic.md
    ```
 
 2. **Read** the current content and **amend** it — do NOT delete and rewrite.
@@ -198,11 +197,11 @@ Update the learnings file with insights from this verification run.
 
 4. **Generate a patch** and save it to repo-memory:
    ```bash
-   diff -u /tmp/gh-aw/e2e-agentic-checkout/.github/e2e-learnings/generic.md /tmp/gh-aw/repo-memory/default/generic.md > /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch || true
+   diff -u /tmp/gh-aw/learnings/e2e-learnings/generic.md /tmp/gh-aw/repo-memory/default/generic.md > /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch || true
    ```
    Then fix the patch paths so `git apply` works:
    ```bash
-   sed -i 's|/tmp/gh-aw/e2e-agentic-checkout/||g; s|/tmp/gh-aw/repo-memory/default/generic.md|.github/e2e-learnings/generic.md|g' /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch
+   sed -i 's|/tmp/gh-aw/learnings/||g; s|/tmp/gh-aw/repo-memory/default/generic.md|e2e-learnings/generic.md|g' /tmp/gh-aw/repo-memory/default/e2e-learning-generic.patch
    ```
 
 5. Verify the patch is not empty and starts with `---`:
