@@ -62,6 +62,7 @@ tools:
   repo-memory:
     branch-name: memory/default
     max-file-size: 65536
+    max-patch-size: 65536
     file-glob: ["*.md"]
 
 timeout-minutes: 60
