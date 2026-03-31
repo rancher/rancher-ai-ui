@@ -59,6 +59,8 @@ tools:
     - "wc *"
     - "jq *"
     - "diff *"
+    - "git *"
+    - "gh *"
   edit:
   repo-memory:
     branch-name: memory/default
