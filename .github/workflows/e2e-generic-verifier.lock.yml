@@ -26,7 +26,7 @@
 # On all-pass, comments on the PR. On failure, dispatches the generic fixer.
 # Works for any feature area.
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"4c9ff7fc73f4eba165757ddba3b338e1ad742a917ed64e81da101ac9ded79961","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"636647b5af2a1de1b9ca6a133a20eb054f73c9f386e1836f1989505e9ed48946","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Generic QA Verifier"
 "on":
@@ -305,7 +305,7 @@ jobs:
       - name: Checkout learning files
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          path: /tmp/gh-aw/learnings/
+          path: learnings
           persist-credentials: false
           ref: learnings/e2e
 
