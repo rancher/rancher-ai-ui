@@ -60,6 +60,7 @@ tools:
     - "grep *"
     - "jq *"
     - "cp *"
+    - "cd *"
     - "git *"
     - "wc *"
   edit:
