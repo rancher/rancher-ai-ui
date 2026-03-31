@@ -146,17 +146,28 @@ For each failure, extract:
 
 **Always** post a comment on the PR using `add-comment`:
 - **pull_request_number**: `${{ github.event.inputs.pr_number }}`
-- **body**: Include:
+
+### If ANY test fails, the comment body should include:
   - Heading with feature area and attempt number
   - A results table with pass/fail status per test
   - For each failure: the full error message from Cypress
   - Overall: `N/M tests passing`
-  - What action will be taken next
+  - What action will be taken next (fixer dispatch or give up)
+
+### If ALL tests pass, the comment body should be a **final summary**:
+  - Heading: `✅ E2E Tests Passed — {feature_area} (Attempt {attempt})`
+  - A results table showing all tests with ✅ status
+  - Overall: `N/N tests passing`
+  - **Artifacts section** with:
+    - Link to the runner workflow run: `https://github.com/${{ github.repository }}/actions/runs/${{ github.event.inputs.runner_run_id }}`
+    - List all screenshot files found at `/tmp/gh-aw/e2e-results/screenshots/` (use `find` to list them). For each screenshot, include the filename in a bullet point.
+    - List all video files found at `/tmp/gh-aw/e2e-results/videos/` if any.
+    - Note: "Screenshots and videos can be downloaded from the [workflow artifacts](link)."
 
 ## Step 6 — Decision
 
 ### ALL tests in the target spec pass
-After commenting:
+After posting the final summary comment:
 1. Use `add-labels` to add the label **`e2e-passed`** to PR `${{ github.event.inputs.pr_number }}`.
 2. Then use `noop` with a message confirming all tests passed.
 
