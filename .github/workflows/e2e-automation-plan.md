@@ -31,16 +31,16 @@ imports:
 safe-outputs:
   create-pull-request:
     title-prefix: "test(e2e): "
-    labels: [ai-e2e, e2e-plan]
+    labels: [bot/e2e-automation, bot/e2e-automation/plan]
     draft: true
     base-branch: e2e-agentic
     allowed-files:
       - "cypress/**"
     max: 1
-  dispatch-workflow: [e2e-planner-verifier]
+  dispatch-workflow: [e2e-automation-plan-verifier]
   create-issue:
-    title-prefix: "[e2e-planner] "
-    labels: [ai-e2e, planning]
+    title-prefix: "[e2e-automation-plan] "
+    labels: [bot/e2e-automation, bot/e2e-automation/planning]
     expires: 7d
     max: 1
   noop:
@@ -123,7 +123,7 @@ for any feature area. This prevents duplicate work:
 
 ```bash
 gh pr list --repo "$GITHUB_REPOSITORY" \
-  --label ai-e2e \
+  --label bot/e2e-automation \
   --state open \
   --json number,headRefName,title \
   --jq '.[] | "\(.number) \(.headRefName) \(.title)"'
@@ -217,9 +217,9 @@ Include these files in the PR:
 
 ## Step 6 - Dispatch the Planner Verifier
 
-After the PR is created, dispatch the `e2e-planner-verifier` workflow:
+After the PR is created, dispatch the `e2e-automation-plan-verifier` workflow:
 
-Use the `dispatch-workflow` safe output for `e2e-planner-verifier` with inputs:
+Use the `dispatch-workflow` safe output for `e2e-automation-plan-verifier` with inputs:
 - `feature_area`: the feature area name (lowercase, hyphenated)
 - `attempt`: `1`
 

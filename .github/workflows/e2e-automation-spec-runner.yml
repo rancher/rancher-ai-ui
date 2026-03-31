@@ -1,4 +1,4 @@
-name: E2E Generic Runner
+name: E2E Automation Spec Runner
 
 on:
   workflow_dispatch:
@@ -43,7 +43,7 @@ jobs:
           if [ -z "$PR_NUM" ]; then
             echo "No PR number provided, finding latest e2e PR for $FEATURE_AREA..."
             PR_NUM=$(gh pr list --repo ${{ github.repository }} \
-              --label ai-e2e --state open --json number,headRefName \
+              --label bot/e2e-automation --state open --json number,headRefName \
               --jq "[.[] | select(.headRefName | startswith(\"test/e2e-${FEATURE_AREA}-spec\"))] | sort_by(.number) | last | .number")
             if [ -z "$PR_NUM" ] || [ "$PR_NUM" = "null" ]; then
               echo "::error::Could not find an open e2e PR for feature_area=$FEATURE_AREA"
@@ -121,7 +121,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-generic-results
+          name: e2e-automation-spec-results
           path: |
             cypress/screenshots/
             cypress/videos/
@@ -146,7 +146,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run e2e-generic-verifier.lock.yml \
+          gh workflow run e2e-automation-spec-verifier.lock.yml \
             --repo ${{ github.repository }} \
             --ref e2e-agentic \
             -f feature_area="${{ github.event.inputs.feature_area }}" \

@@ -20,17 +20,17 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# Generic agentic workflow that reads a test plan from the PR branch and
-# creates a Cypress E2E spec. Saves a patch to repo-memory and dispatches
-# the apply-spec-writer-patch workflow to push the spec to the existing PR.
+# Fixer agent for the E2E planner. Reads the verifier's failure summary,
+# fixes the test plan document, and saves a patch to repo-memory.
+# Dispatches the apply-planner-patch workflow.
 #
 # Resolved workflow manifest:
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"7fe91837f241efee35d4338d5eadf8e4e1ebee1cf030386c777f832cc9b80add","compiler_version":"v0.65.0","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"faae73d74fdff3117c437bf4f977d45a4079b18b85c28b4376a8dd4cb6ce9b59","compiler_version":"v0.65.0","strict":true,"agent_id":"copilot"}
 
-name: "E2E Generic Spec Writer"
+name: "E2E Planner Fixer"
 "on":
   workflow_dispatch:
     inputs:
@@ -39,18 +39,22 @@ name: "E2E Generic Spec Writer"
         description: Agent caller context (used internally by Agentic Workflows).
         required: false
         type: string
-      feature_area:
-        description: Feature area to create spec for (must match test plan name)
+      attempt:
+        default: "1"
+        description: Current attempt number
         required: true
         type: string
-      force_recreate:
-        default: false
-        description: Force recreation of the spec even if it already exists
-        required: false
-        type: boolean
+      failure_summary:
+        description: JSON string with failed checks from the verifier
+        required: true
+        type: string
+      feature_area:
+        description: Feature area being planned
+        required: true
+        type: string
       pr_number:
-        description: PR number containing the test plan (auto-detected if empty)
-        required: false
+        description: PR number containing the test plan
+        required: true
         type: string
 
 permissions: {}
@@ -58,7 +62,7 @@ permissions: {}
 concurrency:
   group: "gh-aw-${{ github.workflow }}"
 
-run-name: "E2E Generic Spec Writer"
+run-name: "E2E Planner Fixer"
 
 jobs:
   activation:
@@ -85,11 +89,11 @@ jobs:
           GH_AW_INFO_VERSION: "latest"
           GH_AW_INFO_AGENT_VERSION: "latest"
           GH_AW_INFO_CLI_VERSION: "v0.65.0"
-          GH_AW_INFO_WORKFLOW_NAME: "E2E Generic Spec Writer"
+          GH_AW_INFO_WORKFLOW_NAME: "E2E Planner Fixer"
           GH_AW_INFO_EXPERIMENTAL: "false"
           GH_AW_INFO_SUPPORTS_TOOLS_ALLOWLIST: "true"
           GH_AW_INFO_STAGED: "false"
-          GH_AW_INFO_ALLOWED_DOMAINS: '["defaults","node"]'
+          GH_AW_INFO_ALLOWED_DOMAINS: '["defaults"]'
           GH_AW_INFO_FIREWALL_ENABLED: "true"
           GH_AW_INFO_AWF_VERSION: "v0.25.4"
           GH_AW_INFO_AWMG_VERSION: ""
@@ -119,7 +123,7 @@ jobs:
       - name: Check workflow file timestamps
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          GH_AW_WORKFLOW_FILE: "e2e-generic-spec-writer.lock.yml"
+          GH_AW_WORKFLOW_FILE: "e2e-automation-plan-fixer.lock.yml"
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -143,6 +147,8 @@ jobs:
           GH_AW_GITHUB_ACTOR: ${{ github.actor }}
           GH_AW_GITHUB_EVENT_COMMENT_ID: ${{ github.event.comment.id }}
           GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: ${{ github.event.discussion.number }}
+          GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT: ${{ github.event.inputs.attempt }}
+          GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY: ${{ github.event.inputs.failure_summary }}
           GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA: ${{ github.event.inputs.feature_area }}
           GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: ${{ github.event.inputs.pr_number }}
           GH_AW_GITHUB_EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -155,15 +161,15 @@ jobs:
         run: |
           bash ${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh
           {
-          cat << 'GH_AW_PROMPT_4e0bfc8c5c8f438b_EOF'
+          cat << 'GH_AW_PROMPT_9693402709aaa405_EOF'
           <system>
-          GH_AW_PROMPT_4e0bfc8c5c8f438b_EOF
+          GH_AW_PROMPT_9693402709aaa405_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/repo_memory_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_4e0bfc8c5c8f438b_EOF'
+          cat << 'GH_AW_PROMPT_9693402709aaa405_EOF'
           <safe-output-tools>
           Tools: add_comment, create_issue, dispatch_workflow, missing_tool, missing_data, noop
           </safe-output-tools>
@@ -198,18 +204,20 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_4e0bfc8c5c8f438b_EOF
+          GH_AW_PROMPT_9693402709aaa405_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_4e0bfc8c5c8f438b_EOF'
+          cat << 'GH_AW_PROMPT_9693402709aaa405_EOF'
           </system>
           {{#runtime-import .github/workflows/shared/cypress-rancher-ai.md}}
-          {{#runtime-import .github/workflows/e2e-generic-spec-writer.md}}
-          GH_AW_PROMPT_4e0bfc8c5c8f438b_EOF
+          {{#runtime-import .github/workflows/e2e-automation-plan-fixer.md}}
+          GH_AW_PROMPT_9693402709aaa405_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
+          GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT: ${{ github.event.inputs.attempt }}
+          GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY: ${{ github.event.inputs.failure_summary }}
           GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA: ${{ github.event.inputs.feature_area }}
           GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: ${{ github.event.inputs.pr_number }}
         with:
@@ -225,6 +233,8 @@ jobs:
           GH_AW_GITHUB_ACTOR: ${{ github.actor }}
           GH_AW_GITHUB_EVENT_COMMENT_ID: ${{ github.event.comment.id }}
           GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: ${{ github.event.discussion.number }}
+          GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT: ${{ github.event.inputs.attempt }}
+          GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY: ${{ github.event.inputs.failure_summary }}
           GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA: ${{ github.event.inputs.feature_area }}
           GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: ${{ github.event.inputs.pr_number }}
           GH_AW_GITHUB_EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -252,6 +262,8 @@ jobs:
                 GH_AW_GITHUB_ACTOR: process.env.GH_AW_GITHUB_ACTOR,
                 GH_AW_GITHUB_EVENT_COMMENT_ID: process.env.GH_AW_GITHUB_EVENT_COMMENT_ID,
                 GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: process.env.GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER,
+                GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT: process.env.GH_AW_GITHUB_EVENT_INPUTS_ATTEMPT,
+                GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY: process.env.GH_AW_GITHUB_EVENT_INPUTS_FAILURE_SUMMARY,
                 GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA: process.env.GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA,
                 GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: process.env.GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER,
                 GH_AW_GITHUB_EVENT_ISSUE_NUMBER: process.env.GH_AW_GITHUB_EVENT_ISSUE_NUMBER,
@@ -291,15 +303,13 @@ jobs:
     needs: activation
     runs-on: ubuntu-latest
     permissions: read-all
-    concurrency:
-      group: "gh-aw-copilot-${{ github.workflow }}"
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       GH_AW_ASSETS_ALLOWED_EXTS: ""
       GH_AW_ASSETS_BRANCH: ""
       GH_AW_ASSETS_MAX_SIZE_KB: 0
       GH_AW_MCP_LOG_DIR: /tmp/gh-aw/mcp-logs/safeoutputs
-      GH_AW_WORKFLOW_ID_SANITIZED: e2egenericspecwriter
+      GH_AW_WORKFLOW_ID_SANITIZED: e2eautomationplanfixer
     outputs:
       checkout_pr_success: ${{ steps.checkout-pr.outputs.checkout_pr_success || 'true' }}
       has_patch: ${{ steps.collect_output.outputs.has_patch }}
@@ -392,38 +402,38 @@ jobs:
           mkdir -p ${RUNNER_TEMP}/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_d38c5305a3347717_EOF'
-          {"add_comment":{"hide_older_comments":true,"max":1,"target":"*"},"create_issue":{"expires":48,"labels":["ai-e2e","automation"],"max":1,"title_prefix":"[e2e-generic-spec-writer] "},"dispatch_workflow":{"max":1,"workflow_files":{"apply-e2e-spec-writer-patch":".yml"},"workflows":["apply-e2e-spec-writer-patch"]},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/default","id":"default","max_file_count":100,"max_file_size":102400,"max_patch_size":102400}]}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_d38c5305a3347717_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_6caf80f453264fd1_EOF'
+          {"add_comment":{"hide_older_comments":true,"max":1,"target":"*"},"create_issue":{"expires":48,"labels":["bot/e2e-automation","bot/e2e-automation/automation"],"max":1,"title_prefix":"[e2e-automation-plan-fixer] "},"dispatch_workflow":{"max":1,"workflow_files":{"apply-e2e-automation-plan-patch":".yml"},"workflows":["apply-e2e-automation-plan-patch"]},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/default","id":"default","max_file_count":100,"max_file_size":102400,"max_patch_size":102400}]}}
+          GH_AW_SAFE_OUTPUTS_CONFIG_6caf80f453264fd1_EOF
       - name: Write Safe Outputs Tools
         run: |
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_598804253ebed766_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_b1baed9e2d1644e7_EOF'
           {
             "description_suffixes": {
               "add_comment": " CONSTRAINTS: Maximum 1 comment(s) can be added. Target: *.",
-              "create_issue": " CONSTRAINTS: Maximum 1 issue(s) can be created. Title will be prefixed with \"[e2e-generic-spec-writer] \". Labels [\"ai-e2e\" \"automation\"] will be automatically added."
+              "create_issue": " CONSTRAINTS: Maximum 1 issue(s) can be created. Title will be prefixed with \"[e2e-automation-plan-fixer] \". Labels [\"bot/e2e-automation\" \"bot/e2e-automation/automation\"] will be automatically added."
             },
             "repo_params": {},
             "dynamic_tools": [
               {
-                "_workflow_name": "apply-e2e-spec-writer-patch",
-                "description": "Dispatch the 'apply-e2e-spec-writer-patch' workflow with workflow_dispatch trigger. This workflow must support workflow_dispatch and be in .github/workflows/ directory in the same repository.",
+                "_workflow_name": "apply-e2e-automation-plan-patch",
+                "description": "Dispatch the 'apply-e2e-automation-plan-patch' workflow with workflow_dispatch trigger. This workflow must support workflow_dispatch and be in .github/workflows/ directory in the same repository.",
                 "inputSchema": {
                   "additionalProperties": false,
                   "properties": {
                     "feature_area": {
-                      "description": "Feature area being tested",
+                      "description": "Feature area being planned",
                       "type": "string"
                     }
                   },
                   "type": "object"
                 },
-                "name": "apply_e2e_spec_writer_patch"
+                "name": "apply_e2e_automation_plan_patch"
               }
             ]
           }
-          GH_AW_SAFE_OUTPUTS_TOOLS_META_598804253ebed766_EOF
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_1d05e8a71eaa99e3_EOF'
+          GH_AW_SAFE_OUTPUTS_TOOLS_META_b1baed9e2d1644e7_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_6c1d3220d4e75e59_EOF'
           {
             "add_comment": {
               "defaultMax": 1,
@@ -534,7 +544,7 @@ jobs:
               }
             }
           }
-          GH_AW_SAFE_OUTPUTS_VALIDATION_1d05e8a71eaa99e3_EOF
+          GH_AW_SAFE_OUTPUTS_VALIDATION_6c1d3220d4e75e59_EOF
           node ${RUNNER_TEMP}/gh-aw/actions/generate_safe_outputs_tools.cjs
       - name: Generate Safe Outputs MCP Server Config
         id: safe-outputs-config
@@ -602,7 +612,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.9'
           
           mkdir -p /home/runner/.copilot
-          cat << GH_AW_MCP_CONFIG_a620dff1cbdf0c07_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
+          cat << GH_AW_MCP_CONFIG_5f297fb114a45e8c_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
           {
             "mcpServers": {
               "github": {
@@ -643,7 +653,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_a620dff1cbdf0c07_EOF
+          GH_AW_MCP_CONFIG_5f297fb114a45e8c_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -659,6 +669,7 @@ jobs:
         # --allow-tool safeoutputs
         # --allow-tool shell(cat *)
         # --allow-tool shell(cat)
+        # --allow-tool shell(cp *)
         # --allow-tool shell(date)
         # --allow-tool shell(echo)
         # --allow-tool shell(find *)
@@ -670,9 +681,6 @@ jobs:
         # --allow-tool shell(jq *)
         # --allow-tool shell(ls *)
         # --allow-tool shell(ls)
-        # --allow-tool shell(node *)
-        # --allow-tool shell(npm *)
-        # --allow-tool shell(npx *)
         # --allow-tool shell(pwd)
         # --allow-tool shell(sort)
         # --allow-tool shell(tail)
@@ -686,8 +694,8 @@ jobs:
           set -o pipefail
           touch /tmp/gh-aw/agent-step-summary.md
           # shellcheck disable=SC1003
-          sudo -E awf --container-workdir "${GITHUB_WORKSPACE}" --mount "${RUNNER_TEMP}/gh-aw:${RUNNER_TEMP}/gh-aw:ro" --mount "${RUNNER_TEMP}/gh-aw:/host${RUNNER_TEMP}/gh-aw:ro" --env-all --exclude-env COPILOT_GITHUB_TOKEN --exclude-env GITHUB_MCP_SERVER_TOKEN --exclude-env MCP_GATEWAY_API_KEY --allow-domains '*.jsr.io,api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.npms.io,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,bun.sh,cdn.jsdelivr.net,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,deb.nodesource.com,deno.land,esm.sh,get.pnpm.io,github.com,googleapis.deno.dev,googlechromelabs.github.io,host.docker.internal,json-schema.org,json.schemastore.org,jsr.io,keyserver.ubuntu.com,nodejs.org,npm.pkg.github.com,npmjs.com,npmjs.org,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.bower.io,registry.npmjs.com,registry.npmjs.org,registry.yarnpkg.com,repo.yarnpkg.com,s.symcb.com,s.symcd.com,security.ubuntu.com,skimdb.npmjs.com,storage.googleapis.com,telemetry.enterprise.githubcopilot.com,telemetry.vercel.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com,www.npmjs.com,www.npmjs.org,yarnpkg.com' --log-level info --proxy-logs-dir /tmp/gh-aw/sandbox/firewall/logs --audit-dir /tmp/gh-aw/sandbox/firewall/audit --enable-host-access --image-tag 0.25.4 --skip-pull --enable-api-proxy \
-            -- /bin/bash -c '/usr/local/bin/copilot --add-dir /tmp/gh-aw/ --log-level all --log-dir /tmp/gh-aw/sandbox/agent/logs/ --disable-builtin-mcps --allow-tool github --allow-tool safeoutputs --allow-tool '\''shell(cat *)'\'' --allow-tool '\''shell(cat)'\'' --allow-tool '\''shell(date)'\'' --allow-tool '\''shell(echo)'\'' --allow-tool '\''shell(find *)'\'' --allow-tool '\''shell(git *)'\'' --allow-tool '\''shell(grep *)'\'' --allow-tool '\''shell(grep)'\'' --allow-tool '\''shell(head *)'\'' --allow-tool '\''shell(head)'\'' --allow-tool '\''shell(jq *)'\'' --allow-tool '\''shell(ls *)'\'' --allow-tool '\''shell(ls)'\'' --allow-tool '\''shell(node *)'\'' --allow-tool '\''shell(npm *)'\'' --allow-tool '\''shell(npx *)'\'' --allow-tool '\''shell(pwd)'\'' --allow-tool '\''shell(sort)'\'' --allow-tool '\''shell(tail)'\'' --allow-tool '\''shell(uniq)'\'' --allow-tool '\''shell(wc *)'\'' --allow-tool '\''shell(wc)'\'' --allow-tool '\''shell(yq)'\'' --allow-tool write --allow-all-paths --add-dir "${GITHUB_WORKSPACE}" --prompt "$(cat /tmp/gh-aw/aw-prompts/prompt.txt)"' 2>&1 | tee -a /tmp/gh-aw/agent-stdio.log
+          sudo -E awf --container-workdir "${GITHUB_WORKSPACE}" --mount "${RUNNER_TEMP}/gh-aw:${RUNNER_TEMP}/gh-aw:ro" --mount "${RUNNER_TEMP}/gh-aw:/host${RUNNER_TEMP}/gh-aw:ro" --env-all --exclude-env COPILOT_GITHUB_TOKEN --exclude-env GITHUB_MCP_SERVER_TOKEN --exclude-env MCP_GATEWAY_API_KEY --allow-domains api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,github.com,host.docker.internal,json-schema.org,json.schemastore.org,keyserver.ubuntu.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.npmjs.org,s.symcb.com,s.symcd.com,security.ubuntu.com,telemetry.enterprise.githubcopilot.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com --log-level info --proxy-logs-dir /tmp/gh-aw/sandbox/firewall/logs --audit-dir /tmp/gh-aw/sandbox/firewall/audit --enable-host-access --image-tag 0.25.4 --skip-pull --enable-api-proxy \
+            -- /bin/bash -c '/usr/local/bin/copilot --add-dir /tmp/gh-aw/ --log-level all --log-dir /tmp/gh-aw/sandbox/agent/logs/ --disable-builtin-mcps --allow-tool github --allow-tool safeoutputs --allow-tool '\''shell(cat *)'\'' --allow-tool '\''shell(cat)'\'' --allow-tool '\''shell(cp *)'\'' --allow-tool '\''shell(date)'\'' --allow-tool '\''shell(echo)'\'' --allow-tool '\''shell(find *)'\'' --allow-tool '\''shell(git *)'\'' --allow-tool '\''shell(grep *)'\'' --allow-tool '\''shell(grep)'\'' --allow-tool '\''shell(head *)'\'' --allow-tool '\''shell(head)'\'' --allow-tool '\''shell(jq *)'\'' --allow-tool '\''shell(ls *)'\'' --allow-tool '\''shell(ls)'\'' --allow-tool '\''shell(pwd)'\'' --allow-tool '\''shell(sort)'\'' --allow-tool '\''shell(tail)'\'' --allow-tool '\''shell(uniq)'\'' --allow-tool '\''shell(wc *)'\'' --allow-tool '\''shell(wc)'\'' --allow-tool '\''shell(yq)'\'' --allow-tool write --allow-all-paths --add-dir "${GITHUB_WORKSPACE}" --prompt "$(cat /tmp/gh-aw/aw-prompts/prompt.txt)"' 2>&1 | tee -a /tmp/gh-aw/agent-stdio.log
         env:
           COPILOT_AGENT_RUNNER_TYPE: STANDALONE
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
@@ -784,7 +792,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_SAFE_OUTPUTS: ${{ steps.set-runtime-paths.outputs.GH_AW_SAFE_OUTPUTS }}
-          GH_AW_ALLOWED_DOMAINS: "*.jsr.io,api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.npms.io,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,bun.sh,cdn.jsdelivr.net,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,deb.nodesource.com,deno.land,esm.sh,get.pnpm.io,github.com,googleapis.deno.dev,googlechromelabs.github.io,host.docker.internal,json-schema.org,json.schemastore.org,jsr.io,keyserver.ubuntu.com,nodejs.org,npm.pkg.github.com,npmjs.com,npmjs.org,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.bower.io,registry.npmjs.com,registry.npmjs.org,registry.yarnpkg.com,repo.yarnpkg.com,s.symcb.com,s.symcd.com,security.ubuntu.com,skimdb.npmjs.com,storage.googleapis.com,telemetry.enterprise.githubcopilot.com,telemetry.vercel.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com,www.npmjs.com,www.npmjs.org,yarnpkg.com"
+          GH_AW_ALLOWED_DOMAINS: "api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,github.com,host.docker.internal,json-schema.org,json.schemastore.org,keyserver.ubuntu.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.npmjs.org,s.symcb.com,s.symcd.com,security.ubuntu.com,telemetry.enterprise.githubcopilot.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
         with:
@@ -888,7 +896,7 @@ jobs:
       issues: write
       pull-requests: write
     concurrency:
-      group: "gh-aw-conclusion-e2e-generic-spec-writer"
+      group: "gh-aw-conclusion-e2e-automation-plan-fixer"
       cancel-in-progress: false
     outputs:
       noop_message: ${{ steps.noop.outputs.noop_message }}
@@ -919,7 +927,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_NOOP_MAX: "1"
-          GH_AW_WORKFLOW_NAME: "E2E Generic Spec Writer"
+          GH_AW_WORKFLOW_NAME: "E2E Planner Fixer"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -933,7 +941,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_MISSING_TOOL_CREATE_ISSUE: "true"
-          GH_AW_WORKFLOW_NAME: "E2E Generic Spec Writer"
+          GH_AW_WORKFLOW_NAME: "E2E Planner Fixer"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -947,10 +955,10 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "E2E Generic Spec Writer"
+          GH_AW_WORKFLOW_NAME: "E2E Planner Fixer"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
-          GH_AW_WORKFLOW_ID: "e2e-generic-spec-writer"
+          GH_AW_WORKFLOW_ID: "e2e-automation-plan-fixer"
           GH_AW_SECRET_VERIFICATION_RESULT: ${{ needs.activation.outputs.secret_verification_result }}
           GH_AW_CHECKOUT_PR_SUCCESS: ${{ needs.agent.outputs.checkout_pr_success }}
           GH_AW_INFERENCE_ACCESS_ERROR: ${{ needs.agent.outputs.inference_access_error }}
@@ -974,7 +982,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "E2E Generic Spec Writer"
+          GH_AW_WORKFLOW_NAME: "E2E Planner Fixer"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
           GH_AW_NOOP_MESSAGE: ${{ steps.noop.outputs.noop_message }}
@@ -1055,8 +1063,8 @@ jobs:
         if: always() && steps.detection_guard.outputs.run_detection == 'true'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          WORKFLOW_NAME: "E2E Generic Spec Writer"
-          WORKFLOW_DESCRIPTION: "Generic agentic workflow that reads a test plan from the PR branch and\ncreates a Cypress E2E spec. Saves a patch to repo-memory and dispatches\nthe apply-spec-writer-patch workflow to push the spec to the existing PR."
+          WORKFLOW_NAME: "E2E Planner Fixer"
+          WORKFLOW_DESCRIPTION: "Fixer agent for the E2E planner. Reads the verifier's failure summary,\nfixes the test plan document, and saves a patch to repo-memory.\nDispatches the apply-planner-patch workflow."
           HAS_PATCH: ${{ needs.agent.outputs.has_patch }}
         with:
           script: |
@@ -1204,11 +1212,11 @@ jobs:
       pull-requests: write
     timeout-minutes: 15
     env:
-      GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/e2e-generic-spec-writer"
+      GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/e2e-automation-plan-fixer"
       GH_AW_ENGINE_ID: "copilot"
       GH_AW_ENGINE_MODEL: ${{ needs.agent.outputs.model }}
-      GH_AW_WORKFLOW_ID: "e2e-generic-spec-writer"
-      GH_AW_WORKFLOW_NAME: "E2E Generic Spec Writer"
+      GH_AW_WORKFLOW_ID: "e2e-automation-plan-fixer"
+      GH_AW_WORKFLOW_NAME: "E2E Planner Fixer"
     outputs:
       code_push_failure_count: ${{ steps.process_safe_outputs.outputs.code_push_failure_count }}
       code_push_failure_errors: ${{ steps.process_safe_outputs.outputs.code_push_failure_errors }}
@@ -1253,10 +1261,10 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_ALLOWED_DOMAINS: "*.jsr.io,api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.npms.io,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,bun.sh,cdn.jsdelivr.net,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,deb.nodesource.com,deno.land,esm.sh,get.pnpm.io,github.com,googleapis.deno.dev,googlechromelabs.github.io,host.docker.internal,json-schema.org,json.schemastore.org,jsr.io,keyserver.ubuntu.com,nodejs.org,npm.pkg.github.com,npmjs.com,npmjs.org,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.bower.io,registry.npmjs.com,registry.npmjs.org,registry.yarnpkg.com,repo.yarnpkg.com,s.symcb.com,s.symcd.com,security.ubuntu.com,skimdb.npmjs.com,storage.googleapis.com,telemetry.enterprise.githubcopilot.com,telemetry.vercel.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com,www.npmjs.com,www.npmjs.org,yarnpkg.com"
+          GH_AW_ALLOWED_DOMAINS: "api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,github.com,host.docker.internal,json-schema.org,json.schemastore.org,keyserver.ubuntu.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.npmjs.org,s.symcb.com,s.symcd.com,security.ubuntu.com,telemetry.enterprise.githubcopilot.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"hide_older_comments\":true,\"max\":1,\"target\":\"*\"},\"create_issue\":{\"expires\":48,\"labels\":[\"ai-e2e\",\"automation\"],\"max\":1,\"title_prefix\":\"[e2e-generic-spec-writer] \"},\"dispatch_workflow\":{\"max\":1,\"workflow_files\":{\"apply-e2e-spec-writer-patch\":\".yml\"},\"workflows\":[\"apply-e2e-spec-writer-patch\"]},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"hide_older_comments\":true,\"max\":1,\"target\":\"*\"},\"create_issue\":{\"expires\":48,\"labels\":[\"bot/e2e-automation\",\"bot/e2e-automation/automation\"],\"max\":1,\"title_prefix\":\"[e2e-automation-plan-fixer] \"},\"dispatch_workflow\":{\"max\":1,\"workflow_files\":{\"apply-e2e-automation-plan-patch\":\".yml\"},\"workflows\":[\"apply-e2e-automation-plan-patch\"]},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"}}"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |

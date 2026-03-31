@@ -2,7 +2,7 @@
 description: |
   Generic agentic workflow that reads E2E test failure artifacts and the
   verifier analysis, fixes the Cypress spec for any feature area, and
-  saves a patch to repo-memory. Dispatches the generic apply-patch workflow.
+  saves a patch to repo-memory. Dispatches the spec apply-patch workflow.
 
 on:
   workflow_dispatch:
@@ -41,15 +41,15 @@ checkout:
 
 safe-outputs:
   create-issue:
-    title-prefix: "[e2e-generic-fixer] "
-    labels: [ai-e2e, automation]
+    title-prefix: "[e2e-automation-spec-fixer] "
+    labels: [bot/e2e-automation, bot/e2e-automation/automation]
     expires: 2d
     max: 1
   add-comment:
     target: "*"
     max: 1
     hide-older-comments: true
-  dispatch-workflow: [apply-e2e-generic-patch]
+  dispatch-workflow: [apply-e2e-automation-spec-patch]
   noop:
 
 tools:
@@ -222,12 +222,12 @@ After saving, call the push_repo_memory tool to validate the size is within limi
 
 ## Step 9 - Dispatch the apply-patch workflow
 
-After saving the patch to repo-memory, dispatch the apply-e2e-generic-patch
+After saving the patch to repo-memory, dispatch the apply-e2e-automation-spec-patch
 workflow so it picks up the patch, pushes it to the PR branch, and
-re-triggers the generic runner.
+re-triggers the spec runner.
 
 Use the dispatch-workflow safe output:
-- workflow: apply-e2e-generic-patch
+- workflow: apply-e2e-automation-spec-patch
 - feature_area: ${{ github.event.inputs.feature_area }}
 - attempt: the **incremented** attempt number (current attempt + 1, as a string)
 
@@ -244,6 +244,6 @@ workflow handles that.
 - Parse the failure summary carefully - it contains specific test names and errors.
 - Be surgical with fixes - only change what is broken.
 - Do NOT use git push - save the patch to repo-memory instead.
-- Do NOT dispatch the runner directly - dispatch apply-e2e-generic-patch.
-- The apply-patch workflow will push the fix, dispatch the generic runner,
+- Do NOT dispatch the runner directly - dispatch apply-e2e-automation-spec-patch.
+- The apply-patch workflow will push the fix, dispatch the spec runner,
   and the verifier will re-check, closing the loop.

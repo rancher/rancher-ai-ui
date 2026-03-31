@@ -20,14 +20,17 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# Generic QA verification agent that reviews Cypress test output from the
-# E2E Generic Runner. Determines pass/fail by parsing the Cypress text log.
-# On all-pass, comments on the PR. On failure, dispatches the generic fixer.
-# Works for any feature area.
+# Verifier agent for the E2E planner. Reviews the test plan PR content
+# to ensure quality: correct selectors, sufficient coverage, proper
+# structure. Approves by adding a label or dispatches the planner fixer.
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"bd0f0c1c9afe5876db4f304583c4e09f55af07b09abcb418d0997e54fda8463d","compiler_version":"v0.65.0","strict":true,"agent_id":"copilot"}
+# Resolved workflow manifest:
+#   Imports:
+#     - shared/cypress-rancher-ai.md
+#
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"7b56e5e420025d85afa2ca40f8e442a83258057b8b11317782a2613aae9d4fe3","compiler_version":"v0.65.0","strict":true,"agent_id":"copilot"}
 
-name: "E2E Generic QA Verifier"
+name: "E2E Planner Verifier"
 "on":
   workflow_dispatch:
     inputs:
@@ -37,24 +40,22 @@ name: "E2E Generic QA Verifier"
         required: false
         type: string
       attempt:
+        default: "1"
         description: Attempt number
-        required: true
+        required: false
       feature_area:
-        description: Feature area that was tested
+        description: Feature area being planned
         required: true
       pr_number:
-        description: PR number that was tested
-        required: true
-      runner_run_id:
-        description: Run ID of the E2E Generic Runner to download artifacts from
-        required: true
+        description: PR number to verify (auto-detected if empty)
+        required: false
 
 permissions: {}
 
 concurrency:
   group: "gh-aw-${{ github.workflow }}"
 
-run-name: "E2E Generic QA Verifier"
+run-name: "E2E Planner Verifier"
 
 jobs:
   activation:
@@ -81,7 +82,7 @@ jobs:
           GH_AW_INFO_VERSION: "latest"
           GH_AW_INFO_AGENT_VERSION: "latest"
           GH_AW_INFO_CLI_VERSION: "v0.65.0"
-          GH_AW_INFO_WORKFLOW_NAME: "E2E Generic QA Verifier"
+          GH_AW_INFO_WORKFLOW_NAME: "E2E Planner Verifier"
           GH_AW_INFO_EXPERIMENTAL: "false"
           GH_AW_INFO_SUPPORTS_TOOLS_ALLOWLIST: "true"
           GH_AW_INFO_STAGED: "false"
@@ -115,7 +116,7 @@ jobs:
       - name: Check workflow file timestamps
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          GH_AW_WORKFLOW_FILE: "e2e-generic-verifier.lock.yml"
+          GH_AW_WORKFLOW_FILE: "e2e-automation-plan-verifier.lock.yml"
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -141,7 +142,6 @@ jobs:
           GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: ${{ github.event.discussion.number }}
           GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA: ${{ github.event.inputs.feature_area }}
           GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: ${{ github.event.inputs.pr_number }}
-          GH_AW_GITHUB_EVENT_INPUTS_RUNNER_RUN_ID: ${{ github.event.inputs.runner_run_id }}
           GH_AW_GITHUB_EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
@@ -152,15 +152,15 @@ jobs:
         run: |
           bash ${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh
           {
-          cat << 'GH_AW_PROMPT_3ab0a4e2bd25cf1c_EOF'
+          cat << 'GH_AW_PROMPT_69a0c02ff16b7ea0_EOF'
           <system>
-          GH_AW_PROMPT_3ab0a4e2bd25cf1c_EOF
+          GH_AW_PROMPT_69a0c02ff16b7ea0_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/repo_memory_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_3ab0a4e2bd25cf1c_EOF'
+          cat << 'GH_AW_PROMPT_69a0c02ff16b7ea0_EOF'
           <safe-output-tools>
           Tools: add_comment, create_issue, add_labels, dispatch_workflow, missing_tool, missing_data, noop
           </safe-output-tools>
@@ -190,14 +190,18 @@ jobs:
           {{#if __GH_AW_GITHUB_RUN_ID__ }}
           - **workflow-run-id**: __GH_AW_GITHUB_RUN_ID__
           {{/if}}
+          - **checkouts**: The following repositories have been checked out and are available in the workspace:
+            - `$GITHUB_WORKSPACE` → `__GH_AW_GITHUB_REPOSITORY__` (cwd) [full history, all branches available as remote-tracking refs] [additional refs fetched: *]
+            - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_3ab0a4e2bd25cf1c_EOF
+          GH_AW_PROMPT_69a0c02ff16b7ea0_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_3ab0a4e2bd25cf1c_EOF'
+          cat << 'GH_AW_PROMPT_69a0c02ff16b7ea0_EOF'
           </system>
-          {{#runtime-import .github/workflows/e2e-generic-verifier.md}}
-          GH_AW_PROMPT_3ab0a4e2bd25cf1c_EOF
+          {{#runtime-import .github/workflows/shared/cypress-rancher-ai.md}}
+          {{#runtime-import .github/workflows/e2e-automation-plan-verifier.md}}
+          GH_AW_PROMPT_69a0c02ff16b7ea0_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
@@ -205,8 +209,6 @@ jobs:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
           GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA: ${{ github.event.inputs.feature_area }}
           GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: ${{ github.event.inputs.pr_number }}
-          GH_AW_GITHUB_EVENT_INPUTS_RUNNER_RUN_ID: ${{ github.event.inputs.runner_run_id }}
-          GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -222,7 +224,6 @@ jobs:
           GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: ${{ github.event.discussion.number }}
           GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA: ${{ github.event.inputs.feature_area }}
           GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: ${{ github.event.inputs.pr_number }}
-          GH_AW_GITHUB_EVENT_INPUTS_RUNNER_RUN_ID: ${{ github.event.inputs.runner_run_id }}
           GH_AW_GITHUB_EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
@@ -250,7 +251,6 @@ jobs:
                 GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: process.env.GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER,
                 GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA: process.env.GH_AW_GITHUB_EVENT_INPUTS_FEATURE_AREA,
                 GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER: process.env.GH_AW_GITHUB_EVENT_INPUTS_PR_NUMBER,
-                GH_AW_GITHUB_EVENT_INPUTS_RUNNER_RUN_ID: process.env.GH_AW_GITHUB_EVENT_INPUTS_RUNNER_RUN_ID,
                 GH_AW_GITHUB_EVENT_ISSUE_NUMBER: process.env.GH_AW_GITHUB_EVENT_ISSUE_NUMBER,
                 GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: process.env.GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER,
                 GH_AW_GITHUB_REPOSITORY: process.env.GH_AW_GITHUB_REPOSITORY,
@@ -294,7 +294,7 @@ jobs:
       GH_AW_ASSETS_BRANCH: ""
       GH_AW_ASSETS_MAX_SIZE_KB: 0
       GH_AW_MCP_LOG_DIR: /tmp/gh-aw/mcp-logs/safeoutputs
-      GH_AW_WORKFLOW_ID_SANITIZED: e2egenericverifier
+      GH_AW_WORKFLOW_ID_SANITIZED: e2eautomationplanverifier
     outputs:
       checkout_pr_success: ${{ steps.checkout-pr.outputs.checkout_pr_success || 'true' }}
       has_patch: ${{ steps.collect_output.outputs.has_patch }}
@@ -317,20 +317,19 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Fetch additional refs
+        env:
+          GH_AW_FETCH_TOKEN: ${{ secrets.GH_AW_GITHUB_MCP_SERVER_TOKEN || secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          header=$(printf "x-access-token:%s" "${GH_AW_FETCH_TOKEN}" | base64 -w 0)
+          git -c "http.extraheader=Authorization: Basic ${header}" fetch origin '+refs/heads/*:refs/remotes/origin/*'
       - name: Create gh-aw temp directory
         run: bash ${RUNNER_TEMP}/gh-aw/actions/create_gh_aw_tmp_dir.sh
       - name: Configure gh CLI for GitHub Enterprise
         run: bash ${RUNNER_TEMP}/gh-aw/actions/configure_gh_for_ghe.sh
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Download test artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          github-token: ${{ github.token }}
-          name: e2e-generic-results
-          path: /tmp/gh-aw/e2e-results/
-          run-id: ${{ github.event.inputs.runner_run_id }}
-
       # Repo memory git-based storage configuration from frontmatter processed below
       - name: Clone repo-memory branch (default)
         env:
@@ -388,23 +387,23 @@ jobs:
           mkdir -p ${RUNNER_TEMP}/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_2b8d3c1ef2c9bfb1_EOF'
-          {"add_comment":{"hide_older_comments":true,"max":1,"target":"*"},"add_labels":{"target":"*"},"create_issue":{"expires":48,"labels":["ai-e2e","qa-review"],"max":1,"title_prefix":"[e2e-verifier] "},"dispatch_workflow":{"max":1,"workflow_files":{"e2e-generic-fixer":".lock.yml"},"workflows":["e2e-generic-fixer"]},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/default","id":"default","max_file_count":100,"max_file_size":102400,"max_patch_size":102400}]}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_2b8d3c1ef2c9bfb1_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_9e8dbbbd5494f59b_EOF'
+          {"add_comment":{"hide_older_comments":true,"max":1,"target":"*"},"add_labels":{"target":"*"},"create_issue":{"expires":48,"labels":["bot/e2e-automation","bot/e2e-automation/qa-review"],"max":1,"title_prefix":"[e2e-automation-plan-verifier] "},"dispatch_workflow":{"aw_context_workflows":["e2e-automation-plan-fixer","e2e-automation-spec-writer"],"max":1,"workflow_files":{"e2e-automation-plan-fixer":".lock.yml","e2e-automation-spec-writer":".lock.yml"},"workflows":["e2e-automation-plan-fixer","e2e-automation-spec-writer"]},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/default","id":"default","max_file_count":100,"max_file_size":102400,"max_patch_size":102400}]}}
+          GH_AW_SAFE_OUTPUTS_CONFIG_9e8dbbbd5494f59b_EOF
       - name: Write Safe Outputs Tools
         run: |
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_2bd4acfc19e080a4_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_a15e1090c0ca9017_EOF'
           {
             "description_suffixes": {
               "add_comment": " CONSTRAINTS: Maximum 1 comment(s) can be added. Target: *.",
               "add_labels": " CONSTRAINTS: Target: *.",
-              "create_issue": " CONSTRAINTS: Maximum 1 issue(s) can be created. Title will be prefixed with \"[e2e-verifier] \". Labels [\"ai-e2e\" \"qa-review\"] will be automatically added."
+              "create_issue": " CONSTRAINTS: Maximum 1 issue(s) can be created. Title will be prefixed with \"[e2e-automation-plan-verifier] \". Labels [\"bot/e2e-automation\" \"bot/e2e-automation/qa-review\"] will be automatically added."
             },
             "repo_params": {},
             "dynamic_tools": [
               {
-                "_workflow_name": "e2e-generic-fixer",
-                "description": "Dispatch the 'e2e-generic-fixer' workflow with workflow_dispatch trigger. This workflow must support workflow_dispatch and be in .github/workflows/ directory in the same repository.",
+                "_workflow_name": "e2e-automation-plan-fixer",
+                "description": "Dispatch the 'e2e-automation-plan-fixer' workflow with workflow_dispatch trigger. This workflow must support workflow_dispatch and be in .github/workflows/ directory in the same repository.",
                 "inputSchema": {
                   "additionalProperties": false,
                   "properties": {
@@ -413,16 +412,21 @@ jobs:
                       "description": "Current attempt number",
                       "type": "string"
                     },
+                    "aw_context": {
+                      "default": "",
+                      "description": "Agent caller context (used internally by Agentic Workflows).",
+                      "type": "string"
+                    },
                     "failure_summary": {
                       "description": "JSON string with failed checks from the verifier",
                       "type": "string"
                     },
                     "feature_area": {
-                      "description": "Feature area being tested",
+                      "description": "Feature area being planned",
                       "type": "string"
                     },
                     "pr_number": {
-                      "description": "PR number to push fixes to",
+                      "description": "PR number containing the test plan",
                       "type": "string"
                     }
                   },
@@ -434,12 +438,44 @@ jobs:
                   ],
                   "type": "object"
                 },
-                "name": "e2e_generic_fixer"
+                "name": "e2e_automation_plan_fixer"
+              },
+              {
+                "_workflow_name": "e2e-automation-spec-writer",
+                "description": "Dispatch the 'e2e-automation-spec-writer' workflow with workflow_dispatch trigger. This workflow must support workflow_dispatch and be in .github/workflows/ directory in the same repository.",
+                "inputSchema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "aw_context": {
+                      "default": "",
+                      "description": "Agent caller context (used internally by Agentic Workflows).",
+                      "type": "string"
+                    },
+                    "feature_area": {
+                      "description": "Feature area to create spec for (must match test plan name)",
+                      "type": "string"
+                    },
+                    "force_recreate": {
+                      "default": false,
+                      "description": "Force recreation of the spec even if it already exists",
+                      "type": "boolean"
+                    },
+                    "pr_number": {
+                      "description": "PR number containing the test plan (auto-detected if empty)",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "feature_area"
+                  ],
+                  "type": "object"
+                },
+                "name": "e2e_automation_spec_writer"
               }
             ]
           }
-          GH_AW_SAFE_OUTPUTS_TOOLS_META_2bd4acfc19e080a4_EOF
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_66c885314b21b8b5_EOF'
+          GH_AW_SAFE_OUTPUTS_TOOLS_META_a15e1090c0ca9017_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_99c40f153d3e01f9_EOF'
           {
             "add_comment": {
               "defaultMax": 1,
@@ -569,7 +605,7 @@ jobs:
               }
             }
           }
-          GH_AW_SAFE_OUTPUTS_VALIDATION_66c885314b21b8b5_EOF
+          GH_AW_SAFE_OUTPUTS_VALIDATION_99c40f153d3e01f9_EOF
           node ${RUNNER_TEMP}/gh-aw/actions/generate_safe_outputs_tools.cjs
       - name: Generate Safe Outputs MCP Server Config
         id: safe-outputs-config
@@ -637,7 +673,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.9'
           
           mkdir -p /home/runner/.copilot
-          cat << GH_AW_MCP_CONFIG_86692fd25006dc09_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
+          cat << GH_AW_MCP_CONFIG_4386d29bd4cbe154_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
           {
             "mcpServers": {
               "github": {
@@ -678,7 +714,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_86692fd25006dc09_EOF
+          GH_AW_MCP_CONFIG_4386d29bd4cbe154_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -920,7 +956,7 @@ jobs:
       issues: write
       pull-requests: write
     concurrency:
-      group: "gh-aw-conclusion-e2e-generic-verifier"
+      group: "gh-aw-conclusion-e2e-automation-plan-verifier"
       cancel-in-progress: false
     outputs:
       noop_message: ${{ steps.noop.outputs.noop_message }}
@@ -951,7 +987,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_NOOP_MAX: "1"
-          GH_AW_WORKFLOW_NAME: "E2E Generic QA Verifier"
+          GH_AW_WORKFLOW_NAME: "E2E Planner Verifier"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -965,7 +1001,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
           GH_AW_MISSING_TOOL_CREATE_ISSUE: "true"
-          GH_AW_WORKFLOW_NAME: "E2E Generic QA Verifier"
+          GH_AW_WORKFLOW_NAME: "E2E Planner Verifier"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -979,10 +1015,10 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "E2E Generic QA Verifier"
+          GH_AW_WORKFLOW_NAME: "E2E Planner Verifier"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
-          GH_AW_WORKFLOW_ID: "e2e-generic-verifier"
+          GH_AW_WORKFLOW_ID: "e2e-automation-plan-verifier"
           GH_AW_SECRET_VERIFICATION_RESULT: ${{ needs.activation.outputs.secret_verification_result }}
           GH_AW_CHECKOUT_PR_SUCCESS: ${{ needs.agent.outputs.checkout_pr_success }}
           GH_AW_INFERENCE_ACCESS_ERROR: ${{ needs.agent.outputs.inference_access_error }}
@@ -1006,7 +1042,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "E2E Generic QA Verifier"
+          GH_AW_WORKFLOW_NAME: "E2E Planner Verifier"
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
           GH_AW_NOOP_MESSAGE: ${{ steps.noop.outputs.noop_message }}
@@ -1087,8 +1123,8 @@ jobs:
         if: always() && steps.detection_guard.outputs.run_detection == 'true'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          WORKFLOW_NAME: "E2E Generic QA Verifier"
-          WORKFLOW_DESCRIPTION: "Generic QA verification agent that reviews Cypress test output from the\nE2E Generic Runner. Determines pass/fail by parsing the Cypress text log.\nOn all-pass, comments on the PR. On failure, dispatches the generic fixer.\nWorks for any feature area."
+          WORKFLOW_NAME: "E2E Planner Verifier"
+          WORKFLOW_DESCRIPTION: "Verifier agent for the E2E planner. Reviews the test plan PR content\nto ensure quality: correct selectors, sufficient coverage, proper\nstructure. Approves by adding a label or dispatches the planner fixer."
           HAS_PATCH: ${{ needs.agent.outputs.has_patch }}
         with:
           script: |
@@ -1236,11 +1272,11 @@ jobs:
       pull-requests: write
     timeout-minutes: 15
     env:
-      GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/e2e-generic-verifier"
+      GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/e2e-automation-plan-verifier"
       GH_AW_ENGINE_ID: "copilot"
       GH_AW_ENGINE_MODEL: ${{ needs.agent.outputs.model }}
-      GH_AW_WORKFLOW_ID: "e2e-generic-verifier"
-      GH_AW_WORKFLOW_NAME: "E2E Generic QA Verifier"
+      GH_AW_WORKFLOW_ID: "e2e-automation-plan-verifier"
+      GH_AW_WORKFLOW_NAME: "E2E Planner Verifier"
     outputs:
       code_push_failure_count: ${{ steps.process_safe_outputs.outputs.code_push_failure_count }}
       code_push_failure_errors: ${{ steps.process_safe_outputs.outputs.code_push_failure_errors }}
@@ -1288,7 +1324,7 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,api.snapcraft.io,archive.ubuntu.com,azure.archive.ubuntu.com,crl.geotrust.com,crl.globalsign.com,crl.identrust.com,crl.sectigo.com,crl.thawte.com,crl.usertrust.com,crl.verisign.com,crl3.digicert.com,crl4.digicert.com,crls.ssl.com,github.com,host.docker.internal,json-schema.org,json.schemastore.org,keyserver.ubuntu.com,ocsp.digicert.com,ocsp.geotrust.com,ocsp.globalsign.com,ocsp.identrust.com,ocsp.sectigo.com,ocsp.ssl.com,ocsp.thawte.com,ocsp.usertrust.com,ocsp.verisign.com,packagecloud.io,packages.cloud.google.com,packages.microsoft.com,ppa.launchpad.net,raw.githubusercontent.com,registry.npmjs.org,s.symcb.com,s.symcd.com,security.ubuntu.com,telemetry.enterprise.githubcopilot.com,ts-crl.ws.symantec.com,ts-ocsp.ws.symantec.com,www.googleapis.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"hide_older_comments\":true,\"max\":1,\"target\":\"*\"},\"add_labels\":{\"target\":\"*\"},\"create_issue\":{\"expires\":48,\"labels\":[\"ai-e2e\",\"qa-review\"],\"max\":1,\"title_prefix\":\"[e2e-verifier] \"},\"dispatch_workflow\":{\"max\":1,\"workflow_files\":{\"e2e-generic-fixer\":\".lock.yml\"},\"workflows\":[\"e2e-generic-fixer\"]},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"hide_older_comments\":true,\"max\":1,\"target\":\"*\"},\"add_labels\":{\"target\":\"*\"},\"create_issue\":{\"expires\":48,\"labels\":[\"bot/e2e-automation\",\"bot/e2e-automation/qa-review\"],\"max\":1,\"title_prefix\":\"[e2e-automation-plan-verifier] \"},\"dispatch_workflow\":{\"aw_context_workflows\":[\"e2e-automation-plan-fixer\",\"e2e-automation-spec-writer\"],\"max\":1,\"workflow_files\":{\"e2e-automation-plan-fixer\":\".lock.yml\",\"e2e-automation-spec-writer\":\".lock.yml\"},\"workflows\":[\"e2e-automation-plan-fixer\",\"e2e-automation-spec-writer\"]},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"}}"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |

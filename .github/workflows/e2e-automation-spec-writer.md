@@ -40,10 +40,10 @@ safe-outputs:
     target: "*"
     max: 1
     hide-older-comments: true
-  dispatch-workflow: [apply-e2e-spec-writer-patch]
+  dispatch-workflow: [apply-e2e-automation-spec-writer-patch]
   create-issue:
-    title-prefix: "[e2e-generic-spec-writer] "
-    labels: [ai-e2e, automation]
+    title-prefix: "[e2e-automation-spec-writer] "
+    labels: [bot/e2e-automation, bot/e2e-automation/automation]
     expires: 2d
     max: 1
   noop:
@@ -73,7 +73,7 @@ tools:
 timeout-minutes: 60
 ---
 
-# E2E Generic Spec Writer
+# E2E Automation Spec Writer
 
 You are an **E2E spec-writing agent** for the Rancher AI UI extension. Your
 job is to read the test plan from the PR branch and create a complete Cypress
@@ -102,8 +102,8 @@ If `${{ github.event.inputs.pr_number }}` is provided, use that.
 Otherwise, auto-detect:
 ```bash
 gh pr list --repo "$GITHUB_REPOSITORY" \
-  --label ai-e2e \
-  --label plan-approved \
+  --label bot/e2e-automation \
+  --label bot/e2e-automation/plan-approved \
   --state open \
   --json number,headRefName \
   --jq '.[] | select(.headRefName | startswith("test/e2e-${{ github.event.inputs.feature_area }}")) | .number' \
@@ -230,10 +230,10 @@ Do NOT create subdirectories. After saving, call push_repo_memory.
 
 ## Step 11 - Dispatch apply-spec-writer-patch
 
-Dispatch `apply-e2e-spec-writer-patch` to push the spec to the PR and trigger the runner.
+Dispatch `apply-e2e-automation-spec-writer-patch` to push the spec to the PR and trigger the runner.
 
 Use the dispatch-workflow safe output:
-- workflow: apply-e2e-spec-writer-patch
+- workflow: apply-e2e-automation-spec-writer-patch
 
 ## Rules
 

@@ -142,13 +142,13 @@ jobs:
               rm "$PATCH_FILE"
 
               # Dispatch the generic E2E runner
-              GH_TOKEN="${{ github.token }}" gh workflow run e2e-generic-runner.yml \
+              GH_TOKEN="${{ github.token }}" gh workflow run e2e-automation-spec-runner.yml \
                 --repo "$REPO" \
                 --ref e2e-agentic \
                 -f feature_area="$FEATURE_AREA" \
                 -f pr_number="$PR_NUMBER" \
-                -f attempt="1" || echo "Warning: Failed to dispatch generic runner"
-              echo "Dispatched E2E Generic Runner for PR #$PR_NUMBER, feature=$FEATURE_AREA"
+                -f attempt="1" || echo "Warning: Failed to dispatch spec runner"
+              echo "Dispatched E2E Automation Spec Runner for PR #$PR_NUMBER, feature=$FEATURE_AREA"
             else
               echo "Push failed"
               gh pr comment "$PR_NUMBER" --repo "$REPO" \

@@ -36,10 +36,10 @@ safe-outputs:
     hide-older-comments: true
   add-labels:
     target: "*"
-  dispatch-workflow: [e2e-planner-fixer, e2e-generic-spec-writer]
+  dispatch-workflow: [e2e-automation-plan-fixer, e2e-automation-spec-writer]
   create-issue:
-    title-prefix: "[e2e-planner-verifier] "
-    labels: [ai-e2e, qa-review]
+    title-prefix: "[e2e-automation-plan-verifier] "
+    labels: [bot/e2e-automation, bot/e2e-automation/qa-review]
     expires: 2d
     max: 1
   noop:
@@ -94,8 +94,8 @@ If `${{ github.event.inputs.pr_number }}` is provided, use that.
 Otherwise, auto-detect the PR:
 ```bash
 gh pr list --repo "$GITHUB_REPOSITORY" \
-  --label ai-e2e \
-  --label e2e-plan \
+  --label bot/e2e-automation \
+  --label bot/e2e-automation/plan \
   --state open \
   --json number,headRefName \
   --jq '.[] | select(.headRefName | startswith("test/e2e-${{ github.event.inputs.feature_area }}")) | .number' \
@@ -168,14 +168,14 @@ grep -r "data-testid=\"<selector>\"" pkg/rancher-ai-ui/components/
 ## Step 6 - Decision
 
 ### ALL checks pass
-1. Add the label `plan-approved` to the PR using `add-label`
-2. Dispatch `e2e-generic-spec-writer` with:
+1. Add the label `bot/e2e-automation/plan-approved` to the PR using `add-label`
+2. Dispatch `e2e-automation-spec-writer` with:
    - `feature_area`: the feature area
    - `pr_number`: the PR number
 3. Comment that the plan is approved and spec writing will begin
 
 ### ANY check fails (attempt < 5)
-Dispatch `e2e-planner-fixer` with:
+Dispatch `e2e-automation-plan-fixer` with:
 - `feature_area`: the feature area
 - `pr_number`: the PR number
 - `attempt`: current attempt (string)
