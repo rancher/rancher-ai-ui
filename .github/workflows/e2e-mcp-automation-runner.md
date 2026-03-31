@@ -100,7 +100,7 @@ safe-outputs:
 
 tools:
   playwright:
-    args: ["--ignore-https-errors"]
+    args: ["--ignore-https-errors", "--save-session", "--caps=devtools"]
   web-fetch:
   github:
     toolsets: [all]
@@ -171,12 +171,20 @@ Before running any tests, authenticate:
 
 **IMPORTANT**: Configure Playwright to ignore HTTPS errors.
 
+## Step 2.5 - Start Video Recording
+
+Start recording the entire test session:
+
+1. Call `browser_start_video` with filename `e2e-${{ github.event.inputs.feature_area }}-attempt-${{ github.event.inputs.attempt }}.webm`
+2. This records everything from login through all test cases
+
 ## Step 3 - Execute Test Cases
 
 For each test case in the test plan:
 
 ### Before each test case:
-1. If mock LLM responses are needed, set them up:
+1. Call `browser_video_chapter` with the test case name as the title
+2. If mock LLM responses are needed, set them up:
    ```bash
    curl -X PUT "http://localhost:1080/mockserver/expectation" \
      -H "Content-Type: application/json" \
@@ -203,7 +211,14 @@ For each test case in the test plan:
 - After opening the chat, always wait for the panel-ready indicator
 - After keyboard shortcuts, wait ~500ms for animations
 
-## Step 4 - Compile Results
+## Step 4 - Stop Video Recording
+
+After all test cases are complete:
+
+1. Call `browser_stop_video` to finalize the recording
+2. The video file is saved to the output directory
+
+## Step 5 - Compile Results
 
 After all test cases, compile a results summary:
 
@@ -221,11 +236,11 @@ After all test cases, compile a results summary:
 ...
 ```
 
-## Step 5 - Comment on PR
+## Step 6 - Comment on PR
 
 Post the full results as a PR comment using `add-comment`.
 
-## Step 6 - Decision
+## Step 7 - Decision
 
 ### ALL tests passed
 1. Add label `bot/e2e-mcp-automation/passed`
@@ -241,7 +256,7 @@ Post the full results as a PR comment using `add-comment`.
 2. Create an issue for human review
 3. Add label `bot/e2e-mcp-automation/qa-review`
 
-## Step 7 - Update Learnings
+## Step 8 - Update Learnings
 
 Update `/tmp/gh-aw/repo-memory/default/generic.md` with insights about:
 - Playwright interactions that worked/failed
