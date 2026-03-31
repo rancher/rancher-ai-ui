@@ -50,8 +50,9 @@ safe-outputs:
   noop:
 
 tools:
+  web-fetch:
   github:
-    toolsets: [default]
+    toolsets: [all]
   bash:
     - "cat *"
     - "ls *"

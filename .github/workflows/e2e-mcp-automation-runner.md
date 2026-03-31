@@ -100,10 +100,10 @@ safe-outputs:
 
 tools:
   playwright:
-    version: "1.56.1"
-  github:
-    toolsets: [default]
+    args: ["--ignore-https-errors"]
   web-fetch:
+  github:
+    toolsets: [all]
   bash:
     - "cat *"
     - "ls *"

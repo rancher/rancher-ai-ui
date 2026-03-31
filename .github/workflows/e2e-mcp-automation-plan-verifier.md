@@ -46,8 +46,11 @@ safe-outputs:
   noop:
 
 tools:
+  playwright:
+    args: ["--ignore-https-errors"]
+  web-fetch:
   github:
-    toolsets: [default]
+    toolsets: [all]
   bash:
     - "cat *"
     - "ls *"
