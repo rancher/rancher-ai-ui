@@ -36,7 +36,7 @@ safe-outputs:
     hide-older-comments: true
   add-labels:
     target: "*"
-  dispatch-workflow: [e2e-planner-fixer, e2e-generic-spec-writer]
+  dispatch-workflow: [e2e-planner-fixer, e2e-generic-spec-writer, apply-e2e-learnings-patch]
   create-issue:
     title-prefix: "[e2e-planner-verifier] "
     labels: [ai-e2e, qa-review]
@@ -74,10 +74,11 @@ before it proceeds to spec writing.
 
 ## Step 0 - Read Learnings
 
-Read `/tmp/gh-aw/repo-memory/default/e2e-planner.learning.md` if it exists.
-This file contains accumulated learnings from previous plan verification
-runs — common plan quality issues, selector verification failures, coverage
-gaps, and other insights. Use this knowledge to improve your review.
+Read `.github/e2e-learnings/planner.md` from the checked-out repo if it
+exists. This file contains accumulated learnings from previous plan
+verification runs — common plan quality issues, selector verification
+failures, coverage gaps, and other insights. Use this knowledge to improve
+your review.
 
 If the file does not exist, skip this step.
 
@@ -183,28 +184,43 @@ Use `create-issue` to report the plan could not be verified after 5 attempts.
 
 ## Step 7 - Update Learnings
 
-After completing verification, update the learnings file at:
-`/tmp/gh-aw/repo-memory/default/e2e-planner.learning.md`
+Update the learnings file with insights from this verification run.
 
-**Amend** the file — do NOT delete and rewrite it. Read the current content
-first, then update it with new insights from this run. Keep the file concise
-and well-organized. Include:
+1. **Copy** the current learnings file to repo-memory so you can edit it:
+   ```bash
+   cp .github/e2e-learnings/planner.md /tmp/gh-aw/repo-memory/default/planner.md
+   ```
 
-- **Common plan issues** — structure problems, missing sections, vague steps
-- **Selector verification results** — selectors that were wrong vs correct
-- **Coverage gaps** — feature behaviors commonly missed in plans
-- **Component mapping** — which components map to which feature areas
-- **Anti-patterns** — things the planner should avoid
+2. **Read** the current content and **amend** it — do NOT delete and rewrite.
+   Add new insights under the appropriate sections:
+   - **Selector Verification** — map verified selectors
+   - **Common Plan Issues** — structure problems, missing sections
+   - **Component Mapping** — which components map to feature areas
+   - **Coverage Guidelines** — behaviors commonly missed
+   - **Anti-Patterns** — things the planner should avoid
 
-Remove outdated entries. The goal is a compact, high-value reference that
-helps the planner and planner-fixer produce better plans on the first attempt.
+3. Remove outdated or redundant entries. Keep it well-organized with bullet
+   points. The goal is a compact, high-value reference.
 
-**SIZE LIMIT**: The file MUST stay under **2KB**. The repo-memory branch has
-a hard 12KB git history limit. If the file is getting long, aggressively
-remove outdated or redundant entries. Prefer bullet points over paragraphs.
-Only keep actionable, high-value insights.
+4. **Generate a patch** and save it to repo-memory:
+   ```bash
+   diff -u .github/e2e-learnings/planner.md /tmp/gh-aw/repo-memory/default/planner.md > /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch || true
+   ```
+   Then fix the patch paths so `git apply` works:
+   ```bash
+   sed -i 's|/tmp/gh-aw/repo-memory/default/planner.md|.github/e2e-learnings/planner.md|g' /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch
+   ```
 
-After writing, call the `push_repo_memory` tool to save.
+5. Verify the patch is not empty and starts with `---`:
+   ```bash
+   head -3 /tmp/gh-aw/repo-memory/default/e2e-learning-planner.patch
+   ```
+   If empty (no changes), skip saving and dispatching.
+
+6. Call `push_repo_memory` to save the patch.
+
+7. Dispatch `apply-e2e-learnings-patch` with:
+   - `learning_type`: `planner`
 
 ## Rules
 
