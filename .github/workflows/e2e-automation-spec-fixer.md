@@ -55,15 +55,6 @@ safe-outputs:
 tools:
   github:
     toolsets: [all]
-  bash:
-    - "cat *"
-    - "ls *"
-    - "find *"
-    - "head *"
-    - "grep *"
-    - "jq *"
-    - "cp *"
-    - "wc *"
   edit:
   repo-memory:
     branch-name: memory/default

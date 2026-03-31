@@ -43,15 +43,6 @@ safe-outputs:
 tools:
   github:
     toolsets: [all]
-  bash:
-    - "ls *"
-    - "cat *"
-    - "find *"
-    - "head *"
-    - "tail *"
-    - "wc *"
-    - "jq *"
-    - "grep *"
   repo-memory:
     branch-name: memory/default
     max-file-size: 102400
