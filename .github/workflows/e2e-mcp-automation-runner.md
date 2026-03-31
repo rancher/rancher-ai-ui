@@ -114,9 +114,6 @@ tools:
     - "wc *"
     - "jq *"
     - "curl *"
-    - "cd *"
-    - "git *"
-    - "gh *"
   repo-memory:
     branch-name: memory/default
     max-file-size: 102400
