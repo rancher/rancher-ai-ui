@@ -69,6 +69,29 @@ Before sending a message, enqueue a mock response via a PUT request to
 | Ctrl+Shift+C | Ctrl+Shift+C | Copy last response |
 | Ctrl+Shift+Backspace | Ctrl+Shift+Backspace | Delete chat |
 
+
+### Video Recording (DevTools capability)
+
+The Playwright MCP server supports video recording when started with
+`--caps=devtools`. The following tools are available:
+
+| Tool | Description |
+|------|-------------|
+| `browser_start_video` | Start recording (params: `filename`, `size`) |
+| `browser_stop_video` | Stop recording and save the video file |
+| `browser_video_chapter` | Add a chapter marker (params: `title`, `description`) |
+| `browser_start_tracing` | Start a Playwright trace |
+| `browser_stop_tracing` | Stop trace recording |
+
+**Recording workflow:**
+1. After login, call `browser_start_video` with filename like
+   `e2e-<feature>-run.webm`
+2. Before each test case, call `browser_video_chapter` with the test name
+3. After all tests complete, call `browser_stop_video`
+
+The video and session data are saved to the `--output-dir` directory.
+With `--save-session`, the full session (snapshots, logs, video) is preserved.
+
 ### Tips for MCP Playwright Testing
 
 - **Self-signed certificates**: Configure Playwright to ignore HTTPS errors
@@ -79,3 +102,4 @@ Before sending a message, enqueue a mock response via a PUT request to
 - **Timeouts**: Use 10-30s timeouts for initial load
 - **Animation delays**: Wait ~500ms after keyboard shortcuts for animations
 - **Network requests**: Wait for LLM response stream to complete before asserting
+- **Video recording**: Start recording after login, add chapter markers per test
