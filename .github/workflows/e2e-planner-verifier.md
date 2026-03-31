@@ -199,6 +199,11 @@ and well-organized. Include:
 Remove outdated entries. The goal is a compact, high-value reference that
 helps the planner and planner-fixer produce better plans on the first attempt.
 
+**SIZE LIMIT**: The file MUST stay under **2KB**. The repo-memory branch has
+a hard 12KB git history limit. If the file is getting long, aggressively
+remove outdated or redundant entries. Prefer bullet points over paragraphs.
+Only keep actionable, high-value insights.
+
 After writing, call the `push_repo_memory` tool to save.
 
 ## Rules
