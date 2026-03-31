@@ -71,11 +71,17 @@ steps:
   - name: Free port 80 for MCP Gateway
     run: |
       # Rancher Docker binds port 80 (HTTP redirect) but we only need 443.
-      # The MCP Gateway needs port 80, so remove the Docker DNAT rule for it.
-      sudo iptables -t nat -S DOCKER | grep -- '-p tcp' | grep -- '--dport 80' | while IFS= read -r rule; do
-        sudo iptables -t nat $(echo "$rule" | sed 's/^-A/-D/')
-      done
-      echo "Freed port 80 for MCP Gateway"
+      # The MCP Gateway needs port 80, so kill any process bound to it.
+      # The docker-proxy process holds the port even after iptables cleanup.
+      sudo fuser -k 80/tcp || true
+      sleep 2
+      # Verify port 80 is now free
+      if sudo fuser 80/tcp 2>/dev/null; then
+        echo "ERROR: Port 80 is still in use!"
+        sudo fuser -v 80/tcp
+        exit 1
+      fi
+      echo "Port 80 is now free for MCP Gateway"
 
 safe-outputs:
   add-comment:
