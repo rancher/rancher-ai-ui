@@ -1,6 +1,6 @@
 ---
 description: |
-  Generic QA verification agent that reviews Cypress test output from the
+  E2E Automation QA verification agent that reviews Cypress test output from the
   E2E Automation Spec Runner. Determines pass/fail by parsing the Cypress text log.
   On all-pass, comments on the PR. On failure, dispatches the spec fixer.
   Works for any feature area.

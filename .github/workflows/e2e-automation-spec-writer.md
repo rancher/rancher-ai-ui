@@ -1,6 +1,6 @@
 ---
 description: |
-  Generic agentic workflow that reads a test plan from the PR branch and
+  E2E Automation agentic workflow that reads a test plan from the PR branch and
   creates a Cypress E2E spec. Saves a patch to repo-memory and dispatches
   the apply-spec-writer-patch workflow to push the spec to the existing PR.
 
