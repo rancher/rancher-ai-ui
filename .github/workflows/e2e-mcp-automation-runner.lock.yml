@@ -29,7 +29,7 @@
 #   Imports:
 #     - shared/playwright-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"14f8f1aeba8418afacb280dc426436e167e39f89264e4bfe72843eee7af93f62","compiler_version":"v0.65.1","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"2e3d2cb06ca970adbdecdea57636bd43a17a102a3f3c6b24135190b22c3290fa","compiler_version":"v0.65.1","strict":true,"agent_id":"copilot"}
 
 name: "E2E MCP Automation Runner"
 "on":
@@ -165,16 +165,16 @@ jobs:
         run: |
           bash ${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh
           {
-          cat << 'GH_AW_PROMPT_87ec7be0315c1554_EOF'
+          cat << 'GH_AW_PROMPT_23fb70e68fa526bc_EOF'
           <system>
-          GH_AW_PROMPT_87ec7be0315c1554_EOF
+          GH_AW_PROMPT_23fb70e68fa526bc_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/playwright_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/repo_memory_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_87ec7be0315c1554_EOF'
+          cat << 'GH_AW_PROMPT_23fb70e68fa526bc_EOF'
           <safe-output-tools>
           Tools: add_comment, create_issue, add_labels, dispatch_workflow, missing_tool, missing_data, noop
           </safe-output-tools>
@@ -209,13 +209,13 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_87ec7be0315c1554_EOF
+          GH_AW_PROMPT_23fb70e68fa526bc_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_87ec7be0315c1554_EOF'
+          cat << 'GH_AW_PROMPT_23fb70e68fa526bc_EOF'
           </system>
           {{#runtime-import .github/workflows/shared/playwright-rancher-ai.md}}
           {{#runtime-import .github/workflows/e2e-mcp-automation-runner.md}}
-          GH_AW_PROMPT_87ec7be0315c1554_EOF
+          GH_AW_PROMPT_23fb70e68fa526bc_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
@@ -421,12 +421,12 @@ jobs:
           mkdir -p ${RUNNER_TEMP}/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_d6db799c682acfd6_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_9cd335c586685065_EOF'
           {"add_comment":{"hide_older_comments":true,"max":1,"target":"*"},"add_labels":{"target":"*"},"create_issue":{"expires":48,"labels":["bot/e2e-mcp-automation","bot/e2e-mcp-automation/qa-review"],"max":1,"title_prefix":"[e2e-mcp-automation-runner] "},"dispatch_workflow":{"aw_context_workflows":["e2e-mcp-automation-plan-verifier"],"max":1,"workflow_files":{"e2e-mcp-automation-plan-verifier":".lock.yml"},"workflows":["e2e-mcp-automation-plan-verifier"]},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/default","id":"default","max_file_count":100,"max_file_size":102400,"max_patch_size":102400}]}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_d6db799c682acfd6_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_9cd335c586685065_EOF
       - name: Write Safe Outputs Tools
         run: |
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_c476b8e37197ab9a_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_e34b6a6154cf62c9_EOF'
           {
             "description_suffixes": {
               "add_comment": " CONSTRAINTS: Maximum 1 comment(s) can be added. Target: *.",
@@ -469,8 +469,8 @@ jobs:
               }
             ]
           }
-          GH_AW_SAFE_OUTPUTS_TOOLS_META_c476b8e37197ab9a_EOF
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_a93dc55cc5c3bcb9_EOF'
+          GH_AW_SAFE_OUTPUTS_TOOLS_META_e34b6a6154cf62c9_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_4e1437d7eb7ee1c5_EOF'
           {
             "add_comment": {
               "defaultMax": 1,
@@ -600,7 +600,7 @@ jobs:
               }
             }
           }
-          GH_AW_SAFE_OUTPUTS_VALIDATION_a93dc55cc5c3bcb9_EOF
+          GH_AW_SAFE_OUTPUTS_VALIDATION_4e1437d7eb7ee1c5_EOF
           node ${RUNNER_TEMP}/gh-aw/actions/generate_safe_outputs_tools.cjs
       - name: Generate Safe Outputs MCP Server Config
         id: safe-outputs-config
@@ -669,7 +669,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.10'
           
           mkdir -p /home/runner/.copilot
-          cat << GH_AW_MCP_CONFIG_a6d0e9fcef0fab1e_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
+          cat << GH_AW_MCP_CONFIG_7a45fadbdc0e8b2b_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
           {
             "mcpServers": {
               "github": {
@@ -692,7 +692,7 @@ jobs:
                 "type": "stdio",
                 "container": "mcr.microsoft.com/playwright/mcp",
                 "args": ["--init", "--network", "host", "--security-opt", "seccomp=unconfined", "--ipc=host"],
-                "entrypointArgs": ["--output-dir", "/tmp/gh-aw/mcp-logs/playwright", "--no-sandbox", "--ignore-https-errors", "--save-session", "--caps=devtools"],
+                "entrypointArgs": ["--output-dir", "/tmp/gh-aw/mcp-logs/playwright", "--no-sandbox", "--ignore-https-errors", "--save-session", "--caps=devtools", "--isolated"],
                 "mounts": ["/tmp/gh-aw/mcp-logs:/tmp/gh-aw/mcp-logs:rw"],
                 "guard-policies": {
                   "write-sink": {
@@ -724,7 +724,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_a6d0e9fcef0fab1e_EOF
+          GH_AW_MCP_CONFIG_7a45fadbdc0e8b2b_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
