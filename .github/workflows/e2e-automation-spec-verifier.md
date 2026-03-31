@@ -60,7 +60,7 @@ tools:
 
 steps:
   - name: Download test artifacts
-    uses: actions/download-artifact@v4
+    uses: actions/download-artifact@v8.0.1
     with:
       name: e2e-automation-spec-results
       path: /tmp/gh-aw/e2e-results/

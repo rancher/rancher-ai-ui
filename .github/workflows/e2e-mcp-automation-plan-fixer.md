@@ -63,6 +63,7 @@ tools:
     - "cd *"
     - "git *"
     - "wc *"
+    - "gh *"
   edit:
   repo-memory:
     branch-name: memory/default
