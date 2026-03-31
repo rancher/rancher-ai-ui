@@ -38,15 +38,15 @@ imports:
 
 safe-outputs:
   create-issue:
-    title-prefix: "[e2e-planner-fixer] "
-    labels: [ai-e2e, automation]
+    title-prefix: "[e2e-automation-plan-fixer] "
+    labels: [bot/e2e-automation, bot/e2e-automation/automation]
     expires: 2d
     max: 1
   add-comment:
     target: "*"
     max: 1
     hide-older-comments: true
-  dispatch-workflow: [apply-e2e-planner-patch]
+  dispatch-workflow: [apply-e2e-automation-plan-patch]
   noop:
 
 tools:
@@ -183,10 +183,10 @@ Do NOT create subdirectories. After saving, call push_repo_memory.
 
 ## Step 8 - Dispatch apply-planner-patch
 
-Dispatch `apply-e2e-planner-patch` to push the fix and re-trigger the verifier.
+Dispatch `apply-e2e-automation-plan-patch` to push the fix and re-trigger the verifier.
 
 Use the dispatch-workflow safe output:
-- workflow: apply-e2e-planner-patch
+- workflow: apply-e2e-automation-plan-patch
 
 ## Important Rules
 

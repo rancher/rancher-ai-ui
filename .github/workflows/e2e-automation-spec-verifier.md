@@ -1,8 +1,8 @@
 ---
 description: |
   Generic QA verification agent that reviews Cypress test output from the
-  E2E Generic Runner. Determines pass/fail by parsing the Cypress text log.
-  On all-pass, comments on the PR. On failure, dispatches the generic fixer.
+  E2E Automation Spec Runner. Determines pass/fail by parsing the Cypress text log.
+  On all-pass, comments on the PR. On failure, dispatches the spec fixer.
   Works for any feature area.
 
 on:
@@ -18,7 +18,7 @@ on:
         description: "Attempt number"
         required: true
       runner_run_id:
-        description: "Run ID of the E2E Generic Runner to download artifacts from"
+        description: "Run ID of the E2E Automation Spec Runner to download artifacts from"
         required: true
 
 permissions: read-all
@@ -32,10 +32,10 @@ safe-outputs:
     hide-older-comments: true
   add-labels:
     target: "*"
-  dispatch-workflow: [e2e-generic-fixer]
+  dispatch-workflow: [e2e-automation-spec-fixer]
   create-issue:
-    title-prefix: "[e2e-verifier] "
-    labels: [ai-e2e, qa-review]
+    title-prefix: "[e2e-automation-spec-verifier] "
+    labels: [bot/e2e-automation, bot/e2e-automation/qa-review]
     expires: 2d
     max: 1
   noop:
@@ -62,7 +62,7 @@ steps:
   - name: Download test artifacts
     uses: actions/download-artifact@v4
     with:
-      name: e2e-generic-results
+      name: e2e-automation-spec-results
       path: /tmp/gh-aw/e2e-results/
       run-id: ${{ github.event.inputs.runner_run_id }}
       github-token: ${{ github.token }}
@@ -70,12 +70,12 @@ steps:
 timeout-minutes: 60
 ---
 
-# E2E Generic QA Verifier
+# E2E Automation Spec Verifier
 
 You are a **QA Verification Agent** for the Rancher AI UI extension. Your job
-is to review the **Cypress text output log** from the E2E Generic Runner and
+is to review the **Cypress text output log** from the E2E Automation Spec Runner and
 decide the next action: **comment on the PR** (all tests pass) or **dispatch
-the generic spec fixer** (any test fails).
+the spec fixer** (any test fails).
 
 **Feature area**: `${{ github.event.inputs.feature_area }}`
 
@@ -167,11 +167,11 @@ For each failure, extract:
 
 ### ALL tests in the target spec pass
 After posting the final summary comment:
-1. Use `add-labels` to add the label **`e2e-passed`** to PR `${{ github.event.inputs.pr_number }}`.
+1. Use `add-labels` to add the label **`bot/e2e-automation/passed`** to PR `${{ github.event.inputs.pr_number }}`.
 2. Then use `noop` with a message confirming all tests passed.
 
 ### ANY test fails (attempt < 5)
-After commenting, dispatch `e2e-generic-fixer` with:
+After commenting, dispatch `e2e-automation-spec-fixer` with:
 - `feature_area`: `${{ github.event.inputs.feature_area }}`
 - `pr_number`: value from metadata
 - `attempt`: current attempt (string)
