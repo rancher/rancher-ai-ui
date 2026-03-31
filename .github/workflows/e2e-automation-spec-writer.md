@@ -62,8 +62,6 @@ tools:
     - "node *"
     - "npx *"
     - "npm *"
-    - "cd *"
-    - "git *"
   edit:
   repo-memory:
     branch-name: memory/default

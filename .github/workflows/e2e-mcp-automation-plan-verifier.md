@@ -60,8 +60,6 @@ tools:
     - "grep *"
     - "wc *"
     - "jq *"
-    - "git *"
-    - "gh *"
   repo-memory:
     branch-name: memory/default
     max-file-size: 102400

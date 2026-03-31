@@ -61,10 +61,7 @@ tools:
     - "grep *"
     - "jq *"
     - "cp *"
-    - "cd *"
-    - "git *"
     - "wc *"
-    - "gh *"
   edit:
   repo-memory:
     branch-name: memory/default
