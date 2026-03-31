@@ -55,7 +55,7 @@ tools:
   repo-memory:
     branch-name: memory/default
     max-file-size: 65536
-    file-glob: ["*.md"]
+    file-glob: ["*.patch", "*.md"]
 
 steps:
   - name: Download test artifacts

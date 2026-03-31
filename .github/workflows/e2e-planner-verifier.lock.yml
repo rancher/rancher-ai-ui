@@ -29,7 +29,7 @@
 #   Imports:
 #     - shared/cypress-rancher-ai.md
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"7b2f3c06ef9c45a710727e8edf6f32e77b1d2d308485e80f57a5ea726cb22e56","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"9dac0d6716052591bc68356163283bf5b19dee43517df0cd273613deaa226e37","compiler_version":"v0.57.2","strict":true}
 
 name: "E2E Planner Verifier"
 "on":
@@ -215,7 +215,7 @@ jobs:
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_MEMORY_BRANCH_NAME: 'memory/default'
-          GH_AW_MEMORY_CONSTRAINTS: "\n\n**Constraints:**\n- **Allowed Files**: Only files matching patterns: *.md\n- **Max File Size**: 65536 bytes (0.06 MB) per file\n- **Max File Count**: 100 files per commit\n- **Max Patch Size**: 10240 bytes (10 KB) total per push (max: 100 KB)\n"
+          GH_AW_MEMORY_CONSTRAINTS: "\n\n**Constraints:**\n- **Allowed Files**: Only files matching patterns: *.patch, *.md\n- **Max File Size**: 65536 bytes (0.06 MB) per file\n- **Max File Count**: 100 files per commit\n- **Max Patch Size**: 10240 bytes (10 KB) total per push (max: 100 KB)\n"
           GH_AW_MEMORY_DESCRIPTION: ''
           GH_AW_MEMORY_DIR: '/tmp/gh-aw/repo-memory/default/'
           GH_AW_MEMORY_TARGET_REPO: ' of the current repository'
@@ -1405,7 +1405,7 @@ jobs:
           MAX_FILE_COUNT: 100
           MAX_PATCH_SIZE: 10240
           ALLOWED_EXTENSIONS: '[]'
-          FILE_GLOB_FILTER: "*.md"
+          FILE_GLOB_FILTER: "*.patch *.md"
         with:
           script: |
             const { setupGlobals } = require('/opt/gh-aw/actions/setup_globals.cjs');
