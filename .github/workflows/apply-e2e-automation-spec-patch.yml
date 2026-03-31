@@ -139,12 +139,16 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
 
-            if git apply --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
-              echo "Patch applied successfully (git apply)"
+            PATCH_COMMITTED=false
+            if git am --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (git am)"
+              PATCH_COMMITTED=true
+            elif git apply --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (git apply)"
             elif git apply --ignore-whitespace --3way "$PATCH_FILE" 2>/dev/null; then
-              echo "Patch applied successfully (git apply --3way)"
-            elif patch -p1 < "$PATCH_FILE" 2>/dev/null; then
-              echo "Patch applied successfully (patch -p1 fallback)"
+              echo "Patch applied (git apply --3way)"
+            elif patch -p1 --fuzz=3 < "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (patch --fuzz=3)"
             else
               echo "Patch apply failed (all methods)"
               gh pr comment "$PR_NUMBER" --repo "$REPO" \
@@ -153,10 +157,12 @@ jobs:
               continue
             fi
 
-            git add -A
-            git commit -m "fix(e2e): apply generic spec-fixer patch ($FEATURE_AREA)
-
-          Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+            if [ "$PATCH_COMMITTED" != "true" ]; then
+              git add -A
+              git commit -m "fix(e2e): apply generic spec-fixer patch ($FEATURE_AREA)
+              
+              Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+            fi
 
             if git push origin "$HEAD_REF"; then
               echo "Patch pushed successfully to fork branch"
