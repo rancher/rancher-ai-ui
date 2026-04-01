@@ -123,7 +123,12 @@ gh pr list --repo "$GITHUB_REPOSITORY" \
 ```
 
 Any branch matching `test/e2e-mcp-<FEATURE>-spec` means that feature area is
-already in progress. If the chosen feature already has an open PR, skip it.
+already in progress.
+
+**If `${{ github.event.inputs.force }}` is `true`**, ignore any existing open
+PRs or merged test plans and proceed with planning anyway.
+
+Otherwise, if the chosen feature already has an open PR, skip it.
 If ALL candidates have open PRs, use `noop`.
 
 Also check for existing MCP test plans already merged:
