@@ -32,7 +32,7 @@ network:
     - node
     - local
     - "172.17.0.1"
-    - "registry.suse.com"
+    - "stgregistry.suse.com"
 
 checkout:
   fetch: ["*"]
