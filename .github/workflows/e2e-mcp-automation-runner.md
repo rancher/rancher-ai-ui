@@ -83,6 +83,14 @@ steps:
       fi
       echo "Port 80 is now free for MCP Gateway"
 
+  - name: Prepare Playwright output directory
+    run: |
+      # The Playwright Docker container runs as a non-root user (pwuser).
+      # The MCP Gateway creates the output dir as the runner user, so the
+      # container can't write videos/screenshots to it. Fix permissions.
+      mkdir -p /tmp/gh-aw/mcp-logs/playwright
+      chmod 777 /tmp/gh-aw/mcp-logs/playwright
+
 safe-outputs:
   add-comment:
     target: "*"
