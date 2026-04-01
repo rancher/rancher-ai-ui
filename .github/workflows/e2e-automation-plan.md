@@ -103,8 +103,11 @@ Otherwise, analyze the codebase to find features lacking tests:
 
 Priority order:
 1. Features with user-facing UI components but no spec at all
-2. Features with complex interactions (multiple composables)
-3. Features with settings/configuration pages
+2. Features with existing specs or test plans but incomplete coverage
+   (e.g., only happy-path tested, missing edge cases, error flows, or
+   recently-added sub-features)
+3. Features with complex interactions (multiple composables)
+4. Features with settings/configuration pages
 
 ## Step 2 - Check for Existing Coverage and Open PRs
 
@@ -131,13 +134,23 @@ has an open PR, skip it and choose the next highest-priority untested area
 instead. If ALL candidate areas already have open PRs, use `noop` with a
 message listing the in-progress PRs.
 
-Also check for existing test plans already merged on the current branch:
+Also check for existing test plans and specs already merged on the current branch:
 ```bash
 find cypress/e2e -name "test-plan-*.md" -type f 2>/dev/null
+find cypress/e2e/tests/features -name "*.spec.ts" -type f 2>/dev/null
 ```
 
-If a plan for this feature area already exists on the branch (and `force` is
-not true), skip it and choose the next candidate.
+**Incremental planning**: If a plan or spec already exists for this feature
+area, **do NOT skip it automatically**. Instead:
+1. Read the existing test plan(s) and/or spec file(s) for this feature.
+2. Read the source components to identify all testable behaviors.
+3. Determine which behaviors are **already covered** by existing tests.
+4. If there are **uncovered behaviors remaining**, proceed to create an
+   incremental plan covering only the gaps.
+5. Only skip (or `noop`) if the feature is **fully covered** — every
+   significant user flow, edge case, and error path already has a test.
+
+If `force` is `true`, always proceed regardless of existing coverage.
 
 ## Step 3 - Analyze the Feature
 
@@ -159,8 +172,11 @@ Focus on:
 
 ## Step 4 - Create the Test Plan
 
-Create the test plan document at:
-`cypress/e2e/tests/features/test-plan-<FEATURE_AREA>.md`
+Create the test plan document. Choose the file path based on whether
+this is an initial or incremental plan:
+- **Initial**: `cypress/e2e/tests/features/test-plan-<FEATURE_AREA>.md`
+- **Incremental**: `cypress/e2e/tests/features/test-plan-<FEATURE_AREA>-<N>.md`
+  where `<N>` is the next sequential number (2, 3, …)
 
 The plan MUST include:
 
@@ -168,6 +184,9 @@ The plan MUST include:
 - Feature area name
 - Date created
 - Source components analyzed
+- **Plan type**: Initial or Incremental
+- **Existing coverage** (incremental only): list existing test plan(s)
+  and/or spec(s) for this feature, with a brief summary of what they cover
 
 ### Test Cases
 For each test case, specify:
@@ -203,6 +222,8 @@ Use the `create-pull-request` safe output:
 - **body**: Include:
   - Summary of the feature area analyzed
   - Number of test cases planned
+  - Whether this is an initial or incremental plan
+  - For incremental plans: what existing coverage exists and what gaps this fills
   - Note that this is a test plan awaiting verification
 
 Include these files in the PR:
@@ -223,6 +244,10 @@ Do NOT include `pr_number` - the verifier will auto-detect it.
 - Be thorough in analysis - the test plan is the foundation for test creation
 - Use only `data-testid` selectors that actually exist in the components
 - Reference existing patterns from `chat.spec.ts` and other working specs
-- Each test plan should have 5-10 test cases
+- Initial plans should have 5-10 test cases; incremental plans should have
+  as many test cases as needed to fill the remaining coverage gaps (minimum 3)
+- **Never duplicate** tests that already exist — always cross-reference
+  existing specs/plans before writing new test cases
 - Include screenshot names following the pattern: `<feature>-test-N-<description>`
+  (for incremental plans, continue numbering from where the last plan left off)
 - The feature area name should be lowercase and hyphenated (e.g., `chat-history`)

@@ -107,8 +107,11 @@ Otherwise, analyze the codebase to find features lacking tests:
 
 Priority order:
 1. Features with user-facing UI components but no test coverage at all
-2. Features with complex interactions (multiple composables)
-3. Features with settings/configuration pages
+2. Features with existing test plans but incomplete coverage
+   (e.g., only happy-path tested, missing edge cases, error flows, or
+   recently-added sub-features)
+3. Features with complex interactions (multiple composables)
+4. Features with settings/configuration pages
 
 ## Step 2 - Check for Existing Coverage and Open PRs
 
@@ -134,7 +137,20 @@ If ALL candidates have open PRs, use `noop`.
 Also check for existing MCP test plans already merged:
 ```bash
 find cypress/e2e -name "mcp-test-plan-*.md" -type f 2>/dev/null
+find cypress/e2e/tests/features -name "*.spec.ts" -type f 2>/dev/null
 ```
+
+**Incremental planning**: If a test plan already exists for this feature
+area, **do NOT skip it automatically**. Instead:
+1. Read the existing test plan(s) for this feature.
+2. Read the source components to identify all testable behaviors.
+3. Determine which behaviors are **already covered** by existing tests.
+4. If there are **uncovered behaviors remaining**, proceed to create an
+   incremental plan covering only the gaps.
+5. Only skip (or `noop`) if the feature is **fully covered** — every
+   significant user flow, edge case, and error path already has a test.
+
+If `force` is `true`, always proceed regardless of existing coverage.
 
 ## Step 3 - Analyze the Feature
 
@@ -155,8 +171,11 @@ Focus on:
 
 ## Step 4 - Create the Test Plan
 
-Create the test plan document at:
-`cypress/e2e/tests/features/mcp-test-plan-<FEATURE_AREA>.md`
+Create the test plan document. Choose the file path based on whether
+this is an initial or incremental plan:
+- **Initial**: `cypress/e2e/tests/features/mcp-test-plan-<FEATURE_AREA>.md`
+- **Incremental**: `cypress/e2e/tests/features/mcp-test-plan-<FEATURE_AREA>-<N>.md`
+  where `<N>` is the next sequential number (2, 3, …)
 
 The plan MUST include:
 
@@ -165,6 +184,9 @@ The plan MUST include:
 - Date created
 - Source components analyzed
 - **Execution method: MCP Playwright** (explicitly stated)
+- **Plan type**: Initial or Incremental
+- **Existing coverage** (incremental only): list existing test plan(s)
+  for this feature, with a brief summary of what they cover
 
 ### Prerequisites
 - Application URL: `https://localhost:8005`
@@ -195,7 +217,12 @@ For each test needing mock LLM responses, include the full HTTP request details.
 Use the `create-pull-request` safe output:
 - **title**: `plan ${{ github.event.inputs.feature_area }} MCP E2E test coverage`
 - **branch**: `test/e2e-mcp-<FEATURE_AREA>-spec`
-- **body**: Summary with feature area, test count, and note about MCP Playwright
+- **body**: Include:
+  - Summary of the feature area analyzed
+  - Number of test cases planned
+  - Whether this is an initial or incremental plan
+  - For incremental plans: what existing coverage exists and what gaps this fills
+  - Note about MCP Playwright execution method
 
 ## Step 6 - Dispatch the MCP Planner Verifier
 
@@ -209,4 +236,9 @@ Dispatch `e2e-mcp-automation-plan-verifier` with:
 - Write steps as natural language instructions an AI agent can follow with Playwright
 - Be explicit about selectors, wait conditions, and assertions
 - Include mock setup instructions for any test that sends messages to the AI
+- Initial plans should have 5-10 test cases; incremental plans should have
+  as many test cases as needed to fill the remaining coverage gaps (minimum 3)
+- **Never duplicate** tests that already exist — always cross-reference
+  existing plans before writing new test cases
+- For incremental plans, continue test numbering from where the last plan left off
 - The feature area name should be lowercase and hyphenated
