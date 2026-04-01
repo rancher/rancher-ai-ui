@@ -123,18 +123,21 @@ Parse the output to build a list of feature areas that already have open PRs.
 Any branch matching `test/e2e-<FEATURE>-spec` means that feature area is
 already in progress.
 
-If the chosen feature area (from Step 1 or from the input) already has an
-open PR, skip it and choose the next highest-priority untested area instead.
-If ALL candidate areas already have open PRs, use `noop` with a message
-listing the in-progress PRs.
+**If `${{ github.event.inputs.force }}` is `true`**, ignore any existing open
+PRs or merged test plans and proceed with planning anyway.
+
+Otherwise, if the chosen feature area (from Step 1 or from the input) already
+has an open PR, skip it and choose the next highest-priority untested area
+instead. If ALL candidate areas already have open PRs, use `noop` with a
+message listing the in-progress PRs.
 
 Also check for existing test plans already merged on the current branch:
 ```bash
 find cypress/e2e -name "test-plan-*.md" -type f 2>/dev/null
 ```
 
-If a plan for this feature area already exists on the branch AND `force` is
-not true, skip it and choose the next candidate.
+If a plan for this feature area already exists on the branch (and `force` is
+not true), skip it and choose the next candidate.
 
 ## Step 3 - Analyze the Feature
 
