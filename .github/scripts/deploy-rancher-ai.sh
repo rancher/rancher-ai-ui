@@ -61,7 +61,7 @@ echo "Deploying Rancher AI Helm chart with LLM mock configuration..."
 helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
   --namespace cattle-ai-agent-system \
   --create-namespace \
-  --set global.cattle.systemDefaultRegistry=registry.suse.com \
+  --set global.cattle.systemDefaultRegistry=stgregistry.suse.com \
   --set googleApiKey=empty \
   --set ollamaUrl="http://localhost:11434" \
   --set ollamaLlmModel=ollama \
