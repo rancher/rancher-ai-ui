@@ -15,45 +15,30 @@
       "version": "v8",
       "sha": "ed597411d8f924073f98dfc5c65a23a2325f34cd"
     },
-    "actions/setup-node@v4": {
+    "actions/setup-node@v6.3.0": {
       "repo": "actions/setup-node",
-      "version": "v4",
-      "sha": "49933ea5288caeca8642d1e84afbd3f7d6820020"
+      "version": "v6.3.0",
+      "sha": "53b83947a5a98c8d113130e565377fae1a50d02f"
     },
     "actions/upload-artifact@v7.0.0": {
       "repo": "actions/upload-artifact",
       "version": "v7.0.0",
       "sha": "bbbca2ddaa5d8feaa63e36b76fdaad77386f024f"
     },
-    "github/gh-aw-actions/setup-cli@v0.65.1": {
+    "github/gh-aw-actions/setup-cli@v0.65.5": {
       "repo": "github/gh-aw-actions/setup-cli",
-      "version": "v0.65.1",
-      "sha": "1831bcd4f397da99da6e6e6b65687557a1a37ac7"
+      "version": "v0.65.5",
+      "sha": "15b2fa31e9a1b771c9773c162273924d8f5ea516"
     },
-    "github/gh-aw-actions/setup-cli@v0.65.4": {
-      "repo": "github/gh-aw-actions/setup-cli",
-      "version": "v0.65.4",
-      "sha": "934698b44320d87a7a9196339f90293f10bd2247"
-    },
-    "github/gh-aw-actions/setup@v0.65.1": {
+    "github/gh-aw-actions/setup@v0.65.5": {
       "repo": "github/gh-aw-actions/setup",
-      "version": "v0.65.1",
-      "sha": "1831bcd4f397da99da6e6e6b65687557a1a37ac7"
+      "version": "v0.65.5",
+      "sha": "15b2fa31e9a1b771c9773c162273924d8f5ea516"
     },
-    "github/gh-aw-actions/setup@v0.65.2": {
-      "repo": "github/gh-aw-actions/setup",
-      "version": "v0.65.2",
-      "sha": "9398bbf0cbb2f974bd98b8ae29f94a7ae920486d"
-    },
-    "github/gh-aw-actions/setup@v0.65.4": {
-      "repo": "github/gh-aw-actions/setup",
-      "version": "v0.65.4",
-      "sha": "934698b44320d87a7a9196339f90293f10bd2247"
-    },
-    "github/gh-aw/actions/setup@v0.65.2": {
+    "github/gh-aw/actions/setup@v0.65.5": {
       "repo": "github/gh-aw/actions/setup",
-      "version": "v0.65.2",
-      "sha": "6e45e1ecf9cd1991f9486ff13cf312013010ebdf"
+      "version": "v0.65.5",
+      "sha": "3c32425a2bf4b1c5f993f8ef5ec81091e4cc9567"
     }
   }
 }
