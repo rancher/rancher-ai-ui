@@ -84,13 +84,17 @@ The Playwright MCP server supports video recording when started with
 | `browser_stop_tracing` | Stop trace recording |
 
 **Recording workflow:**
-1. After login, call `browser_start_video` with filename like
-   `e2e-<feature>-run.webm`
+1. After login, call `browser_start_video` with an **absolute path** filename:
+   `/tmp/gh-aw/mcp-logs/playwright/e2e-<feature>-run.webm`
 2. Before each test case, call `browser_video_chapter` with the test name
 3. After all tests complete, call `browser_stop_video`
 
-The video and session data are saved to the `--output-dir` directory.
-With `--save-session`, the full session (snapshots, logs, video) is preserved.
+**IMPORTANT**: Always use absolute paths starting with `/tmp/gh-aw/mcp-logs/playwright/`
+for video and screenshot filenames. Relative paths write to the container's
+internal filesystem which is destroyed when the container exits.
+
+The video and session data are saved to the mounted output directory at
+`/tmp/gh-aw/mcp-logs/playwright/` and uploaded as workflow artifacts.
 
 ### Tips for MCP Playwright Testing
 
@@ -103,3 +107,5 @@ With `--save-session`, the full session (snapshots, logs, video) is preserved.
 - **Animation delays**: Wait ~500ms after keyboard shortcuts for animations
 - **Network requests**: Wait for LLM response stream to complete before asserting
 - **Video recording**: Start recording after login, add chapter markers per test
+- **Absolute paths**: Always use `/tmp/gh-aw/mcp-logs/playwright/` prefix for
+  all video and screenshot filenames to ensure they persist in artifacts
