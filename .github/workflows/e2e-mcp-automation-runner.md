@@ -175,7 +175,7 @@ Before running any tests, authenticate:
 3. Enter the password `password` into the password field
 4. Click the "Log In" button
 5. Wait for the Rancher Dashboard to load
-6. Take a screenshot: `login-success`
+6. Take a screenshot with filename `/tmp/gh-aw/mcp-logs/playwright/login-success.png`
 
 **IMPORTANT**: Configure Playwright to ignore HTTPS errors.
 
@@ -183,8 +183,12 @@ Before running any tests, authenticate:
 
 Start recording the entire test session:
 
-1. Call `browser_start_video` with filename `e2e-${{ github.event.inputs.feature_area }}-attempt-${{ github.event.inputs.attempt }}.webm`
+1. Call `browser_start_video` with filename `/tmp/gh-aw/mcp-logs/playwright/e2e-${{ github.event.inputs.feature_area }}-attempt-${{ github.event.inputs.attempt }}.webm`
 2. This records everything from login through all test cases
+
+**IMPORTANT**: Always use absolute paths starting with `/tmp/gh-aw/mcp-logs/playwright/`
+for video filenames and screenshot filenames. This ensures files are saved to the
+mounted volume and included in the workflow artifacts.
 
 ## Step 3 - Execute Test Cases
 
@@ -205,12 +209,12 @@ For each test case in the test plan:
 1. Follow each step from the test plan exactly
 2. Use the selectors specified in the test plan
 3. After each major interaction, wait for the expected result
-4. Take a screenshot after key assertions
+4. Take a screenshot after key assertions (use absolute path: `/tmp/gh-aw/mcp-logs/playwright/<name>.png`)
 5. Verify each assertion from the test plan
 
 ### After each test case:
 1. Record the result: PASSED or FAILED
-2. If FAILED, record which step failed, what was expected vs actual, and take a failure screenshot
+2. If FAILED, record which step failed, what was expected vs actual, and take a failure screenshot (save to `/tmp/gh-aw/mcp-logs/playwright/`)
 3. Clean up if needed (close chat panel, clear history)
 
 ### Tips:
@@ -224,7 +228,7 @@ For each test case in the test plan:
 After all test cases are complete:
 
 1. Call `browser_stop_video` to finalize the recording
-2. The video file is saved to the output directory
+2. The video file is saved to `/tmp/gh-aw/mcp-logs/playwright/`
 
 ## Step 5 - Compile Results
 
