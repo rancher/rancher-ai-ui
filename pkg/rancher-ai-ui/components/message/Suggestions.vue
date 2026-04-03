@@ -89,7 +89,7 @@ const emit = defineEmits(['select']);
 
 .rc-button-label {
   word-break: break-word;
-  white-space: pre-line;
-  list-style-position: inside;
+  white-space: normal;
+  text-align: left;
 }
 </style>
