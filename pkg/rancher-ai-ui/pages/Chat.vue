@@ -5,6 +5,7 @@ import {
   onMounted, onBeforeUnmount, computed, nextTick, ref,
   watch
 } from 'vue';
+import jsyaml from 'js-yaml';
 import { PRODUCT_NAME } from '../product';
 import {
   Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, Role, StorageType
@@ -28,6 +29,7 @@ import DeleteChat from '../dialog/DeleteChatCard.vue';
 import KeyboardShortcuts from '../components/header/KeyboardShortcuts.vue';
 import AppModal from '@shell/components/AppModal.vue';
 import { useInputComposable } from '../composables/useInputComposable';
+import testYaml from './test.yaml';
 
 /**
  * Chat panel landing page.
@@ -230,6 +232,32 @@ function routeToSettings() {
   store.state.$router.push({
     name:   `c-cluster-settings-${ PRODUCT_NAME }`,
     params: { cluster: store.state.$route.params.cluster || 'local' },
+  });
+}
+
+function navigateToStagingWithYaml() {
+  const yamlContent = typeof testYaml === 'string' ? testYaml : jsyaml.dump(testYaml);
+  const resourceKind = 'Pod';
+  const resourceNamespace = 'default';
+  const resourceName = 'test';
+
+  // Save YAML to store
+  store.commit(`${ PRODUCT_NAME }/staging/setStagingYaml`, {
+    yaml: yamlContent,
+    resource: {
+      kind: resourceKind,
+      namespace: resourceNamespace || 'default',
+      name: resourceName || 'new-resource'
+    }
+  });
+
+  // Navigate to staging page
+  store.state.$router.push({
+    name:   `c-cluster-${ PRODUCT_NAME }-staging`,
+    params: {
+      cluster: 'local',
+      product: 'explorer',
+    }
   });
 }
 
@@ -438,6 +466,14 @@ function unmount() {
         @input:content="ensureConnectionAndSendMessage($event)"
         @select:agent="selectAgent"
       />
+      <button
+        class="scroll-button-btn role-tertiary"
+        type="button"
+        role="button"
+        @click="navigateToStagingWithYaml"
+      >
+        <i class="icon icon-edit" />
+      </button>
       <History
         :chats="chatHistory"
         :active-chat-id="chatMetadata.chatId"
