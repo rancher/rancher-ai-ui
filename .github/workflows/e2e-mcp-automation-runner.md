@@ -185,10 +185,14 @@ Start recording the entire test session:
 
 1. Call `browser_start_video` with filename `/tmp/gh-aw/mcp-logs/playwright/e2e-${{ github.event.inputs.feature_area }}-attempt-${{ github.event.inputs.attempt }}.webm`
 2. This records everything from login through all test cases
+3. After calling `browser_start_video`, verify the recording started by checking the tool response
 
 **IMPORTANT**: Always use absolute paths starting with `/tmp/gh-aw/mcp-logs/playwright/`
 for video filenames and screenshot filenames. This ensures files are saved to the
 mounted volume and included in the workflow artifacts.
+
+**CRITICAL**: If `browser_start_video` fails or returns an error, log the error
+but continue with the tests — screenshots are still valuable without video.
 
 ## Step 3 - Execute Test Cases
 
@@ -229,10 +233,27 @@ After all test cases are complete:
 
 1. Call `browser_stop_video` to finalize the recording
 2. The video file is saved to `/tmp/gh-aw/mcp-logs/playwright/`
+3. Verify files were captured:
+```bash
+echo "=== Captured Playwright artifacts ==="
+find /tmp/gh-aw/mcp-logs/playwright -type f -exec ls -lh {} \;
+echo "=== Total size ==="
+du -sh /tmp/gh-aw/mcp-logs/playwright/
+```
+4. If no video file exists but screenshots do, that's OK — the screenshots
+   are the most important evidence. Log a warning and continue.
 
 ## Step 5 - Compile Results
 
-After all test cases, compile a results summary:
+After all test cases, compile a results summary.
+
+First, list all captured evidence:
+```bash
+echo "=== All captured evidence files ==="
+find /tmp/gh-aw/mcp-logs/playwright -type f -name '*.png' -o -name '*.webm' -o -name '*.json' | sort
+```
+
+Then compile the report:
 
 ```
 ## MCP E2E Test Results - <feature_area>
@@ -240,13 +261,21 @@ After all test cases, compile a results summary:
 **Attempt**: <N>
 **Total Tests**: <N> | **Passed**: <N> | **Failed**: <N>
 
-| # | Test Name | Status | Notes |
-|---|-----------|--------|-------|
-| 1 | <name> | PASSED/FAILED | <notes> |
+| # | Test Name | Status | Screenshot | Notes |
+|---|-----------|--------|------------|-------|
+| 1 | <name> | PASSED/FAILED | <filename>.png | <notes> |
+
+### Evidence Files
+- Video: `e2e-<feature>-attempt-<N>.webm` (if captured)
+- Screenshots: list all .png files captured during the run
 
 ### Failure Details (if any)
 ...
 ```
+
+**IMPORTANT**: Always include the list of captured screenshot filenames in the
+results summary. This helps reviewers know what evidence is available in the
+artifacts.
 
 ## Step 6 - Comment on PR
 
@@ -282,9 +311,12 @@ Then call `push_repo_memory`.
 ## Rules
 
 - Execute EVERY test case in the plan, even if earlier ones fail
-- Always take screenshots for evidence
+- Always take screenshots for evidence — at minimum: after login, before each test, after each test, and on any failure
+- **EVERY screenshot MUST use an absolute path**: `/tmp/gh-aw/mcp-logs/playwright/<descriptive-name>.png`
 - Be patient with waits - the app may load slowly
 - Use `data-testid` selectors whenever possible
 - Accept self-signed certificates
 - Mock LLM responses BEFORE sending messages
 - Max attempt count for the runner is 3
+- After all tests, ALWAYS run `find /tmp/gh-aw/mcp-logs/playwright -type f` to verify evidence files exist
+- If `browser_screenshot` fails, retry once with a different filename before moving on
