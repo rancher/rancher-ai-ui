@@ -70,8 +70,18 @@ Your job is to ensure the test plan is high quality before it proceeds to
 
 ## Step 0 - Read Learnings
 
+Read each learnings file if it exists. These contain verified facts from
+previous runs — **trust them over your own assumptions**.
+
 ```bash
-cat /tmp/gh-aw/repo-memory/default/planner.md 2>/dev/null || echo "No planner learnings file found yet"
+echo "=== Selectors ==="
+cat /tmp/gh-aw/repo-memory/default/selectors.md 2>/dev/null || echo "(none)"
+echo ""
+echo "=== Anti-Patterns ==="
+cat /tmp/gh-aw/repo-memory/default/anti-patterns.md 2>/dev/null || echo "(none)"
+echo ""
+echo "=== Patterns ==="
+cat /tmp/gh-aw/repo-memory/default/patterns.md 2>/dev/null || echo "(none)"
 ```
 
 ## Step 1 - Find the PR
@@ -163,5 +173,25 @@ Create an issue reporting verification failure.
 
 ## Step 7 - Update Learnings
 
-Update `/tmp/gh-aw/repo-memory/default/planner.md` with insights, then
-call `push_repo_memory`.
+Update the appropriate file(s) under `/tmp/gh-aw/repo-memory/default/`:
+
+| File | What to write | Example |
+|---|---|---|
+| `selectors.md` | Verified selector ↔ component mappings | "`rancher-ai-ui-chat-console` → `components/panels/Console.vue`" |
+| `selectors.md` | Selectors referenced in plans that do NOT exist | "`rancher-ai-ui-chat-menu-button` does NOT exist — use `.chat-console-menu-container button`" |
+| `anti-patterns.md` | Plan patterns that cause runner failures | "Do NOT assert `textarea[disabled]` during `GeneratingResponse` — the textarea is never disabled in that phase" |
+| `patterns.md` | Component behavior facts useful for plan writing | "`disabled` computed in Chat.vue only covers: deployment inactive, system errors, awaiting confirmation" |
+
+### Rules for writing learnings
+
+1. **Only write facts you verified against source code** in this run.
+2. **Do NOT record PR numbers, dates, or attempt counts.**
+3. **Each entry must include the source** (component file + line or grep
+   evidence).
+4. **Before appending, check if the entry already exists** — do not
+   duplicate.
+5. **Size cap**: if any file exceeds 120 lines, remove entries for selectors
+   or components that no longer exist in the codebase before appending.
+6. **Organize `selectors.md` by feature area** with `###` headers.
+
+After writing, call `push_repo_memory`.
