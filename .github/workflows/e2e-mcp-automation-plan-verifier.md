@@ -57,7 +57,7 @@ tools:
     max-patch-size: 102400
     file-glob: ["*.patch", "*.md"]
 
-timeout-minutes: 60
+timeout-minutes: 120
 ---
 
 # E2E MCP Planner Verifier
