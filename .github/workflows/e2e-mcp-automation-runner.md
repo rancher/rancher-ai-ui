@@ -137,8 +137,18 @@ available at `http://localhost:1080`.
 
 ## Step 0 - Read Learnings
 
+Read each learnings file if it exists. These contain hard-won knowledge from
+previous runs — **trust them over your own assumptions**.
+
 ```bash
-cat /tmp/gh-aw/repo-memory/default/generic.md 2>/dev/null || echo "No generic learnings file found yet"
+echo "=== Anti-Patterns ==="
+cat /tmp/gh-aw/repo-memory/default/anti-patterns.md 2>/dev/null || echo "(none)"
+echo ""
+echo "=== Patterns ==="
+cat /tmp/gh-aw/repo-memory/default/patterns.md 2>/dev/null || echo "(none)"
+echo ""
+echo "=== Selectors ==="
+cat /tmp/gh-aw/repo-memory/default/selectors.md 2>/dev/null || echo "(none)"
 ```
 
 ## Step 1 - Find the PR and Read the Test Plan
@@ -297,16 +307,33 @@ Post the full results as a PR comment using `add-comment`.
 2. Create an issue for human review
 3. Add label `bot/e2e-mcp-automation/qa-review`
 
-## Step 8 - Update Learnings
+## Step 8 - Update Learnings (failures only)
 
-Update `/tmp/gh-aw/repo-memory/default/generic.md` with insights about:
-- Playwright interactions that worked/failed
-- Timing issues
-- Selector reliability
-- Mock setup patterns
-- Common failures
+**Skip this step entirely if all tests passed.** The PR comment already
+records success. Only write learnings when something failed or required a
+non-obvious workaround.
 
-Then call `push_repo_memory`.
+Update the appropriate file(s) under `/tmp/gh-aw/repo-memory/default/`:
+
+| File | What to write | Example |
+|---|---|---|
+| `anti-patterns.md` | Interactions that **don't work** and what to do instead | "`.type('{uparrow}')` doesn't fire Vue keydown — use `.trigger('keydown', {...})` instead" |
+| `patterns.md` | Reusable interaction patterns that **do work** | "CDP bypass for HTTPS: `Security.setIgnoreCertificateErrors`", "Mock consumption: push N+1 mocks (welcome msg consumes one)" |
+| `selectors.md` | Selectors that were **wrong in the plan** and the correct one | "`rancher-ai-ui-delete-chat-confirm-button` does NOT exist — use `prompt-remove-confirm-button`" |
+
+### Rules for writing learnings
+
+1. **Do NOT record per-test pass/fail results** — the PR comment has that.
+2. **Do NOT record PR numbers, dates, or attempt counts** — they have no
+   future value.
+3. **Each entry must be actionable** — a future agent should be able to read
+   it and change its behavior.
+4. **Before appending, check if the insight already exists** — do not
+   duplicate.
+5. **Size cap**: if any file exceeds 80 lines, remove the least-actionable
+   entries (vague notes, outdated info) before appending.
+
+After writing, call `push_repo_memory`.
 
 ## Rules
 

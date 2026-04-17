@@ -78,8 +78,18 @@ found by the verifier. Fix them.
 
 ## Step 0 - Read Learnings
 
+Read each learnings file if it exists. These contain verified facts from
+previous runs — **trust them over your own assumptions**.
+
 ```bash
-cat /tmp/gh-aw/repo-memory/default/planner.md 2>/dev/null || echo "No planner learnings file found yet"
+echo "=== Selectors ==="
+cat /tmp/gh-aw/repo-memory/default/selectors.md 2>/dev/null || echo "(none)"
+echo ""
+echo "=== Anti-Patterns ==="
+cat /tmp/gh-aw/repo-memory/default/anti-patterns.md 2>/dev/null || echo "(none)"
+echo ""
+echo "=== Patterns ==="
+cat /tmp/gh-aw/repo-memory/default/patterns.md 2>/dev/null || echo "(none)"
 ```
 
 ## Step 1 - Loop Guard
