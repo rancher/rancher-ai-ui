@@ -1,0 +1,177 @@
+name: Apply E2E spec-writer patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_area:
+        description: "Feature area being tested"
+        required: false
+        type: string
+
+jobs:
+  apply-patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Check for spec-writer patches in repo-memory and apply
+        env:
+          GH_TOKEN: ${{ secrets.MAINTAINER_PAT }}
+        run: |
+          REPO="${{ github.repository }}"
+
+          # Wait for push_repo_memory to finish
+          PATCH_FOUND=false
+          for i in 1 2 3 4 5 6; do
+            echo "Attempt $i: cloning memory/default branch..."
+            rm -rf /tmp/repo-memory
+            git clone --depth 1 --branch memory/default \
+              "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" \
+              /tmp/repo-memory 2>/dev/null || {
+              echo "No memory/default branch found."
+              if [ "$i" -lt 6 ]; then
+                echo "Waiting 15s before retry..."
+                sleep 15
+                continue
+              fi
+              echo "Giving up after $i attempts, skipping."
+              exit 0
+            }
+
+            # Check for spec-writer patch files (named e2e-spec-pr-<number>.patch)
+            if ls /tmp/repo-memory/e2e-spec-pr-*.patch 1>/dev/null 2>&1; then
+              PATCH_FOUND=true
+              echo "Found spec-writer patch files on attempt $i"
+              break
+            fi
+
+            echo "No spec-writer patch files found yet on attempt $i"
+            if [ "$i" -lt 6 ]; then
+              echo "Waiting 15s for push_repo_memory to complete..."
+              sleep 15
+            fi
+          done
+
+          if [ "$PATCH_FOUND" != "true" ]; then
+            echo "No spec-writer patch files found after 6 attempts, skipping."
+            exit 0
+          fi
+
+          PATCH_DIR="/tmp/repo-memory"
+          FEATURE_AREA="${{ github.event.inputs.feature_area }}"
+
+          for PATCH_FILE in "$PATCH_DIR"/e2e-spec-pr-*.patch; do
+            FILENAME=$(basename "$PATCH_FILE")
+            PR_NUMBER=$(echo "$FILENAME" | sed 's/e2e-spec-pr-\([0-9]*\)\.patch/\1/')
+
+            echo "Found spec-writer patch for PR #$PR_NUMBER: $FILENAME"
+
+            if [ ! -s "$PATCH_FILE" ]; then
+              echo "Patch file is empty, skipping."
+              continue
+            fi
+
+            PR_DATA=$(gh pr view "$PR_NUMBER" --repo "$REPO" \
+              --json headRefName,headRepository,headRepositoryOwner,maintainerCanModify,state 2>/dev/null) || {
+              echo "PR #$PR_NUMBER not found, skipping."
+              continue
+            }
+
+            PR_STATE=$(echo "$PR_DATA" | jq -r '.state')
+            if [ "$PR_STATE" != "OPEN" ]; then
+              echo "PR #$PR_NUMBER is $PR_STATE, cleaning up."
+              rm "$PATCH_FILE"
+              continue
+            fi
+
+            HEAD_REF=$(echo "$PR_DATA" | jq -r '.headRefName')
+            HEAD_OWNER=$(echo "$PR_DATA" | jq -r '.headRepositoryOwner.login')
+            HEAD_REPO_NAME=$(echo "$PR_DATA" | jq -r '.headRepository.name')
+            CAN_MODIFY=$(echo "$PR_DATA" | jq -r '.maintainerCanModify')
+            REPO_OWNER=$(echo "$REPO" | cut -d'/' -f1)
+
+            if [ "$HEAD_OWNER" != "$REPO_OWNER" ] && [ "$CAN_MODIFY" != "true" ]; then
+              echo "Cross-fork PR with maintainer edits not allowed."
+              gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                --body "⚠️ **Spec-writer auto-apply failed**: Cannot push to fork."
+              continue
+            fi
+
+            # Detect feature_area from branch if not provided
+            if [ -z "$FEATURE_AREA" ]; then
+              FEATURE_AREA=$(echo "$HEAD_REF" | sed -n 's/test\/e2e-\(.*\)-spec/\1/p')
+              echo "Auto-detected feature_area: $FEATURE_AREA"
+            fi
+
+            FORK_DIR="/tmp/fork-$PR_NUMBER"
+            FORK_URL="https://x-access-token:${GH_TOKEN}@github.com/$HEAD_OWNER/$HEAD_REPO_NAME.git"
+            git clone --depth 1 --branch "$HEAD_REF" "$FORK_URL" "$FORK_DIR" || {
+              echo "Failed to clone fork, skipping."
+              continue
+            }
+
+            cd "$FORK_DIR"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            PATCH_COMMITTED=false
+            if git am --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (git am)"
+              PATCH_COMMITTED=true
+            elif git apply --ignore-whitespace "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (git apply)"
+            elif git apply --ignore-whitespace --3way "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (git apply --3way)"
+            elif patch -p1 --fuzz=3 < "$PATCH_FILE" 2>/dev/null; then
+              echo "Patch applied (patch --fuzz=3)"
+            else
+              echo "Patch apply failed"
+              gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                --body "⚠️ **Spec-writer auto-apply failed**: Patch could not be applied."
+              cd /tmp
+              continue
+            fi
+
+            if [ "$PATCH_COMMITTED" != "true" ]; then
+              git add -A
+              git commit -m "test(e2e): add $FEATURE_AREA spec
+              
+              Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+            fi
+
+            if git push origin "$HEAD_REF"; then
+              echo "Spec pushed successfully"
+              gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                --body "✅ **E2E spec added** ($FEATURE_AREA) — triggering E2E runner."
+              rm "$PATCH_FILE"
+
+              # Dispatch the generic E2E runner
+              GH_TOKEN="${{ github.token }}" gh workflow run e2e-automation-spec-runner.yml \
+                --repo "$REPO" \
+                --ref e2e-agentic \
+                -f feature_area="$FEATURE_AREA" \
+                -f pr_number="$PR_NUMBER" \
+                -f attempt="1" || echo "Warning: Failed to dispatch spec runner"
+              echo "Dispatched E2E Automation Spec Runner for PR #$PR_NUMBER, feature=$FEATURE_AREA"
+            else
+              echo "Push failed"
+              gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                --body "⚠️ **Spec-writer auto-apply failed**: Could not push."
+            fi
+
+            cd /tmp
+          done
+
+          # Clean up applied patches from repo-memory
+          cd /tmp/repo-memory
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git add -A && git diff --cached --quiet; then
+            echo "No patches to clean up."
+          else
+            git commit -m "chore: clean up applied spec-writer patches"
+            git push origin memory/default
+            echo "Cleaned up patches."
+          fi
