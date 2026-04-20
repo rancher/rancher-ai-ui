@@ -87,6 +87,17 @@ function handleShowThinking() {
   }));
 }
 
+// Handle click on links in the message content to avoid opening them in the same window
+function handleLinkClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  const link = target.closest('a');
+
+  if (link && link.href) {
+    event.preventDefault();
+    window.open(link.href, '_blank', 'noopener,noreferrer');
+  }
+}
+
 onBeforeUnmount(() => {
   if (timeoutCopy.value) {
     clearTimeout(timeoutCopy.value);
@@ -114,6 +125,7 @@ onBeforeUnmount(() => {
           'chat-msg-bubble-assistant': props.message.role !== RoleEnum.User,
           'chat-msg-bubble-error': props.message.source === MessageInternalSource.Error
         }"
+        @click="handleLinkClick"
       >
         <div
           v-if="!props.disabled"
