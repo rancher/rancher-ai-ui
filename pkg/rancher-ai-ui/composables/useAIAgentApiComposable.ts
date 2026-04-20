@@ -1,11 +1,11 @@
 import { ComputedRef } from 'vue';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
-import {
-  Agent, AgentSettings, HistoryChat, HistoryChatMessage, LLMProvider, Message
-} from '../types';
 import { error } from '../utils/log';
-import { buildMessageFromHistoryMessage } from '../utils/format';
+import {
+  Agent, AgentSettings, HistoryChat, HistoryChatMessage, LLMProvider, Message,
+} from '../types';
 import { Settings } from '../pages/settings/types';
+import { buildMessageFromHistoryMessage } from '../utils/format';
 
 interface LLMOptions {
   url?: string;
@@ -198,9 +198,6 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
       return messages.map((msg) => buildMessageFromHistoryMessage(msg, agents?.value || []));
     } catch (err) {
       error('Failed to fetch messages:', err);
-
-      return [];
-    }
 
       return [];
     }
