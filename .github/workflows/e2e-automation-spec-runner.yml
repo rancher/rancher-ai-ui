@@ -1,0 +1,156 @@
+name: E2E Automation Spec Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_area:
+        description: "Feature area to test"
+        required: true
+        type: string
+      pr_number:
+        description: "PR number to test (auto-detected if empty)"
+        required: false
+        type: string
+        default: ""
+      attempt:
+        description: "Attempt number for the test loop"
+        required: false
+        type: string
+        default: "1"
+
+env:
+  RANCHER_VERSION: head
+  CATTLE_SERVER_URL: https://172.17.0.1
+  CATTLE_BOOTSTRAP_PASSWORD: password
+  KUBECONFIG_PATH: ${{ github.workspace }}/kubeconfig.yaml
+  DEV_UI_URL: https://localhost:8005
+
+jobs:
+  run-e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Resolve PR head ref
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUM="${{ github.event.inputs.pr_number }}"
+          FEATURE_AREA="${{ github.event.inputs.feature_area }}"
+
+          if [ -z "$PR_NUM" ]; then
+            echo "No PR number provided, finding latest e2e PR for $FEATURE_AREA..."
+            PR_NUM=$(gh pr list --repo ${{ github.repository }} \
+              --label bot/e2e-automation --state open --json number,headRefName \
+              --jq "[.[] | select(.headRefName | startswith(\"test/e2e-${FEATURE_AREA}-spec\"))] | sort_by(.number) | last | .number")
+            if [ -z "$PR_NUM" ] || [ "$PR_NUM" = "null" ]; then
+              echo "::error::Could not find an open e2e PR for feature_area=$FEATURE_AREA"
+              exit 1
+            fi
+            echo "Auto-detected PR #$PR_NUM"
+          fi
+          echo "pr_number=$PR_NUM" >> "$GITHUB_OUTPUT"
+          HEAD_REF=$(gh pr view "$PR_NUM" --repo ${{ github.repository }} --json headRefName -q .headRefName)
+          echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+          echo "Resolved PR #$PR_NUM head ref: $HEAD_REF"
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.pr.outputs.head_ref }}
+          fetch-depth: 1
+
+      - name: Setup Node env
+        uses: ./.github/actions/setup
+
+      - name: Start Rancher
+        run: .github/scripts/install-rancher.sh ${{ env.RANCHER_VERSION }} ${{ env.CATTLE_SERVER_URL }} ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+
+      - name: Deploy Rancher AI charts
+        run: .github/scripts/deploy-rancher-ai.sh ${{ env.KUBECONFIG_PATH }}
+
+      - name: Start dev UI
+        env:
+          API: ${{ env.CATTLE_SERVER_URL }}
+        run: |
+          nohup yarn dev > dev.log 2>&1 & echo $! > dev.pid
+
+      - name: Wait for dev UI to be ready
+        run: |
+          npx wait-on ${{ env.DEV_UI_URL }}
+
+      - name: Run Cypress tests
+        id: cypress
+        continue-on-error: true
+        env:
+          TEST_USERNAME: admin
+          CATTLE_BOOTSTRAP_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+          API: ${{ env.CATTLE_SERVER_URL }}
+        run: |
+          mkdir -p cypress/results
+          yarn e2e --spec "cypress/e2e/tests/setup/rancher-setup.spec.ts,cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts" --browser chrome 2>&1 | tee cypress/results/cypress-output.txt
+
+      - name: Check Cypress results
+        id: check
+        if: always()
+        run: |
+          if [ -f cypress/results/cypress-output.txt ] && grep -q "All specs passed" cypress/results/cypress-output.txt; then
+            echo "result=passed" >> "$GITHUB_OUTPUT"
+            echo "All specs passed"
+          else
+            echo "result=failed" >> "$GITHUB_OUTPUT"
+            echo "Some specs failed or output missing"
+          fi
+
+      - name: Save attempt metadata
+        if: always()
+        run: |
+          mkdir -p cypress/results
+          cat > cypress/results/metadata.json << EOF
+          {
+            "attempt": ${{ github.event.inputs.attempt }},
+            "pr_number": "${{ steps.pr.outputs.pr_number }}",
+            "feature_area": "${{ github.event.inputs.feature_area }}",
+            "outcome": "${{ steps.cypress.outcome }}",
+            "run_id": "${{ github.run_id }}"
+          }
+          EOF
+
+      - name: Upload E2E results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-automation-spec-results
+          path: |
+            cypress/screenshots/
+            cypress/videos/
+            cypress/results/
+          retention-days: 7
+
+      - name: Tear down background processes
+        if: always()
+        run: |
+          if [ -f dev.pid ]; then kill $(cat dev.pid) || true; fi
+
+      - name: Report outcome
+        if: always()
+        run: |
+          echo "Cypress outcome: ${{ steps.cypress.outcome }}"
+          echo "Attempt: ${{ github.event.inputs.attempt }}"
+          echo "Feature: ${{ github.event.inputs.feature_area }}"
+          echo "PR: #${{ steps.pr.outputs.pr_number }}"
+
+      - name: Dispatch E2E Verifier
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run e2e-automation-spec-verifier.lock.yml \
+            --repo ${{ github.repository }} \
+            --ref e2e-agentic \
+            -f feature_area="${{ github.event.inputs.feature_area }}" \
+            -f pr_number="${{ steps.pr.outputs.pr_number }}" \
+            -f attempt="${{ github.event.inputs.attempt }}" \
+            -f runner_run_id="${{ github.run_id }}"
+          echo "Dispatched E2E Generic Verifier with run_id=${{ github.run_id }}"
