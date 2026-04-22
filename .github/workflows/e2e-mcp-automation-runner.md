@@ -99,11 +99,6 @@ safe-outputs:
   add-labels:
     target: "*"
   dispatch-workflow: [e2e-mcp-automation-plan-verifier]
-  create-issue:
-    title-prefix: "[e2e-mcp-automation-runner] "
-    labels: [bot/e2e-mcp-automation, bot/e2e-mcp-automation/qa-review]
-    expires: 2d
-    max: 1
   noop:
 
 tools:
@@ -297,15 +292,10 @@ Post the full results as a PR comment using `add-comment`.
 1. Add label `bot/e2e-mcp-automation/passed`
 2. Include celebration message in the comment
 
-### ANY test failed (attempt < 3)
+### ANY test failed
 1. Include failure details in the comment
 2. Dispatch `e2e-mcp-automation-plan-verifier` with:
    - `feature_area`, `pr_number`, `attempt`: current + 1
-
-### ANY test failed (attempt >= 3)
-1. Include failure details
-2. Create an issue for human review
-3. Add label `bot/e2e-mcp-automation/qa-review`
 
 ## Step 8 - Update Learnings (failures only)
 
@@ -344,6 +334,5 @@ After writing, call `push_repo_memory`.
 - Use `data-testid` selectors whenever possible
 - Accept self-signed certificates
 - Mock LLM responses BEFORE sending messages
-- Max attempt count for the runner is 3
 - After all tests, ALWAYS run `find /tmp/gh-aw/mcp-logs/playwright -type f` to verify evidence files exist
 - If `browser_screenshot` fails, retry once with a different filename before moving on
