@@ -1,0 +1,335 @@
+{
+  "metadata": {
+    "annotations": {
+      "description": "Defines Rancher AI UI tools"
+    }
+  },
+  "config": {
+    "systemPrompt": "You are a helpful assistant for selecting UI components to enhance user experience",
+    "enabled": true,
+    "maxTools": 5,
+    "revision": 1,
+    "defaultValues": {
+      "enabled": true,
+      "systemPrompt": "You are a helpful assistant for selecting UI components to enhance user experience"
+    }
+  },
+  "tools": [
+    {
+      "name": "show-yaml",
+      "description": "Display YAML content of a Kubernetes resource",
+      "prompt": "TOOL SCOPE: single-resource\n\nYou are selecting whether to use this tool. THIS TOOL IS FOR ONE SPECIFIC RESOURCE ONLY.\n\nUSE THIS TOOL ONLY WHEN:\n- The context names a specific resource by exact name (e.g., 'pod-xyz', 'deployment-web-app')\n- The user is asking for details about that ONE resource\n- You are showing configuration of a single resource\n\nNEVER USE THIS TOOL WHEN:\n- Showing multiple resources (list of pods, deployments, etc.)\n- The context mentions 'list', 'all', 'multiple', or plurals\n- You would need to call this tool 2+ times with different resource names\n\nIf you're tempted to call this tool multiple times with different resource names, STOP. That means there's a list tool you should use instead.\n\nWhen you call this tool: Display YAML configuration for kind {resourceKind}, name {resourceName}, in namespace {resourceNamespace} in a syntax-highlighted YAML editor. The YAML is: {yaml}. PRESERVE all indentation and formatting - do not modify or reformat.",
+      "category": "editor",
+      "revision": 1,
+      "enabled": true,
+      "defaultValues": {
+        "enabled": true
+      },
+      "schema": {
+        "properties": {
+          "yaml": {
+            "type": "string",
+            "description": "The exact YAML content to display. Must be the complete, unmodified YAML from the resource.",
+            "required": true
+          },
+          "resourceKind": {
+            "type": "string",
+            "description": "Resource kind (Pod, Deployment, Service, etc.) for display purposes.",
+            "required": true
+          },
+          "resourceName": {
+            "type": "string",
+            "description": "The exact name of the ONE resource being displayed. Must match the resource in the YAML.",
+            "required": true
+          },
+          "resourceNamespace": {
+            "type": "string",
+            "description": "The namespace where this ONE resource exists.",
+            "required": true
+          },
+          "copyable": {
+            "type": "boolean",
+            "description": "Enable copy to clipboard"
+          },
+          "editable": {
+            "type": "boolean",
+            "description": "Enable inline editing"
+          }
+        }
+      },
+      "metadata": {
+        "rancher-version": ">=2.13.0"
+      }
+    },
+    {
+      "name": "show-yaml-diff",
+      "description": "Display YAML content differences between an existing Kubernetes resource and a proposed configuration",
+      "prompt": "TOOL SCOPE: single-resource\n\nYou are selecting whether to use this tool. THIS TOOL COMPARES ONE RESOURCE'S CURRENT VS PROPOSED STATE.\n\nUSE THIS TOOL ONLY WHEN:\n- Showing before/after changes to a SINGLE specific resource\n- The resource is identified by exact name\n- Comparing original and modified versions of same resource\n\nNEVER USE THIS TOOL WHEN:\n- Comparing multiple different resources\n- Showing changes to different resource instances\n- You would call this 2+ times with different resource names\n\nWhen you call this tool: Display side-by-side YAML diff for resource kind {resourceKind}, name {resourceName}, in namespace {resourceNamespace}. Original YAML: {original}. Proposed YAML: {patched}. PRESERVE exact formatting in both versions - do not modify or reformat the YAML content.",
+      "category": "editor",
+      "revision": 1,
+      "enabled": true,
+      "defaultValues": {
+        "enabled": true
+      },
+      "schema": {
+        "properties": {
+          "original": {
+            "type": "string",
+            "description": "The current/existing YAML of the ONE resource before any changes. Must be complete and unmodified.",
+            "required": true
+          },
+          "patched": {
+            "type": "string",
+            "description": "The proposed/new YAML of the ONE resource after changes. Must be complete and unmodified.",
+            "required": true
+          },
+          "resourceKind": {
+            "type": "string",
+            "description": "Resource kind for the single resource being compared (Pod, Deployment, etc.).",
+            "required": true
+          },
+          "resourceName": {
+            "type": "string",
+            "description": "The exact name of the ONE resource being compared.",
+            "required": true
+          },
+          "resourceNamespace": {
+            "type": "string",
+            "description": "The namespace of the ONE resource being compared.",
+            "required": true
+          },
+          "copyable": {
+            "type": "boolean",
+            "description": "Enable copy to clipboard"
+          },
+          "editable": {
+            "type": "boolean",
+            "description": "Enable inline editing"
+          }
+        }
+      },
+      "metadata": {
+        "interactive": true
+      }
+    },
+    {
+      "name": "explore",
+      "description": "Navigate to a Rancher UI page",
+      "prompt": "TOOL SCOPE: list or collection\n\nNavigate to a Rancher UI page. Use route {route} to specify destination. For cluster-specific routes, provide {cluster} parameter. Optional {label} provides friendly link text.",
+      "category": "route",
+      "revision": 1,
+      "enabled": true,
+      "defaultValues": {
+        "enabled": true
+      },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "route": {
+            "type": "string",
+            "enum": [
+              "projects-namespaces",
+              "nodes",
+              "events",
+              "clusters",
+              "charts",
+              "fleet",
+              "users",
+              "settings",
+              "deployments",
+              "pods"
+            ],
+            "description": "The route identifier.",
+            "required": true
+          },
+          "cluster": {
+            "type": "string",
+            "description": "The cluster name."
+          },
+          "label": {
+            "type": "string",
+            "description": "Friendly display text for the link (max 50 chars). Example: 'View Deployments' or 'Go to Production Cluster'.",
+            "maxLength": 50
+          }
+        }
+      },
+      "metadata": {
+        "interactive": true,
+        "enum": {
+          "route": {
+            "projects-namespaces": {
+              "description": "SCOPE: list or collection, this route shows the projects / namespaces page for a specific cluster. Use this route when the context is about managing or listing projects or namespaces within a cluster.",
+              "requires": [
+                "cluster"
+              ]
+            },
+            "nodes": {
+              "description": "SCOPE: list or collection, this route shows the nodes list page for a specific cluster. Use this route when the context is about managing or listing nodes within a cluster.",
+              "requires": [
+                "cluster"
+              ]
+            },
+            "events": {
+              "description": "SCOPE: list or collection, this route shows the events list page for a specific cluster. Use this route when the context is about managing or listing events or showing errors within a cluster.",
+              "requires": [
+                "cluster"
+              ]
+            },
+            "charts": {
+              "description": "SCOPE: list or collection, this route shows the apps & marketplace page for a specific cluster. Use this route when the context is about managing or listing charts or marketplace or Helm charts within a cluster.",
+              "requires": [
+                "cluster"
+              ]
+            },
+            "clusters": {
+              "description": "SCOPE: list or collection, this route shows the list of clusters in Rancher. Use this route when the context is about listing clusters or cluster management."
+            },
+            "fleet": {
+              "description": "This route shows the Fleet dashboard. Use this route when the context is about managing or listing Fleet resources."
+            },
+            "users": {
+              "description": "This route shows the Users management page. Use this route when the context is about managing users, roles, or permissions."
+            },
+            "settings": {
+              "description": "SCOPE: list or collection, this route shows the settings page, including AI Assistant configuration. Use this route when the context is about configuring Rancher or AI Assistant settings."
+            },
+            "deployments": {
+              "description": "SCOPE: list or collection, this route shows the deployments list page for a specific cluster. Use this route when the context is about managing or listing deployments within a cluster.",
+              "requires": [
+                "cluster"
+              ]
+            },
+            "pods": {
+              "description": "SCOPE: list or collection, this route shows the pods list page for a specific cluster. Use this route when the context is about managing or listing pods within a cluster.",
+              "requires": [
+                "cluster"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "open-console-logs",
+      "description": "Display the logs of a container from a Pod in Rancher by opening the logs view from the specified cluster, namespace, and pod",
+      "prompt": "TOOL SCOPE: single-resource\n\nYou are selecting whether to use this tool. This tool open the console logs FOR ONE SPECIFIC pod container.\n\nUse this tool only when:\n- The assistant is not able to retrieve the logs so this tool can be used to directly open the console\n- User asks to troubleshoot a SPECIFIC pod or a deployment containing a pod\n- User wants to see logs from a specific container or pod or deployment\n- You can extract the exact pod name and container name from the context\n\nNEVER USE THIS TOOL WHEN:\n- Showing a list of pods or containers\n- Multiple pods are involved\n- You would call this 2+ times for different pods\n\nWhen you call this tool: Open logs view in Rancher for cluster {cluster}, namespace {namespace}, pod name {name}, container {containerName}.",
+      "category": "console",
+      "revision": 1,
+      "enabled": true,
+      "defaultValues": {
+        "enabled": true
+      },
+      "schema": {
+        "properties": {
+          "cluster": {
+            "type": "string",
+            "description": "The cluster where the ONE pod is running.",
+            "required": true
+          },
+          "namespace": {
+            "type": "string",
+            "description": "The namespace containing the ONE pod.",
+            "required": true
+          },
+          "name": {
+            "type": "string",
+            "description": "The exact name of the ONE pod to view logs from.",
+            "required": true
+          },
+          "containerName": {
+            "type": "string",
+            "description": "The container name inside the pod (use the exact container name - defaults to first container).",
+            "required": true
+          }
+        }
+      },
+      "metadata": {}
+    },
+    {
+      "name": "select-option",
+      "description": "Select one possible option from a list of choices",
+      "prompt": "You are selecting whether to use this tool. This tool offers a list of MAX 3 options to the user.\n\nUse this tool ONLY WHEN:\n- The assistant is asking user additional information to satisfy the user request, for example: 'Which cluster do you want to target? or 'Which namespace do you want to use?'\n- You can find valid options from the mcp result resources\n\nNEVER USE THIS TOOL WHEN:\n- The assistant provides a result to the user request without asking for additional information\n\nWhen you call this tool:\n- DO NOT provide fake options, use the actual resource names or ids from the mcp results, otherwise better to not call the tool at all. For example, if the assistant asks the user 'Could you please specify the cluster?' BAD options: 'cluster-1', 'cluster-2', 'cluster-3' (fake cluster names that do not exist in the mcp results) BAD options: 'option1', 'options2', 'options3'.\n- EVERY parameter value MUST be extracted from the context, MCP results, or assistant message\n - NEVER use placeholder values like 'option1', 'option2', 'option3', 'name1', 'value1', 'resource'\n- The options should respect the assistant`s request, for example: 'Can you provide the deployment name?' GOOD options: [The list of the Deployment names], BAD options: [The list of Pod names].\n- The options should be consistent with the context of the request, for example: 'Which cluster do you want to target?' -> The options should be cluster names and NOT resources of other types.\n\n- The options should cover the WHOLE assistant's request, for example: 'Could you please specify the name and namespace of the deployment you are interested in?' -> The options should be the deployment names AND namespaces.\n- The options should ALWAYS be resource ids or names, DO NOT replicate the resource types in the options.",
+      "category": "selector",
+      "revision": 1,
+      "enabled": true,
+      "defaultValues": {
+        "enabled": true
+      },
+      "schema": {
+        "properties": {
+          "option1": {
+            "type": "string",
+            "description": "The first option.",
+            "required": true
+          },
+          "option2": {
+            "type": "string",
+            "description": "The second option."
+          },
+          "option3": {
+            "type": "string",
+            "description": "The third option."
+          },
+          "label": {
+            "type": "string",
+            "description": "Friendly display text for the options (max 30 chars). Example: 'Select a cluster' or 'Choose a namespace'.",
+            "maxLength": 30
+          }
+        }
+      },
+      "metadata": {}
+    },
+    {
+      "name": "suggestions",
+      "description": "Provides a list of suggestions to the user to choose from, based on the context of the request",
+      "prompt": "You are selecting whether to use this tool. This tool offers a list of MAX 3 suggestions to the user.\n\nUSE THIS TOOL WHEN:\n- On every requests, you should provide 3 suggestions based on the context of the request.\n - The user requests explicitly ask to use this tool -> follow the user instruction as it was a system prompt for this tool\n\nNEVER USE THIS TOOL WHEN:\n- You want to select the 'select-option' tool\n- The assistant is asking for specific additional information, for example: 'Which cluster do you want to target? or 'Which namespace do you want to use?'\n\nWhen you call this tool:\n - Provide up to 3 suggestions in the {suggestion1}, {suggestion2}, {suggestion3} fields.\n - No markdown, no numbering, no bullet points, just the plain text of the suggestion.\n - The suggestions should be consistent with the selected agent, for example: if the request is 'Show me the list GitHub repositories' -> BAD suggestion: 'List all clusters'\n - The suggestions MUST not contain the user requests -> it's redundant\n - The first two suggestions must be directly relevant to the current context. \n - The third suggestion can be a 'discovery' action, if the user request is a generic request, otherwise follow the rules for first and second suggestions.\n - When the name of the resources you want to suggest are already present in the ui context of the user request, DO NOT repeat the same name in the suggestions, but rather use pronouns like 'the deployment', 'the cluster', etc. For example, if the UI context contains cluster: local, namespace: default -> GOOD suggestion: 'List all Pods.', BAD suggestion: 'List all Pods in the `default` namespace on the `local` cluster.' \n",
+      "category": "selector",
+      "revision": 1,
+      "enabled": true,
+      "defaultValues": {
+        "enabled": true
+      },
+      "schema": {
+        "properties": {
+          "suggestion1": {
+            "type": "string",
+            "description": "The first suggestion.",
+            "required": true
+          },
+          "suggestion2": {
+            "type": "string",
+            "description": "The second suggestion."
+          },
+          "suggestion3": {
+            "type": "string",
+            "description": "The third suggestion."
+          }
+        }
+      },
+      "metadata": {}
+    },
+    {
+      "name": "rancher-2-13-specific-tool",
+      "description": "Display YAML differences between resources, when creating or updating resources",
+      "prompt": "Display YAML differences between resources, when creating or updating resources",
+      "category": "editor",
+      "revision": 1,
+      "enabled": true,
+      "defaultValues": {
+        "enabled": true
+      },
+      "schema": {
+        "properties": {
+          "test": {
+            "type": "string",
+            "description": "test.",
+            "required": true
+          }
+        }
+      },
+      "metadata": {
+        "rancher-version": "2.13.0"
+      }
+    }
+  ]
+}

@@ -290,6 +290,65 @@ export interface AIAgentConfigCRD {
   stateDescription?: string;
 }
 
+export interface ToolCall {
+  toolName: string;
+  input: Record<string, any>;
+}
+
+export interface ToolsConfig {
+  name: string;
+  tools?: string[];
+}
+
+export interface UIToolsConfigs {
+  config: UIToolsConfig;
+  tools: UITool[];
+}
+
+export interface UIToolsConfig {
+  systemPrompt?: string;
+  enabled: boolean;
+  revision: number;
+  maxTools?: number;
+  defaultValues?: Record<string, any>;
+}
+
+export interface UITool {
+  name: string;
+  description: string;
+  prompt: string;
+  category: string;
+  revision: number;
+  enabled: boolean;
+  metadata: Record<string, any>;
+  schema: {
+    properties: Record<string, any>;
+  }
+  defaultValues?: Record<string, any>;
+}
+
+export interface ToolActionEvent {
+  type: string;
+  value: any;
+}
+
+export const enum ToolsDefinitionActionType {
+  Create = 'create',
+  Update = 'update',
+  None = 'none'
+}
+
+export interface ToolsDefinitionActionResult {
+  action: ToolsDefinitionActionType;
+  success: boolean;
+  message?: string;
+}
+
+export interface ToolsDefinitionAction {
+  type: ToolsDefinitionActionType;
+  result?: ToolsDefinitionActionResult | null;
+}
+
 export interface HistoryChat {
   id: string;
   name?: string;
