@@ -270,6 +270,7 @@ aiConfig:
       apiError: 'Failed to save settings. {error}'
     fetchModels:
       error: 'Failed to refresh models list.'
+    resetToDefaults: Reset to Default
     section:
       provider:
         header: AI Provider
@@ -352,7 +353,64 @@ aiConfig:
               none: No authentication
               basic: Basic authentication
               rancher: Rancher authentication
-          
+      tools:
+        header: UI Tools
+        description: Configure the UI tools
+        config:
+          title: Configuration
+        fields:
+          systemPrompt:
+            label: Guidelines
+            placeholder: 'Markdown instructions for using UI tools'
+            tooltip: 'Guidelines provide specific instructions or guidelines to the AI assistant on how to select the UI tools.'
+          enabled:
+            label: Enable Tools
+            tooltip: 'Select the UI tools that the AI assistant can use to enhance its responses. These tools allow the assistant to perform specific actions or retrieve information, making it more interactive and useful.'
+          tools:
+            label: Available Tools
+            name:
+              show-yaml: Show YAML
+              show-yaml-diff: Show YAML Diff
+              explore: Explore
+              open-console-logs: Console Logs
+              download-logs: Download Logs
+              select-option: Select Option
+              suggestions: Suggestions
+              rancher-2-13-specific-tool: Rancher 2.13 Specific Tool
+            revision:
+              tooltip: 'Revision'
+            category:
+              tooltip:
+                label: Category
+                action: Filter tools by this category
+        publish:
+          action:
+            create:
+              label: Install UI Tools
+              message:
+                admin: The UI tools are now available for the AI assistant to use. Please install the tools to make them available in the UI.
+                user: The UI tools are now available for the AI assistant to use. Please contact your administrator to install the tools and make them available in the UI.
+              result:
+                success: UI Tools definition installed successfully.
+                error: 'Failed to install UI Tools definition, an error occurred during installation. {message}'
+            update:
+              label: Refresh UI Tools
+              message:
+                admin: The UI tools definition has changed. Please refresh the tools to apply the latest changes.
+                user: The UI tools definition has changed. Please contact your administrator to refresh the tools and apply the latest changes.
+              result:
+                success: 'UI tools definition have been updated: {message}.'
+                error: 'Failed to update UI Tools definition, an error occurred during update. {message}'
+        search: Search tools...
+        noTools: No UI tools configured
+        noMatchingTools: No matching tools
+        tryAdjustingFilters: Try adjusting your filters or search query
+        resetFilters: Reset Filters
+        enabledCount: "({count} enabled)"
+        interactive: Interactive
+        matched: "{count} tools matched"
+        total: "{count} tools total"
+
     EMBEDDINGS_MODEL:
       label: Embeddings Model
     ENABLE_RAG:
