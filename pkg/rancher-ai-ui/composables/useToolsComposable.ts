@@ -30,6 +30,11 @@ export function useToolsComposable() {
    * filtering tools based on Rancher version compatibility.
    */
   const toolsSelector = computed(() => {
+    // Disable tools if create or update action is needed to prevent usage of outdated tools
+    if (uiToolsDefinitionAction.value.type !== ToolsDefinitionActionType.None) {
+      return undefined;
+    }
+
     let configs = {} as UIToolsConfigs;
 
     try {

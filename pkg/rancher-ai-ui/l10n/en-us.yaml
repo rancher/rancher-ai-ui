@@ -13,7 +13,24 @@ ai:
           line1: I'm Liz, your personal AI assistant.
           line2: How can I help you?
           line3: 'Hi, {name}!'
-        info: '<b>Pro tip</b>: you can also interact with the status badges and error messages throughout the Rancher UI to ask me for help. Or, you can resume one of your previous chats - I automatically save them in the main menu for easy access.'
+        labels:
+          proTip: Pro Tip
+          news: What's New
+        info:
+          label: Pro Tip
+          message: 'You can also interact with the status badges and error messages throughout the Rancher UI to ask me for help. Or, you can resume one of your previous chats - I automatically save them in the main menu for easy access.'
+        news:
+          label: What’s New
+          message:
+            admin:
+              createTools: 'UI tools are here! The AI assistant can now use interactive UI tools to enhance its responses and provide a more integrated experience.'
+              updateTools: 'UI tools have been updated! The AI assistant can now use the latest interactive UI tools to enhance its responses and provide a more integrated experience.'
+            user:
+              createTools: 'UI tools are here! The AI assistant can now use interactive UI tools to enhance its responses and provide a more integrated experience. Please contact your administrator to install the tools.'
+              updateTools: 'UI tools have been updated! The AI assistant can now use the latest interactive UI tools to enhance its responses and provide a more integrated experience. Please contact your administrator to refresh the tools.'
+          action:
+            install: 'Install UI Tools'
+            refresh: 'Refresh UI Tools'
         suggestions:
           label: 'Here are a few suggestions based on your context:'
       switchAgent:
@@ -52,8 +69,6 @@ ai:
       hideThinking: Hide Thinking
       showCompleteMessage: See More
       hideCompleteMessage: See Less
-    suggestions:
-      label: Quick Actions
     template:
       heyAnalyzeResource: 'Hey Liz, please analyse the resource'
       namespace: 'Namespace'
@@ -161,6 +176,7 @@ ai:
     processing: 'Processing'
     awaitingConfirmation: 'Awaiting confirmation'
     generatingResponse: 'Generating response'
+    processingTools: 'Processing UI tools'
     confirming: 'Confirming'
     finalizing: 'Finalizing results'
     connecting: 'Connecting'
@@ -257,6 +273,39 @@ ai:
   generic:
     opensInNewTab: Opens in a new tab
 
+  staging:
+    yaml-editor:
+      title: View YAML
+      unknownResource: Unknown Resource
+      showDiff: Show Diff
+      backToEdit: Back to Edit
+      showChanges: Show Changes
+      hideChanges: Hide Changes
+      close: Close
+      cancel: Cancel
+      apply: Apply to Cluster
+
+  tools:
+    label: Tools
+    show-yaml:
+      name: Show YAML
+      tooltip: View the YAML configuration for the {name} {kind} in {namespace} namespace
+    show-yaml-diff:
+      name: Show YAML Diff
+      tooltip: View the differences between the current and previous YAML configurations for the {name} {kind} in {namespace} namespace
+    explore:
+      name: Explore
+    open-console-logs:
+      name: Console Logs
+      tooltip: Open the console logs for the {name} Pod in {namespace} namespace
+    download-logs:
+      name: Download Logs
+    select-option:
+      name: 'Select options:'
+    suggestions:
+      name: 'Quick actions'
+      action:
+        edit: Edit before sending
 aiConfig:
   label: AI Assistant
   form:

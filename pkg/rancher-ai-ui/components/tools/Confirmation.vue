@@ -4,20 +4,18 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { warn } from '../../utils/log';
 import RcButton from '@components/RcButton/RcButton.vue';
-import { ConfirmationStatus, ConfirmationActionType, MessageConfirmation } from '../../types';
+import { ConfirmationStatus, ConfirmationActionType, Message } from '../../types';
+import { ToolName } from './types';
+import Tool from '../tools/Tool.vue';
 
 const store = useStore();
 const { t } = useI18n(store);
 
 const props = defineProps({
-  value: {
-    type:    Object as PropType<MessageConfirmation>,
-    default: () => ({} as MessageConfirmation),
+  message: {
+    type:    Object as PropType<Message>,
+    default: () => ({} as Message),
   },
-  messageContent: {
-    type:    String,
-    default: ''
-  }
 });
 
 const emit = defineEmits(['confirm']);
@@ -28,7 +26,7 @@ const confirmationText = computed(() => {
   try {
     let out = '';
 
-    props.value.actions?.forEach((action) => {
+    props.message.confirmation?.actions?.forEach((action) => {
       const actionType = action?.type || ConfirmationActionType.Create;
 
       const {
@@ -48,7 +46,7 @@ const confirmationText = computed(() => {
           break;
         case ConfirmationActionType.Update:
         case ConfirmationActionType.Patch:
-          const description = action?.payload?.reduce((acc: string, curr) => {
+          const description = action?.payload?.patch?.reduce((acc: string, curr) => {
             const { op, value, path } = curr || {};
 
             if (op && value && path) {
@@ -91,68 +89,82 @@ const confirmationText = computed(() => {
         data-testid="rancher-ai-ui-chat-message-confirmation-message"
       />
     </div>
-    <div
-      v-if="props.value.status === ConfirmationStatus.Pending"
-      class="confirmation-buttons"
-    >
+    <div class="confirmation-buttons">
+      <Tool
+        :name="ToolName.ShowYamlDiff"
+        :message="props.message"
+        :label="t(`ai.tools.${ ToolName.ShowYamlDiff }.name`, {}, true)"
+      />
+      <Tool
+        :name="ToolName.ShowYaml"
+        :message="props.message"
+        :label="t(`ai.tools.${ ToolName.ShowYaml }.name`, {}, true)"
+      />
       <div
-        v-if="props.value.actions?.some(action => action.type === ConfirmationActionType.Delete)"
-        class="delete-confirmation"
+        v-if="props.message.confirmation?.status === ConfirmationStatus.Pending"
+        class="confirmation-buttons"
       >
-        <!-- TODO Add Delete resource buttons when available in the backend -->
+        <div
+          v-if="props.message.confirmation?.actions?.some(action => action.type === ConfirmationActionType.Delete)"
+          class="delete-confirmation"
+        >
+          <!-- TODO Add Delete resource buttons when available in the backend -->
+        </div>
+        <div
+          v-else
+          class="create-update-confirmation"
+        >
+          <div>
+            <RcButton
+              small
+              tertiary
+              data-testid="rancher-ai-ui-chat-message-confirmation-cancel-button"
+              @click="emit('confirm', false)"
+            >
+              <span class="rc-button-label">
+                {{ t('ai.confirmation.cancel') }}
+              </span>
+            </RcButton>
+            <RcButton
+              small
+              tertiary
+              data-testid="rancher-ai-ui-chat-message-confirmation-confirm-button"
+              @click="emit('confirm', true)"
+            >
+              <span class="rc-button-label">
+                {{ t('ai.confirmation.confirm') }}
+              </span>
+            </RcButton>
+          </div>
+        </div>
       </div>
       <div
         v-else
-        class="standard-confirmation"
+        class="confirmation-status"
       >
-        <RcButton
-          small
-          tertiary
-          data-testid="rancher-ai-ui-chat-message-confirmation-cancel-button"
-          @click="emit('confirm', false)"
-        >
-          <span class="rc-button-label">
-            {{ t('ai.confirmation.cancel') }}
-          </span>
-        </RcButton>
-        <RcButton
-          small
-          tertiary
-          data-testid="rancher-ai-ui-chat-message-confirmation-confirm-button"
-          @click="emit('confirm', true)"
-        >
-          <span class="rc-button-label">
-            {{ t('ai.confirmation.confirm') }}
-          </span>
-        </RcButton>
+        <template v-if="props.message.confirmation?.status === ConfirmationStatus.Confirmed">
+          <div
+            class="status-confirmed"
+            data-testid="rancher-ai-ui-chat-message-confirmation-confirmed"
+          >
+            <i class="icon icon-checkmark" />
+            <p>
+              {{ t('ai.confirmation.confirmed') }}
+            </p>
+          </div>
+        </template>
+        <template v-else-if="props.message.confirmation?.status === ConfirmationStatus.Canceled">
+          <div
+            class="status-canceled"
+            data-testid="rancher-ai-ui-chat-message-confirmation-canceled"
+          >
+            <i class="icon icon-close canceled" />
+            <p>
+              {{ t('ai.confirmation.canceled') }}
+            </p>
+          </div>
+        </template>
       </div>
-    </div>
-    <div
-      v-else
-      class="confirmation-status"
-    >
-      <template v-if="props.value.status === ConfirmationStatus.Confirmed">
-        <div
-          class="status-confirmed"
-          data-testid="rancher-ai-ui-chat-message-confirmation-confirmed"
-        >
-          <i class="icon icon-checkmark" />
-          <p>
-            {{ t('ai.confirmation.confirmed') }}
-          </p>
-        </div>
-      </template>
-      <template v-else-if="props.value.status === ConfirmationStatus.Canceled">
-        <div
-          class="status-canceled"
-          data-testid="rancher-ai-ui-chat-message-confirmation-canceled"
-        >
-          <i class="icon icon-close canceled" />
-          <p>
-            {{ t('ai.confirmation.canceled') }}
-          </p>
-        </div>
-      </template>
     </div>
   </div>
 </template>
@@ -197,13 +209,28 @@ const confirmationText = computed(() => {
   color: #C0EFDE;
 }
 
-.confirmation-buttons, .standard-confirmation, .delete-confirmation {
+.confirmation-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.create-update-confirmation, .delete-confirmation {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 
+.third-action-button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
 .confirmation-status {
+  display: flex;
+
   .status-confirmed , .status-canceled {
     display: flex;
     flex-direction: row;

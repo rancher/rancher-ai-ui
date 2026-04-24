@@ -5,26 +5,30 @@
  */
 
 export const enum Tag {
+  // Chat init tags
   ChatMetadataStart = '<chat-metadata>',
   ChatMetadataEnd = '</chat-metadata>',
   AgentMetadataStart = '<agent-metadata>',
   AgentMetadataEnd = '</agent-metadata>',
+  // Message content tags
   MessageStart = '<message>',
   MessageEnd = '</message>',
   ThinkingStart = '<think>',
   ThinkingEnd = '</think>',
+  ToolsStart = '<ui-tools>',
+  ToolsEnd = '</ui-tools>',
   McpResultStart = '<mcp-response>',
   McpResultEnd = '</mcp-response>',
   ConfirmationStart = '<confirmation-response>',
   ConfirmationEnd = '</confirmation-response>',
-  SuggestionsStart = '<suggestion>',
-  SuggestionsEnd = '</suggestion>',
   DocLinkStart = '<mcp-doclink>',
   DocLinkEnd = '</mcp-doclink>',
   ChatErrorStart = '<chat-error>',
   ChatErrorEnd = '</chat-error>',
   ErrorStart = '<error>',
   ErrorEnd = '</error>',
+  // Processing tags
+  ProcessingTools = '<processing-ui-tools/>',
 }
 
 /**
@@ -85,6 +89,7 @@ export const enum MessagePhase {
   Processing = 'processing',
   AwaitingConfirmation = 'awaitingConfirmation',
   GeneratingResponse = 'generatingResponse',
+  ProcessingTools = 'processingTools',
   Confirming = 'confirming',
   Finalizing = 'finalizing',
 }
@@ -120,10 +125,16 @@ export interface ActionResource {
 }
 
 export interface ConfirmationOperationPayload {
+  original: string;
+  patch: PatchPayload[];
+  patched: string;
+};
+
+export interface PatchPayload {
   op: string; // add, update, remove, etc.
   path: string;
   value?: any;
-};
+}
 
 export const enum ConfirmationActionType {
   Patch = 'patch',
@@ -158,8 +169,6 @@ export interface MessageAction {
   action?: () => MessageConfirmation;
 }
 
-export type MessageActionSuggestion = string;
-
 export interface MessageConfirmation {
   actions?: MessageConfirmationAction[] | null;
   status: ConfirmationStatus;
@@ -169,7 +178,7 @@ export interface MessageConfirmation {
 
 export interface MessageConfirmationAction {
   type: ConfirmationActionType | string;
-  payload?: ConfirmationOperationPayload[];
+  payload?: ConfirmationOperationPayload;
   resource: ActionResource;
 }
 
@@ -214,9 +223,9 @@ export interface Message {
   completed?: boolean;
   showThinking?: boolean;
   showCompleteMessage?: boolean;
+  tools?: ToolCall[];
   actions?: MessageAction[];
   relatedResourcesActions?: MessageAction[];
-  suggestionActions?: string[];
   confirmation?: MessageConfirmation;
   sourceLinks?: SourceLinkItem[];
   timestamp?: Date;
@@ -328,8 +337,13 @@ export interface UITool {
 }
 
 export interface ToolActionEvent {
-  type: string;
+  type: ToolActionEventType;
   value: any;
+}
+
+export const enum ToolActionEventType {
+  Select = 'select',
+  Edit = 'edit',
 }
 
 export const enum ToolsDefinitionActionType {
@@ -367,6 +381,7 @@ export interface HistoryChatMessage {
   labels?: Record<MessageLabelKey, string>;
   tags?: string[];
   confirmation?: boolean;
+  tools?: ToolCall[];
   createdAt: string;
 }
 
