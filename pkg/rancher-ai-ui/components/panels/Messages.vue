@@ -59,7 +59,6 @@ const formattedMessages = computed<FormattedMessage[]>(() => {
     .filter((m) => m.messageContent ||
       m.thinkingContent ||
       m.confirmation ||
-      m.suggestionActions?.length ||
       m.templateContent
     )
     .map((m) => ({

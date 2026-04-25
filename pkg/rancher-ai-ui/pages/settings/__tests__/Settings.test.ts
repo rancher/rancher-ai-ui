@@ -7,14 +7,26 @@ import { Settings as SettingsEnum, AIAgentConfigAuthType } from '../types';
 import { AIAgentConfigCRD } from '../../../types';
 
 // Mock components with external dependencies
-jest.mock('../../../composables/useChatApiComposable', () => ({
-  useChatApiComposable: jest.fn(() => ({
+jest.mock('../../../composables/useAIAgentApiComposable', () => ({
+  useAIAgentApiComposable: jest.fn(() => ({
     fetchSettings: jest.fn().mockResolvedValue({}),
     saveSettings:  jest.fn().mockResolvedValue({})
   }))
 }));
 jest.mock('../sections/AIAgentSettings.vue', () => ({}));
 jest.mock('../../../dialog/ApplySettingsCard.vue', () => ({}));
+jest.mock('@components/RcButton/RcButton.vue', () => ({
+  default: {
+    name:     'RcButton',
+    template: '<button><slot /></button>'
+  }
+}));
+jest.mock('@components/RcItemCard/RcItemCard.vue', () => ({
+  default: {
+    name:     'RcItemCard',
+    template: '<div><slot /></div>'
+  }
+}));
 
 jest.mock('dayjs', () => ({
   __esModule: true,
@@ -356,10 +368,10 @@ describe('Settings.vue', () => {
 
   describe('Saving Agent Settings', () => {
     it('should call saveSettings API with form data', async() => {
-      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const { useAIAgentApiComposable } = require('../../../composables/useAIAgentApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
       const mockSaveSettings = jest.fn().mockResolvedValue({});
 
-      (useChatApiComposable as jest.Mock).mockReturnValue({
+      (useAIAgentApiComposable as jest.Mock).mockReturnValue({
         fetchSettings: jest.fn().mockResolvedValue({}),
         saveSettings:  mockSaveSettings
       });
@@ -385,10 +397,10 @@ describe('Settings.vue', () => {
     });
 
     it('should handle save errors gracefully', async() => {
-      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const { useAIAgentApiComposable } = require('../../../composables/useAIAgentApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
       const mockSaveSettings = jest.fn().mockRejectedValueOnce(new Error('Save failed'));
 
-      (useChatApiComposable as jest.Mock).mockReturnValue({
+      (useAIAgentApiComposable as jest.Mock).mockReturnValue({
         fetchSettings: jest.fn().mockResolvedValue({}),
         saveSettings:  mockSaveSettings
       });
@@ -551,10 +563,10 @@ describe('Settings.vue', () => {
 
   describe('Save Operation', () => {
     it('should save all data when save method is called', async() => {
-      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const { useAIAgentApiComposable } = require('../../../composables/useAIAgentApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
       const mockSaveSettings = jest.fn().mockResolvedValue({});
 
-      (useChatApiComposable as jest.Mock).mockReturnValue({
+      (useAIAgentApiComposable as jest.Mock).mockReturnValue({
         fetchSettings: jest.fn().mockResolvedValue({}),
         saveSettings:  mockSaveSettings
       });
@@ -608,10 +620,10 @@ describe('Settings.vue', () => {
     });
 
     it.skip('should call save function when openApplySettingsDialog onConfirm is triggered', async() => { // eslint-disable-line jest/no-disabled-tests
-      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const { useAIAgentApiComposable } = require('../../../composables/useAIAgentApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
       const mockSaveSettings = jest.fn().mockResolvedValue({});
 
-      (useChatApiComposable as jest.Mock).mockReturnValue({
+      (useAIAgentApiComposable as jest.Mock).mockReturnValue({
         fetchSettings: jest.fn().mockResolvedValue({}),
         saveSettings:  mockSaveSettings
       });
@@ -1020,10 +1032,10 @@ describe('Settings.vue', () => {
     });
 
     it.skip('should display apiError banner when save fails', async() => { // eslint-disable-line jest/no-disabled-tests
-      const { useChatApiComposable } = require('../../../composables/useChatApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
+      const { useAIAgentApiComposable } = require('../../../composables/useAIAgentApiComposable'); // eslint-disable-line @typescript-eslint/no-require-imports, no-undef
       const mockSaveSettings = jest.fn().mockRejectedValueOnce(new Error('API Error'));
 
-      (useChatApiComposable as jest.Mock).mockReturnValue({
+      (useAIAgentApiComposable as jest.Mock).mockReturnValue({
         fetchSettings: jest.fn().mockResolvedValue({}),
         saveSettings:  mockSaveSettings
       });

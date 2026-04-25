@@ -4,16 +4,21 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import { FormattedMessage, MessageInternalSource, MessagePhase, Role as RoleEnum } from '../../types';
+import {
+  FormattedMessage, MessageInternalSource, MessagePhase, Role as RoleEnum, ToolActionEvent,
+  ToolActionEventType
+} from '../../types';
+import { ToolName } from '../tools/types';
 import { extractMessageText } from '../../utils/label';
-import Processing from '../Processing.vue';
-import Actions from './action/index.vue';
-import SourceLinks from './SourceLinks.vue';
-import Confirmation from './Confirmation.vue';
-import Suggestions from './Suggestions.vue';
+import Tools from '../tools/index.vue';
+import Tool from '../tools/Tool.vue';
+import Actions from '../tools/actions/index.vue';
+import SourceLinks from '../tools/SourceLinks.vue';
+import Confirmation from '../tools/Confirmation.vue';
 import ContextTag from '../context/ContextTag.vue';
 import UserAvatar from './avatar/UserAvatar.vue';
 import SystemAvatar from './avatar/SystemAvatar.vue';
+import Processing from '../Processing.vue';
 import BubbleButton from './BubbleButton.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
@@ -44,7 +49,7 @@ const isThinking = computed(() => props.message.role === RoleEnum.Assistant &&
 );
 const showCopySuccess = ref(false);
 const timeoutCopy = ref<any>(null);
-const { cleanInputAndTags } = useInputComposable();
+const { updateInput, cleanInputAndTags, focusConsoleInput } = useInputComposable();
 
 function handleCopy() {
   let text = extractMessageText(props.message);
@@ -85,6 +90,15 @@ function handleShowThinking() {
     ...props.message,
     showThinking
   }));
+}
+
+function handleToolAction(event: ToolActionEvent) {
+  if (event.type === ToolActionEventType.Select) {
+    emit('send:message', event.value);
+  } else if (event.type === ToolActionEventType.Edit) {
+    updateInput(event.value);
+    focusConsoleInput();
+  }
 }
 
 onBeforeUnmount(() => {
@@ -178,23 +192,36 @@ onBeforeUnmount(() => {
             }"
           />
         </div>
-        <div
-          v-if="props.message.suggestionActions?.length && !props.message.confirmation"
-          class="chat-msg-section-footer"
-        >
-          <Suggestions
-            :suggestions="props.message.suggestionActions"
-            :disabled="disabled || pendingConfirmation"
-            @select="(suggestion: string) => emit('send:message', suggestion)"
+        <template v-if="!props.message.confirmation">
+          <Tools
+            :key="props.message.tools?.length"
+            class="chat-msg-section-footer"
+            :message="props.message"
+            :exclude="[
+              ToolName.SelectOption,
+              ToolName.Suggestions,
+            ]"
           />
-        </div>
+          <Tool
+            class="chat-msg-section-footer"
+            :name="ToolName.SelectOption"
+            :message="props.message"
+            @action="handleToolAction"
+          />
+          <Tool
+            v-if="!props.message.tools?.find((t) => t.toolName === ToolName.SelectOption)"
+            class="chat-msg-section-footer"
+            :name="ToolName.Suggestions"
+            :message="props.message"
+            @action="handleToolAction"
+          />
+        </template>
         <div
           v-if="props.message.confirmation"
           class="chat-msg-section-footer"
         >
           <Confirmation
-            :value="props.message.confirmation"
-            :message-content="props.message.messageContent"
+            :message="props.message"
             @confirm="emit('confirm:message', {
               message: props.message,
               result: $event

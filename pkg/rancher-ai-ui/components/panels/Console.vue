@@ -57,13 +57,15 @@ const props = defineProps({
   }
 });
 
+defineExpose({ focusInput });
+
 const emit = defineEmits([
   'input:content',
   'select:agent'
 ]);
 
 const {
-  inputText, updateInput, cleanInput, cleanInputAndTags
+  inputText, updateInput, cleanInput, cleanInputAndTags, setConsoleRef
 } = useInputComposable();
 
 const promptTextarea = ref<HTMLTextAreaElement | null>(null);
@@ -184,9 +186,11 @@ function sendContent(event: Event) {
 
 function selectAgent(agentName: string) {
   emit('select:agent', agentName);
-  nextTick(() => {
-    promptTextarea.value?.focus();
-  });
+  nextTick(() => focusInput());
+}
+
+function focusInput() {
+  promptTextarea.value?.focus();
 }
 
 function autoResizePrompt() {
@@ -218,14 +222,14 @@ watch(
     }
 
     if (!newDisabled && (oldDisabled || oldChatId !== newChatId)) {
-      nextTick(() => {
-        promptTextarea.value?.focus();
-      });
+      nextTick(() => focusInput());
     }
   }
 );
 
 onMounted(() => {
+  setConsoleRef({ focusInput });
+
   nextTick(() => {
     autoResizePrompt();
   });

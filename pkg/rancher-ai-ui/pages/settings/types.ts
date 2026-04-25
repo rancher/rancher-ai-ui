@@ -10,6 +10,7 @@ export interface SettingsPermissions {
   create: {
     canCreateAiAgentCRDS: boolean;
     canCreateSecrets: boolean;
+    canCreateConfigMaps: boolean;
   };
 }
 

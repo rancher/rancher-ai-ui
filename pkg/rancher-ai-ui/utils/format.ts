@@ -13,8 +13,12 @@ import {
   MessageLabelKey,
   ChatError,
   SourceLinkItem,
+  ToolsConfig,
+  ToolCall,
 } from '../types';
+import { error } from '../utils/log';
 import { validateActionResource } from './validator';
+import { printTools } from '../components/tools/format';
 
 interface WSInputMessageArgs {
   prompt: string;
@@ -22,6 +26,7 @@ interface WSInputMessageArgs {
   context?: Context[];
   labels?: Record<MessageLabelKey, string>;
   tags?: string[];
+  tools?: ToolsConfig;
 }
 
 const md = new MarkdownIt({
@@ -49,8 +54,9 @@ export function formatWSInputMessage(args: WSInputMessageArgs): string {
   return JSON.stringify({
     prompt: args.prompt,
     agent:  args.agent,
-    context,
+    tools:  args.tools,
     labels: args.labels,
+    context,
     tags,
   });
 }
@@ -64,7 +70,7 @@ export function formatChatErrorMessage(data: string): ChatError {
 
       return parsed;
     } catch (e) {
-      console.error('Failed to parse chat error message:', e); /* eslint-disable-line no-console */
+      error('Failed to parse chat error message:', e);
     }
   }
 
@@ -77,8 +83,8 @@ export function formatChatMetadata(data: string): ChatMetadata | null {
 
     try {
       return JSON.parse(cleaned);
-    } catch (error) {
-      console.error('Failed to parse chat metadata:', error); /* eslint-disable-line no-console */
+    } catch (err) {
+      error('Failed to parse chat metadata:', err);
     }
   }
 
@@ -113,8 +119,8 @@ export function formatAgentMetadata(data: string, agents: Agent[]): AgentMetadat
         };
       }
     }
-  } catch (error) {
-    console.error('Failed to parse agent metadata:', error); /* eslint-disable-line no-console */
+  } catch (err) {
+    error('Failed to parse agent metadata:', err);
   }
 
   return null;
@@ -147,8 +153,8 @@ export function formatMessageRelatedResourcesActions(value: string, actionType =
           cluster:   parsed.cluster,
         },
       }));
-    } catch (e) {
-      console.error('Failed to parse MCP response:', e); /* eslint-disable-line no-console */
+    } catch (err) {
+      error('Failed to parse MCP response:', err);
     }
   }
 
@@ -163,31 +169,39 @@ export function formatConfirmationActions(value: string): MessageConfirmationAct
       const parsed = JSON.parse(value);
 
       return parsed;
-    } catch (e) {
-      console.error('Failed to parse confirmation response:', e); /* eslint-disable-line no-console */
+    } catch (err) {
+      error('Failed to parse confirmation response:', err);
     }
   }
 
   return null;
 }
 
-export function formatSuggestionActions(suggestionActions: string[], remaining: string): { suggestionActions: string[]; remaining: string } {
-  const re = /<suggestion\b[^>]*>([\s\S]*?)<\/suggestion>/i;
+export function formatTools(tools: ToolCall[], remaining: string): { tools: ToolCall[]; remaining: string } {
+  const re = /<ui-tools\b[^>]*>([\s\S]*?)<\/ui-tools>/i;
   const match = remaining?.match(re);
 
   if (match) {
-    const inner = match[1]; // first suggestion text
+    const inner = match[1]; // first ui-tools content
 
-    suggestionActions.push(inner.trim());
+    try {
+      const parsed = JSON.parse(inner);
+      const toolsArray = Array.isArray(parsed) ? parsed : [parsed];
+
+      tools.push(...toolsArray);
+    } catch (err) {
+      error('Failed to parse ui-tools content:', err);
+    }
+
     remaining = remaining.replace(match[0], '').trim();
 
     if (remaining) {
-      return formatSuggestionActions(suggestionActions, remaining);
+      return formatTools(tools, remaining);
     }
   }
 
   return {
-    suggestionActions,
+    tools,
     remaining
   };
 }
@@ -215,8 +229,8 @@ export function formatFileMessages(principal: any, messages: Message[]): string 
       body += `Context: ${ JSON.stringify(msg.contextContent) }\n`;
     }
 
-    if (msg.suggestionActions?.length) {
-      body += `Suggestions: [${ msg.suggestionActions.join('], [') }]\n`;
+    if (msg.tools?.length) {
+      body += printTools(msg.tools);
     }
 
     return `[${ timestamp }] [${ avatar[msg.role] }]: ${ body }`;
@@ -240,8 +254,8 @@ export function formatErrorMessage(value: string): ChatError {
       const parsed = JSON.parse(value);
 
       return parsed;
-    } catch (e) {
-      console.error('Failed to parse error message:', e); /* eslint-disable-line no-console */
+    } catch (err) {
+      error('Failed to parse error message:', err);
     }
   }
 
@@ -279,18 +293,6 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
     tag:         key,
     description:   key,
   }));
-
-  /**
-   * Parsing suggestion actions
-   */
-  let suggestionActions: string[] = [];
-
-  if (msg.message?.includes(Tag.SuggestionsStart) && msg.message?.includes(Tag.SuggestionsEnd)) {
-    const { suggestionActions: suggestionActionsData, remaining } = formatSuggestionActions(suggestionActions, msg.message);
-
-    suggestionActions = suggestionActionsData;
-    msg.message = remaining;
-  }
 
   /**
    * Parsing related resources actions
@@ -378,8 +380,8 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
     summaryContent,
     relatedResourcesActions,
     confirmation,
-    suggestionActions,
     sourceLinks,
+    tools:             msg.tools || [],
     messageContent:    msg.message,
     timestamp:         new Date(msg.createdAt),
   };

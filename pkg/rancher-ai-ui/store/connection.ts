@@ -1,5 +1,6 @@
 import { PERMISSIONS_DOCS_URL, PRODUCT_NAME } from '../product';
 import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
+import { error } from '../utils/log';
 import { ConnectionError, ConnectionParams, ConnectionPhase } from '../types';
 import { isManualDisconnect, MANUAL_DISCONNECT } from '../utils/ws';
 
@@ -81,8 +82,8 @@ const actions = {
         state.ws = null;
       };
       ws.onerror = (e) => {
-        // eslint-disable-next-line no-console
-        console.error('WebSocket error: ', e);
+        error('WebSocket error: ', e);
+
         commit('setError', {
           key:         'ai.error.websocket.generic',
           sourceLinks: [{
@@ -94,8 +95,8 @@ const actions = {
 
       commit('setError', null);
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('WebSocket connection error: ', e);
+      error('WebSocket connection error: ', e);
+
       commit('setError', { key: 'ai.error.websocket.connection' } );
     }
   },

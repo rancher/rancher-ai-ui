@@ -13,7 +13,24 @@ ai:
           line1: I'm Liz, your personal AI assistant.
           line2: How can I help you?
           line3: 'Hi, {name}!'
-        info: '<b>Pro tip</b>: you can also interact with the status badges and error messages throughout the Rancher UI to ask me for help. Or, you can resume one of your previous chats - I automatically save them in the main menu for easy access.'
+        labels:
+          proTip: Pro Tip
+          news: What's New
+        info:
+          label: Pro Tip
+          message: 'You can also interact with the status badges and error messages throughout the Rancher UI to ask me for help. Or, you can resume one of your previous chats - I automatically save them in the main menu for easy access.'
+        news:
+          label: What’s New
+          message:
+            admin:
+              createTools: 'UI tools are here! The AI assistant can now use interactive UI tools to enhance its responses and provide a more integrated experience.'
+              updateTools: 'UI tools have been updated! The AI assistant can now use the latest interactive UI tools to enhance its responses and provide a more integrated experience.'
+            user:
+              createTools: 'UI tools are here! The AI assistant can now use interactive UI tools to enhance its responses and provide a more integrated experience. Please contact your administrator to install the tools.'
+              updateTools: 'UI tools have been updated! The AI assistant can now use the latest interactive UI tools to enhance its responses and provide a more integrated experience. Please contact your administrator to refresh the tools.'
+          action:
+            install: 'Install UI Tools'
+            refresh: 'Refresh UI Tools'
         suggestions:
           label: 'Here are a few suggestions based on your context:'
       switchAgent:
@@ -52,8 +69,6 @@ ai:
       hideThinking: Hide Thinking
       showCompleteMessage: See More
       hideCompleteMessage: See Less
-    suggestions:
-      label: Quick Actions
     template:
       heyAnalyzeResource: 'Hey Liz, please analyse the resource'
       namespace: 'Namespace'
@@ -161,6 +176,7 @@ ai:
     processing: 'Processing'
     awaitingConfirmation: 'Awaiting confirmation'
     generatingResponse: 'Generating response'
+    processingTools: 'Processing UI tools'
     confirming: 'Confirming'
     finalizing: 'Finalizing results'
     connecting: 'Connecting'
@@ -257,6 +273,39 @@ ai:
   generic:
     opensInNewTab: Opens in a new tab
 
+  staging:
+    yaml-editor:
+      title: View YAML
+      unknownResource: Unknown Resource
+      showDiff: Show Diff
+      backToEdit: Back to Edit
+      showChanges: Show Changes
+      hideChanges: Hide Changes
+      close: Close
+      cancel: Cancel
+      apply: Apply to Cluster
+
+  tools:
+    label: Tools
+    show-yaml:
+      name: Show YAML
+      tooltip: View the YAML configuration for the {name} {kind} in {namespace} namespace
+    show-yaml-diff:
+      name: Show YAML Diff
+      tooltip: View the differences between the current and previous YAML configurations for the {name} {kind} in {namespace} namespace
+    explore:
+      name: Explore
+    open-console-logs:
+      name: Console Logs
+      tooltip: Open the console logs for the {name} Pod in {namespace} namespace
+    download-logs:
+      name: Download Logs
+    select-option:
+      name: 'Select options:'
+    suggestions:
+      name: 'Quick actions'
+      action:
+        edit: Edit before sending
 aiConfig:
   label: AI Assistant
   form:
@@ -270,6 +319,7 @@ aiConfig:
       apiError: 'Failed to save settings. {error}'
     fetchModels:
       error: 'Failed to refresh models list.'
+    resetToDefaults: Reset to Default
     section:
       provider:
         header: AI Provider
@@ -352,7 +402,64 @@ aiConfig:
               none: No authentication
               basic: Basic authentication
               rancher: Rancher authentication
-          
+      tools:
+        header: UI Tools
+        description: Configure the UI tools
+        config:
+          title: Configuration
+        fields:
+          systemPrompt:
+            label: Guidelines
+            placeholder: 'Markdown instructions for using UI tools'
+            tooltip: 'Guidelines provide specific instructions or guidelines to the AI assistant on how to select the UI tools.'
+          enabled:
+            label: Enable Tools
+            tooltip: 'Select the UI tools that the AI assistant can use to enhance its responses. These tools allow the assistant to perform specific actions or retrieve information, making it more interactive and useful.'
+          tools:
+            label: Available Tools
+            name:
+              show-yaml: Show YAML
+              show-yaml-diff: Show YAML Diff
+              explore: Explore
+              open-console-logs: Console Logs
+              download-logs: Download Logs
+              select-option: Select Option
+              suggestions: Suggestions
+              rancher-2-13-specific-tool: Rancher 2.13 Specific Tool
+            revision:
+              tooltip: 'Revision'
+            category:
+              tooltip:
+                label: Category
+                action: Filter tools by this category
+        publish:
+          action:
+            create:
+              label: Install UI Tools
+              message:
+                admin: The UI tools are now available for the AI assistant to use. Please install the tools to make them available in the UI.
+                user: The UI tools are now available for the AI assistant to use. Please contact your administrator to install the tools and make them available in the UI.
+              result:
+                success: UI Tools definition installed successfully.
+                error: 'Failed to install UI Tools definition, an error occurred during installation. {message}'
+            update:
+              label: Refresh UI Tools
+              message:
+                admin: The UI tools definition has changed. Please refresh the tools to apply the latest changes.
+                user: The UI tools definition has changed. Please contact your administrator to refresh the tools and apply the latest changes.
+              result:
+                success: 'UI tools definition have been updated: {message}.'
+                error: 'Failed to update UI Tools definition, an error occurred during update. {message}'
+        search: Search tools...
+        noTools: No UI tools configured
+        noMatchingTools: No matching tools
+        tryAdjustingFilters: Try adjusting your filters or search query
+        resetFilters: Reset Filters
+        enabledCount: "({count} enabled)"
+        interactive: Interactive
+        matched: "{count} tools matched"
+        total: "{count} tools total"
+
     EMBEDDINGS_MODEL:
       label: Embeddings Model
     ENABLE_RAG:

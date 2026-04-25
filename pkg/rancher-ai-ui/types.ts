@@ -1,35 +1,34 @@
 /* eslint-disable no-unused-vars */
 
 /**
- * Rancher AI schema types.
- */
-export const RANCHER_AI_SCHEMA = { AI_AGENT_CONFIG: 'ai.cattle.io.aiagentconfig' };
-
-/**
  * Tags used in Rancher AI Chat messages.
  */
 
 export const enum Tag {
+  // Chat init tags
   ChatMetadataStart = '<chat-metadata>',
   ChatMetadataEnd = '</chat-metadata>',
   AgentMetadataStart = '<agent-metadata>',
   AgentMetadataEnd = '</agent-metadata>',
+  // Message content tags
   MessageStart = '<message>',
   MessageEnd = '</message>',
   ThinkingStart = '<think>',
   ThinkingEnd = '</think>',
+  ToolsStart = '<ui-tools>',
+  ToolsEnd = '</ui-tools>',
   McpResultStart = '<mcp-response>',
   McpResultEnd = '</mcp-response>',
   ConfirmationStart = '<confirmation-response>',
   ConfirmationEnd = '</confirmation-response>',
-  SuggestionsStart = '<suggestion>',
-  SuggestionsEnd = '</suggestion>',
   DocLinkStart = '<mcp-doclink>',
   DocLinkEnd = '</mcp-doclink>',
   ChatErrorStart = '<chat-error>',
   ChatErrorEnd = '</chat-error>',
   ErrorStart = '<error>',
   ErrorEnd = '</error>',
+  // Processing tags
+  ProcessingTools = '<processing-ui-tools/>',
 }
 
 /**
@@ -90,6 +89,7 @@ export const enum MessagePhase {
   Processing = 'processing',
   AwaitingConfirmation = 'awaitingConfirmation',
   GeneratingResponse = 'generatingResponse',
+  ProcessingTools = 'processingTools',
   Confirming = 'confirming',
   Finalizing = 'finalizing',
 }
@@ -125,10 +125,16 @@ export interface ActionResource {
 }
 
 export interface ConfirmationOperationPayload {
+  original: string;
+  patch: PatchPayload[];
+  patched: string;
+};
+
+export interface PatchPayload {
   op: string; // add, update, remove, etc.
   path: string;
   value?: any;
-};
+}
 
 export const enum ConfirmationActionType {
   Patch = 'patch',
@@ -163,8 +169,6 @@ export interface MessageAction {
   action?: () => MessageConfirmation;
 }
 
-export type MessageActionSuggestion = string;
-
 export interface MessageConfirmation {
   actions?: MessageConfirmationAction[] | null;
   status: ConfirmationStatus;
@@ -174,7 +178,7 @@ export interface MessageConfirmation {
 
 export interface MessageConfirmationAction {
   type: ConfirmationActionType | string;
-  payload?: ConfirmationOperationPayload[];
+  payload?: ConfirmationOperationPayload;
   resource: ActionResource;
 }
 
@@ -219,9 +223,9 @@ export interface Message {
   completed?: boolean;
   showThinking?: boolean;
   showCompleteMessage?: boolean;
+  tools?: ToolCall[];
   actions?: MessageAction[];
   relatedResourcesActions?: MessageAction[];
-  suggestionActions?: string[];
   confirmation?: MessageConfirmation;
   sourceLinks?: SourceLinkItem[];
   timestamp?: Date;
@@ -295,6 +299,71 @@ export interface AIAgentConfigCRD {
   stateDescription?: string;
 }
 
+export interface ToolCall {
+  toolName: string;
+  input: Record<string, any>;
+}
+
+export interface ToolsConfig {
+  name: string;
+  tools?: string[];
+}
+
+export interface UIToolsConfigs {
+  config: UIToolsConfig;
+  tools: UITool[];
+}
+
+export interface UIToolsConfig {
+  systemPrompt?: string;
+  enabled: boolean;
+  revision: number;
+  maxTools?: number;
+  defaultValues?: Record<string, any>;
+}
+
+export interface UITool {
+  name: string;
+  description: string;
+  prompt: string;
+  category: string;
+  revision: number;
+  enabled: boolean;
+  metadata: Record<string, any>;
+  schema: {
+    properties: Record<string, any>;
+  }
+  defaultValues?: Record<string, any>;
+}
+
+export interface ToolActionEvent {
+  type: ToolActionEventType;
+  value: any;
+}
+
+export const enum ToolActionEventType {
+  Select = 'select',
+  Edit = 'edit',
+  Confirm = 'confirm',
+}
+
+export const enum ToolsDefinitionActionType {
+  Create = 'create',
+  Update = 'update',
+  None = 'none'
+}
+
+export interface ToolsDefinitionActionResult {
+  action: ToolsDefinitionActionType;
+  success: boolean;
+  message?: string;
+}
+
+export interface ToolsDefinitionAction {
+  type: ToolsDefinitionActionType;
+  result?: ToolsDefinitionActionResult | null;
+}
+
 export interface HistoryChat {
   id: string;
   name?: string;
@@ -313,6 +382,7 @@ export interface HistoryChatMessage {
   labels?: Record<MessageLabelKey, string>;
   tags?: string[];
   confirmation?: boolean;
+  tools?: ToolCall[];
   createdAt: string;
 }
 

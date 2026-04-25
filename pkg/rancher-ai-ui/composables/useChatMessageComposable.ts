@@ -20,15 +20,19 @@ import {
   Role,
   Tag
 } from '../types';
+import { ToolName } from '../components/tools/types';
 import {
-  formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationActions, formatSuggestionActions, formatFileMessages,
+  formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationActions, formatFileMessages,
   formatErrorMessage, formatSourceLinks,
   formatChatMetadata,
   formatAgentMetadata,
-  formatChatErrorMessage
+  formatChatErrorMessage,
+  formatTools
 } from '../utils/format';
 import { downloadFile } from '@shell/utils/download';
 import { useContextComposable } from './useContextComposable';
+import { useToolsComposable } from './useToolsComposable';
+import { DEFAULT_AI_AGENT } from './useAgentComposable';
 
 const EXPAND_THINKING = false;
 const DISMISS_RECOMMENDED_AGENT_KEY = 'dismissed-agent-recommendation';
@@ -53,6 +57,9 @@ export function useChatMessageComposable(
   const store = useStore();
   const { t } = useI18n(store);
 
+  const { selectContext, selectedContext } = useContextComposable();
+  const { toolsSelector } = useToolsComposable();
+
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};
 
   const messageBox = computed(() => store.getters['rancher-ai-ui/chat/messageBox'](chatId));
@@ -72,8 +79,6 @@ export function useChatMessageComposable(
       phase
     });
   };
-
-  const { selectContext, selectedContext } = useContextComposable();
 
   function wsSend(ws: WebSocket, value: string) {
     if (!ws) {
@@ -110,6 +115,7 @@ export function useChatMessageComposable(
       prompt:  messageContent,
       context: selectedContext.value,
       agent:   agentName.value,
+      tools:   toolsSelector.value,
       labels
     }));
 
@@ -158,6 +164,10 @@ export function useChatMessageComposable(
         status:  result ? ConfirmationStatus.Confirmed : ConfirmationStatus.Canceled
       },
     });
+
+    if (message.source === MessageInternalSource.MessageBox) {
+      clearMessageBox();
+    }
   }
 
   function getMessage(messageId: string) {
@@ -185,7 +195,7 @@ export function useChatMessageComposable(
         component: MessageTemplateComponent.Welcome,
         content:   {
           principal,
-          message: t('ai.message.system.welcome.info', {}, true),
+          message: t('ai.message.system.welcome.info.message', {}, true),
         }
       },
       source:    MessageInternalSource.Welcome,
@@ -266,16 +276,26 @@ export function useChatMessageComposable(
       return;
     }
 
-    // The chat is empty, send a welcome message with suggestions to start the conversation.
-    const initPrompt = `Hi!
-      - Send me a message with 3 ${ selectedContext.value?.length ? 'suggestions based on the context.' : 'generic suggestions.' }.
+    // The chat is empty, we want to trigger the suggestions tool to build the welcome message
+    const initPrompt = `This is an initialization prompt to start the conversation:
+      - DO NOT provide a response to this message, this ONLY is to call the ui-tools.
+      - USE the 'suggestions' ui-tool and provides ${ selectedContext.value?.length ? 'suggestions based on the context.' : 'generic suggestions.' }.
+        - The first two suggestions must be directly relevant to the current context. If none fallback to the next rule.
+        - The third suggestion should be a 'discovery' action. It introduces a related but broader Rancher or Kubernetes topic, helping the user learn.
+        Examples: 1: How do I scale a deployment? 2: Check the resource usage for this cluster 3: Show me the logs for the failing pod
+      - DO NOT use any other ui-tool except 'suggestions'.
       - DO NOT ask for any confirmation or additional information.
     `;
 
     wsSend(ws, formatWSInputMessage({
       prompt:  initPrompt,
       context: selectedContext.value,
-      tags:    [MessageTag.Ephemeral, MessageTag.Welcome]
+      agent:   DEFAULT_AI_AGENT,
+      tags:    [MessageTag.Ephemeral, MessageTag.Welcome],
+      tools:   {
+        name:  toolsSelector.value?.name || '',
+        tools: [ToolName.Suggestions]
+      }
     }));
 
     setPhase(MessagePhase.Processing);
@@ -374,11 +394,12 @@ export function useChatMessageComposable(
 
         currentMsg.value.messageContent += data;
 
-        if (currentMsg.value.messageContent?.includes(Tag.SuggestionsStart) && currentMsg.value.messageContent?.includes(Tag.SuggestionsEnd)) {
-          const { suggestionActions, remaining } = formatSuggestionActions(currentMsg.value.suggestionActions || [], currentMsg.value.messageContent);
+        if (currentMsg.value.messageContent?.includes(Tag.ToolsStart) && currentMsg.value.messageContent?.includes(Tag.ToolsEnd)) {
+          const { tools, remaining } = formatTools(currentMsg.value.tools || [], currentMsg.value.messageContent);
 
-          currentMsg.value.suggestionActions = suggestionActions;
+          currentMsg.value.tools = tools;
           currentMsg.value.messageContent = remaining;
+
           break;
         }
       }
@@ -481,13 +502,20 @@ export function useChatMessageComposable(
           throw errorMessage;
         }
 
+        if (data === Tag.ProcessingTools) {
+          setPhase(MessagePhase.ProcessingTools);
+
+          break;
+        }
+
         currentMsg.value.messageContent += data;
 
-        if (currentMsg.value.messageContent?.includes(Tag.SuggestionsStart) && currentMsg.value.messageContent?.includes(Tag.SuggestionsEnd)) {
-          const { suggestionActions, remaining } = formatSuggestionActions(currentMsg.value.suggestionActions || [], currentMsg.value.messageContent);
+        if (currentMsg.value.messageContent?.includes(Tag.ToolsStart) && currentMsg.value.messageContent?.includes(Tag.ToolsEnd)) {
+          const { tools, remaining } = formatTools(currentMsg.value.tools || [], currentMsg.value.messageContent);
 
-          currentMsg.value.suggestionActions = suggestionActions;
+          currentMsg.value.tools = tools;
           currentMsg.value.messageContent = remaining;
+
           break;
         }
 
