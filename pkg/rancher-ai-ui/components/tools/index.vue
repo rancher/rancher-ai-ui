@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { camelCase, upperFirst } from 'lodash';
 import {
-  type PropType, computed, defineAsyncComponent, onMounted, ref,
+  type PropType, computed, defineAsyncComponent, onMounted, shallowRef,
 } from 'vue';
 import { Message } from '../../types';
 import { warn } from '../../utils/log';
@@ -35,7 +35,7 @@ const props = defineProps({
   },
 });
 
-const toolComponents = ref<Record<string, any>>({});
+const toolComponents = shallowRef<Record<string, any>>({});
 
 const tools = computed(() => {
   const all = props.message.tools || [];
@@ -70,11 +70,14 @@ async function loadToolComponents() {
 
   const all = await Promise.all(loaderPromises);
 
+  const newComponents: Record<string, any> = {};
+
   all.forEach(({ name, component }) => {
     if (component) {
-      toolComponents.value[name] = component;
+      newComponents[name] = component;
     }
   });
+  toolComponents.value = newComponents; // Replace entire object to preserve reactivity
 }
 
 onMounted(() => {

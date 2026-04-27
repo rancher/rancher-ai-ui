@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { camelCase, upperFirst } from 'lodash';
 import {
-  type PropType, computed, defineAsyncComponent, ref, watch
+  type PropType, computed, defineAsyncComponent, shallowRef, watch
 } from 'vue';
 import { Message } from '../../types';
 import { warn } from '../../utils/log';
@@ -25,7 +25,7 @@ const emit = defineEmits(['action']);
 
 const tool = computed(() => props.message.tools?.find((t) => t.toolName === props.name) || null);
 
-const component = ref<any>(null);
+const component = shallowRef<any>(null);
 
 watch(() => tool.value, (newTool) => {
   if (!newTool) {
