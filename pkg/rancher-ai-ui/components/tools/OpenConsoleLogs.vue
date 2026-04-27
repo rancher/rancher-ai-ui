@@ -19,6 +19,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['action']); // eslint-disable-line no-unused-vars
+
 const pod = computed(() => {
   const { cluster, namespace, name } = props.tool.input || {};
 

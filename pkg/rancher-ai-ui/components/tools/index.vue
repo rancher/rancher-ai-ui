@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { camelCase, upperFirst } from 'lodash';
-import {
-  type PropType, computed, defineAsyncComponent, onMounted, shallowRef,
-} from 'vue';
+import { type PropType, computed } from 'vue';
 import { Message } from '../../types';
-import { warn } from '../../utils/log';
 import { ToolName } from './types';
+import Tool from '../tools/Tool.vue';
 
 const ToolsOrder: Record<string, number> = {
   [ToolName.Explore]:      0,
@@ -35,8 +32,6 @@ const props = defineProps({
   },
 });
 
-const toolComponents = shallowRef<Record<string, any>>({});
-
 const tools = computed(() => {
   const all = props.message.tools || [];
 
@@ -47,47 +42,11 @@ const tools = computed(() => {
     // Sort tools based on predefined order
     .sort((a, b) => ToolsOrder[a.toolName] - ToolsOrder[b.toolName]);
 });
-
-async function loadToolComponents() {
-  const loaderPromises = tools.value.map(async({ toolName: name }) => {
-    const path = upperFirst(camelCase(name));
-
-    try {
-      await import(`./${ path }.vue`);
-
-      const component = defineAsyncComponent(() => import(`./${ path }.vue`));
-
-      return {
-        name,
-        component
-      };
-    } catch (error) {
-      warn(`Tool component not found: ${ path }.vue`, error);
-
-      return { name };
-    }
-  });
-
-  const all = await Promise.all(loaderPromises);
-
-  const newComponents: Record<string, any> = {};
-
-  all.forEach(({ name, component }) => {
-    if (component) {
-      newComponents[name] = component;
-    }
-  });
-  toolComponents.value = newComponents; // Replace entire object to preserve reactivity
-}
-
-onMounted(() => {
-  loadToolComponents();
-});
 </script>
 
 <template>
   <div
-    v-if="tools.length && Object.values(toolComponents).length"
+    v-if="tools.length"
     class="chat-tools-container"
   >
     <div
@@ -103,16 +62,10 @@ onMounted(() => {
           v-for="(tool, index) in tools"
           :key="index"
         >
-          <div
-            v-if="toolComponents[tool.toolName]"
-            class="mt-2 chat-msg-tools"
-          >
-            <component
-              :is="toolComponents[tool.toolName]"
-              :message="props.message"
-              :tool="tool"
-            />
-          </div>
+          <Tool
+            :name="tool.toolName"
+            :message="props.message"
+          />
         </template>
       </div>
     </div>
@@ -141,17 +94,5 @@ onMounted(() => {
 .chat-msg-tool-tags {
   display: flex;
   flex-direction: column;
-}
-
-.chat-msg-tools {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 2px;
-}
-
-.chat-msg-tools-more {
-  color: #94a3b8;
-  cursor: pointer;
 }
 </style>

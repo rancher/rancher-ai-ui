@@ -16,6 +16,7 @@ export function useStagingComposable() {
 
   function open(args: OpenArgs) {
     let currentRoute = store.state.$router.currentRoute.value.path || '';
+    const currentCluster = store.state.$router.currentRoute.value.params.cluster || 'local';
 
     // Prevent setting route to staging page itself
     if (currentRoute.includes('/explorer/staging')) {
@@ -30,7 +31,7 @@ export function useStagingComposable() {
     store.state.$router.push({
       name:   `c-cluster-${ PRODUCT_NAME }-staging`,
       params: {
-        cluster: 'local', // TODO pass actual cluster if needed
+        cluster: currentCluster,
         product: 'explorer',
       },
     });

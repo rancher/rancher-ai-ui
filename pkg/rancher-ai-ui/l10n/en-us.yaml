@@ -295,6 +295,7 @@ ai:
       tooltip: View the differences between the current and previous YAML configurations for the {name} {kind} in {namespace} namespace
     explore:
       name: Explore
+      tooltip: '{label} in {cluster} cluster'
     open-console-logs:
       name: Console Logs
       tooltip: Open the console logs for the {name} Pod in {namespace} namespace

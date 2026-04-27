@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type PropType } from 'vue';
+import { computed, onMounted, ref, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import {
@@ -88,6 +88,18 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['action']); // eslint-disable-line no-unused-vars
+
+const inStore = 'management';
+
+const isLoading = ref(true);
+
+const cluster = computed(() => {
+  const allClusters = store.getters[`${ inStore }/all`](MANAGEMENT.CLUSTER) || [];
+
+  return allClusters.find((c: any) => c.nameDisplay === props.tool.input.cluster || c.name === props.tool.input.cluster);
+});
+
 const route = computed(() => {
   const config = ROUTES[props.tool.input.route];
 
@@ -97,11 +109,15 @@ const route = computed(() => {
 
   const { schema, resolve } = config;
 
-  if (!store.getters['management/schemaFor'](schema)) {
+  if (!store.getters[`${ inStore }/schemaFor`](schema)) {
     return null;
   }
 
-  return resolve(props.tool.input.cluster);
+  if (cluster.value) {
+    return resolve(cluster.value.name);
+  }
+
+  return null;
 });
 
 const label = computed(() => {
@@ -115,11 +131,29 @@ function navigateToRoute() {
     warn(`Unknown route: ${ props.tool.input.route }`);
   }
 }
+
+const tooltip = computed(() => {
+  return t(`ai.tools.${ props.tool.toolName }.tooltip`, {
+    label:   label.value,
+    cluster: cluster.value?.name
+  }, true);
+});
+
+onMounted(async() => {
+  await store.dispatch('loadManagement');
+  await store.dispatch(`${ inStore }/findAll`, { type: MANAGEMENT.CLUSTER });
+
+  isLoading.value = false;
+});
 </script>
 
 <template>
+  <span v-if="isLoading">
+    <i class="icon icon-spinner icon-spin ml-5" />
+  </span>
   <div v-if="route">
     <RcButton
+      v-clean-tooltip="tooltip"
       small
       tertiary
       @click="navigateToRoute"
