@@ -19,6 +19,25 @@ import { LlmResponseArgs } from '@/cypress/globals';
  * arg.chunkSize (Optional)
  *   The size of each chunk if text is a single string.
  *   If not provided or less than or equal to 0, the entire text will be sent as a single chunk.
+ * 
+ * arg.uiTools (Optional)
+ *  The UI tools to be rendered in the UI. It can be used to simulate the rendering of UI tools and verify their behavior during tests.
+ *
+ *  Usage example:
+ *
+ *    - Suggestions:
+ *
+ *      uiTools: [
+ *        {
+ *          name: 'suggestions',
+ *          args: {
+ *            suggestion1: 'View resources',
+ *            suggestion2: 'Analyze logs',
+ *            suggestion3: 'Do action',
+ *          }
+ *        }
+ *      ]
+ * 
  *
  * arg.tool (Optional)
  *   The tool to be used by the Rancher AI agent to request cluster resources to the MCP. It can be used to simulate resource fetching during tests and confirmation behavior.
@@ -118,6 +137,7 @@ Cypress.Commands.add('enqueueLLMResponse', (args: LlmResponseArgs) => {
   const agent = args.agent === undefined ? 'rancher' : args.agent;
   const text = chunks.length > 0 ? { chunks } : undefined;
   const tool = args.tool;
+  const uiTools = args.uiTools || [];
 
   return cy.getCookie('R_SESS').then((token) => {
     cy.request({
@@ -130,7 +150,8 @@ Cypress.Commands.add('enqueueLLMResponse', (args: LlmResponseArgs) => {
       body: {
         agent,
         text,
-        tool
+        tool,
+        uiTools
       },
     })
       .then((resp) => {

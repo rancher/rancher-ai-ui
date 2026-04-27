@@ -64,7 +64,7 @@ const hoveredIndex = ref<number | null>(null);
               class="button-group-label"
               tertiary
               small
-              :data-testid="`rancher-ai-ui-chat-message-suggestion-${index}`"
+              :data-testid="`rancher-ai-ui-chat-message-list-option-${index}`"
               :disabled="props.disabled"
               @click="() => emit('select', option)"
             >

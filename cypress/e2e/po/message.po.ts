@@ -20,8 +20,8 @@ class RawMessagePo extends ComponentPo {
     return this.self().get(`[data-testid="rancher-ai-ui-context-tag-${ label }"]`);
   }
 
-  suggestion(index: number) {
-    return this.self().get(`[data-testid="rancher-ai-ui-chat-message-suggestion-${ index }"]`);
+  option(index: number) {
+    return this.self().get(`[data-testid="rancher-ai-ui-chat-message-list-option-${ index }"]`);
   }
 
   sourceLink(index: number) {

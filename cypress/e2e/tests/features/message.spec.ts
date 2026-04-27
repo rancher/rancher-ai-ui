@@ -14,8 +14,19 @@ describe('Messages', () => {
 
   it('Show welcome message', () => {
     cy.enqueueLLMResponse({
-      text:      'Providing mock response from the agent, containing suggestions for the welcome message. <suggestion>View resources</suggestion><suggestion>Analyze logs</suggestion><suggestion>Do action</suggestion>',
-      chunkSize: 30
+      text:      'Init message',
+      chunkSize: 30,
+      agent:     null, // Welcome message uses 'rancher' as manual agent - the backend skips the agent selection.
+      uiTools:   [
+        {
+          name: 'suggestions',
+          args: {
+            suggestion1: 'View resources',
+            suggestion2: 'Analyze logs',
+            suggestion3: 'Do action',
+          }
+        }
+      ]
     });
 
     chat.open();
@@ -27,7 +38,7 @@ describe('Messages', () => {
     const suggestions = ['View resources', 'Analyze logs', 'Do action'];
 
     suggestions.forEach((value, index) => {
-      welcomeMessage.suggestion(index).should('contain.text', value);
+      welcomeMessage.option(index).should('contain.text', value);
     });
   });
 
@@ -259,7 +270,7 @@ describe('Messages', () => {
       text:      'Pod created successfully.',
       tool: {
         name: 'createKubernetesResource',
-        args: [{
+        args: {
           kind:      'Pod',
           name:      'my-pod',
           resource:  {
@@ -272,7 +283,7 @@ describe('Messages', () => {
           },
           cluster:   'local',
           namespace: 'default'
-        }]
+        }
       },
     });
 

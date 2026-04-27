@@ -3,6 +3,7 @@ export interface LlmResponseArgs {
   text?: string | string[];
   chunkSize?: number;
   tool?: McpTool;
+  uiTools?: McpTool[];
 }
 
 export interface McpTool {
