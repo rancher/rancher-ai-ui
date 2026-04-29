@@ -14,7 +14,7 @@
   "icon": "https://raw.githubusercontent.com/rancher/rancher-ai-ui/main/pkg/rancher-ai-ui/assets/extension-icon.svg",
   "scripts": {},
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~5.0.0",

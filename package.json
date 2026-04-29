@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "private": false,
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "dependencies": {
-    "@rancher/shell": "3.0.9-rc.5"
+    "@rancher/shell": "3.0.12-rc.2"
   },
   "resolutions": {
-    "@types/node": "~20.10.0",
+    "@types/node": "25.3.3",
     "@types/lodash": "4.17.5"
   },
   "scripts": {
