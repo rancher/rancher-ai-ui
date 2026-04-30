@@ -161,7 +161,7 @@ const confirmationText = computed(() => {
         ToolName.ShowYamlDiff,
       ]"
       :show-default-labels="true"
-      @action="emit('confirm', $event.value)"
+      @action="emit('confirm', $event)"
     />
   </div>
 </template>
