@@ -74,6 +74,11 @@ function handleResendMessage() {
   nextTick(() => emit('send:message', props.message));
 }
 
+function handleEditBeforeSending(text: string) {
+  updateInput(text);
+  focusConsoleInput();
+}
+
 function handleShowCompleteMessage() {
   const showCompleteMessage = !props.message.showCompleteMessage;
 
@@ -96,8 +101,7 @@ function handleToolAction(event: ToolActionEvent) {
   if (event.type === ToolActionEventType.Select) {
     emit('send:message', event.value);
   } else if (event.type === ToolActionEventType.Edit) {
-    updateInput(event.value);
-    focusConsoleInput();
+    handleEditBeforeSending(event.value);
   }
 }
 
@@ -139,6 +143,12 @@ onBeforeUnmount(() => {
             :icon="'icon-thinking-process'"
             :tooltip="props.message.showThinking ? t('ai.message.actions.tooltip.hideThinking') : t('ai.message.actions.tooltip.showThinking')"
             @click="handleShowThinking"
+          />
+          <BubbleButton
+            v-if="props.message.role === RoleEnum.User && !pendingConfirmation"
+            :icon="showCopySuccess ? 'icon-checkmark' : 'icon-edit'"
+            :tooltip="t('ai.message.actions.tooltip.editBeforeResend')"
+            @click="handleEditBeforeSending(extractMessageText(props.message) || '')"
           />
           <BubbleButton
             :icon="showCopySuccess ? 'icon-checkmark' : 'icon-copy'"

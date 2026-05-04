@@ -247,6 +247,7 @@ const resetToolsToDefaults = () => {
               class="form-value-checkbox"
               :value="props.value?.config?.enabled"
               :label="t('aiConfig.form.section.tools.fields.enabled.label')"
+              :tooltip="t('aiConfig.form.section.tools.fields.enabled.tooltip')"
               :disabled="readOnly"
               @update:value="(val: boolean) => updateToolsConfigValue({ enabled: val })"
             />
@@ -279,13 +280,13 @@ const resetToolsToDefaults = () => {
           class="row"
         >
           <div class="col span-4">
-            <button
-              class="btn role-tertiary"
+            <RcButton
+              variant="tertiary"
               :disabled="readOnly"
               @click="resetToolsConfigToDefaults"
             >
               {{ t('aiConfig.form.resetToDefaults', {}, true) }}
-            </button>
+            </RcButton>
           </div>
         </div>
       </div>
@@ -354,6 +355,13 @@ const resetToolsToDefaults = () => {
             </div>
           </div>
 
+          <!-- Empty Tools Grid to avoid layout shift -->
+          <div
+            v-if="filteredTools.length === 0"
+            class="tools-grid-container"
+          >
+          </div>
+
           <!-- Tools List -->
           <div
             v-else
@@ -371,26 +379,23 @@ const resetToolsToDefaults = () => {
                     {{ t('aiConfig.form.section.tools.enabledCount', { count: enabledToolsCount }) }}
                   </span>
                 </p>
-                <button
+                <a
                   v-if="!noFiltersApplied"
                   class="reset-filters-link"
+                  role="button"
                   @click="resetAllFilters"
                 >
                   {{ t('aiConfig.form.section.tools.resetFilters', {}, true) }}
-                </button>
+                </a>
               </div>
-              <div
+              <RcButton
                 v-if="!props.readOnly && hasToolEnabledChanges"
-                class="text-right"
+                variant="tertiary"
+                :disabled="readOnly || !props.value?.tools || props.value?.tools.length === 0"
+                @click="resetToolsToDefaults"
               >
-                <button
-                  class="btn role-tertiary"
-                  :disabled="readOnly || !props.value?.tools || props.value?.tools.length === 0"
-                  @click="resetToolsToDefaults"
-                >
-                  {{ t('aiConfig.form.resetToDefaults', {}, true) }}
-                </button>
-              </div>
+                {{ t('aiConfig.form.resetToDefaults', {}, true) }}
+              </RcButton>
             </div>
 
             <!-- Tools Cards Grid -->
@@ -565,7 +570,7 @@ const resetToolsToDefaults = () => {
 .right-section {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-md);
+  gap: var(--gap);
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -576,7 +581,7 @@ const resetToolsToDefaults = () => {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--gap-md);
+  gap: var(--gap);
   padding: 8px 0;
   overflow: hidden;
 
@@ -599,18 +604,9 @@ const resetToolsToDefaults = () => {
     }
 
     .reset-filters-link {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
-      color: var(--primary);
-      background: none;
-      border: none;
-      padding: 0;
       cursor: pointer;
-      text-decoration: underline;
-
-      &:hover {
-        color: var(--primary-hover);
-      }
     }
   }
 }
@@ -651,7 +647,7 @@ const resetToolsToDefaults = () => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   margin-bottom: 8px;
 }
 

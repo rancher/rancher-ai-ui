@@ -49,7 +49,6 @@ const options = computed(() => {
 <template>
   <ListOptions
     :label="t(`ai.tools.${props.tool.toolName}.name`, {}, true)"
-    :icon="'icon-quick-action'"
     :options="options"
     :show-edit="true"
     :disabled="props.disabled"

@@ -23,11 +23,11 @@ const newsTranslationKey = computed(() => {
   const userType = canPublishTools.value ? 'admin' : 'user';
 
   if (toolsRequiredAction.value === ToolsDefinitionActionType.Create) {
-    return `ai.message.system.news.${ userType }.infoCreate`;
+    return `ai.message.system.news.message.action.${ userType }.create`;
   }
 
   if (toolsRequiredAction.value === ToolsDefinitionActionType.Update) {
-    return `ai.message.system.news.${ userType }.infoUpdate`;
+    return `ai.message.system.news.message.action.${ userType }.update`;
   }
 
   return 'ai.message.system.news.message.info';
@@ -49,7 +49,6 @@ function routeToSettings() {
     <div class="chat-news-msg-text">
       <div class="chat-news-msg-text-title">
         <span><b>{{ t('ai.message.system.news.label') }}</b></span>
-        <i class="icon icon-notify-announcement" />
       </div>
       <span
         v-clean-html="t(`ai.message.system.news.message.info`, {}, true)"
@@ -61,7 +60,7 @@ function routeToSettings() {
         >
           <template #installTools="{ content }">
             <a
-              v-clean-tooltip="{ content: t('ai.message.system.news.action.refreshTooltip'), delay: { show: 300 } }"
+              v-clean-tooltip="{ content: t('ai.message.system.news.message.action.refreshTooltip'), delay: { show: 300 } }"
               class="text-label clickable-label"
               @click="routeToSettings()"
             >
@@ -70,7 +69,7 @@ function routeToSettings() {
           </template>
           <template #refreshTools="{ content }">
             <a
-              v-clean-tooltip="{ content: t('ai.message.system.news.action.refreshTooltip'), delay: { show: 300 } }"
+              v-clean-tooltip="{ content: t('ai.message.system.news.message.action.refreshTooltip'), delay: { show: 300 } }"
               class="text-label clickable-label"
               @click="routeToSettings()"
             >

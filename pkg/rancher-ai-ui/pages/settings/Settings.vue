@@ -462,7 +462,7 @@ async function publishToolsDefinitionAndRefetch() {
 
   toolsActionResultBanner.value = {
     color:   key,
-    label: t(`aiConfig.form.section.tools.publish.action.${ action }.result.${ key }`, { message }, true),
+    label: t(`aiConfig.form.section.tools.publish.message.admin.${ action }.action.result.${ key }`, { message }, true),
   };
 
   fetchUIToolsConfigSettings();

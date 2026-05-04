@@ -22,15 +22,15 @@ ai:
       news:
         label: What’s New
         message:
-          info: 'UI tools are here! The AI assistant can now use interactive UI tools to enhance its responses and provide a more integrated experience.'
-        admin:
-          infoCreate: '<br><br>UI tools need to be <installTools>installed</installTools> to enable full AI capabilities.'
-          infoUpdate: '<br><br>UI tools have updates available. <refreshTools>Refresh them</refreshTools> to get the latest features.'
-        user:
-          infoCreate: '<br><br>UI tools need to be installed to enable full AI capabilities. Please contact your administrator to proceed.'
-          infoUpdate: '<br><br>UI tools have updates available. Please contact your administrator to refresh them.'
-        action:
-          refreshTooltip: 'Go to settings to handle the UI tools.'
+          info: 'UI tools are here! I can use contextual buttons, shortcuts and other UI enhancements to provide you a more powerful and compelling experience.'
+          action:
+            admin:
+              create: '<br><br><installTools>Install the UI tools</installTools> to enable full AI capabilities.'
+              update: '<br><br>UI tools have updates available. <refreshTools>Refresh them</refreshTools> to get the latest features.'
+            user:
+              create: '<br><br>Please contact your administrator to install the UI tools.'
+              update: '<br><br>UI tools have updates available. Please contact your administrator to refresh them.'
+            refreshTooltip: 'Go to settings to handle the UI tools.'
       suggestions:
         label: 'Here are a few suggestions based on your context:'
       switchAgent:
@@ -64,6 +64,7 @@ ai:
       tooltip:
         copy: Copy to Clipboard
         resend: Resend Message
+        editBeforeResend: Edit before sending
         showThinking: Show Thinking
         hideThinking: Hide Thinking
       hideThinking: Hide Thinking
@@ -302,9 +303,9 @@ ai:
     download-logs:
       name: Download Logs
     select-option:
-      name: 'Select options:'
+      name: 'Select Options'
     suggestions:
-      name: 'Quick actions'
+      name: 'Quick Actions'
       action:
         edit: Edit before sending
 aiConfig:
@@ -320,7 +321,7 @@ aiConfig:
       apiError: 'Failed to save settings. {error}'
     fetchModels:
       error: 'Failed to refresh models list.'
-    resetToDefaults: Reset to Default
+    resetToDefaults: Reset Configuration
     section:
       provider:
         header: AI Provider
@@ -413,10 +414,10 @@ aiConfig:
           systemPrompt:
             label: Guidelines
             placeholder: 'Markdown instructions for using UI tools'
-            tooltip: 'Guidelines provide specific instructions or guidelines to the AI assistant on how to select the UI tools.'
+            tooltip: 'Guidelines provide additional instructions to the AI assistant on how to select the UI tools. Use this field to customize the behavior of the tools, otherwise the default system prompt will be used.'
           enabled:
             label: Enable Tools
-            tooltip: 'Select the UI tools that the AI assistant can use to enhance its responses. These tools allow the assistant to perform specific actions or retrieve information, making it more interactive and useful.'
+            tooltip: 'Enabling the UI tools brings additional capabilities to the AI assistant chat, but it also requires more time to respond, which might result in longer response times. Disable the tools if you prefer faster responses.'
           tools:
             label: Available Tools
             name:
@@ -434,43 +435,44 @@ aiConfig:
                 label: Category
                 action: Filter tools by this category
         publish:
-          action:
-            create:
-              label: Install UI Tools
-              message:
-                admin: Please install the tools to make them available in the UI.
-                user: Please contact your administrator to install the tools and make them available in the UI.
-              result:
-                success: UI Tools definition installed successfully.
-                error: 'Failed to install UI Tools definition, an error occurred during installation. {message}'
-            update:
-              label: Refresh UI Tools
-              message:
-                admin: Please refresh the tools to apply the latest changes.
-                user: Please contact your administrator to refresh the tools and apply the latest changes.
-              result:
-                success: 'UI tools definition have been updated: {message}'
-                error: 'Failed to update UI Tools definition, an error occurred during update. {message}'
-        intro:
-          title: About UI Tools
-          description: 'UI Tools make your chat experience more interactive and powerful. Instead of just reading text responses, the AI assistant can now provide interactive buttons, shortcuts, and other UI improvements right in the chat to help you accomplish tasks faster.'
-          feature1:
-            title: Smart Tool Selection
-            description: The AI automatically chooses the right tools based on your conversation. It knows when a tool would be helpful and what action you need, so you get relevant interactive options without asking.
-          feature2:
-            title: Seamless Integration
-            description: Tools are built to work naturally with your chat experience, providing helpful options whenever they're relevant.
-          disclaimer: 'Note: With smaller language models, enabling UI tools may slightly increase response time. You can enable or disable tools depending on your preferences for speed versus feature richness.'
-          learnMore: 'Want to know more? <documentation>See the documentation</documentation>'
-        search: Search tools...
+          message:
+            admin:
+              create:
+                label: 'The UI Tools will transform your interaction with the Rancher AI Assistant into a more powerful and compelling experience by providing contextual buttons, shortcuts, and other UI enhancements right in the chat window to help you accomplish tasks faster. Want to learn more? Read our <documentation>documentation</documentation>'
+                action:
+                  label: Install UI Tools
+                  result:
+                    success: UI Tools definition installed successfully.
+                    error: 'Failed to install UI Tools definition, an error occurred during installation. {message}'
+              update:
+                label: 'UI tools have updates available. Please refresh them to get the latest features.'
+                action:
+                  label: Refresh UI Tools
+                  result:
+                    success: 'UI tools definition have been updated.'
+                    error: 'Failed to update UI Tools definition, an error occurred during update. {message}'
+            user:
+              create:
+                label: 'The UI Tools will transform your interaction with the Rancher AI Assistant into a more powerful and compelling experience by providing contextual buttons, shortcuts, and other UI enhancements right in the chat window to help you accomplish tasks faster. Want to learn more? Read our <documentation>documentation</documentation><br><br>Please contact your administrator to install the tools and make them available in the UI.'
+              update:
+                label: 'UI tools have updates available. Please contact your administrator to refresh them and get the latest features.'
+        search: Search the tool...
         noTools: No UI tools configured
         noMatchingTools: No matching tools
         tryAdjustingFilters: Try adjusting your filters or search query
-        resetFilters: Reset Filters
+        resetFilters: Clear all filters
         enabledCount: "({count} enabled)"
         interactive: Interactive
-        matched: "{count} tools matched"
-        total: "{count} tools total"
+        matched: |-
+          {count, plural,
+            =1 { {count} tool matched your criteria }
+            other { {count} tools matched your criteria }
+          }
+        total: |-
+          {count, plural,
+            =1 { {count} tool total }
+            other { {count} tools total }
+          }
     EMBEDDINGS_MODEL:
       label: Embeddings Model
     ENABLE_RAG:

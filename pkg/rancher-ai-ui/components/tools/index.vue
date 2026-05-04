@@ -64,7 +64,6 @@ const tools = computed(() => {
       class="chat-msg-tools-title"
     >
       <span>{{ t('ai.tools.label') }}</span>
-      <i class="icon icon-apps" />
     </div>
     <div class="chat-msg-tools-container">
       <div class="chat-msg-tool-tags">

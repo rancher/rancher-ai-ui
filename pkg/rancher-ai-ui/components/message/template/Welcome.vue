@@ -92,7 +92,6 @@ function handleToolAction(event: ToolActionEvent) {
       <div class="chat-welcome-msg-text">
         <div class="chat-welcome-msg-text-title">
           <span><b>{{ t('ai.message.system.welcome.info.label') }}</b></span>
-          <i class="icon icon-ai" />
         </div>
         <span
           v-clean-html="formatMessageContent(props.message.templateContent?.content?.message || '')"
