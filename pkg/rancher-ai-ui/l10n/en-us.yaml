@@ -64,7 +64,7 @@ ai:
       tooltip:
         copy: Copy to Clipboard
         resend: Resend Message
-        editBeforeResend: Edit before sending
+        editBeforeResend: Edit Prompt
         showThinking: Show Thinking
         hideThinking: Hide Thinking
       hideThinking: Hide Thinking
@@ -470,8 +470,8 @@ aiConfig:
           }
         total: |-
           {count, plural,
-            =1 { {count} tool total }
-            other { {count} tools total }
+            =1 { {count} tool in total }
+            other { {count} tools in total }
           }
     EMBEDDINGS_MODEL:
       label: Embeddings Model

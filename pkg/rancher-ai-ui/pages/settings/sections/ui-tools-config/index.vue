@@ -293,11 +293,23 @@ const resetToolsToDefaults = () => {
 
       <!-- Tools list management Section -->
       <div class="form-values-row">
-        <div class="row">
+        <div class="row tools-header">
           <div class="col span-6">
             <h3 class="m-0">
               {{ t('aiConfig.form.section.tools.fields.tools.label') }}
             </h3>
+          </div>
+          <div
+            v-if="!props.readOnly && hasToolEnabledChanges"
+            class="col span-6 text-right"
+          >
+            <RcButton
+              variant="tertiary"
+              :disabled="readOnly || !props.value?.tools || props.value?.tools.length === 0"
+              @click="resetToolsToDefaults"
+            >
+              {{ t('aiConfig.form.resetToDefaults', {}, true) }}
+            </RcButton>
           </div>
         </div>
 
@@ -388,14 +400,6 @@ const resetToolsToDefaults = () => {
                   {{ t('aiConfig.form.section.tools.resetFilters', {}, true) }}
                 </a>
               </div>
-              <RcButton
-                v-if="!props.readOnly && hasToolEnabledChanges"
-                variant="tertiary"
-                :disabled="readOnly || !props.value?.tools || props.value?.tools.length === 0"
-                @click="resetToolsToDefaults"
-              >
-                {{ t('aiConfig.form.resetToDefaults', {}, true) }}
-              </RcButton>
             </div>
 
             <!-- Tools Cards Grid -->
@@ -412,9 +416,6 @@ const resetToolsToDefaults = () => {
                       key: `aiConfig.form.section.tools.fields.tools.name.${tool.name}`,
                       text: tool.name
                     }
-                  }"
-                  :image="{
-                    icon: 'icon-gear'
                   }"
                   :content="{
                     text: tool.description
@@ -436,6 +437,7 @@ const resetToolsToDefaults = () => {
                   </template>
                   <template #item-card-actions>
                     <ToggleSwitch
+                      class="toggle-enable-tool"
                       :value="tool.enabled"
                       :disabled="readOnly"
                       @update:value="updateToolEnabled(tool.name, $event)"
@@ -504,6 +506,12 @@ const resetToolsToDefaults = () => {
   color: var(--body-text-secondary);
 }
 
+.tools-header {
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+
 .search-input {
   position: relative;
 
@@ -519,10 +527,6 @@ const resetToolsToDefaults = () => {
     &:focus {
       outline: none;
       border-color: var(--primary);
-    }
-
-    &::placeholder {
-      color: var(--input-placeholder-text);
     }
   }
 
@@ -570,7 +574,7 @@ const resetToolsToDefaults = () => {
 .right-section {
   display: flex;
   flex-direction: column;
-  gap: var(--gap);
+  gap: 16px;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -588,7 +592,7 @@ const resetToolsToDefaults = () => {
   .total {
     display: flex;
     align-items: center;
-    height: 56px;
+    height: 32px;
     gap: 8px;
 
     .total-message {
@@ -647,8 +651,34 @@ const resetToolsToDefaults = () => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
   margin-bottom: 8px;
+
+  .icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    font-size: 19px;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+  }
+}
+
+.toggle-enable-tool {
+  :deep() .switch {
+    width: 32px;
+    height: 16px;
+  }
+
+  :deep() .slider:before {
+    width: 12px;
+    height: 12px;
+    bottom: 2px;
+  }
+
+  :deep() input:checked + .slider:before {
+    transform: translateX(14px);
+  }
 }
 
 .reset-filters-btn {

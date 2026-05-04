@@ -10,7 +10,7 @@ export function getRancherVersion(): string {
     return envVersion;
   }
 
-  const rawVersion = getVersionData().Version || 'latest';
+  const rawVersion = getVersionData().Version || '99.0.0'; // Default to a high version if not available
 
   try {
     // Remove 'v' prefix if present
