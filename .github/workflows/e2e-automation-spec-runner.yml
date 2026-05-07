@@ -21,13 +21,14 @@ on:
 env:
   RANCHER_VERSION: head
   CATTLE_SERVER_URL: https://172.17.0.1
-  CATTLE_BOOTSTRAP_PASSWORD: password
+  CATTLE_BOOTSTRAP_PASSWORD: ${{ secrets.CATTLE_BOOTSTRAP_PASSWORD || 'password' }}
   KUBECONFIG_PATH: ${{ github.workspace }}/kubeconfig.yaml
   DEV_UI_URL: https://localhost:8005
 
 jobs:
   run-e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       actions: write
@@ -78,7 +79,7 @@ jobs:
 
       - name: Wait for dev UI to be ready
         run: |
-          npx wait-on ${{ env.DEV_UI_URL }}
+          npx wait-on ${{ env.DEV_UI_URL }} --timeout 300000
 
       - name: Run Cypress tests
         id: cypress
