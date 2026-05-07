@@ -117,10 +117,12 @@ const route = computed(() => {
     return null;
   }
 
+  // If the tool doesn't specify a cluster, we won't pass one to the route resolver
   if (!props.tool.input.cluster) {
     return resolve();
   }
 
+  // If the tool specifies a cluster, but we can't find it, we can't resolve the route
   if (cluster.value) {
     return resolve(cluster.value.name);
   }
