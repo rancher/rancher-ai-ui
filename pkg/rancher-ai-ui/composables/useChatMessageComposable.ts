@@ -450,7 +450,13 @@ export function useChatMessageComposable(
 
         if (data.startsWith(Tag.McpResultStart) && data.endsWith(Tag.McpResultEnd)) {
           setPhase(MessagePhase.Finalizing);
-          currentMsg.value.relatedResourcesActions = formatMessageRelatedResourcesActions(data);
+
+          const relatedResourcesActions = formatMessageRelatedResourcesActions(data);
+
+          if (!currentMsg.value.relatedResourcesActions) {
+            currentMsg.value.relatedResourcesActions = [];
+          }
+          currentMsg.value.relatedResourcesActions.push(...relatedResourcesActions);
           break;
         }
 
