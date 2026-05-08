@@ -36,3 +36,6 @@
 - **Test 4 (`.context-dropdown` not found, line 61)**: The context dropdown element is not found after the deselect step. The dropdown trigger needs to be clicked before the `.context-dropdown` container is asserted. Ensure the spec opens the dropdown before trying to find `.context-dropdown`.
 - **Test 8 (`[data-testid="extension-header-action-ai.action.openChat"]` not found, line 120)**: The AI chat header button testid is not found. The test tries to open the chat panel via `ChatPo.open()` → `RancherHeaderPo.askLizButton()`. This may fail if the page has not fully loaded or if the feature flag is disabled in this environment. Confirm the button is rendered before clicking.
 - **afterEach hook 503 (Test 8)**: Still using `cy.request()` without `failOnStatusCode: false` in `cypress/support/commands/chat-history.ts:8`. This is a known anti-pattern — fix by adding `failOnStatusCode: false`.
+
+## PR #208 — context (Attempt 2, 2026-05-08)
+- **Test 4 (`.context-dropdown` not found, line 61)**: Same failure as Attempt 1. The `.context-dropdown` element is not found after deselect. The test retried 3 times and failed all attempts. The dropdown trigger must be clicked before asserting `.context-dropdown` content. The fixer needs to ensure the dropdown is opened prior to line 61.
