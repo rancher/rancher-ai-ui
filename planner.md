@@ -16,6 +16,11 @@
 - `rc-dropdown-item` from `@components/RcDropdown` is a third-party component — its rendered HTML tag is unverifiable from this repo
 - **NEVER** specify the HTML tag (e.g., `li`) when targeting dropdown items — use `cy.get('.context-dropdown').contains('text')` or `cy.contains('.context-dropdown', 'text')` to match any element type
 
+### context (verified 2026-05-08, approved attempt 3)
+- `cy.installRancherAIService({ waitForAIServiceReady: false })` — **supported** parameter (confirmed in `rancher-ai-service.ts`)
+- Message IDs: welcome=1, first user message=2, first AI response=3 — confirmed in `message.spec.ts`
+- `.chat-context.disabled-panel` is sufficient to assert disabled state — do NOT add `.context-trigger[disabled]` as Vue prop `:disabled` doesn't guarantee HTML attribute
+
 ## Common Plan Issues
 
 - **Wrong descendant selectors**: When `data-testid` is on an inner element, adjacent siblings won't be found via descendant selector. Always check element hierarchy.
