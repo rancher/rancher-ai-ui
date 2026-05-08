@@ -136,7 +136,7 @@ const user = computed(() => {
   color: var(--body-text);
   border: 1px solid var(--border);
   border-radius: 90px;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px 0 var(--shadow);
 }
 
 .chat-no-permissions-msg-greeting-bubble {
@@ -159,7 +159,7 @@ const user = computed(() => {
   color: var(--body-text);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px 0 var(--shadow);
   padding: 12px;
   display: flex;
   flex-direction: column;
