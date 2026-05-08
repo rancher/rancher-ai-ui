@@ -39,3 +39,8 @@
 
 ## PR #208 — context (Attempt 2, 2026-05-08)
 - **Test 4 (`.context-dropdown` not found, line 61)**: Same failure as Attempt 1. The `.context-dropdown` element is not found after deselect. The test retried 3 times and failed all attempts. The dropdown trigger must be clicked before asserting `.context-dropdown` content. The fixer needs to ensure the dropdown is opened prior to line 61.
+
+## PR #208 — context (Attempt 3, 2026-05-08)
+- **Test 4 (`.context-dropdown` not found)**: The `.context-dropdown` class is on `<rc-dropdown>` Vue component. Rancher's `rc-dropdown` uses `floating-vue` and renders dropdown content in `.v-popper__popper` (NOT inside the `.context-dropdown` container). Fix: use `cy.get('.v-popper__popper').filter(':visible').contains('local').click()` instead of scoping to `.context-dropdown`.
+- The `rc-dropdown` component likely has `inheritAttrs: false` or renders as fragment, so Vue-applied classes don't appear on any DOM element.
+- **Pattern**: For any `rc-dropdown` in Rancher, use `.v-popper__popper` with `.filter(':visible')` to find the open dropdown's content after clicking the trigger.

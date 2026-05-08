@@ -1,0 +1,13 @@
+diff --git a/cypress/e2e/tests/features/context.spec.ts b/cypress/e2e/tests/features/context.spec.ts
+index 773b368..1760314 100644
+--- a/cypress/e2e/tests/features/context.spec.ts
++++ b/cypress/e2e/tests/features/context.spec.ts
+@@ -80,7 +80,7 @@ describe('Feature: context', () => {
+     context.tag('local').should('not.exist');
+ 
+     context.addContextTrigger().click();
+-    cy.get('.context-dropdown').should('be.visible').contains('local').click();
++    cy.get('.v-popper__popper').filter(':visible').contains('local').click();
+ 
+     context.tag('local').should('be.visible');
+     context.resetButton().should('not.exist');
