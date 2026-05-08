@@ -80,7 +80,7 @@ describe('Feature: context', () => {
     context.tag('local').should('not.exist');
 
     context.addContextTrigger().click();
-    cy.get('.context-dropdown').should('be.visible').contains('local').click();
+    cy.get('.v-popper__popper').filter(':visible').contains('local').click();
 
     context.tag('local').should('be.visible');
     context.resetButton().should('not.exist');
