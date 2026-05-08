@@ -44,3 +44,8 @@
 - **Test 4 (`.context-dropdown` not found)**: The `.context-dropdown` class is on `<rc-dropdown>` Vue component. Rancher's `rc-dropdown` uses `floating-vue` and renders dropdown content in `.v-popper__popper` (NOT inside the `.context-dropdown` container). Fix: use `cy.get('.v-popper__popper').filter(':visible').contains('local').click()` instead of scoping to `.context-dropdown`.
 - The `rc-dropdown` component likely has `inheritAttrs: false` or renders as fragment, so Vue-applied classes don't appear on any DOM element.
 - **Pattern**: For any `rc-dropdown` in Rancher, use `.v-popper__popper` with `.filter(':visible')` to find the open dropdown's content after clicking the trigger.
+
+## PR #208 — context (Attempt 3, 2026-05-08)
+- **All 8 tests passed** — the fixes from attempts 1-2 (`.v-popper__popper` for rc-dropdown, `failOnStatusCode: false` in cleanup) resolved all failures.
+- Tests 1, 4, 8 required retries (attempt 2) before passing; all ultimately passed within Cypress retry budget.
+- The `.v-popper__popper` selector pattern for `rc-dropdown` is confirmed working for Test 4.
