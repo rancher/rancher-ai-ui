@@ -125,7 +125,7 @@ deselects it, causing it to disappear from the panel.
 1. Navigate to deployments page and open chat.
 2. Remove `local` context tag: `cy.get('[data-testid="rancher-ai-ui-context-tag-local"]').parent('.vs__selected').find('.vs__deselect').click()`.
 3. Click the `.context-trigger` button ("Add context").
-4. In the dropdown, click the item containing text `local`: `cy.contains('[data-testid="rancher-ai-ui-chat-container"] .context-dropdown li', 'local').click()`
+4. In the dropdown, click the item containing text `local`: `cy.get('.context-dropdown').contains('local').click()`
 
 **Assertions**:
 - `[data-testid="rancher-ai-ui-context-tag-local"]` reappears.
@@ -133,7 +133,7 @@ deselects it, causing it to disappear from the panel.
 
 **Selectors**:
 - `.context-trigger` — the dropdown trigger button
-- `cy.contains('[data-testid="rancher-ai-ui-chat-container"] .context-dropdown li', 'local')` — text-based selection (avoids relying on unverified `.rc-dropdown-item` class)
+- `cy.get('.context-dropdown').contains('local')` — text-based selection without hardcoding the HTML tag (avoids relying on unverified element type for rc-dropdown-item)
 - `[data-testid="rancher-ai-ui-context-tag-local"]`
 
 **Screenshot**: `context-test-4-tag-readded`
@@ -251,7 +251,6 @@ should be disabled (non-interactive).
 
 **Selectors**:
 - `.chat-context.disabled-panel`
-- `.context-trigger[disabled]`
 
 **Screenshot**: `context-test-8-disabled-when-not-active`
 
