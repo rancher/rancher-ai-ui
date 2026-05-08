@@ -110,7 +110,7 @@ describe('Feature: context-selection', () => {
     let removedItemValue: string;
 
     context.allTags().first().then(($tag) => {
-      const testId = $tag.find('[data-testid^="rancher-ai-ui-context-tag-"]').attr('data-testid') || '';
+      const testId = $tag.attr('data-testid') || '';
 
       removedItemValue = testId.replace('rancher-ai-ui-context-tag-', '');
     });
@@ -190,6 +190,9 @@ describe('Feature: context-selection', () => {
 
     clusterDashboard.goTo();
     clusterDashboard.waitForPage();
+
+    chat.open();
+    chat.isReady();
 
     context.allTags().should('have.length.gte', 1);
     context.self().find('.context-reset').should('not.exist');
