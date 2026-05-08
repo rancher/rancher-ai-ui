@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onBeforeUnmount, ref } from 'vue';
 
 const props = defineProps({
   icon: {
@@ -9,9 +10,40 @@ const props = defineProps({
     type:    String,
     default: '',
   },
+  showSuccess: {
+    type:    Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['click']);
+
+const success = ref(false);
+const successTimeout = ref<any>(null);
+
+function handleShowSuccess() {
+  success.value = true;
+  if (successTimeout.value) {
+    clearTimeout(successTimeout.value);
+  }
+  successTimeout.value = setTimeout(() => {
+    success.value = false;
+  }, 1000);
+}
+
+function handleClick() {
+  emit('click');
+
+  if (props.showSuccess) {
+    handleShowSuccess();
+  }
+}
+
+onBeforeUnmount(() => {
+  if (successTimeout.value) {
+    clearTimeout(successTimeout.value);
+  }
+});
 </script>
 
 <template>
@@ -20,9 +52,9 @@ const emit = defineEmits(['click']);
     class="bubble-action-btn btn role-tertiary"
     type="button"
     role="button"
-    @click="emit('click')"
+    @click="handleClick"
   >
-    <i :class="`icon ${props.icon}`" />
+    <i :class="`icon ${ success ? 'icon-checkmark' : props.icon }`" />
   </button>
 </template>
 

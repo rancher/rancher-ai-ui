@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import {
-  computed, nextTick, onBeforeUnmount, ref, type PropType
-} from 'vue';
+import { computed, nextTick, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import {
@@ -43,13 +41,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:message', 'confirm:message', 'send:message']);
 
+const { updateInput, cleanInputAndTags, focusConsoleInput } = useInputComposable();
+
 const isThinking = computed(() => props.message.role === RoleEnum.Assistant &&
   !props.message.completed &&
   (props.message.thinking || !props.message.formattedMessageContent)
 );
-const showCopySuccess = ref(false);
-const timeoutCopy = ref<any>(null);
-const { updateInput, cleanInputAndTags, focusConsoleInput } = useInputComposable();
 
 function handleCopy() {
   let text = extractMessageText(props.message);
@@ -61,13 +58,6 @@ function handleCopy() {
   text = cleanInputAndTags(text);
 
   navigator.clipboard.writeText(text);
-  showCopySuccess.value = true;
-  if (timeoutCopy.value) {
-    clearTimeout(timeoutCopy.value);
-  }
-  timeoutCopy.value = setTimeout(() => {
-    showCopySuccess.value = false;
-  }, 1000);
 }
 
 function handleResendMessage() {
@@ -104,12 +94,6 @@ function handleToolAction(event: ToolActionEvent) {
     handleEditBeforeSending(event.value);
   }
 }
-
-onBeforeUnmount(() => {
-  if (timeoutCopy.value) {
-    clearTimeout(timeoutCopy.value);
-  }
-});
 </script>
 
 <template>
@@ -146,13 +130,15 @@ onBeforeUnmount(() => {
           />
           <BubbleButton
             v-if="props.message.role === RoleEnum.User && !pendingConfirmation"
-            :icon="showCopySuccess ? 'icon-checkmark' : 'icon-edit'"
+            :icon="'icon-edit'"
             :tooltip="t('ai.message.actions.tooltip.editBeforeResend')"
+            :show-success="true"
             @click="handleEditBeforeSending(extractMessageText(props.message) || '')"
           />
           <BubbleButton
-            :icon="showCopySuccess ? 'icon-checkmark' : 'icon-copy'"
+            :icon="'icon-copy'"
             :tooltip="t('ai.message.actions.tooltip.copy')"
+            :show-success="true"
             @click="handleCopy"
           />
           <BubbleButton

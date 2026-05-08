@@ -77,6 +77,7 @@ const hoveredIndex = ref<number | null>(null);
               class="button-group-action"
               :class="{ hidden: !(props.showEdit && hoveredIndex === index && !props.disabled) }"
               :icon="'icon-edit'"
+              :show-success="true"
               @click="props.disabled ? undefined : emit('edit', option)"
             />
           </div>
