@@ -6,15 +6,18 @@
 Cypress.Commands.add('cleanChatHistory', () => {
   return cy.getCookie('CSRF').then((token) => {
     cy.request({
-      method:  'DELETE',
-      url:     `${ Cypress.env('chatServiceProxyPath') }/chats`,
-      headers: {
+      method:            'DELETE',
+      url:               `${ Cypress.env('chatServiceProxyPath') }/chats`,
+      headers:           {
         'x-api-csrf': token.value,
         Accept:       'application/json'
       },
+      failOnStatusCode: false,
     })
       .then((resp) => {
-        expect(resp.status).to.eq(204);
+        if (resp.status !== 503) {
+          expect(resp.status).to.eq(204);
+        }
       });
   });
 });

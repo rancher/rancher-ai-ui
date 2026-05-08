@@ -80,7 +80,7 @@ describe('Feature: context', () => {
     context.tag('local').should('not.exist');
 
     context.addContextTrigger().click();
-    cy.get('.context-dropdown').contains('local').click();
+    cy.get('.context-dropdown').should('be.visible').contains('local').click();
 
     context.tag('local').should('be.visible');
     context.resetButton().should('not.exist');
@@ -172,6 +172,7 @@ describe('Feature: context', () => {
     deploymentsListPage.goTo();
     deploymentsListPage.waitForPage();
 
+    cy.get('[data-testid="extension-header-action-ai.action.openChat"]').should('be.visible');
     chat.open();
 
     context.isDisabled();
