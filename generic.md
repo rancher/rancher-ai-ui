@@ -20,10 +20,11 @@
 - For tests involving navigation, ensure the target page actually renders the component under test (e.g., navigate to a cluster page before asserting `.chat-context`).
 
 ## Feature-Specific Notes (context-selection)
-- Tests 1–4, 6, 7 are stable as of attempt 2.
-- Test 5 (toggle context via dropdown) is flaky across attempts 1 and 2: `[data-testid="rancher-ai-ui-context-dropdown-item-"]` is never found — the testid suffix may be empty in the PO method.
-- Test 8 (hide Reset after re-navigation) is failing: `.chat-context` not found after navigation — probably navigated to a page where the context panel doesn't appear.
-- The `afterEach` hook deletes chat history via API; add `failOnStatusCode: false` when the backend may be unavailable in CI.
+- All 8 tests fully passing as of attempt 3 (PR #209).
+- Tests 1–4, 6, 7 were stable from attempt 2.
+- Test 5 (toggle context via dropdown) was fixed by attempt 3: the `dropdownItem()` PO method was corrected to include the item name in the testid suffix.
+- Test 8 (hide Reset after re-navigation) was fixed by attempt 3: navigation now targets a cluster-scoped page before asserting `.chat-context`.
+- The `afterEach` hook deletes chat history via API; `failOnStatusCode: false` was added for resilience.
 
 ## Anti-Patterns
 - Do NOT use `[data-testid="rancher-ai-ui-context-dropdown-item-"]` with an empty suffix — the PO method likely needs the item name as an argument.
