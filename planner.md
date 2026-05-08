@@ -1,0 +1,37 @@
+# E2E Planner Learnings
+
+## Selector Verification
+
+### context-selection (verified 2026-05-08)
+- `[data-testid^="rancher-ai-ui-context-tag-"]` — on `.tag-content` **inner div** inside `.vs__selected.tag` wrapper
+- `.vs__deselect` button is a **sibling** of `.tag-content`, not a descendant — must use `.vs__selected.tag .vs__deselect` or `[data-testid^="..."].parent().find('.vs__deselect')`
+- `.context-trigger` — class on `<rc-dropdown-trigger>` in `SelectContext.vue`
+- `.context-dropdown` — class on `<rc-dropdown>` wrapper in `SelectContext.vue`; items accessible via `cy.contains('.context-dropdown', label)`
+- `.no-context` — class on the `<span>` shown when `options.length === 0`
+- `.context-reset` — wrapper div containing `RcButton`; use `.context-reset button` for the actual button
+- `.chat-context.disabled-panel` — root div of `Context.vue` when `disabled` prop is true
+- `[data-testid="rancher-ai-ui-chat-message-box-N"]` — dynamic testid in `Messages.vue` based on `message.id`
+
+## Common Plan Issues
+
+- **Wrong descendant selectors**: When `data-testid` is on an inner element, adjacent siblings won't be found via descendant selector. Always check element hierarchy.
+- **Unverified component class names**: `RcDropdownItem` and similar wrapped components may not expose their internal CSS class. Prefer `cy.contains()` with text or `cy.get()` with verified classes.
+- **Disabled attribute vs. property**: When Vue binds `:disabled` as a prop to a custom component, the HTML `disabled` attribute may not be set. Use `cy.get(...).should('be.disabled')` which checks both.
+
+## Component Mapping
+
+- `context-selection` feature → `SelectContext.vue`, `ContextTag.vue`, `Context.vue` (panel wrapper)
+- Chat panel → `panels/` directory (Chat.vue, Console.vue, Context.vue, Messages.vue)
+- Message context tags rendered in `message/index.vue` via `ContextTag.vue`
+
+## Coverage Guidelines
+
+- Context selection tests should cover: auto-populate on navigation, no-context placeholder, remove tag, reset, re-add via dropdown, context sent with message, disabled state during connecting
+- Always test navigation-triggered context refresh (context updates when navigating between pages)
+
+## Anti-Patterns
+
+- Do NOT use `.rc-dropdown-item` — this class is not guaranteed on the rendered element
+- Do NOT use `data-testid` descendant selectors without verifying element hierarchy first
+- Do NOT assume `:disabled` prop translates to HTML `disabled` attribute without verification
+- Do NOT reference `WorkloadsDeploymentsListPagePo` without checking the exact import path (it's in `@rancher/cypress/e2e/po/pages/explorer/workloads/workloads-deployments.po`)
