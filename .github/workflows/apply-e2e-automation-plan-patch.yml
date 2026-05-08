@@ -155,7 +155,7 @@ jobs:
               # Dispatch planner verifier
               GH_TOKEN="${{ github.token }}" gh workflow run e2e-automation-plan-verifier.lock.yml \
                 --repo "$REPO" \
-                --ref e2e-agentic \
+                --ref main \
                 -f feature_area="$FEATURE_AREA" \
                 -f pr_number="$PR_NUMBER" \
                 -f attempt="$ATTEMPT" || echo "Warning: Failed to dispatch planner verifier"

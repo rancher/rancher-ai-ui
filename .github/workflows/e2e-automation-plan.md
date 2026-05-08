@@ -33,7 +33,7 @@ safe-outputs:
     title-prefix: "test(e2e): "
     labels: [bot/e2e-automation, bot/e2e-automation/plan]
     draft: true
-    base-branch: e2e-agentic
+    base-branch: main
     allowed-files:
       - "cypress/**"
     max: 1

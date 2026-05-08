@@ -149,7 +149,7 @@ jobs:
         run: |
           gh workflow run e2e-automation-spec-verifier.lock.yml \
             --repo ${{ github.repository }} \
-            --ref e2e-agentic \
+            --ref main \
             -f feature_area="${{ github.event.inputs.feature_area }}" \
             -f pr_number="${{ steps.pr.outputs.pr_number }}" \
             -f attempt="${{ github.event.inputs.attempt }}" \
