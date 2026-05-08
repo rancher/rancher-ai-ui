@@ -1,0 +1,23 @@
+diff --git a/cypress/e2e/tests/features/context-selection.spec.ts b/cypress/e2e/tests/features/context-selection.spec.ts
+index c52fbd1..4ed2ba6 100644
+--- a/cypress/e2e/tests/features/context-selection.spec.ts
++++ b/cypress/e2e/tests/features/context-selection.spec.ts
+@@ -110,7 +110,7 @@ describe('Feature: context-selection', () => {
+     let removedItemValue: string;
+ 
+     context.allTags().first().then(($tag) => {
+-      const testId = $tag.find('[data-testid^="rancher-ai-ui-context-tag-"]').attr('data-testid') || '';
++      const testId = $tag.attr('data-testid') || '';
+ 
+       removedItemValue = testId.replace('rancher-ai-ui-context-tag-', '');
+     });
+@@ -191,6 +191,9 @@ describe('Feature: context-selection', () => {
+     clusterDashboard.goTo();
+     clusterDashboard.waitForPage();
+ 
++    chat.open();
++    chat.isReady();
++
+     context.allTags().should('have.length.gte', 1);
+     context.self().find('.context-reset').should('not.exist');
+ 
