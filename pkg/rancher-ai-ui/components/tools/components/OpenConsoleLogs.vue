@@ -75,7 +75,7 @@ async function openConsoleLogs() {
     await store.state.$router.push({ path: expectedBasePath });
   }
 
-  const containerName = pod.value?.spec?.containers?.[0]?.name;
+  const containerName = props.tool.input.containerName || pod.value?.spec?.containers?.[0]?.name;
 
   store.dispatch('wm/open', {
     id:        `${ containerName }-logs`,
