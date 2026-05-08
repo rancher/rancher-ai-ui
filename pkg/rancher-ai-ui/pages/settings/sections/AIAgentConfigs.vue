@@ -2,6 +2,7 @@
 import { ref, computed, PropType, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import { randomStr } from '@shell/utils/string';
 import { AGENT_NAMESPACE } from '../../../product';
 import { AIAgentConfigCRD } from '../../../types';
 import { AIAgentConfigAuthType, AiAgentConfigSecretPayload } from '../types';
@@ -79,7 +80,9 @@ const agents = computed(() => {
   const builtIn = all
     .filter((a) => a.spec.builtIn)
     .sort((a) => a.metadata.name === DEFAULT_AI_AGENT ? -1 : 1);
-  const custom = all.filter((a) => !a.spec.builtIn);
+  const custom = all
+    .filter((a) => !a.spec.builtIn)
+    .sort((a, b) => b.metadata.name.localeCompare(a.metadata.name));
 
   return [
     ...custom,
@@ -246,7 +249,10 @@ function addAgent() {
     return;
   }
 
-  const name = `agent-${ agents.value.length + 1 }`;
+  // Random string is added to ensure the name is unique even when multiple agents are being added without saving in between
+  const name = `agent-${ agents.value.length + 1 }-${ randomStr(8) }`.toLocaleLowerCase();
+
+  const newAgentsCount = agents.value.filter((a) => a.spec?.displayName?.trim().startsWith('New Agent')).length;
 
   const newList: AIAgentConfigCRD[] = [
     {
@@ -255,7 +261,7 @@ function addAgent() {
         namespace: AGENT_NAMESPACE
       },
       spec:     {
-        displayName:          'New Agent',
+        displayName:          `New Agent${ newAgentsCount === 0 ? '' : ` ${ newAgentsCount }` }`,
         enabled:              true,
         mcpURL:               '',
         authenticationType:   AIAgentConfigAuthType.RANCHER,
