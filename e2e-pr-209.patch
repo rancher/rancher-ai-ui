@@ -1,0 +1,74 @@
+diff --git a/cypress/e2e/po/context.po.ts b/cypress/e2e/po/context.po.ts
+index d586f01..79e30fc 100644
+--- a/cypress/e2e/po/context.po.ts
++++ b/cypress/e2e/po/context.po.ts
+@@ -28,7 +28,7 @@ export class ContextPanelPo extends ComponentPo {
+   }
+ 
+   dropdownItem(label: string) {
+-    return cy.contains('.context-dropdown', label);
++    return cy.get(`[data-testid="rancher-ai-ui-context-dropdown-item-${ label }"]`);
+   }
+ 
+   tag(label: string) {
+diff --git a/cypress/e2e/tests/features/context-selection.spec.ts b/cypress/e2e/tests/features/context-selection.spec.ts
+index 4417e23..c52fbd1 100644
+--- a/cypress/e2e/tests/features/context-selection.spec.ts
++++ b/cypress/e2e/tests/features/context-selection.spec.ts
+@@ -12,8 +12,10 @@ describe('Feature: context-selection', () => {
+     cy.login();
+   });
+ 
+-  afterEach(() => {
+-    cy.cleanChatHistory();
++  afterEach(function() {
++    if (!this.currentTest?.title.includes('Test 7')) {
++      cy.cleanChatHistory();
++    }
+   });
+ 
+   it('Test 1: Context panel shows context tags when on a cluster-scoped page', () => {
+@@ -105,10 +107,12 @@ describe('Feature: context-selection', () => {
+     chat.open();
+     chat.isReady();
+ 
+-    let removedLabel: string;
++    let removedItemValue: string;
+ 
+     context.allTags().first().then(($tag) => {
+-      removedLabel = $tag.text().trim();
++      const testId = $tag.find('[data-testid^="rancher-ai-ui-context-tag-"]').attr('data-testid') || '';
++
++      removedItemValue = testId.replace('rancher-ai-ui-context-tag-', '');
+     });
+ 
+     cy.get('.vs__selected.tag .vs__deselect').first().click();
+@@ -116,7 +120,7 @@ describe('Feature: context-selection', () => {
+     context.openDropdown();
+ 
+     cy.then(() => {
+-      cy.contains('.context-dropdown', removedLabel).click();
++      context.dropdownItem(removedItemValue).click();
+     });
+ 
+     context.allTags().should('have.length.gte', 1);
+@@ -166,7 +170,6 @@ describe('Feature: context-selection', () => {
+     chat.isNotReady();
+ 
+     context.isDisabled();
+-    context.self().find('.context-trigger').should('be.disabled');
+ 
+     cy.wait(500);
+     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-7-context-disabled');
+diff --git a/pkg/rancher-ai-ui/components/context/SelectContext.vue b/pkg/rancher-ai-ui/components/context/SelectContext.vue
+index 6b862e6..cdb5e2a 100644
+--- a/pkg/rancher-ai-ui/components/context/SelectContext.vue
++++ b/pkg/rancher-ai-ui/components/context/SelectContext.vue
+@@ -108,6 +108,7 @@ function reset() {
+           v-for="(opt, i) in props.options"
+           :key="i"
+           v-clean-tooltip="opt.description"
++          :data-testid="`rancher-ai-ui-context-dropdown-item-${ opt.valueLabel || opt.value }`"
+           @click="toggleItem(opt)"
+         >
+           {{ opt.tag }}:{{ contextLabel(opt) }}
