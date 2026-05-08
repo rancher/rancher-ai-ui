@@ -12,8 +12,10 @@ describe('Feature: context-selection', () => {
     cy.login();
   });
 
-  afterEach(() => {
-    cy.cleanChatHistory();
+  afterEach(function() {
+    if (!this.currentTest?.title.includes('Test 7')) {
+      cy.cleanChatHistory();
+    }
   });
 
   it('Test 1: Context panel shows context tags when on a cluster-scoped page', () => {
@@ -105,10 +107,12 @@ describe('Feature: context-selection', () => {
     chat.open();
     chat.isReady();
 
-    let removedLabel: string;
+    let removedItemValue: string;
 
     context.allTags().first().then(($tag) => {
-      removedLabel = $tag.text().trim();
+      const testId = $tag.find('[data-testid^="rancher-ai-ui-context-tag-"]').attr('data-testid') || '';
+
+      removedItemValue = testId.replace('rancher-ai-ui-context-tag-', '');
     });
 
     cy.get('.vs__selected.tag .vs__deselect').first().click();
@@ -116,7 +120,7 @@ describe('Feature: context-selection', () => {
     context.openDropdown();
 
     cy.then(() => {
-      cy.contains('.context-dropdown', removedLabel).click();
+      context.dropdownItem(removedItemValue).click();
     });
 
     context.allTags().should('have.length.gte', 1);
@@ -166,7 +170,6 @@ describe('Feature: context-selection', () => {
     chat.isNotReady();
 
     context.isDisabled();
-    context.self().find('.context-trigger').should('be.disabled');
 
     cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-7-context-disabled');

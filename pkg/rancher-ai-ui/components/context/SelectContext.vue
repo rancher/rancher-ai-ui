@@ -112,6 +112,7 @@ function reset() {
             v-for="(opt, i) in props.options"
             :key="i"
             v-clean-tooltip="opt.description"
+            :data-testid="`rancher-ai-ui-context-dropdown-item-${ opt.valueLabel || opt.value }`"
             @click="toggleItem(opt)"
           >
             {{ opt.tag }}:{{ contextLabel(opt) }}
