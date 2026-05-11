@@ -59,7 +59,6 @@ const formattedMessages = computed<FormattedMessage[]>(() => {
     .filter((m) => m.messageContent ||
       m.thinkingContent ||
       m.confirmation ||
-      m.suggestionActions?.length ||
       m.templateContent
     )
     .map((m) => ({
@@ -201,6 +200,7 @@ onBeforeUnmount(() => {
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
         :disabled="props.disabled"
+        :pending-confirmation="messagePhase === MessagePhase.AwaitingConfirmation"
         :message="message"
         @update:message="emit('update:message', $event)"
         @send:message="emit('send:message', $event)"

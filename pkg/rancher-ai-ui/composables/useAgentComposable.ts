@@ -1,7 +1,10 @@
 import { computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
-import { Agent, AIAgentConfigCRD, RANCHER_AI_SCHEMA } from '../types';
+import { RANCHER_AI_SCHEMA } from '../product';
+import { Agent, AIAgentConfigCRD } from '../types';
 import { formatAgentFromCRD } from '../utils/format';
+
+export const DEFAULT_AI_AGENT = 'rancher';
 
 /**
  * Composable for managing the AI agents.

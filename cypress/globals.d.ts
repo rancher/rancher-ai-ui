@@ -1,11 +1,12 @@
 export interface LlmResponseArgs {
-  agent?: string;
+  agent?: string | null;
   text?: string | string[];
   chunkSize?: number;
-  tool?: McpTool;
+  mcpTool?: Tool;
+  uiTools?: Tool[];
 }
 
-export interface McpTool {
+export interface Tool {
   name: string;
   args: object | object[];
 }
@@ -26,6 +27,9 @@ declare global {
       createAgentConfig(config: object): void;
       updateAgentConfig(config: object): void;
       deleteAgentConfig(config: object): void;
+      installUIToolsDefinition(): void;
+      updateUIToolsDefinition(): void;
+      uninstallUIToolsDefinition(): void;
     }
   }
 }

@@ -2,9 +2,9 @@
 import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import ContextTag from '../context/ContextTag.vue';
-import { toLinkLabel } from '../../utils/label';
-import { SourceLinkItem } from '../../types';
+import ContextTag from '../../context/ContextTag.vue';
+import { toLinkLabel } from '../../../utils/label';
+import { SourceLinkItem } from '../../../types';
 
 const store = useStore();
 const { t } = useI18n(store);

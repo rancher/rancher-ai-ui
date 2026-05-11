@@ -6,6 +6,11 @@ import ChatPo from '@/cypress/e2e/po/chat.po';
 describe('Messages', () => {
   const chat = new ChatPo();
 
+  before(() => {
+    cy.login();
+    cy.installUIToolsDefinition();
+  });
+
   beforeEach(() => {
     cy.login();
 
@@ -14,8 +19,19 @@ describe('Messages', () => {
 
   it('Show welcome message', () => {
     cy.enqueueLLMResponse({
-      text:      'Providing mock response from the agent, containing suggestions for the welcome message. <suggestion>View resources</suggestion><suggestion>Analyze logs</suggestion><suggestion>Do action</suggestion>',
-      chunkSize: 30
+      text:      'Init message',
+      chunkSize: 30,
+      agent:     null, // Welcome message uses 'rancher' as manual agent - the backend skips the agent selection.
+      uiTools:   [
+        {
+          name: 'suggestions',
+          args: {
+            suggestion1: 'View resources',
+            suggestion2: 'Analyze logs',
+            suggestion3: 'Do action',
+          }
+        }
+      ]
     });
 
     chat.open();
@@ -27,7 +43,7 @@ describe('Messages', () => {
     const suggestions = ['View resources', 'Analyze logs', 'Do action'];
 
     suggestions.forEach((value, index) => {
-      welcomeMessage.suggestion(index).should('contain.text', value);
+      welcomeMessage.option(index).should('contain.text', value);
     });
   });
 
@@ -109,7 +125,7 @@ describe('Messages', () => {
 
     cy.enqueueLLMResponse({
       text:      ['Here', ' are the resources'],
-      tool: {
+      mcpTool: {
         name: 'listKubernetesResources',
         args: {
           kind:      'Deployment',
@@ -203,7 +219,7 @@ describe('Messages', () => {
 
     cy.enqueueLLMResponse({
       text:      'Pod created successfully.',
-      tool: {
+      mcpTool: {
         name: 'createKubernetesResource',
         args: {
           kind:      'Pod',
@@ -257,9 +273,9 @@ describe('Messages', () => {
      */
     cy.enqueueLLMResponse({
       text:      'Pod created successfully.',
-      tool: {
+      mcpTool: {
         name: 'createKubernetesResource',
-        args: [{
+        args: {
           kind:      'Pod',
           name:      'my-pod',
           resource:  {
@@ -272,7 +288,7 @@ describe('Messages', () => {
           },
           cluster:   'local',
           namespace: 'default'
-        }]
+        }
       },
     });
 
@@ -305,7 +321,7 @@ describe('Messages', () => {
 
     cy.enqueueLLMResponse({
       text:      'Pod creation canceled.',
-      tool: {
+      mcpTool: {
         name: 'createKubernetesResource',
         args: {
           kind:      'Pod',
@@ -342,5 +358,6 @@ describe('Messages', () => {
 
   after(() => {
     cy.clearLLMResponses();
+    cy.uninstallUIToolsDefinition();
   });
 });

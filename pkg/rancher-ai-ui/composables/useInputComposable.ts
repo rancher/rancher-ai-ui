@@ -1,8 +1,13 @@
 import { useStore } from 'vuex';
-import { computed } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 
 /**
- * Composable for managing the AI input text state.
+ * Shared console ref for managing focus across the app
+ */
+const consoleRef: Ref<any> = ref(null);
+
+/**
+ * Composable for managing the AI input text state and the input status in the console.
  * @returns Composable for managing the AI input text state.
  */
 export function useInputComposable() {
@@ -28,10 +33,20 @@ export function useInputComposable() {
       .trim();
   }
 
+  function setConsoleRef(ref: any) {
+    consoleRef.value = ref;
+  }
+
+  function focusConsoleInput() {
+    consoleRef.value?.focusInput();
+  }
+
   return {
     inputText,
     updateInput,
     cleanInput,
     cleanInputAndTags,
+    setConsoleRef,
+    focusConsoleInput,
   };
 }

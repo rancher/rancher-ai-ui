@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { ref, PropType } from 'vue';
+import { ref, PropType, onMounted, nextTick } from 'vue';
+import { useStore } from 'vuex';
 import Banner from '@components/Banner/Banner.vue';
 
 const props = defineProps({
+  sectionId: {
+    type:     String,
+    required: true,
+  },
   title: {
     type:     String,
     default:  '',
@@ -17,11 +22,37 @@ const props = defineProps({
   },
 });
 
+const store = useStore();
+
 const isExpanded = ref(true);
+
+function ensureScrollToRow() {
+  const section = store.state.$router.currentRoute.value?.query?.section;
+
+  if (section && section === props.sectionId) {
+    nextTick(() => {
+      const element = document.getElementById(props.sectionId);
+
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block:    'start'
+        });
+      }
+    });
+  }
+}
+
+onMounted(() => {
+  ensureScrollToRow();
+});
 </script>
 
 <template>
-  <div class="settings-row">
+  <div
+    :id="props.sectionId"
+    class="settings-row"
+  >
     <div class="header">
       <div
         class="title clickable"

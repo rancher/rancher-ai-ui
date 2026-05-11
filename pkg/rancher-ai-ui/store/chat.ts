@@ -217,6 +217,13 @@ const mutations = {
       return;
     }
 
+    const lastMessage = state.chats[chatId]?.messages[state.chats[chatId].msgIdCnt || 0];
+
+    // Confirmation in progress, skip
+    if (lastMessage?.confirmation?.status === ConfirmationStatus.Pending) {
+      return;
+    }
+
     state.messageBox[chatId] = {
       ...message,
       source: MessageInternalSource.MessageBox

@@ -7,7 +7,13 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import {
-  AGENT_NAME, AGENT_NAMESPACE, AGENT_CONFIG_SECRET_NAME, AGENT_CONFIG_CONFIG_MAP_NAME, PERMISSIONS_DOCS_URL
+  RANCHER_AI_SCHEMA,
+  AGENT_NAME,
+  AGENT_NAMESPACE,
+  AGENT_CONFIG_SECRET_NAME,
+  AGENT_CONFIG_CONFIG_MAP_NAME,
+  PERMISSIONS_DOCS_URL,
+  TOOLS_CONFIG_NAME,
 } from '../../product';
 import { warn } from '../../utils/log';
 import { CONFIG_MAP, SECRET, WORKLOAD_TYPES } from '@shell/config/types';
@@ -23,13 +29,15 @@ import {
   SettingsFormData, Settings, Workload, AiAgentConfigSecretPayload, AIAgentConfigAuthType,
   SettingsPermissions,
 } from './types';
-import { AgentSettings, AIAgentConfigCRD, RANCHER_AI_SCHEMA } from '../../types';
+import { AgentSettings, AIAgentConfigCRD, UIToolsConfigs } from '../../types';
 import { AI_AGENT_LABELS } from '../../labels-annotations';
 import SettingsRow from './SettingsRow.vue';
 import AIAgentConfigs from './sections/AIAgentConfigs.vue';
+import UIToolsConfig from './sections/ui-tools-config/index.vue';
 import AIAgentSettings from './sections/AIAgentSettings.vue';
 import ApplySettings from '../../dialog/ApplySettingsCard.vue';
-import { useChatApiComposable } from '../../composables/useChatApiComposable';
+import { useAIAgentApiComposable } from '../../composables/useAIAgentApiComposable';
+import { useToolsComposable } from '../../composables/useToolsComposable';
 
 /**
  * Settings page for configuring Rancher AI assistant.
@@ -40,7 +48,12 @@ const { t } = useI18n(store);
 // const shellApi = useShell();
 
 // TODO: All settings will be fetched through the API in the future.
-const { fetchSettings, saveSettings } = useChatApiComposable();
+const { fetchSettings, saveSettings } = useAIAgentApiComposable();
+
+const {
+  toolsRequiredAction,
+  publishToolsDefinition
+} = useToolsComposable();
 
 const isLoading = ref(true);
 const isSaving = ref(false);
@@ -54,6 +67,8 @@ const aiAgentSettings = ref<SettingsFormData | null>(null);
 
 const aiAgentConfigCRDs = ref<AIAgentConfigCRD[] | null>(null);
 const initAiAgentConfigCRDs = ref<AIAgentConfigCRD[]>([]);
+const uiToolsSettings = ref<UIToolsConfigs | null>(null);
+
 const authenticationSecrets = ref<Record<string, AiAgentConfigSecretPayload | null>>({});
 
 const permissions = ref<SettingsPermissions | null>(null);
@@ -66,6 +81,8 @@ const buttonProps = ref({
   successLabel: t('asyncButton.apply.action'),
   successColor: 'bg-success',
 });
+
+const toolsActionResultBanner = ref<{ color: string; label: string } | null>(null);
 
 /**
  * Fetches the rancher-ai-agent deployment.
@@ -157,6 +174,35 @@ async function fetchAiAgentConfigCRDs() {
 
   aiAgentConfigCRDs.value = crds;
   initAiAgentConfigCRDs.value = [...crds];
+}
+
+/**
+ * Fetches the UI tools config from the ConfigMap.
+ */
+async function fetchUIToolsConfigSettings() {
+  let uiToolsConfigSettings;
+
+  if (permissions.value?.list?.canListConfigMaps) {
+    let configMap;
+
+    try {
+      configMap = await store.dispatch(`management/find`, {
+        type: CONFIG_MAP,
+        id:   `${ AGENT_NAMESPACE }/${ TOOLS_CONFIG_NAME }`,
+        opt:  { watch: true }
+      });
+    } catch (err) {
+      warn('Unable to fetch UI Tools Config ConfigMap: ', { err });
+    }
+
+    try {
+      uiToolsConfigSettings = JSON.parse(configMap?.data?.config || '{}');
+    } catch (error) {
+      warn('Failed to parse UI Tools Config ConfigMap data:', { error });
+    }
+  }
+
+  uiToolsSettings.value = uiToolsConfigSettings;
 }
 
 /**
@@ -260,6 +306,34 @@ async function saveAiAgentConfigCRDs() {
 }
 
 /**
+ * Saves the UI tools config to the ConfigMap.
+ */
+async function saveUIToolsConfig() {
+  let configMap;
+
+  try {
+    configMap = await store.dispatch(`management/find`, {
+      type: CONFIG_MAP,
+      id:   `${ AGENT_NAMESPACE }/${ TOOLS_CONFIG_NAME }`,
+    });
+  } catch (err) {
+    warn('Unable to fetch UI Tools Config ConfigMap: ', { err });
+  }
+
+  if (configMap) {
+    configMap.data = { config: JSON.stringify(uiToolsSettings.value || {}) };
+
+    try {
+      await configMap.save();
+    } catch (err) {
+      warn('Unable to save UI Tools Config ConfigMap: ', { err });
+    }
+  } else {
+    warn('UI Tools Config ConfigMap not found, cannot save settings');
+  }
+}
+
+/**
  * Saves the AI agent config authentication secrets.
  */
 async function saveAiAgentConfigAuthenticationSecrets() {
@@ -341,6 +415,10 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
         await saveAiAgentConfigCRDs();
       }
 
+      if (permissions?.value?.create.canCreateConfigMaps) {
+        await saveUIToolsConfig();
+      }
+
       // Redeploy the rancher-ai-agent deployment after save
       await redeployAiAgent();
     }
@@ -351,6 +429,8 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
     apiError.value = t('aiConfig.form.save.apiError', { error }, true);
     btnCB(false);
   }
+
+  toolsActionResultBanner.value = null;
 };
 
 function applySettings() {
@@ -375,6 +455,19 @@ function discardSettings() {
   isSaving.value = false;
 }
 
+async function publishToolsDefinitionAndRefetch() {
+  const { action, success, message = undefined } = await publishToolsDefinition();
+
+  const key = success ? 'success' : 'error';
+
+  toolsActionResultBanner.value = {
+    color:   key,
+    label: t(`aiConfig.form.section.tools.publish.message.admin.${ action }.action.result.${ key }`, { message }, true),
+  };
+
+  fetchUIToolsConfigSettings();
+}
+
 function fetchPermissions() {
   const canListConfigMaps = store.getters['management/canList'](CONFIG_MAP);
   const canListSecrets = store.getters['management/canList'](SECRET);
@@ -387,16 +480,20 @@ function fetchPermissions() {
   schema = store.getters['management/schemaFor'](SECRET);
   const canCreateSecrets = !!schema?.resourceMethods?.find((verb: any) => 'PUT' === verb);
 
+  schema = store.getters['management/schemaFor'](CONFIG_MAP);
+  const canCreateConfigMaps = !!schema?.resourceMethods?.find((verb: any) => 'PUT' === verb);
+
   permissions.value = {
     list:   {
       canListConfigMaps,
       canListSecrets,
       canListDeployments,
-      canListAiAgentCRDS
+      canListAiAgentCRDS,
     },
     create: {
       canCreateSecrets,
-      canCreateAiAgentCRDS
+      canCreateAiAgentCRDS,
+      canCreateConfigMaps,
     }
   };
 }
@@ -412,6 +509,7 @@ onMounted(async() => {
     await fetchAiAgentSettings();
 
     await fetchAiAgentConfigCRDs();
+    await fetchUIToolsConfigSettings();
 
     // Watch for status updates of AI Agent Config CRDs
     watch(
@@ -477,6 +575,7 @@ onMounted(async() => {
 
     <template v-else>
       <settings-row
+        :section-id="'ai-agent-settings'"
         :title="t('aiConfig.form.section.provider.header')"
         :description="t('aiConfig.form.section.provider.description')"
         data-testid="rancher-ai-ui-settings-ai-agent-settings"
@@ -490,6 +589,7 @@ onMounted(async() => {
       </settings-row>
 
       <settings-row
+        :section-id="'ai-agents-configs'"
         :title="t('aiConfig.form.section.aiAgent.header')"
         :description="t('aiConfig.form.section.aiAgent.description')"
         data-testid="rancher-ai-ui-settings-ai-agent-configs"
@@ -502,6 +602,23 @@ onMounted(async() => {
           @update:value="aiAgentConfigCRDs = $event"
           @update:authentication-secrets="authenticationSecrets = $event"
           @update:validation-error="hasAiAgentConfigsValidationErrors = $event"
+        />
+      </settings-row>
+
+      <settings-row
+        :section-id="'ui-tools-config'"
+        :title="t('aiConfig.form.section.tools.header')"
+        :description="t('aiConfig.form.section.tools.description')"
+        :banner="toolsActionResultBanner"
+        data-testid="rancher-ai-ui-settings-tools"
+      >
+        <UIToolsConfig
+          v-if="uiToolsSettings"
+          :value="uiToolsSettings"
+          :read-only="!permissions?.create.canCreateConfigMaps"
+          :required-action="toolsRequiredAction"
+          @update:value="uiToolsSettings = $event"
+          @publish:tools="publishToolsDefinitionAndRefetch"
         />
       </settings-row>
 

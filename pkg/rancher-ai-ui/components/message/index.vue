@@ -1,20 +1,23 @@
 <script setup lang="ts">
-import {
-  computed, nextTick, onBeforeUnmount, ref, type PropType
-} from 'vue';
+import { computed, nextTick, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import { FormattedMessage, MessageInternalSource, MessagePhase, Role as RoleEnum } from '../../types';
+import {
+  FormattedMessage, MessageInternalSource, MessagePhase, Role as RoleEnum, ToolActionEvent,
+  ToolActionEventType
+} from '../../types';
+import { ToolName } from '../tools/types';
 import { extractMessageText } from '../../utils/label';
-import Processing from '../Processing.vue';
-import Actions from './action/index.vue';
-import SourceLinks from './SourceLinks.vue';
+import Tools from '../tools/index.vue';
+import Actions from '../message/actions/index.vue';
+import Tool from '../tools/Tool.vue';
+import SourceLinks from '../tools/components/SourceLinks.vue';
 import Confirmation from './Confirmation.vue';
-import Suggestions from './Suggestions.vue';
 import ContextTag from '../context/ContextTag.vue';
 import UserAvatar from './avatar/UserAvatar.vue';
 import SystemAvatar from './avatar/SystemAvatar.vue';
-import BubbleButton from './BubbleButton.vue';
+import Processing from '../Processing.vue';
+import BubbleButton from '../BubbleButton.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
 
@@ -38,13 +41,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:message', 'confirm:message', 'send:message']);
 
+const { updateInput, cleanInputAndTags, focusConsoleInput } = useInputComposable();
+
 const isThinking = computed(() => props.message.role === RoleEnum.Assistant &&
   !props.message.completed &&
   (props.message.thinking || !props.message.formattedMessageContent)
 );
-const showCopySuccess = ref(false);
-const timeoutCopy = ref<any>(null);
-const { cleanInputAndTags } = useInputComposable();
 
 function handleCopy() {
   let text = extractMessageText(props.message);
@@ -56,17 +58,15 @@ function handleCopy() {
   text = cleanInputAndTags(text);
 
   navigator.clipboard.writeText(text);
-  showCopySuccess.value = true;
-  if (timeoutCopy.value) {
-    clearTimeout(timeoutCopy.value);
-  }
-  timeoutCopy.value = setTimeout(() => {
-    showCopySuccess.value = false;
-  }, 1000);
 }
 
 function handleResendMessage() {
   nextTick(() => emit('send:message', props.message));
+}
+
+function handleEditBeforeSending(text: string) {
+  updateInput(text);
+  focusConsoleInput();
 }
 
 function handleShowCompleteMessage() {
@@ -87,11 +87,13 @@ function handleShowThinking() {
   }));
 }
 
-onBeforeUnmount(() => {
-  if (timeoutCopy.value) {
-    clearTimeout(timeoutCopy.value);
+function handleToolAction(event: ToolActionEvent) {
+  if (event.type === ToolActionEventType.Select) {
+    emit('send:message', event.value);
+  } else if (event.type === ToolActionEventType.Edit) {
+    handleEditBeforeSending(event.value);
   }
-});
+}
 </script>
 
 <template>
@@ -127,8 +129,16 @@ onBeforeUnmount(() => {
             @click="handleShowThinking"
           />
           <BubbleButton
-            :icon="showCopySuccess ? 'icon-checkmark' : 'icon-copy'"
+            v-if="props.message.role === RoleEnum.User && !pendingConfirmation"
+            :icon="'icon-edit'"
+            :tooltip="t('ai.message.actions.tooltip.editBeforeResend')"
+            :show-success="true"
+            @click="handleEditBeforeSending(extractMessageText(props.message) || '')"
+          />
+          <BubbleButton
+            :icon="'icon-copy'"
             :tooltip="t('ai.message.actions.tooltip.copy')"
+            :show-success="true"
             @click="handleCopy"
           />
           <BubbleButton
@@ -178,23 +188,39 @@ onBeforeUnmount(() => {
             }"
           />
         </div>
-        <div
-          v-if="props.message.suggestionActions?.length && !props.message.confirmation"
-          class="chat-msg-section-footer"
-        >
-          <Suggestions
-            :suggestions="props.message.suggestionActions"
-            :disabled="disabled || pendingConfirmation"
-            @select="(suggestion: string) => emit('send:message', suggestion)"
+        <template v-if="!props.message.confirmation">
+          <Tools
+            :key="props.message.tools?.length"
+            class="mmt-2"
+            :message="props.message"
+            :exclude="[
+              ToolName.SelectOption,
+              ToolName.Suggestions,
+            ]"
+            :disabled="props.disabled"
           />
-        </div>
+          <Tool
+            class="mmt-2"
+            :name="ToolName.SelectOption"
+            :message="props.message"
+            :disabled="props.disabled || props.pendingConfirmation"
+            @action="handleToolAction"
+          />
+          <Tool
+            v-if="!props.message.tools?.find((t) => t.toolName === ToolName.SelectOption)"
+            class="mmt-2"
+            :name="ToolName.Suggestions"
+            :message="props.message"
+            :disabled="props.disabled || props.pendingConfirmation"
+            @action="handleToolAction"
+          />
+        </template>
         <div
           v-if="props.message.confirmation"
-          class="chat-msg-section-footer"
+          class="mmt-2"
         >
           <Confirmation
-            :value="props.message.confirmation"
-            :message-content="props.message.messageContent"
+            :message="props.message"
             @confirm="emit('confirm:message', {
               message: props.message,
               result: $event
@@ -222,7 +248,7 @@ onBeforeUnmount(() => {
       </div>
       <div
         v-if="props.message.role === RoleEnum.User && props.message.contextContent?.length"
-        class="chat-msg-section chat-msg-user-context-tags"
+        class="mmt-2 chat-msg-user-context-tags"
       >
         <ContextTag
           v-for="(item, index) in props.message.contextContent"
@@ -235,7 +261,7 @@ onBeforeUnmount(() => {
       </div>
       <div
         v-if="props.message.sourceLinks?.length"
-        class="chat-msg-section"
+        class="mmt-2"
       >
         <SourceLinks
           :links="props.message.sourceLinks"
@@ -243,7 +269,7 @@ onBeforeUnmount(() => {
       </div>
       <div
         v-if="props.message.relatedResourcesActions?.length"
-        class="chat-msg-section"
+        class="mmt-2"
       >
         <Actions
           :label="t('ai.message.relatedResourcesActions.label')"
@@ -252,7 +278,7 @@ onBeforeUnmount(() => {
       </div>
       <div
         v-if="props.message.actions?.length"
-        class="chat-msg-section"
+        class="mmt-2"
       >
         <Actions
           :label="t('ai.message.quickActions.label')"
@@ -301,7 +327,7 @@ onBeforeUnmount(() => {
   color: var(--body-text);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px 0 var(--shadow);
   padding: 12px;
   line-height: 21px;
   display: flex;
@@ -370,14 +396,6 @@ onBeforeUnmount(() => {
 
 .theme-dark .chat-msg-text :deep(code) {
   color: #C0EFDE;
-}
-
-.chat-msg-section {
-  margin-top: 8px;
-}
-
-.chat-msg-section-footer {
-  margin-top: 8px;
 }
 
 .chat-msg-timestamp {

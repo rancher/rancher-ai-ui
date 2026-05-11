@@ -3,9 +3,6 @@ import { ref, computed, PropType, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { randomStr } from '@shell/utils/string';
-import { AGENT_NAMESPACE } from '../../../product';
-import { AIAgentConfigCRD } from '../../../types';
-import { AIAgentConfigAuthType, AiAgentConfigSecretPayload } from '../types';
 import Tabbed from '@shell/components/Tabbed/index.vue';
 import Tab from '@shell/components/Tabbed/Tab.vue';
 import ArrayList from '@shell/components/form/ArrayList.vue';
@@ -18,8 +15,10 @@ import SelectOrCreateAuthSecret from '@shell/components/form/SelectOrCreateAuthS
 import SecretSelector from '@shell/components/form/SecretSelector.vue';
 import FileSelector from '@shell/components/form/FileSelector.vue';
 import formRulesGenerator from '@shell/utils/validators/formRules';
-
-const DEFAULT_AI_AGENT = 'rancher';
+import { AGENT_NAMESPACE } from '../../../product';
+import { AIAgentConfigCRD } from '../../../types';
+import { AIAgentConfigAuthType, AiAgentConfigSecretPayload } from '../types';
+import { DEFAULT_AI_AGENT } from '../../../composables/useAgentComposable';
 
 const store = useStore();
 const { t } = useI18n(store);

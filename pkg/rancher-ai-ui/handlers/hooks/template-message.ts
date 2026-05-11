@@ -37,6 +37,8 @@ class TemplateMessageFactory {
       value:       resource?.namespace
     }] : [];
 
+    const state = resource.state || resource.stateDisplay;
+
     switch (ctx.tag) {
     case HookContextTag.SortableTableRow:
     case HookContextTag.DetailsState:
@@ -45,13 +47,13 @@ class TemplateMessageFactory {
         name: resource.name
       }, true);
       messageContent = t('ai.message.template.message.explainStateForResource', {
-        state:     resource.state,
+        state,
         kind:      resource.kind,
         name:      resource.name,
         namespace: resource.namespace || null
       }, true);
 
-      if (resource.state !== 'active' && resource.state !== 'running' && resource.state !== 'ready') {
+      if (state?.toLowerCase() !== 'active' && state?.toLowerCase() !== 'running' && state?.toLowerCase() !== 'ready') {
         messageContent += `\n  - ${ t('ai.message.template.bullet.identifyCause') }\n  - ${ t('ai.message.template.bullet.provideActions') }`;
       } else {
         messageContent += `\n  - ${ t('ai.message.template.bullet.confirmExpectedState') }`;
@@ -67,13 +69,13 @@ class TemplateMessageFactory {
         issue: issueText
       }, true);
       messageContent = t('ai.message.template.message.explainStateForResource', {
-        state:     resource.state,
+        state,
         kind:      resource.kind,
         name:      resource.name,
         namespace: resource.namespace || null
       }, true);
 
-      if (resource.state !== 'active' && resource.state !== 'running' && resource.state !== 'ready') {
+      if (state?.toLowerCase() !== 'active' && state?.toLowerCase() !== 'running' && state?.toLowerCase() !== 'ready') {
         messageContent += `\n  - ${ t('ai.message.template.bullet.identifyCause') }\n  - ${ t('ai.message.template.bullet.provideActions') }`;
       } else {
         messageContent += `\n  - ${ t('ai.message.template.bullet.confirmExpectedState') }`;

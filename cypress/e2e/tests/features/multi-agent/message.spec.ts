@@ -56,7 +56,7 @@ describe('Multi Agent Messages', () => {
         '<mcp-doclink>https://www.rancher.com/support/</mcp-doclink>',
         ''
       ],
-      tool: {
+      mcpTool: {
         name: 'listKubernetesResources',
         args: {
           kind:      'Deployment',
@@ -79,7 +79,7 @@ describe('Multi Agent Messages', () => {
 
     cy.enqueueLLMResponse({
       text:      'Pod created successfully.',
-      tool:  {
+      mcpTool:  {
         name: 'createKubernetesResource',
         args: {
           kind:      'Pod',
@@ -210,7 +210,7 @@ describe('Multi Agent Messages', () => {
         '<mcp-doclink>https://www.rancher.com/support/</mcp-doclink>',
         ''
       ],
-      tool: {
+      mcpTool: {
         name: 'listKubernetesResources',
         args: {
           kind:      'Deployment',
@@ -235,7 +235,7 @@ describe('Multi Agent Messages', () => {
 
     cy.enqueueLLMResponse({
       text:      'Pod created successfully.',
-      tool: {
+      mcpTool: {
         name: 'createKubernetesResource',
         args: {
           kind:      'Pod',
@@ -327,7 +327,7 @@ describe('Multi Agent Messages', () => {
         '<mcp-doclink>https://www.rancher.com/support/</mcp-doclink>',
         ''
       ],
-      tool: {
+      mcpTool: {
         name: 'listKubernetesResources',
         args: {
           kind:      'Deployment',

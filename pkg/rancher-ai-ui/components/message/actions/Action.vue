@@ -110,7 +110,7 @@ onMounted(async() => {
   >
     <RcButton
       small
-      secondary
+      variant="secondary"
       :disabled="!to"
       @click="goTo"
     >

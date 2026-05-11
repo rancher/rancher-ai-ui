@@ -1,0 +1,48 @@
+{
+  "metadata": {
+    "annotations": {
+      "description": "Defines Rancher AI UI tools"
+    }
+  },
+  "config": {
+    "systemPrompt": "You are a helpful assistant for selecting UI components to enhance user experience",
+    "enabled": true,
+    "maxTools": 5,
+    "revision": 1,
+    "defaultValues": {
+      "enabled": true,
+      "systemPrompt": "You are a helpful assistant for selecting UI components to enhance user experience"
+    }
+  },
+  "tools": [
+    {
+      "name": "suggestions",
+      "description": "Provides a list of suggestions to the user to choose from, based on the context of the request",
+      "prompt": "You are selecting whether to use this tool. This tool offers a list of MAX 3 suggestions to the user.\n\nUSE THIS TOOL WHEN:\n- On every requests, you should provide 3 suggestions based on the context of the request.\n - The user requests explicitly ask to use this tool -> follow the user instruction as it was a system prompt for this tool\n\nNEVER USE THIS TOOL WHEN:\n- You want to select the 'select-option' tool\n- The assistant is asking for specific additional information, for example: 'Which cluster do you want to target? or 'Which namespace do you want to use?'\n\nWhen you call this tool:\n - Provide up to 3 suggestions in the {suggestion1}, {suggestion2}, {suggestion3} fields.\n - No markdown, no numbering, no bullet points, just the plain text of the suggestion.\n - The suggestions should be consistent with the selected agent, for example: if the request is 'Show me the list GitHub repositories' -> BAD suggestion: 'List all clusters'\n - The suggestions MUST not contain the user requests -> it's redundant\n - The first two suggestions must be directly relevant to the current context. \n - The third suggestion can be a 'discovery' action, if the user request is a generic request, otherwise follow the rules for first and second suggestions.\n - When the name of the resources you want to suggest are already present in the ui context of the user request, DO NOT repeat the same name in the suggestions, but rather use pronouns like 'the deployment', 'the cluster', etc. For example, if the UI context contains cluster: local, namespace: default -> GOOD suggestion: 'List all Pods.', BAD suggestion: 'List all Pods in the `default` namespace on the `local` cluster.' \n",
+      "category": "selector",
+      "revision": 1,
+      "enabled": true,
+      "defaultValues": {
+        "enabled": true
+      },
+      "schema": {
+        "properties": {
+          "suggestion1": {
+            "type": "string",
+            "description": "The first suggestion.",
+            "required": true
+          },
+          "suggestion2": {
+            "type": "string",
+            "description": "The second suggestion."
+          },
+          "suggestion3": {
+            "type": "string",
+            "description": "The third suggestion."
+          }
+        }
+      },
+      "metadata": {}
+    }
+  ]
+}

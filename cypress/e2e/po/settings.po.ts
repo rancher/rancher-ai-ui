@@ -32,6 +32,10 @@ export class SettingsPo extends ComponentPo {
     return new AiAgentConfigs(this.self());
   }
 
+  uiToolsConfig() {
+    return new UiToolsConfig(this.self());
+  }
+
   saveButton() {
     return this.self().get('[data-testid="rancher-ai-ui-settings-save-button"]');
   }
@@ -74,5 +78,29 @@ export class AiAgentConfigs extends ComponentPo {
 
   guidelinesInput() {
     return cy.get('textarea[data-testid="rancher-ai-ui-settings-ai-agent-configs-system-prompt"]').first();
+  }
+}
+
+export class UiToolsConfig extends ComponentPo {
+  constructor(self: Cypress.Chainable) {
+    super('[data-testid="rancher-ai-ui-settings-tools"]', self);
+  }
+
+  intro() {
+    return new UiToolsConfigIntro(this.self());
+  }
+}
+
+class UiToolsConfigIntro extends ComponentPo {
+  constructor(self: Cypress.Chainable) {
+    super('[data-testid="rancher-ai-ui-tools-config-intro"]', self);
+  }
+
+  infoBanner() {
+    return this.self().find('[data-testid="rancher-ai-ui-tools-config-info-banner"]');
+  }
+
+  actionButton() {
+    return this.self().get('[data-testid="rancher-ai-ui-tools-config-action-button"]');
   }
 }

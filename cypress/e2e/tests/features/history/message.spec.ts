@@ -45,7 +45,7 @@ describe('History Messages', () => {
         '<mcp-doclink>https://www.rancher.com/support/</mcp-doclink>',
         ''
       ],
-      tool: {
+      mcpTool: {
         name: 'listKubernetesResources',
         args: {
           kind:      'Deployment',
@@ -68,7 +68,7 @@ describe('History Messages', () => {
 
     cy.enqueueLLMResponse({
       text:      'Pod created successfully.',
-      tool: {
+      mcpTool: {
         name: 'createKubernetesResource',
         args: {
           kind:      'Pod',
@@ -105,7 +105,7 @@ describe('History Messages', () => {
 
     cy.enqueueLLMResponse({
       text:      'Pod creation canceled.',
-      tool: {
+      mcpTool: {
         name: 'createKubernetesResource',
         args: {
           kind:      'Pod',

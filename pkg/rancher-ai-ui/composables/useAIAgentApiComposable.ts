@@ -1,10 +1,11 @@
 import { ComputedRef } from 'vue';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
+import { error } from '../utils/log';
 import {
-  Agent, AgentSettings, HistoryChat, HistoryChatMessage, LLMProvider, Message
+  Agent, AgentSettings, HistoryChat, HistoryChatMessage, LLMProvider, Message,
 } from '../types';
-import { buildMessageFromHistoryMessage } from '../utils/format';
 import { Settings } from '../pages/settings/types';
+import { buildMessageFromHistoryMessage } from '../utils/format';
 
 interface LLMOptions {
   url?: string;
@@ -18,9 +19,11 @@ interface LLMConfig {
 }
 
 /**
- * Composable for managing the chat API interactions.
+ * Composable for managing the AI agent API interactions.
  *
  * Endpoints:
+ *
+ * - llm: fetch available models for the active LLM, with query parameters based on the active LLM.
  * - settings: fetch settings
  * - chat: fetch all chats, update a chat, delete a chat
  * - messages: fetch messages for a chat
@@ -29,7 +32,7 @@ interface LLMConfig {
  * @returns Composable for managing chat API interactions.
  */
 
-export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
+export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
   const apiPath = `/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_REST_API_PATH }`;
   let llmModelsAbortController: AbortController | null = null;
 
@@ -88,9 +91,8 @@ export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
       }
 
       return await data.json();
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to fetch settings:', error);
+    } catch (err) {
+      error('Failed to fetch settings:', err);
 
       return null;
     }
@@ -113,11 +115,10 @@ export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
       }
 
       return await data.json() as Record<Settings, string>;
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to save settings:', error);
+    } catch (err) {
+      error('Failed to save settings:', err);
 
-      throw error;
+      throw err;
     }
   }
 
@@ -139,9 +140,8 @@ export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
           ...chat,
           name: chat.name?.split('\n')[0].slice(0, 500).trim(),
         }));
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to fetch chats:', error);
+    } catch (err) {
+      error('Failed to fetch chats:', err);
 
       return [];
     }
@@ -162,11 +162,10 @@ export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
       }
 
       return await data.json() as HistoryChat;
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to update chat:', error);
+    } catch (err) {
+      error('Failed to update chat:', err);
 
-      throw error;
+      throw err;
     }
   }
 
@@ -179,9 +178,8 @@ export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
 
         throw new Error(errorMessage);
       }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to delete chat:', error);
+    } catch (err) {
+      error('Failed to delete chat:', err);
     }
   }
 
@@ -198,9 +196,8 @@ export function useChatApiComposable(agents?: ComputedRef<Agent[]>) {
       const messages = await data.json() as HistoryChatMessage[];
 
       return messages.map((msg) => buildMessageFromHistoryMessage(msg, agents?.value || []));
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to fetch messages:', error);
+    } catch (err) {
+      error('Failed to fetch messages:', err);
 
       return [];
     }

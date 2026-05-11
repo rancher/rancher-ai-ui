@@ -2,11 +2,15 @@
 import { computed, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import { Message } from '../../../types';
-import Suggestions from '../Suggestions.vue';
+import { Message, ToolActionEvent, ToolActionEventType } from '../../../types';
+import { ToolName } from '../../tools/types';
 import { formatMessageContent } from '../../../utils/format';
+import { useInputComposable } from '../../../composables/useInputComposable';
 // @ts-expect-error FIXME: Cannot find module '../../../assets/liz-icon.svg'... Remove this comment to see the full error message
 import lizIcon from '../../../assets/liz-icon.svg';
+import Tool from '../../tools/Tool.vue';
+import News from '../../News.vue';
+import RequiredToolsAction from '../../tools/RequiredAction.vue';
 
 const store = useStore();
 const { t } = useI18n(store);
@@ -20,9 +24,15 @@ const props = defineProps({
     type:    Boolean,
     default: false,
   },
+  pendingConfirmation: {
+    type:    Boolean,
+    default: false,
+  }
 });
 
 const emit = defineEmits(['send:message']);
+
+const { updateInput, focusConsoleInput } = useInputComposable();
 
 const user = computed(() => {
   const principal = props.message.templateContent?.content?.principal;
@@ -35,6 +45,15 @@ const user = computed(() => {
 
   return out;
 });
+
+function handleToolAction(event: ToolActionEvent) {
+  if (event.type === ToolActionEventType.Select) {
+    emit('send:message', event.value);
+  } else if (event.type === ToolActionEventType.Edit) {
+    updateInput(event.value);
+    focusConsoleInput();
+  }
+}
 </script>
 
 <template>
@@ -72,11 +91,19 @@ const user = computed(() => {
       class="chat-welcome-msg-bubble"
     >
       <div class="chat-welcome-msg-text">
+        <div class="chat-welcome-msg-text-title">
+          <span><b>{{ t('ai.message.system.welcome.info.label') }}</b></span>
+        </div>
         <span
           v-clean-html="formatMessageContent(props.message.templateContent?.content?.message || '')"
         />
       </div>
     </div>
+
+    <News />
+
+    <RequiredToolsAction />
+
     <div
       v-if="props.message.completed && props.message.messageContent"
       class="chat-welcome-msg-bubble"
@@ -87,18 +114,14 @@ const user = computed(() => {
         </span>
       </div>
     </div>
-    <div
-      v-if="props.message.completed && props.message.suggestionActions?.length"
+    <Tool
+      v-if="props.message.completed"
       class="chat-welcome-msg-bubble chat-welcome-suggestions"
-    >
-      <div class="chat-welcome-msg-text">
-        <Suggestions
-          :label="t('ai.message.system.welcome.suggestions.label')"
-          :suggestions="props.message.suggestionActions"
-          @select="(suggestion: string) => emit('send:message', suggestion)"
-        />
-      </div>
-    </div>
+      :name="ToolName.Suggestions"
+      :message="props.message"
+      :disabled="props.disabled || props.pendingConfirmation"
+      @action="handleToolAction"
+    />
   </div>
 </template>
 
@@ -156,7 +179,7 @@ const user = computed(() => {
   color: var(--body-text);
   border: 1px solid var(--border);
   border-radius: 90px;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px 0 var(--shadow);
 }
 
 .chat-welcome-msg-greeting-bubble {
@@ -193,7 +216,7 @@ const user = computed(() => {
   color: var(--body-text);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px 0 var(--shadow);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -208,4 +231,10 @@ const user = computed(() => {
   list-style-position: inside;
 }
 
+.chat-welcome-msg-text-title {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 4px;
+}
 </style>

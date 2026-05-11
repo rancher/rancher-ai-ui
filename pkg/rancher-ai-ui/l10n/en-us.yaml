@@ -13,9 +13,25 @@ ai:
           line1: I'm Liz, your personal AI assistant.
           line2: How can I help you?
           line3: 'Hi, {name}!'
-        info: '<b>Pro tip</b>: you can also interact with the status badges and error messages throughout the Rancher UI to ask me for help. Or, you can resume one of your previous chats - I automatically save them in the main menu for easy access.'
-        suggestions:
-          label: 'Here are a few suggestions based on your context:'
+        labels:
+          proTip: Pro Tip
+          news: What's New
+        info:
+          label: Pro Tip
+          message: 'You can also interact with the status badges and error messages throughout the Rancher UI to ask me for help. Or, you can resume one of your previous chats - I automatically save them in the main menu for easy access.'
+      news:
+        label: What’s New
+        message:
+          info: 'UI tools are here! I can use contextual buttons, shortcuts and other UI enhancements to provide you a more powerful and compelling experience.'
+      tools:
+        action:
+          admin:
+            create: '<installTools>Install the UI tools</installTools> to enable full AI capabilities.'
+            update: 'The UI tools are <b>disabled</b> due to definition change.<br><refreshTools>Refresh the UI tools</refreshTools> to install the new definition and get the latest updates.'
+          user:
+            create: 'Please contact your administrator to install the UI tools.'
+            update: 'The UI tools are <b>disabled</b> due to definition change.<br>Please ask your administrator to refresh and enable the UI tools to get the latest updates.'
+          refreshTooltip: 'Go to settings to handle the UI tools.'
       switchAgent:
         info: '<code>{agent}</code> Agent has been selected in adaptive mode for the last few prompts.<br>Usually, manual selection is best for faster response times.<br><br>Would you like me to switch over to <b>manual</b> agent selection?<br>'
         actions:
@@ -47,13 +63,12 @@ ai:
       tooltip:
         copy: Copy to Clipboard
         resend: Resend Message
+        editBeforeResend: Edit Prompt
         showThinking: Show Thinking
         hideThinking: Hide Thinking
       hideThinking: Hide Thinking
       showCompleteMessage: See More
       hideCompleteMessage: See Less
-    suggestions:
-      label: Quick Actions
     template:
       heyAnalyzeResource: 'Hey Liz, please analyse the resource'
       namespace: 'Namespace'
@@ -161,6 +176,7 @@ ai:
     processing: 'Processing'
     awaitingConfirmation: 'Awaiting confirmation'
     generatingResponse: 'Generating response'
+    processingTools: 'Processing UI tools'
     confirming: 'Confirming'
     finalizing: 'Finalizing results'
     connecting: 'Connecting'
@@ -257,6 +273,40 @@ ai:
   generic:
     opensInNewTab: Opens in a new tab
 
+  staging:
+    yaml-editor:
+      title: View YAML
+      unknownResource: Unknown Resource
+      showDiff: Show Diff
+      backToEdit: Back to Edit
+      showChanges: Show Changes
+      hideChanges: Hide Changes
+      close: Close
+      cancel: Cancel
+      apply: Apply to Cluster
+
+  tools:
+    label: Tools
+    show-yaml:
+      name: Show YAML
+      tooltip: View the YAML configuration for the {name} {kind} in {namespace} namespace
+    show-yaml-diff:
+      name: Show YAML Diff
+      tooltip: View the differences between the current and previous YAML configurations for the {name} {kind} in {namespace} namespace
+    explore:
+      name: Explore
+      tooltip: '{label} in {cluster} cluster'
+    open-console-logs:
+      name: Console Logs
+      tooltip: Open the console logs for the {name} Pod in {namespace} namespace
+    download-logs:
+      name: Download Logs
+    select-option:
+      name: 'Select Options'
+    suggestions:
+      name: 'Quick Actions'
+      action:
+        edit: Edit before sending
 aiConfig:
   label: AI Assistant
   form:
@@ -270,6 +320,7 @@ aiConfig:
       apiError: 'Failed to save settings. {error}'
     fetchModels:
       error: 'Failed to refresh models list.'
+    resetToDefaults: Reset Configuration
     section:
       provider:
         header: AI Provider
@@ -353,7 +404,78 @@ aiConfig:
               basic: Basic authentication
               rancher: Rancher authentication
               header: Custom Headers authentication
-          
+      tools:
+        header: UI Tools
+        description: Configure the UI tools
+        config:
+          title: Configuration
+        fields:
+          systemPrompt:
+            label: Guidelines
+            placeholder: 'Markdown instructions for using UI tools'
+            tooltip: 'Guidelines provide additional instructions to the AI assistant on how to select the UI tools. Use this field to customize the behavior of the tools, otherwise the default system prompt will be used.'
+          enabled:
+            label: Enable Tools
+            tooltip: 'Enabling the UI tools brings additional capabilities to the AI assistant chat, but it also requires more time to respond, which might result in longer response times. Disable the tools if you prefer faster responses.'
+          tools:
+            label: Available Tools
+            name:
+              show-yaml: Show YAML
+              show-yaml-diff: Show YAML Diff
+              explore: Explore
+              open-console-logs: Console Logs
+              download-logs: Download Logs
+              select-option: Select Option
+              suggestions: Suggestions
+            revision:
+              tooltip: 'Revision'
+            category:
+              tooltip:
+                label: Category
+                action: Filter tools by this category
+        publish:
+          message:
+            admin:
+              create:
+                label: 'The UI Tools will transform your interaction with the Rancher AI Assistant into a more powerful and compelling experience by providing contextual buttons, shortcuts, and other UI enhancements right in the chat window to help you accomplish tasks faster. Want to learn more? Read our <documentation>documentation</documentation>'
+                action:
+                  label: Install UI Tools
+                  result:
+                    success: UI Tools definition installed successfully.
+                    error: 'Failed to install UI Tools definition, an error occurred during installation. {message}'
+              update:
+                label: 'The UI tools definition has changed. Please refresh the UI tools to install the new definition and get the latest updates.'
+                action:
+                  label: Refresh UI Tools
+                  result:
+                    success: 'UI tools definition have been updated.'
+                    error: 'Failed to update UI Tools definition, an error occurred during update. {message}'
+            user:
+              create:
+                label: 'The UI Tools will transform your interaction with the Rancher AI Assistant into a more powerful and compelling experience by providing contextual buttons, shortcuts, and other UI enhancements right in the chat window to help you accomplish tasks faster. Want to learn more? Read our <documentation>documentation</documentation><br><br>Please contact your administrator to install the tools and make them available in the UI.'
+              update:
+                label: 'The UI Tools definition has changed. Please ask your administrator to refresh and enable the UI tools to get the latest updates.'
+        search: Search the tool...
+        noTools: No UI tools configured
+        noMatchingTools: No matching tools
+        tryAdjustingFilters: Try adjusting your filters or search query
+        resetFilters: Clear all filters
+        enabledCount: |-
+          {count, plural,
+            =0 { (none enabled). }
+            other { ({count} enabled). }
+          }
+        interactive: Interactive
+        matched: |-
+          {count, plural,
+            =1 { {count} tool matched your criteria }
+            other { {count} tools matched your criteria }
+          }
+        total: |-
+          {count, plural,
+            =1 { {count} tool in total }
+            other { {count} tools in total }
+          }
     EMBEDDINGS_MODEL:
       label: Embeddings Model
     ENABLE_RAG:

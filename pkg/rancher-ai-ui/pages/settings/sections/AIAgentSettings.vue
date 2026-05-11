@@ -17,7 +17,7 @@ import formRulesGenerator from '@shell/utils/validators/formRules';
 import { LLMProvider as ChatBotEnum } from '../../../types';
 import { Settings, SettingsFormData, ValidationStatus } from '../types';
 import ToggleGroup from '../../../components/toggle/toggle-group.vue';
-import { useChatApiComposable } from '../../../composables/useChatApiComposable';
+import { useAIAgentApiComposable } from '../../../composables/useAIAgentApiComposable';
 
 interface ModelValidationPayload {
   status?: ValidationStatus;
@@ -42,7 +42,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:value', 'update:validation-error']);
 
-const { fetchLLMModels } = useChatApiComposable();
+const { fetchLLMModels } = useAIAgentApiComposable();
 
 const BEDROCK_REGION_OPTIONS = [
   // North America

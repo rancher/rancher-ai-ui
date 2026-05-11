@@ -48,8 +48,6 @@ fi
 
 helm upgrade --install llm-mock ./rancher-ai-llm-mock/chart/llm-mock \
   --namespace cattle-ai-agent-system \
-  --set image.repository=ghcr.io/rancher-sandbox/rancher-ai-llm-mock \
-  --set image.tag=v1.1.7 \
   --create-namespace \
   --wait --timeout 1m
 
