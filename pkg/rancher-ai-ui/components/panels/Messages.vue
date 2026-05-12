@@ -60,6 +60,7 @@ const messagesView = ref<HTMLDivElement | null>(null);
 const {
   autoScrollEnabled,
   fastScrollEnabled,
+  updateScrollState,
   scrollToBottom
 } = useScrollComposable(
   messagesView,
@@ -112,6 +113,7 @@ watch(
   (newVal, oldVal) => {
     if (oldVal && newVal !== oldVal) {
       nextTick(() => {
+        updateScrollState();
         scrollToBottom();
       });
     }

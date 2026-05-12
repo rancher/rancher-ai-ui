@@ -86,6 +86,7 @@ export function useScrollComposable(containerRef: Ref<HTMLDivElement | null>, la
     lastScrollPosition,
     autoScrollEnabled,
     fastScrollEnabled,
+    updateScrollState,
     scrollToBottom,
   };
 }
