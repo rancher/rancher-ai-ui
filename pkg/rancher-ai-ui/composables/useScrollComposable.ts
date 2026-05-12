@@ -1,3 +1,4 @@
+import { throttle } from 'lodash';
 import {
   ref, nextTick, watch, onMounted, onBeforeUnmount, type Ref,
 } from 'vue';
@@ -18,7 +19,7 @@ export function useScrollComposable(containerRef: Ref<HTMLDivElement | null>, la
   /**
    * Update scroll state flags based on container scroll position
    */
-  function handleScroll() {
+  function updateScrollState() {
     const container = containerRef.value;
 
     if (!container) {
@@ -31,6 +32,8 @@ export function useScrollComposable(containerRef: Ref<HTMLDivElement | null>, la
     // Save scroll position on every scroll event
     lastScrollPosition.value = container.scrollTop;
   }
+
+  const handleScroll = throttle(updateScrollState, 100);
 
   /**
    * Scroll to bottom of container
@@ -76,13 +79,13 @@ export function useScrollComposable(containerRef: Ref<HTMLDivElement | null>, la
     if (containerRef.value) {
       containerRef.value.removeEventListener('scroll', handleScroll);
     }
+    handleScroll.cancel();
   });
 
   return {
     lastScrollPosition,
     autoScrollEnabled,
     fastScrollEnabled,
-    handleScroll,
     scrollToBottom,
   };
 }
