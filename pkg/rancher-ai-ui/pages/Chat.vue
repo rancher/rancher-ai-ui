@@ -409,6 +409,7 @@ function unmount() {
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :message-phase="hasPermissions ? messagePhase : MessagePhase.Idle"
+        v-bind="$attrs"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"

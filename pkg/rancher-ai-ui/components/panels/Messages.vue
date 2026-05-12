@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import {
-  ref, computed, watch, nextTick, onMounted, onBeforeUnmount, type PropType,
+  ref, computed, watch, nextTick, type PropType,
 } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
@@ -15,6 +15,7 @@ import NoPermission from '../message/template/NoPermissions.vue';
 import SystemSuggestion from '../message/template/SystemSuggestion.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
+import { useScrollComposable } from '../../composables/useScrollComposable';
 
 /**
  * Messages panel displaying the chat messages.
@@ -42,6 +43,10 @@ const props = defineProps({
     type:    String,
     default: '',
   },
+  layout: {
+    type:    String,
+    default: '',
+  },
   disabled: {
     type:    Boolean,
     default: false,
@@ -51,8 +56,15 @@ const props = defineProps({
 const emit = defineEmits(['update:message', 'confirm:message', 'send:message']);
 
 const messagesView = ref<HTMLDivElement | null>(null);
-const autoScrollEnabled = ref(true);
-const fastScrollEnabled = ref(false);
+
+const {
+  autoScrollEnabled,
+  fastScrollEnabled,
+  scrollToBottom
+} = useScrollComposable(
+  messagesView,
+  () => props.layout
+);
 
 const formattedMessages = computed<FormattedMessage[]>(() => {
   return [...props.messages]
@@ -94,34 +106,12 @@ function getMessageTemplate(component: MessageTemplateComponent) {
   }
 }
 
-function handleScroll() {
-  const container = messagesView.value;
-
-  if (!container) {
-    return;
-  }
-
-  nextTick(() => {
-    autoScrollEnabled.value = container.scrollTop + container.clientHeight >= container.scrollHeight - 2;
-    fastScrollEnabled.value = container.scrollTop + container.clientHeight < container.scrollHeight - 150;
-  });
-}
-
-function scrollToBottom() {
-  if (!messagesView.value) {
-    return;
-  }
-
-  messagesView.value.scrollTop = messagesView.value.scrollHeight;
-}
-
 // Watch activeChatId to handle auto-scroll and scroll button visibility when switching between chats
 watch(
   () => props.activeChatId,
   (newVal, oldVal) => {
     if (oldVal && newVal !== oldVal) {
       nextTick(() => {
-        handleScroll();
         scrollToBottom();
       });
     }
@@ -168,18 +158,6 @@ const stopSystemErrorsWatcher = watch(
     deep:      true
   }
 );
-
-onMounted(() => {
-  if (messagesView.value) {
-    messagesView.value.addEventListener('scroll', handleScroll);
-  }
-});
-
-onBeforeUnmount(() => {
-  if (messagesView.value) {
-    messagesView.value.removeEventListener('scroll', handleScroll);
-  }
-});
 </script>
 
 <template>
