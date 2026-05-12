@@ -1,5 +1,5 @@
 import {
-  ref, nextTick, watch, onMounted, onBeforeUnmount, Ref,
+  ref, nextTick, watch, onMounted, onBeforeUnmount, type Ref,
 } from 'vue';
 
 /**
@@ -25,13 +25,11 @@ export function useScrollComposable(containerRef: Ref<HTMLDivElement | null>, la
       return;
     }
 
-    nextTick(() => {
-      autoScrollEnabled.value = container.scrollTop + container.clientHeight >= container.scrollHeight - 2;
-      fastScrollEnabled.value = container.scrollTop + container.clientHeight < container.scrollHeight - 150;
+    autoScrollEnabled.value = container.scrollTop + container.clientHeight >= container.scrollHeight - 2;
+    fastScrollEnabled.value = container.scrollTop + container.clientHeight < container.scrollHeight - 150;
 
-      // Save scroll position on every scroll event
-      lastScrollPosition.value = container.scrollTop;
-    });
+    // Save scroll position on every scroll event
+    lastScrollPosition.value = container.scrollTop;
   }
 
   /**
