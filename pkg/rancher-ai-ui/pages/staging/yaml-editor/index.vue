@@ -105,13 +105,13 @@ watch(patched, (val) => {
         class="staging-yaml-actions"
       >
         <RcButton
-          secondary
+          variant="secondary"
           @click="handleCancel"
         >
           {{ t('ai.staging.yaml-editor.cancel', {}, true) }}
         </RcButton>
         <RcButton
-          primary
+          variant="primary"
           @click="handleApply"
         >
           {{ t('ai.staging.yaml-editor.apply', {}, true) }}
@@ -122,7 +122,7 @@ watch(patched, (val) => {
         class="staging-yaml-actions"
       >
         <RcButton
-          secondary
+          variant="secondary"
           @click="emit('close')"
         >
           {{ t('ai.staging.yaml-editor.close', {}, true) }}

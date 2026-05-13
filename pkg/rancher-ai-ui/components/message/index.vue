@@ -231,7 +231,7 @@ function handleToolAction(event: ToolActionEvent) {
           v-if="props.message.role === RoleEnum.Assistant && !!props.message.thinkingContent && props.message.showThinking"
           class="inline-button"
           small
-          ghost
+          variant="ghost"
           @click="handleShowThinking"
         >
           <a>{{ t('ai.message.actions.hideThinking') }}</a>
@@ -240,7 +240,7 @@ function handleToolAction(event: ToolActionEvent) {
           v-if="!!props.message.summaryContent"
           class="inline-button"
           small
-          ghost
+          variant="ghost"
           @click="handleShowCompleteMessage"
         >
           <a>{{ props.message.showCompleteMessage ? t('ai.message.actions.hideCompleteMessage') : t('ai.message.actions.showCompleteMessage') }}</a>

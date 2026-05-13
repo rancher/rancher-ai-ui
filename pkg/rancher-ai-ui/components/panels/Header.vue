@@ -51,7 +51,7 @@ function toggleHistory() {
         >
           <RcButton
             small
-            ghost
+            variant="ghost"
             class="btn-open-history"
             data-testid="rancher-ai-ui-chat-history-button"
             :disabled="props.disabled"
@@ -87,7 +87,7 @@ function toggleHistory() {
     <div class="chat-close-btn">
       <RcButton
         small
-        ghost
+        variant="ghost"
         class="btn-close"
         data-testid="rancher-ai-ui-chat-close-button"
         @click="emit('close:chat')"

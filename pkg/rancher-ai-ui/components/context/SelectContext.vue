@@ -91,7 +91,7 @@ function reset() {
         @update:open="isOpen = $event"
       >
         <rc-dropdown-trigger
-          ghost
+          variant="ghost"
           small
           class="context-trigger"
           :disabled="props.disabled"
@@ -144,7 +144,7 @@ function reset() {
     >
       <RcButton
         small
-        tertiary
+        variant="tertiary"
         @click="reset"
       >
         <i class="icon icon-refresh mr-5" />

@@ -108,7 +108,7 @@ const isOpen = ref(false);
       @update:open="isOpen = $event"
     >
       <rc-dropdown-trigger
-        ghost
+        variant="ghost"
         small
         class="agent-trigger"
         :disabled="props.disabled"
