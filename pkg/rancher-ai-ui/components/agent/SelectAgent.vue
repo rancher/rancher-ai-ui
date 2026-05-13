@@ -85,6 +85,12 @@ const selectedAgentName = computed<string>(() => {
   return props.agentName;
 });
 
+const selectedAgentLabel = computed(() => {
+  const agent = options.value?.find((opt) => opt.name === selectedAgentName.value);
+
+  return agent?.displayName || t('ai.agents.items.unknown');
+});
+
 const debouncedSelectAgent = debounce((id: string) => {
   emit('select', id === ADAPTIVE_MODE_ID ? '' : id);
 }, 100);
@@ -102,7 +108,7 @@ const isOpen = ref(false);
       @update:open="isOpen = $event"
     >
       <rc-dropdown-trigger
-        ghost
+        variant="ghost"
         small
         class="agent-trigger"
         :disabled="props.disabled"
@@ -110,7 +116,7 @@ const isOpen = ref(false);
         <span
           class="selected-agent-name"
         >
-          {{ options?.find(opt => opt.name === selectedAgentName)?.displayName || t('ai.agents.items.unknown') }}
+          {{ selectedAgentLabel }}
         </span>
         <i
           class="icon icon-chevron-down chevron-icon"

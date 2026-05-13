@@ -358,7 +358,7 @@ const resetToolsToDefaults = () => {
               <p>{{ t('aiConfig.form.section.tools.tryAdjustingFilters', {}, true) }}</p>
               <RcButton
                 v-if="!noFiltersApplied"
-                tertiary
+                variant="tertiary"
                 class="inline-button"
                 @click="resetAllFilters"
               >

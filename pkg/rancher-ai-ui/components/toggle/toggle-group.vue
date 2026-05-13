@@ -35,7 +35,7 @@ const update = (value: string) => {
       :key="item.name"
     >
       <rc-button
-        ghost
+        variant="ghost"
         class="toggle-group-item"
         :class="{ active: modelValue === item.value }"
         :disabled="props.disabled && modelValue !== item.value"

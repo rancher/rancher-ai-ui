@@ -34,7 +34,7 @@ const props = defineProps({
       placement="top"
     >
       <rc-dropdown-trigger
-        ghost
+        variant="ghost"
         small
         :disabled="props.disabled"
       >

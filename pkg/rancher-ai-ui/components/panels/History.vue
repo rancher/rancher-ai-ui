@@ -122,7 +122,7 @@ function dismissEdit() {
         <div class="history-body">
           <RcButton
             ref="createBtn"
-            primary
+            variant="primary"
             class="btn-create-chat"
             data-testid="rancher-ai-ui-chat-history-create-chat-button"
             @click="createChat"
@@ -145,7 +145,7 @@ function dismissEdit() {
               <RcButton
                 v-for="(chat, index) in props.chats"
                 :key="chat.id"
-                tertiary
+                variant="tertiary"
                 class="history-chat-item"
                 :class="{
                   'focused': props.activeChatId === chat.id || editingChat?.id === chat.id

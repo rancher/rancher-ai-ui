@@ -65,7 +65,7 @@ const docsUrl = 'https://rancher.github.io/rancher-ai-product-docs/rancher-ai/la
       </Banner>
       <RcButton
         v-if="!props.readOnly"
-        primary
+        variant="primary"
         data-testid="rancher-ai-ui-tools-config-action-button"
         @click="emit('publish:tools')"
       >

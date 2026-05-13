@@ -36,7 +36,7 @@ function toggleHistory() {
         >
           <RcButton
             small
-            ghost
+            variant="ghost"
             class="btn-open-history"
             data-testid="rancher-ai-ui-chat-history-header-button"
             @click="toggleHistory"

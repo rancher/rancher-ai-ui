@@ -126,7 +126,7 @@ onMounted(async() => {
   <div v-if="!!pod">
     <RcButton
       small
-      tertiary
+      variant="tertiary"
       :disabled="props.disabled"
       @click="() => openConsoleLogs()"
     >

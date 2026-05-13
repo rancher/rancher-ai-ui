@@ -135,7 +135,7 @@ function emitConfirmationAction(value: boolean) {
     >
       <RcButton
         small
-        tertiary
+        variant="tertiary"
         :disabled="props.disabled"
         @click="navigateToStaging"
       >
