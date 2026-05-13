@@ -524,140 +524,146 @@ onMounted(async() => {
 </script>
 
 <template>
-  <loading v-if="isLoading" />
-  <div
-    v-else
-    class="ai-configs-container"
-    data-testid="rancher-ai-ui-settings-container"
-  >
-    <h1 class="m-0">
-      {{ t('aiConfig.form.header') }}
-    </h1>
-
-    <Banner
-      v-if="!permissions?.list?.canListDeployments || !permissions?.list?.canListConfigMaps || !permissions?.list?.canListAiAgentCRDS"
-      class="m-0"
-      color="warning"
+  <div class="ai-configs-container">
+    <loading v-if="isLoading" />
+    <div
+      v-else
+      class="ai-configs"
+      data-testid="rancher-ai-ui-settings-container"
     >
-      <RichTranslation
-        :k="'aiConfig.form.warning.missingPermissions'"
-      >
-        <template #docsUrl="{ content }">
-          <a
-            :href="`${ PERMISSIONS_DOCS_URL }`"
-            tabindex="0"
-            target="_blank"
-            rel="noopener noreferrer nofollow"
-          >
-            {{ content }} <i class="icon icon-external-link" />
-            <span class="sr-only">{{ t('generic.opensInNewTab') }}</span>
-          </a>
-        </template>
-      </RichTranslation>
-    </Banner>
+      <h1 class="m-0">
+        {{ t('aiConfig.form.header') }}
+      </h1>
 
-    <template
-      v-else-if="!aiAgentDeployment || !aiAgentSettings"
+      <Banner
+        v-if="!permissions?.list?.canListDeployments || !permissions?.list?.canListConfigMaps || !permissions?.list?.canListAiAgentCRDS"
+        class="m-0"
+        color="warning"
+      >
+        <RichTranslation
+          :k="'aiConfig.form.warning.missingPermissions'"
+        >
+          <template #docsUrl="{ content }">
+            <a
+              :href="`${ PERMISSIONS_DOCS_URL }`"
+              tabindex="0"
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+            >
+              {{ content }} <i class="icon icon-external-link" />
+              <span class="sr-only">{{ t('generic.opensInNewTab') }}</span>
+            </a>
+          </template>
+        </RichTranslation>
+      </Banner>
+
+      <template
+        v-else-if="!aiAgentDeployment || !aiAgentSettings"
+      >
+        <Banner
+          v-if="!aiAgentDeployment"
+          class="m-0"
+          color="error"
+          :label="t('aiConfig.form.warning.noDeployment')"
+        />
+        <Banner
+          v-if="!aiAgentSettings"
+          class="m-0"
+          color="error"
+          :label="t('aiConfig.form.section.provider.noSecret')"
+        />
+      </template>
+
+      <template v-else>
+        <settings-row
+          :section-id="'ai-agent-settings'"
+          :title="t('aiConfig.form.section.provider.header')"
+          :description="t('aiConfig.form.section.provider.description')"
+          data-testid="rancher-ai-ui-settings-ai-agent-settings"
+        >
+          <AIAgentSettings
+            :value="aiAgentSettings"
+            :read-only="!permissions?.create.canCreateSecrets"
+            @update:value="aiAgentSettings = $event; apiError = ''"
+            @update:validation-error="hasAiAgentSettingsValidationErrors = $event"
+          />
+        </settings-row>
+
+        <settings-row
+          :section-id="'ai-agents-configs'"
+          :title="t('aiConfig.form.section.aiAgent.header')"
+          :description="t('aiConfig.form.section.aiAgent.description')"
+          data-testid="rancher-ai-ui-settings-ai-agent-configs"
+        >
+          <AIAgentConfigs
+            v-if="aiAgentConfigCRDs"
+            :value="aiAgentConfigCRDs"
+            :init-value="initAiAgentConfigCRDs"
+            :read-only="!permissions?.create.canCreateSecrets || !permissions?.create.canCreateAiAgentCRDS"
+            @update:value="aiAgentConfigCRDs = $event"
+            @update:authentication-secrets="authenticationSecrets = $event"
+            @update:validation-error="hasAiAgentConfigsValidationErrors = $event"
+          />
+        </settings-row>
+
+        <settings-row
+          :section-id="'ui-tools-config'"
+          :title="t('aiConfig.form.section.tools.header')"
+          :description="t('aiConfig.form.section.tools.description')"
+          :banner="toolsActionResultBanner"
+          data-testid="rancher-ai-ui-settings-tools"
+        >
+          <UIToolsConfig
+            v-if="uiToolsSettings"
+            :value="uiToolsSettings"
+            :read-only="!permissions?.create.canCreateConfigMaps"
+            :required-action="toolsRequiredAction"
+            @update:value="uiToolsSettings = $event"
+            @publish:tools="publishToolsDefinitionAndRefetch"
+          />
+        </settings-row>
+
+        <Banner
+          v-if="!!apiError"
+          class="m-0"
+          color="error"
+          :label="apiError"
+        />
+
+        <div class="form-footer">
+          <async-button
+            v-if="permissions?.create.canCreateAiAgentCRDS || permissions?.create.canCreateSecrets"
+            action-label="Apply"
+            data-testid="rancher-ai-ui-settings-save-button"
+            :success-label="buttonProps.successLabel"
+            :success-color="buttonProps.successColor"
+            :disabled="hasAiAgentSettingsValidationErrors || hasAiAgentConfigsValidationErrors"
+            @click="applySettingsCb = $event; isSaving = true"
+          />
+        </div>
+      </template>
+    </div>
+    <app-modal
+      v-if="isSaving"
+      :width="400"
+      :click-to-close="false"
+      height="auto"
     >
-      <Banner
-        v-if="!aiAgentDeployment"
-        class="m-0"
-        color="error"
-        :label="t('aiConfig.form.warning.noDeployment')"
+      <ApplySettings
+        :storage-type="chatSettings?.storageType || ''"
+        @confirm="applySettings"
+        @cancel="discardSettings"
       />
-      <Banner
-        v-if="!aiAgentSettings"
-        class="m-0"
-        color="error"
-        :label="t('aiConfig.form.section.provider.noSecret')"
-      />
-    </template>
-
-    <template v-else>
-      <settings-row
-        :section-id="'ai-agent-settings'"
-        :title="t('aiConfig.form.section.provider.header')"
-        :description="t('aiConfig.form.section.provider.description')"
-        data-testid="rancher-ai-ui-settings-ai-agent-settings"
-      >
-        <AIAgentSettings
-          :value="aiAgentSettings"
-          :read-only="!permissions?.create.canCreateSecrets"
-          @update:value="aiAgentSettings = $event; apiError = ''"
-          @update:validation-error="hasAiAgentSettingsValidationErrors = $event"
-        />
-      </settings-row>
-
-      <settings-row
-        :section-id="'ai-agents-configs'"
-        :title="t('aiConfig.form.section.aiAgent.header')"
-        :description="t('aiConfig.form.section.aiAgent.description')"
-        data-testid="rancher-ai-ui-settings-ai-agent-configs"
-      >
-        <AIAgentConfigs
-          v-if="aiAgentConfigCRDs"
-          :value="aiAgentConfigCRDs"
-          :init-value="initAiAgentConfigCRDs"
-          :read-only="!permissions?.create.canCreateSecrets || !permissions?.create.canCreateAiAgentCRDS"
-          @update:value="aiAgentConfigCRDs = $event"
-          @update:authentication-secrets="authenticationSecrets = $event"
-          @update:validation-error="hasAiAgentConfigsValidationErrors = $event"
-        />
-      </settings-row>
-
-      <settings-row
-        :section-id="'ui-tools-config'"
-        :title="t('aiConfig.form.section.tools.header')"
-        :description="t('aiConfig.form.section.tools.description')"
-        :banner="toolsActionResultBanner"
-        data-testid="rancher-ai-ui-settings-tools"
-      >
-        <UIToolsConfig
-          v-if="uiToolsSettings"
-          :value="uiToolsSettings"
-          :read-only="!permissions?.create.canCreateConfigMaps"
-          :required-action="toolsRequiredAction"
-          @update:value="uiToolsSettings = $event"
-          @publish:tools="publishToolsDefinitionAndRefetch"
-        />
-      </settings-row>
-
-      <Banner
-        v-if="!!apiError"
-        class="m-0"
-        color="error"
-        :label="apiError"
-      />
-
-      <div class="form-footer">
-        <async-button
-          v-if="permissions?.create.canCreateAiAgentCRDS || permissions?.create.canCreateSecrets"
-          action-label="Apply"
-          data-testid="rancher-ai-ui-settings-save-button"
-          :success-label="buttonProps.successLabel"
-          :success-color="buttonProps.successColor"
-          :disabled="hasAiAgentSettingsValidationErrors || hasAiAgentConfigsValidationErrors"
-          @click="applySettingsCb = $event; isSaving = true"
-        />
-      </div>
-    </template>
+    </app-modal>
   </div>
-  <app-modal
-    v-if="isSaving"
-    :width="400"
-    :click-to-close="false"
-    height="auto"
-  >
-    <ApplySettings
-      :storage-type="chatSettings?.storageType || ''"
-      @confirm="applySettings"
-      @cancel="discardSettings"
-    />
-  </app-modal>
 </template>
 
 <style lang="scss" scoped>
 .ai-configs-container {
+  display: contents;
+}
+
+.ai-configs {
   display: flex;
   flex-direction: column;
   gap: 24px;
