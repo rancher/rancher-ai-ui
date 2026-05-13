@@ -66,17 +66,15 @@ const tools = computed(() => {
       <span>{{ t('ai.tools.label') }}</span>
     </div>
     <div class="chat-msg-tools-container">
-      <div class="chat-msg-tool-tags">
-        <Tool
-          v-for="(tool, index) in tools"
-          :key="index"
-          :tool="tool"
-          :message="props.message"
-          :label="props.showDefaultLabels ? t(`ai.tools.${ tool.toolName }.name`, { }, true) : ''"
-          :disabled="props.disabled"
-          @action="emit('action', $event.value)"
-        />
-      </div>
+      <Tool
+        v-for="(tool, index) in tools"
+        :key="index"
+        :tool="tool"
+        :message="props.message"
+        :label="props.showDefaultLabels ? t(`ai.tools.${ tool.toolName }.name`, { }, true) : ''"
+        :disabled="props.disabled"
+        @action="emit('action', $event.value)"
+      />
     </div>
   </div>
 </template>
@@ -97,12 +95,17 @@ const tools = computed(() => {
 .chat-msg-tools-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
 }
 
-.chat-msg-tool-tags {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+// Hide container (and the title too) if there are no tools to show
+.chat-tools-container {
+  &:not(:has(.chat-msg-tools-container > *)) {
+    display: none;
+  }
+}
+
+.chat-msg-tools-container:empty {
+  display: none;
 }
 </style>
