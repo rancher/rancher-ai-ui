@@ -148,6 +148,7 @@ describe('Feature: context', () => {
   describe('disabled state', () => {
     afterEach(() => {
       cy.uninstallRancherAIService();
+      cy.installRancherAIService();
     });
 
     it('Test 8: Context panel is disabled when AI service is not active', () => {

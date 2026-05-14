@@ -136,10 +136,14 @@ cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]')
   chat.sendMessage('Hello');
   ```
 - For tests that install/uninstall the AI service, isolate them in a nested `describe`
-  with cleanup in `afterEach`:
+  with cleanup in `afterEach`. The `afterEach` must **reinstall** the service after
+  uninstalling to leave the environment clean for subsequent spec files:
   ```typescript
   describe('disabled state', () => {
-    afterEach(() => { cy.uninstallRancherAIService(); });
+    afterEach(() => {
+      cy.uninstallRancherAIService();
+      cy.installRancherAIService();
+    });
     it('...', () => { cy.installRancherAIService({ waitForAIServiceReady: false }); ... });
   });
   ```

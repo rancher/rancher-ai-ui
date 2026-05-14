@@ -18,7 +18,8 @@ Cypress.Commands.add('cleanChatHistory', () => {
     })
       .then((resp) => {
         // 503 is expected when the AI service is not deployed (e.g. Test 8: disabled state)
-        if (resp.status !== 503) {
+        // 404 is expected when the service was just uninstalled and the route no longer exists
+        if (resp.status !== 503 && resp.status !== 404) {
           expect(resp.status).to.eq(204);
         }
       });

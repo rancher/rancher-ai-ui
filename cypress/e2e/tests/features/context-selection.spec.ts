@@ -180,6 +180,7 @@ describe('Feature: context-selection', () => {
   describe('disabled state', () => {
     afterEach(() => {
       cy.uninstallRancherAIService();
+      cy.installRancherAIService();
     });
 
     it('Test 7: Context panel is disabled while chat is not ready', () => {
