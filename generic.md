@@ -49,3 +49,9 @@
 - **All 8 tests passed** — the fixes from attempts 1-2 (`.v-popper__popper` for rc-dropdown, `failOnStatusCode: false` in cleanup) resolved all failures.
 - Tests 1, 4, 8 required retries (attempt 2) before passing; all ultimately passed within Cypress retry budget.
 - The `.v-popper__popper` selector pattern for `rc-dropdown` is confirmed working for Test 4.
+
+## PR #209 — context-selection (Attempt 1, 2026-05-14)
+- **All 8 tests passed** on attempt 1 — no fixes were needed.
+- Test 8 required Cypress internal retry (attempt 2 of 3) but passed successfully; this is normal flakiness.
+- The fixes from PR #208 (`.v-popper__popper` for rc-dropdown, `failOnStatusCode: false` in cleanup, cluster-scoped navigation for Test 8) were all effective and carried over to this PR.
+- Confirms the spec is stable and the feature is working correctly.
