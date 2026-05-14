@@ -19,7 +19,6 @@ export default class ContextPo extends ComponentPo {
     return this.self();
   }
 
-
   removeTag(label: string) {
     return this.tag(label).remove();
   }
@@ -27,7 +26,6 @@ export default class ContextPo extends ComponentPo {
   addContextTrigger() {
     return cy.get('.context-trigger');
   }
-
 
   isDisabled() {
     return this.self().should('have.class', 'disabled-panel');
