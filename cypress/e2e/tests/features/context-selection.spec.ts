@@ -2,11 +2,11 @@ import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import { WorkloadsDeploymentsListPagePo } from '@rancher/cypress/e2e/po/pages/explorer/workloads/workloads-deployments.po';
 import ClusterDashboardPagePo from '@rancher/cypress/e2e/po/pages/explorer/cluster-dashboard.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
-import { ContextPanelPo } from '@/cypress/e2e/po/context.po';
+import ContextPo from '@/cypress/e2e/po/context.po';
 
 describe('Feature: context-selection', () => {
   const chat = new ChatPo();
-  const context = new ContextPanelPo();
+  const context = new ContextPo();
 
   beforeEach(() => {
     cy.login();
