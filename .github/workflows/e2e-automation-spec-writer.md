@@ -143,10 +143,13 @@ ls cypress/e2e/po/
 Key patterns to follow:
 - Import page objects and use them for all interactions
 - Use `cy.enqueueLLMResponse()` before sending messages
-- Use `cy.get('[data-testid="..."]')` for all selectors
+- Use `cy.get('[data-testid="..."]')` for selectors in specs; inside Page Objects, use `this.self().find(...)` to scope queries within the component container
 - Screenshots on the chat container: `cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('name')`
-- Add `cy.wait(500)` before screenshots
+- Do NOT add `cy.wait(500)` before screenshots — assertions before the screenshot act as implicit waits
 - Use `.should('be.visible')` for element existence checks
+- Place `cy.login()` in `beforeEach`, NOT inside each `it()` block
+- If a test modifies shared state (e.g. installs AI service), isolate it in a nested `describe` with its own `afterEach` for teardown
+- Encapsulate fragile third-party selectors (e.g. `.v-popper__popper` from floating-vue) inside Page Object methods with comments
 
 ## Step 6 - Read Relevant Source Components
 
@@ -167,15 +170,30 @@ The spec MUST follow the test plan exactly:
 Structure:
 ```typescript
 describe('Feature: ${{ github.event.inputs.feature_area }}', () => {
+  const chat = new ChatPo();
+
   beforeEach(() => {
-    // Common setup from test plan
+    cy.login();
+  });
+
+  afterEach(() => {
+    cy.cleanChatHistory();
   });
 
   it('Test 1: <name from plan>', () => {
-    // Steps from test plan
+    // Navigate, open chat, interact, assert, screenshot
   });
 
-  // ... more tests
+  // Tests that modify infrastructure state go in nested describe:
+  describe('<state-changing context>', () => {
+    afterEach(() => {
+      // Teardown: restore original state
+    });
+
+    it('Test N: <name>', () => {
+      // Setup state, assert, screenshot
+    });
+  });
 });
 ```
 
@@ -183,6 +201,36 @@ describe('Feature: ${{ github.event.inputs.feature_area }}', () => {
 
 If the test plan specifies new page objects, create them in:
 `cypress/e2e/po/<name>.po.ts`
+
+Page Object best practices:
+- Extend `ComponentPo` from `@rancher/cypress/e2e/po/components/component.po`
+- Pass the root CSS selector to `super()` in the constructor
+- Scope ALL queries using `this.self().find(...)` instead of global `cy.get(...)`
+- Only use global `cy.get(...)` for elements teleported outside the component tree
+  (e.g. floating-vue poppers rendered in `body`)
+- Add comments on methods that use third-party internal selectors explaining the coupling
+- Example:
+  ```typescript
+  import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
+
+  export default class ExamplePo extends ComponentPo {
+    constructor() {
+      super('.my-component');
+    }
+
+    myButton() {
+      return this.self().find('[data-testid="my-button"]');
+    }
+
+    /**
+     * Selects an item from the dropdown.
+     * Uses floating-vue's .v-popper__popper since rc-dropdown teleports content outside the component.
+     */
+    selectDropdownItem(label: string) {
+      return cy.get('.v-popper__popper').filter(':visible').contains(label).click();
+    }
+  }
+  ```
 
 ## Step 9 - Comment on PR
 
@@ -228,11 +276,19 @@ Use the dispatch-workflow safe output:
 - Follow the test plan EXACTLY
 - Use only selectors that actually exist in the source components
 - Every test MUST have a screenshot at the end
-- Use `cy.wait(500)` before every screenshot
+- Do NOT use `cy.wait(500)` before screenshots — rely on assertion-based implicit waits
 - Screenshots on the container element, not viewport
 - Mock all LLM interactions with `cy.enqueueLLMResponse()`
 - Do not use `cy.type('{tab}')` - unsupported
 - Keyboard shortcuts must use combined syntax: `{alt+k}`, `{ctrl+shift+o}`
 - Stub clipboard before copy tests
+- Place `cy.login()` in `beforeEach` — never inside individual `it()` blocks
+- Place `cy.cleanChatHistory()` in `afterEach`
+- Tests that install/uninstall the AI service or otherwise alter cluster state MUST be in a nested `describe` with teardown in `afterEach`
+- Page Object methods MUST scope selectors with `this.self().find(...)` not global `cy.get(...)` (exception: teleported elements like popper dropdowns)
+- Encapsulate fragile selectors (third-party library classes) inside Page Object methods with documenting comments
+- Encapsulate internal DOM traversal (e.g. `.vs__selected .vs__deselect`) in named PO methods — specs should never contain raw multi-step DOM chains
+- Specs must NEVER call `.self().find(...)` on a Page Object directly — always expose a PO method
+- Never use conditional `afterEach` (e.g. `if (!this.currentTest?.title.includes(...))`) — use nested `describe` blocks instead
 - Do NOT create a new PR - save patch to repo-memory instead
 - Do NOT use git push - the apply-patch workflow handles that

@@ -20,7 +20,7 @@ fi
 
 HELM_WAIT_FLAGS=""
 if [ "$WAIT_FOR_AI_SERVICE_READY" = "true" ]; then
-  HELM_WAIT_FLAGS="--wait --timeout 2m"
+  HELM_WAIT_FLAGS="--wait --timeout 5m"
 fi
 
 if [ -z "$KUBECONFIG_PATH" ]; then
@@ -69,6 +69,6 @@ helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
   $HELM_WAIT_FLAGS
 
 if [ "$WAIT_FOR_AI_SERVICE_READY" = "true" ]; then
-  kubectl -n cattle-ai-agent-system rollout status deployment/rancher-ai-agent --timeout=2m
-  kubectl -n cattle-ai-agent-system wait --for=condition=available --timeout=2m deployment/rancher-ai-agent
+  kubectl -n cattle-ai-agent-system rollout status deployment/rancher-ai-agent --timeout=5m
+  kubectl -n cattle-ai-agent-system wait --for=condition=available --timeout=5m deployment/rancher-ai-agent
 fi

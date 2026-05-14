@@ -131,16 +131,17 @@ Parse the failure_summary input (JSON) to understand which tests failed and why.
 
 Common failure categories:
 1. **Selector not found** - data-testid or CSS selector does not match the actual DOM
-2. **Timing issue** - Element not ready when assertion runs (needs cy.wait or should be.visible)
+2. **Timing issue** - Element not ready when assertion runs (use `.should('be.visible')` as implicit wait)
 3. **Wrong interaction** - Using incorrect Cypress commands or unsupported key combos
 4. **Missing mock** - Need to call cy.enqueueLLMResponse() before sending a message
 5. **Screenshot issue** - Screenshots must be taken on the chat container element:
    `cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('name')`
-   and always add `cy.wait(500)` before each screenshot call.
+   Do NOT add `cy.wait(500)` before screenshots — assertions before the screenshot serve as implicit waits.
 6. **Clipboard permission denied** - In headless CI, navigator.clipboard.writeText()
    fails. Must stub it: `cy.window().then(win => cy.stub(win.navigator.clipboard, 'writeText').resolves())`
 7. **tab not supported** - `cy.type('{tab}')` is NOT valid Cypress. Never use it.
 8. **Logic error** - Test flow does not match actual UI behavior
+9. **Scope issue** - Page Object uses global `cy.get(...)` instead of `this.self().find(...)`, matching wrong elements
 
 ## Step 5 - Read Only What You Need
 
@@ -165,7 +166,17 @@ Rules for fixes:
 - Add appropriate waits (cy.get(...).should('be.visible')) for timing issues
 - Use correct data-testid selectors from the actual components
 - Screenshots MUST be taken on the chat container element, not the viewport
-- Add cy.wait(500) before every cy.screenshot() to ensure DOM stability
+- Do NOT add cy.wait(500) before screenshots — rely on assertion-based implicit waits
+- Keyboard shortcuts MUST use combined modifier syntax: {alt+k}, {ctrl+shift+o}
+- Stub clipboard before copy tests
+- Never use {tab} in cy.type() - it is not supported
+- Keep the same test structure (same number of tests, same screenshot names)
+- Page Object methods MUST scope selectors with `this.self().find(...)`, not global `cy.get(...)`
+- Specs must NEVER call `.self().find(...)` on a Page Object directly — always expose a PO method
+- Encapsulate internal DOM traversal (e.g. `.vs__selected .vs__deselect`) in named PO methods
+- Never use conditional `afterEach` (e.g. `if (!this.currentTest?.title.includes(...))`) — use nested `describe` blocks instead
+- `cy.login()` belongs in `beforeEach`, not inside individual `it()` blocks
+- Tests that install/uninstall the AI service must be in a nested `describe` with cleanup in `afterEach`
 - Keyboard shortcuts MUST use combined modifier syntax: {alt+k}, {ctrl+shift+o}
 - Stub clipboard before copy tests
 - Never use {tab} in cy.type() - it is not supported

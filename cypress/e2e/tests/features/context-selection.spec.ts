@@ -12,10 +12,8 @@ describe('Feature: context-selection', () => {
     cy.login();
   });
 
-  afterEach(function() {
-    if (!this.currentTest?.title.includes('Test 7')) {
-      cy.cleanChatHistory();
-    }
+  afterEach(() => {
+    cy.cleanChatHistory();
   });
 
   it('Test 1: Context panel shows context tags when on a cluster-scoped page', () => {
@@ -28,9 +26,8 @@ describe('Feature: context-selection', () => {
     chat.isReady();
 
     context.allTags().should('have.length.gte', 1);
-    context.self().find('.context-trigger').should('exist');
+    context.addContextTrigger().should('exist');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-1-context-tags-visible');
   });
 
@@ -42,9 +39,8 @@ describe('Feature: context-selection', () => {
 
     context.noContextLabel().should('be.visible');
     context.allTags().should('not.exist');
-    context.self().find('.context-trigger').should('not.exist');
+    context.addContextTrigger().should('not.exist');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-2-no-context');
   });
 
@@ -59,12 +55,11 @@ describe('Feature: context-selection', () => {
 
     context.allTags().should('have.length.gte', 1);
 
-    cy.get('.vs__selected.tag .vs__deselect').first().click();
+    context.removeFirstTag();
 
     context.allTags().should('not.exist');
     context.resetButton().should('be.visible');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-3-tag-removed');
   });
 
@@ -83,7 +78,7 @@ describe('Feature: context-selection', () => {
       originalCount = $tags.length;
     });
 
-    cy.get('.vs__selected.tag .vs__deselect').first().click();
+    context.removeFirstTag();
 
     context.resetButton().should('be.visible');
     context.resetButton().click();
@@ -92,9 +87,8 @@ describe('Feature: context-selection', () => {
       expect($tags.length).to.equal(originalCount);
     });
 
-    context.self().find('.context-reset').should('not.exist');
+    context.resetButton().should('not.exist');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-4-context-reset');
   });
 
@@ -115,7 +109,7 @@ describe('Feature: context-selection', () => {
       removedItemValue = testId.replace('rancher-ai-ui-context-tag-', '');
     });
 
-    cy.get('.vs__selected.tag .vs__deselect').first().click();
+    context.removeFirstTag();
 
     context.openDropdown();
 
@@ -124,9 +118,8 @@ describe('Feature: context-selection', () => {
     });
 
     context.allTags().should('have.length.gte', 1);
-    context.self().find('.context-reset').should('not.exist');
+    context.resetButton().should('not.exist');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-5-tag-re-added');
   });
 
@@ -156,23 +149,7 @@ describe('Feature: context-selection', () => {
     resultMessage.context('local').should('exist');
     resultMessage.containsText('Here is the context response.');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-6-context-in-message');
-  });
-
-  it('Test 7: Context panel is disabled while chat is not ready', () => {
-    HomePagePo.goTo();
-
-    cy.installRancherAIService({ waitForAIServiceReady: false });
-
-    chat.open();
-
-    chat.isNotReady();
-
-    context.isDisabled();
-
-    cy.wait(500);
-    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-7-context-disabled');
   });
 
   it('Test 8: Removing all context tags hides the "Reset" button when re-navigating', () => {
@@ -195,9 +172,28 @@ describe('Feature: context-selection', () => {
     chat.isReady();
 
     context.allTags().should('have.length.gte', 1);
-    context.self().find('.context-reset').should('not.exist');
+    context.resetButton().should('not.exist');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-8-context-updates-on-navigation');
+  });
+
+  describe('disabled state', () => {
+    afterEach(() => {
+      cy.uninstallRancherAIService();
+    });
+
+    it('Test 7: Context panel is disabled while chat is not ready', () => {
+      HomePagePo.goTo();
+
+      cy.installRancherAIService({ waitForAIServiceReady: false });
+
+      chat.open();
+
+      chat.isNotReady();
+
+      context.isDisabled();
+
+      cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-selection-test-7-context-disabled');
+    });
   });
 });

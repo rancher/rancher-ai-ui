@@ -42,10 +42,28 @@ yarn cypress:run --spec cypress/e2e/tests/features/<spec>.spec.ts \
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 
-before(() => cy.login());
-beforeEach(() => { cy.login(); HomePagePo.goTo(); });
+beforeEach(() => { cy.login(); });
 afterEach(() => cy.cleanChatHistory());
 ```
+
+**Important conventions:**
+- Place `cy.login()` in `beforeEach`, never repeat it inside individual `it()` blocks
+- Place `cy.cleanChatHistory()` in `afterEach` for cleanup
+- If a test modifies shared infrastructure state (e.g. installs/uninstalls the AI service),
+  isolate it in a nested `describe` with its own `afterEach` that tears down the state
+- Do NOT use `cy.wait(500)` before screenshots — Cypress retries assertions automatically.
+  The `.should()` assertions before a screenshot act as implicit waits.
+- Page Object methods should scope selectors within their container using `this.self().find(...)`
+  instead of global `cy.get(...)`. Only use global selectors for elements rendered outside
+  the component tree (e.g. teleported poppers/modals).
+- Encapsulate fragile third-party selectors (like `.v-popper__popper`) inside Page Object
+  methods with documenting comments, so they can be updated in one place if the library changes.
+- Encapsulate internal DOM traversal (e.g. `.vs__selected.tag .vs__deselect`) in named PO
+  methods — any non-trivial selector chain belongs in the Page Object, not the spec.
+- Specs should NEVER call `.self().find(...)` directly on a Page Object. If a spec needs
+  to query the DOM, the PO should expose a method for it. The spec only calls PO methods.
+- Never use conditional `afterEach` (e.g. `if (!this.currentTest?.title.includes(...))`).
+  Use nested `describe` blocks with their own `afterEach` for state-changing tests instead.
 
 ### Page Objects
 
@@ -108,7 +126,7 @@ cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]')
 ### Tips
 
 - Cypress handles self-signed certs via `NODE_TLS_REJECT_UNAUTHORIZED=0`
-- Use `cy.wait(500)` between rapid keyboard actions for animations
+- Use `cy.wait(500)` between rapid keyboard actions for animations (NOT before screenshots)
 - The LLM mock service is pre-configured; `enqueueLLMResponse` queues replies
 - Cypress video recording is enabled with `--config video=true`
 - Screenshots are saved to `cypress/screenshots/` by default
@@ -117,5 +135,18 @@ cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]')
   cy.enqueueLLMResponse({ text: 'Hello from AI.' });
   chat.sendMessage('Hello');
   ```
+- For tests that install/uninstall the AI service, isolate them in a nested `describe`
+  with cleanup in `afterEach`:
+  ```typescript
+  describe('disabled state', () => {
+    afterEach(() => { cy.uninstallRancherAIService(); });
+    it('...', () => { cy.installRancherAIService({ waitForAIServiceReady: false }); ... });
+  });
+  ```
+- Always scope Page Object selectors with `this.self().find(...)` instead of global `cy.get(...)`
+- Specs should only call PO methods — never use `po.self().find(...)` directly in a spec
+- Encapsulate multi-step DOM traversal in named PO methods (e.g. `removeFirstTag()`)
+- Never use conditional `afterEach` with `this.currentTest` — use nested `describe` instead
+- Use Cypress implicit waiting via `.should()` assertions — avoid explicit `cy.wait()` calls
 
 <!-- END SKILL REFERENCE -->

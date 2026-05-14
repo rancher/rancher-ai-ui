@@ -7,13 +7,15 @@ describe('Feature: context', () => {
   const chat = new ChatPo();
   const context = new ContextPo();
 
+  beforeEach(() => {
+    cy.login();
+  });
+
   afterEach(() => {
     cy.cleanChatHistory();
   });
 
   it('Test 1: Context panel shows cluster tag on cluster-scoped page', () => {
-    cy.login();
-
     const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
 
     deploymentsListPage.goTo();
@@ -22,15 +24,12 @@ describe('Feature: context', () => {
     chat.open();
     chat.isReady();
 
-    context.tag('local').self().should('be.visible');
+    context.tag('local').should('be.visible');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-1-cluster-tag-visible');
   });
 
   it('Test 2: No context shown on Home page', () => {
-    cy.login();
-
     HomePagePo.goTo();
 
     chat.open();
@@ -39,13 +38,10 @@ describe('Feature: context', () => {
     context.noContextLabel().should('be.visible');
     cy.get('[data-testid^="rancher-ai-ui-context-tag-"]').should('not.exist');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-2-no-context-home');
   });
 
   it('Test 3: Deselect a context tag', () => {
-    cy.login();
-
     const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
 
     deploymentsListPage.goTo();
@@ -54,20 +50,17 @@ describe('Feature: context', () => {
     chat.open();
     chat.isReady();
 
-    context.tag('local').self().should('be.visible');
+    context.tag('local').should('be.visible');
 
     context.removeTag('local');
 
-    context.tag('local').self().should('not.exist');
+    context.tag('local').should('not.exist');
     context.resetButton().should('be.visible');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-3-tag-deselected');
   });
 
   it('Test 4: Re-add a context via the dropdown', () => {
-    cy.login();
-
     const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
 
     deploymentsListPage.goTo();
@@ -77,21 +70,18 @@ describe('Feature: context', () => {
     chat.isReady();
 
     context.removeTag('local');
-    context.tag('local').self().should('not.exist');
+    context.tag('local').should('not.exist');
 
     context.addContextTrigger().click();
-    cy.get('.v-popper__popper').filter(':visible').contains('local').click();
+    context.selectDropdownItem('local');
 
-    context.tag('local').self().should('be.visible');
+    context.tag('local').should('be.visible');
     context.resetButton().should('not.exist');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-4-tag-readded');
   });
 
   it('Test 5: Reset restores all deselected tags', () => {
-    cy.login();
-
     const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
 
     deploymentsListPage.goTo();
@@ -100,7 +90,7 @@ describe('Feature: context', () => {
     chat.open();
     chat.isReady();
 
-    context.tag('local').self().should('be.visible');
+    context.tag('local').should('be.visible');
 
     context.removeTag('local');
     context.resetButton().should('be.visible');
@@ -110,13 +100,10 @@ describe('Feature: context', () => {
     cy.get('[data-testid^="rancher-ai-ui-context-tag-"]').should('be.visible');
     context.resetButton().should('not.exist');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-5-reset-restores-all');
   });
 
   it('Test 6: Deselected context is NOT included in sent message', () => {
-    cy.login();
-
     const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
 
     deploymentsListPage.goTo();
@@ -136,13 +123,10 @@ describe('Feature: context', () => {
       cy.get('[data-testid="rancher-ai-ui-context-tag-local"]').should('not.exist');
     });
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-6-deselected-not-in-message');
   });
 
   it('Test 7: Selected context IS included in sent message', () => {
-    cy.login();
-
     const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
 
     deploymentsListPage.goTo();
@@ -158,26 +142,28 @@ describe('Feature: context', () => {
 
     userMessage.context('local').should('exist');
 
-    cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-7-selected-context-in-message');
   });
 
-  it('Test 8: Context panel is disabled when AI service is not active', () => {
-    cy.login();
+  describe('disabled state', () => {
+    afterEach(() => {
+      cy.uninstallRancherAIService();
+    });
 
-    cy.installRancherAIService({ waitForAIServiceReady: false });
+    it('Test 8: Context panel is disabled when AI service is not active', () => {
+      cy.installRancherAIService({ waitForAIServiceReady: false });
 
-    const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
+      const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
 
-    deploymentsListPage.goTo();
-    deploymentsListPage.waitForPage();
+      deploymentsListPage.goTo();
+      deploymentsListPage.waitForPage();
 
-    cy.get('[data-testid="extension-header-action-ai.action.openChat"]').should('be.visible');
-    chat.open();
+      cy.get('[data-testid="extension-header-action-ai.action.openChat"]').should('be.visible');
+      chat.open();
 
-    context.isDisabled();
+      context.isDisabled();
 
-    cy.wait(500);
-    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-8-disabled-when-not-active');
+      cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-8-disabled-when-not-active');
+    });
   });
 });
