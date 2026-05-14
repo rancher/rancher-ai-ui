@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { type PropType, computed } from 'vue';
+import { randomStr } from '@shell/utils/string';
 import { Message } from '../../types';
 import { ToolName } from './types';
 import Tool from '../tools/Tool.vue';
@@ -49,6 +50,11 @@ const tools = computed(() => {
     // Filter tools based on include/exclude props
     .filter((tool) => !props.exclude.includes(tool.toolName) &&
       (props.include.length === 0 || props.include.includes(tool.toolName)))
+    // Add unique keys to each tool for rendering
+    .map((tool) => ({
+      ...tool,
+      key: `${ tool.toolName }-${ randomStr(4) }`,
+    }))
     // Sort tools based on predefined order
     .sort((a, b) => ToolsOrder[a.toolName] - ToolsOrder[b.toolName]);
 });
@@ -67,8 +73,8 @@ const tools = computed(() => {
     </div>
     <div class="chat-msg-tools-container">
       <Tool
-        v-for="(tool, index) in tools"
-        :key="index"
+        v-for="tool in tools"
+        :key="tool.key"
         :tool="tool"
         :message="props.message"
         :label="props.showDefaultLabels ? t(`ai.tools.${ tool.toolName }.name`, { }, true) : ''"
