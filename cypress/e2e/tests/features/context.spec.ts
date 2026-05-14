@@ -22,7 +22,7 @@ describe('Feature: context', () => {
     chat.open();
     chat.isReady();
 
-    context.tag('local').should('be.visible');
+    context.tag('local').self().should('be.visible');
 
     cy.wait(500);
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-1-cluster-tag-visible');
@@ -54,11 +54,11 @@ describe('Feature: context', () => {
     chat.open();
     chat.isReady();
 
-    context.tag('local').should('be.visible');
+    context.tag('local').self().should('be.visible');
 
     context.removeTag('local');
 
-    context.tag('local').should('not.exist');
+    context.tag('local').self().should('not.exist');
     context.resetButton().should('be.visible');
 
     cy.wait(500);
@@ -77,12 +77,12 @@ describe('Feature: context', () => {
     chat.isReady();
 
     context.removeTag('local');
-    context.tag('local').should('not.exist');
+    context.tag('local').self().should('not.exist');
 
     context.addContextTrigger().click();
     cy.get('.v-popper__popper').filter(':visible').contains('local').click();
 
-    context.tag('local').should('be.visible');
+    context.tag('local').self().should('be.visible');
     context.resetButton().should('not.exist');
 
     cy.wait(500);
@@ -100,7 +100,7 @@ describe('Feature: context', () => {
     chat.open();
     chat.isReady();
 
-    context.tag('local').should('be.visible');
+    context.tag('local').self().should('be.visible');
 
     context.removeTag('local');
     context.resetButton().should('be.visible');
