@@ -41,11 +41,10 @@ const isValidInput = computed(() => {
   const {
     yaml,
     resourceKind,
-    resourceNamespace,
     resourceName,
   } = props.tool.input;
 
-  return !!yaml && !!resourceKind && !!resourceNamespace && !!resourceName;
+  return !!yaml && !!resourceKind && !!resourceName; // resourceNamespace is not required for non-namespaced resources
 });
 
 const label = computed(() => {
@@ -83,7 +82,7 @@ function navigateToStaging() {
     title
   } = props.tool.input;
 
-  if (!yaml || !resourceKind || !resourceName || !resourceNamespace) {
+  if (!yaml || !resourceKind || !resourceName) {
     warn('Missing YAML content for ShowYaml tool:', props.tool.input);
 
     return;

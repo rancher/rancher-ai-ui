@@ -42,11 +42,10 @@ const isValidInput = computed(() => {
     original,
     patched,
     resourceKind,
-    resourceNamespace,
     resourceName,
   } = props.tool.input;
 
-  return !!original && !!patched && !!resourceKind && !!resourceNamespace && !!resourceName;
+  return !!original && !!patched && !!resourceKind && !!resourceName; // resourceNamespace is not required for non-namespaced resources
 });
 
 const label = computed(() => {
@@ -85,7 +84,7 @@ function navigateToStaging() {
     title
   } = props.tool.input;
 
-  if (!original || !patched || !resourceKind || !resourceName || !resourceNamespace) {
+  if (!original || !patched || !resourceKind || !resourceName) {
     warn('Missing YAML content for ShowYamlDiff tool:', props.tool.input);
 
     return;

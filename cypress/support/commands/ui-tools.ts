@@ -1,4 +1,4 @@
-import createDefinition from '../../e2e/blueprints/ui-tools/create.json';
+import createDefinition from '../../../pkg/rancher-ai-ui/ui-tools.json';
 import updateDefinition from '../../e2e/blueprints/ui-tools/update.json';
 
 const AGENT_NAMESPACE = 'cattle-ai-agent-system';

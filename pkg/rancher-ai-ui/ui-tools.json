@@ -44,8 +44,7 @@
           },
           "resourceNamespace": {
             "type": "string",
-            "description": "The namespace where this ONE resource exists.",
-            "required": true
+            "description": "The namespace where this ONE resource exists. Required only if the resource is namespaced."
           },
           "copyable": {
             "type": "boolean",
@@ -95,8 +94,7 @@
           },
           "resourceNamespace": {
             "type": "string",
-            "description": "The namespace of the ONE resource being compared.",
-            "required": true
+            "description": "The namespace of the ONE resource being compared. Required only if the resource is namespaced."
           },
           "copyable": {
             "type": "boolean",
