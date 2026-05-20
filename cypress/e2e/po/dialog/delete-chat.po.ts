@@ -5,7 +5,11 @@ export default class DeleteChatPromptPo extends ComponentPo {
     super(cy.get('[data-testid="card"].prompt-remove'));
   }
 
+  confirmButton() {
+    return this.self().getId('prompt-remove-confirm-button');
+  }
+
   confirm() {
-    return this.self().getId('prompt-remove-confirm-button').click();
+    return this.confirmButton().click();
   }
 }

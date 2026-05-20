@@ -65,6 +65,10 @@ describe('Feature: chat-panel-menu', () => {
   });
 
   it('Test 4: "Edit Configuration" menu option navigates to the AI settings page', () => {
+    // Navigate to cluster page to ensure cluster context is available for routing
+    cy.visit('/c/local/');
+    chat.isReady();
+
     menu.openMenu();
     menu.clickOption('Edit Configuration');
 
@@ -118,11 +122,15 @@ describe('Feature: chat-panel-menu', () => {
   });
 
   it('Test 8: Keyboard shortcut Ctrl+Shift+Backspace (Delete chat) shows delete confirmation', () => {
+    cy.enqueueLLMResponse({ text: 'Hello from AI.' });
+    chat.sendMessage('Hello');
+    chat.getMessage(3).isCompleted();
+
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').type('{ctrl}{shift}{backspace}');
 
     const deletePrompt = new DeleteChatPromptPo();
 
-    deletePrompt.confirm().should('be.visible');
+    deletePrompt.confirmButton().should('be.visible');
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-8-delete-shortcut-dialog');
   });
