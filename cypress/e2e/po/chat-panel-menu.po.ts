@@ -18,9 +18,11 @@ export default class ChatPanelMenuPo extends ComponentPo {
   /**
    * Click a menu option by its visible label text.
    * Uses .v-popper__popper because rc-dropdown teleports content outside the component tree.
+   * Uses .filter(':visible').contains(label) to target the actual item element, not the popper
+   * container — clicking the container center would hit the wrong item.
    */
   clickOption(label: string) {
-    return cy.contains('.v-popper__popper', label).click();
+    return cy.get('.v-popper__popper').filter(':visible').contains(label).click();
   }
 
   /**
