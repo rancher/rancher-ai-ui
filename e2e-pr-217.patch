@@ -1,0 +1,50 @@
+diff --git a/cypress/e2e/po/dialog/delete-chat.po.ts b/cypress/e2e/po/dialog/delete-chat.po.ts
+index 6caf309..adf93d7 100644
+--- a/cypress/e2e/po/dialog/delete-chat.po.ts
++++ b/cypress/e2e/po/dialog/delete-chat.po.ts
+@@ -5,7 +5,11 @@ export default class DeleteChatPromptPo extends ComponentPo {
+     super(cy.get('[data-testid="card"].prompt-remove'));
+   }
+ 
++  confirmButton() {
++    return this.self().getId('prompt-remove-confirm-button');
++  }
++
+   confirm() {
+-    return this.self().getId('prompt-remove-confirm-button').click();
++    return this.confirmButton().click();
+   }
+ }
+\ No newline at end of file
+diff --git a/cypress/e2e/tests/features/chat-panel-menu.spec.ts b/cypress/e2e/tests/features/chat-panel-menu.spec.ts
+index 5af628b..ac92d03 100644
+--- a/cypress/e2e/tests/features/chat-panel-menu.spec.ts
++++ b/cypress/e2e/tests/features/chat-panel-menu.spec.ts
+@@ -65,6 +65,10 @@ describe('Feature: chat-panel-menu', () => {
+   });
+ 
+   it('Test 4: "Edit Configuration" menu option navigates to the AI settings page', () => {
++    // Navigate to cluster page to ensure cluster context is available for routing
++    cy.visit('/c/local/');
++    chat.isReady();
++
+     menu.openMenu();
+     menu.clickOption('Edit Configuration');
+ 
+@@ -118,11 +122,15 @@ describe('Feature: chat-panel-menu', () => {
+   });
+ 
+   it('Test 8: Keyboard shortcut Ctrl+Shift+Backspace (Delete chat) shows delete confirmation', () => {
++    cy.enqueueLLMResponse({ text: 'Hello from AI.' });
++    chat.sendMessage('Hello');
++    chat.getMessage(3).isCompleted();
++
+     cy.get('[data-testid="rancher-ai-ui-chat-container"]').type('{ctrl}{shift}{backspace}');
+ 
+     const deletePrompt = new DeleteChatPromptPo();
+ 
+-    deletePrompt.confirm().should('be.visible');
++    deletePrompt.confirmButton().should('be.visible');
+ 
+     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-8-delete-shortcut-dialog');
+   });
