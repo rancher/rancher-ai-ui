@@ -21,7 +21,7 @@
 - Message IDs: welcome=1, first user message=2, first AI response=3 — confirmed in `message.spec.ts`
 - `.chat-context.disabled-panel` is sufficient to assert disabled state — do NOT add `.context-trigger[disabled]` as Vue prop `:disabled` doesn't guarantee HTML attribute
 
-### chat-panel-menu (verified 2026-05-20, attempt 2 — NEEDS_FIX)
+### chat-panel-menu (verified 2026-05-20, attempt 3 — NEEDS_FIX)
 - `[data-testid="rancher-ai-ui-chat-container"] .icon-actions` — correct selector for ⋮ menu trigger in `ChatPanelMenu.vue`
 - `.v-popper__popper` — correct global selector for teleported dropdown (NOT scoped via `.find()`)
 - `.shortcuts-title`, `.shortcuts-row`, `.shortcuts-action`, `.shortcuts-key` — verified CSS classes in `KeyboardShortcuts.vue`
@@ -74,3 +74,4 @@
 - Do NOT use `cy.contains()` with paraphrased or lowercase-adjusted i18n text — always verify the exact rendered string from `en-us.yaml` first.
 - Do NOT recommend `cy.wait(500)` in test plan notes — always prefer `.should('be.visible')` as implicit wait.
 - Do NOT use descriptive shortcut action names (e.g., "Toggle history", "Navigate history") — always use the exact i18n translation values from `en-us.yaml`.
+- Do NOT use abbreviated menu labels (e.g., "Configure", "Download") — always use full exact i18n labels (e.g., "Edit Configuration", "Download Messages"). Partial matches may work but violate plan conventions and obscure intent; also some are not substrings (e.g., "Configure" ≠ substring of "Edit Configuration").
