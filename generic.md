@@ -55,3 +55,8 @@
 - Test 8 required Cypress internal retry (attempt 2 of 3) but passed successfully; this is normal flakiness.
 - The fixes from PR #208 (`.v-popper__popper` for rc-dropdown, `failOnStatusCode: false` in cleanup, cluster-scoped navigation for Test 8) were all effective and carried over to this PR.
 - Confirms the spec is stable and the feature is working correctly.
+
+## PR #217 — chat-panel-menu (Attempt 1, 2026-05-20)
+- **Test 4 (`AssertionError`, line 84)**: After clicking "Edit Configuration", URL stayed at `/home` instead of matching `/\/(ai-assistant|settings)/`. The navigation triggered by the menu item is not working — either the route name is wrong, or the menu item click isn't propagating. Check the menu action handler in the PO/component.
+- **Test 8 (`AssertionError`, line 118)**: `[data-testid="card"].prompt-remove` not found after Ctrl+Shift+Backspace. The delete confirmation dialog was not rendered. Either the keyboard shortcut isn't bound, the shortcut handler references incorrect key codes, or the dialog uses a different selector/testid. Check `DeleteChatPromptPo` constructor at `cypress/e2e/po/dialog/delete-chat.po.ts:25`.
+- Tests 1–3, 5–7, 9 all passed on first attempt.
