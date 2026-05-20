@@ -636,6 +636,47 @@ describe('Chat', () => {
       chat.scrollButton().checkNotExists();
     });
 
+    it('it should scroll to bottom when the user re-sends a message', () => {
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      // Send multiple messages to expand the chat
+      for (let i = 0; i < 2; i++) {
+        chat.sendMessage(`Request ${ i + 1 }`);
+
+        const responseMessage = chat.getMessage(3 + (i * 2));
+
+        responseMessage.isCompleted();
+      }
+
+      chat.phase('Processing UI Tools').should('not.exist');
+
+      // Scroll to top
+      chat.getMessage(1).scrollIntoView();
+
+      // Verify that the last message is not visible
+      chat.getMessage(5).self().should('not.be.visible');
+      chat.scrollButton().self().should('be.visible');
+
+      // Re-send the first message
+      chat.getMessage(2).resendButton().click({ force: true });
+
+      // Verify that the chat has scrolled to the bottom and the new request is visible
+      chat.getMessage(6).self().should('be.visible');
+      chat.getMessage(6).containsText('Request 1');
+
+      // Verify that the chat continues to scroll to the bottom and the new response is visible
+      chat.getMessage(7).isCompleted();
+      chat.getMessage(7).self().should('be.visible');
+
+      chat.scrollButton().checkNotExists();
+    });
+
     it('it should scroll to bottom when the user sends a message from a sliding badge', () => {
       HomePagePo.goTo();
 

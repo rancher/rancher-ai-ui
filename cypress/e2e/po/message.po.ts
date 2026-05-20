@@ -33,6 +33,12 @@ class RawMessagePo extends ComponentPo {
     return this.self().get(`[data-testid^="rancher-ai-ui-chat-message-action-button-${ resourceIdPrefix }"]`);
   }
 
+  bubbleButton(icon: string) {
+    this.self().trigger('mouseenter', { force: true });
+
+    return this.self().find(`[data-testid="rancher-ai-ui-bubble-btn-${ icon }"]`);
+  }
+
   tool() {
     return new ToolPo(this.self());
   }
@@ -62,9 +68,11 @@ class RawMessagePo extends ComponentPo {
   }
 
   thinkingButton() {
-    this.self().trigger('mouseenter', { force: true });
+    return this.bubbleButton('icon-thinking-process');
+  }
 
-    return this.self().find('[data-testid="rancher-ai-ui-chat-message-show-thinking-button"]');
+  resendButton() {
+    return this.bubbleButton('icon-backup');
   }
 
   containsText(value: string) {

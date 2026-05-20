@@ -50,6 +50,7 @@ onBeforeUnmount(() => {
   <button
     v-clean-tooltip="props.tooltip"
     class="bubble-action-btn btn role-tertiary"
+    :data-testid="`rancher-ai-ui-bubble-btn-${ props.icon }`"
     type="button"
     role="button"
     @click="handleClick"
