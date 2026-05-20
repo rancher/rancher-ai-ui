@@ -21,43 +21,56 @@
 - Message IDs: welcome=1, first user message=2, first AI response=3 — confirmed in `message.spec.ts`
 - `.chat-context.disabled-panel` is sufficient to assert disabled state — do NOT add `.context-trigger[disabled]` as Vue prop `:disabled` doesn't guarantee HTML attribute
 
+### chat-panel-menu (verified 2026-05-20, attempt 2 — NEEDS_FIX)
+- `[data-testid="rancher-ai-ui-chat-container"] .icon-actions` — correct selector for ⋮ menu trigger in `ChatPanelMenu.vue`
+- `.v-popper__popper` — correct global selector for teleported dropdown (NOT scoped via `.find()`)
+- `.shortcuts-title`, `.shortcuts-row`, `.shortcuts-action`, `.shortcuts-key` — verified CSS classes in `KeyboardShortcuts.vue`
+- `DeleteChatPromptPo` at `cypress/e2e/po/dialog/delete-chat.po.ts` — `.confirm()` clicks `prompt-remove-confirm-button` inside `[data-testid="card"].prompt-remove`
+- `SettingsPagePo` at `cypress/e2e/po/settings.po` — exists; path `/c/local/settings/rancher-ai-ui`
+- **Actual shortcut action labels** from `en-us.yaml` (ai.shortcuts.items.*):
+  - `navigateHistory`: "Previous / Next Prompt"
+  - `openChat`: "Open / Close Chat Panel"
+  - `newChat`: "New Chat"
+  - `copyLastMessage`: "Copy Last Response"
+  - `toggleHistory`: "View Previous Chats"
+  - `deleteChat`: "Delete Current Chat"
+- **Actual menu item labels** from `en-us.yaml` (ai.menu.options.chat.*):
+  - `download.label`: "Download Messages"
+  - `shortcuts.label`: "View Keyboard Shortcuts"
+  - `config.label`: "Edit Configuration"
+- Settings page heading: `aiConfig.form.header` = "AI Assistant Configuration" — verified in `en-us.yaml`
+
 ## Common Plan Issues
 
 - **Wrong descendant selectors**: When `data-testid` is on an inner element, adjacent siblings won't be found via descendant selector. Always check element hierarchy.
 - **Unverified component class names**: `RcDropdownItem` and similar wrapped components may not expose their internal CSS class. Prefer `cy.contains()` with text or `cy.get()` with verified classes.
 - **Disabled attribute vs. property**: When Vue binds `:disabled` as a prop to a custom component, the HTML `disabled` attribute may not be set. Use `.should('be.disabled')` which checks both, or rely on class-based assertions (e.g., `.disabled-panel`) instead of `[disabled]` attribute selectors.
 - **Hardcoded HTML element tags in cy.contains()**: `cy.contains('ul li', 'text')` fails if the list is not `ul/li`. Always drop the element type when the rendered tag is uncertain: `cy.contains('.container', 'text')`.
+- **Wrong i18n text assertions**: ALWAYS verify assertion strings against the actual translated values in `pkg/rancher-ai-ui/l10n/en-us.yaml`. Plans that use descriptive/paraphrased text instead of exact i18n labels cause runtime assertion failures. This is especially common for shortcut action labels.
 
 ## Component Mapping
 
 - `context` / `context-selection` feature → `SelectContext.vue`, `ContextTag.vue`, `Context.vue` (panel wrapper)
-- Chat panel → `panels/` directory (Chat.vue, Console.vue, Context.vue, Messages.vue)
+- Chat panel → `panels/` directory (Chat.vue, Console.Vue, Context.vue, Messages.vue)
 - Message context tags rendered in `message/index.vue` via `ContextTag.vue`
 - `MessagePo.context(label)` → returns `[data-testid="rancher-ai-ui-context-tag-{label}"]` within message — **verified in message.po.ts**
+- `chat-panel-menu` feature → `header/ChatPanelMenu.vue`, `header/KeyboardShortcuts.vue`, `panels/Header.vue`
 
 ## Coverage Guidelines
 
 - Context selection tests should cover: auto-populate on navigation, no-context placeholder, remove tag, reset, re-add via dropdown, context sent with message, disabled state during connecting
 - Always test navigation-triggered context refresh (context updates when navigating between pages)
 - Tests 6 & 7 (context in/out of sent message) require `cy.enqueueLLMResponse()` before `sendMessage()`
+- Shortcut tests must verify both text content using exact i18n labels AND presence of keyboard key badges
 
 ## Anti-Patterns
 
 - Do NOT use `.rc-dropdown-item` — this class is not guaranteed on the rendered element
 - Do NOT use `data-testid` descendant selectors without verifying element hierarchy first
 - Do NOT assume `:disabled` prop translates to HTML `disabled` attribute without verification — use `.should('be.disabled')` or class-based assertions
-- Do NOT reference `WorkloadsDeploymentsListPagePo` without checking the exact import path (it's in `@rancher/cypress/e2e/po/pages/explorer/workloads/workloads-deployments.po`)
+- Do NOT reference `WorkloadsDeploymentsListPagePo` without checking the exact import path
 - Do NOT hardcode HTML element types (li, div, span) in `cy.contains()` selectors for third-party components — always use container-only scoping
-
-### chat-panel-menu (verified 2026-05-20, attempt 1 — NEEDS_FIX)
-- `[data-testid="rancher-ai-ui-chat-container"] .icon-actions` — correct selector for ⋮ menu trigger in `ChatPanelMenu.vue`
-- `.v-popper__popper` — correct global selector for teleported dropdown (NOT scoped via `.find()`)
-- `.shortcuts-title`, `.shortcuts-row`, `.shortcuts-action`, `.shortcuts-key` — verified CSS classes in `KeyboardShortcuts.vue`
-- **Delete confirm testid**: `rancher-ai-ui-delete-chat-confirm-button` does NOT exist; use `DeleteChatPromptPo` which wraps `prompt-remove-confirm-button` inside `[data-testid="card"].prompt-remove` (from `DeleteChatCard.vue`)
-- Menu item actual labels (from `en-us.yaml`): "Download Messages", "View Keyboard Shortcuts", "Edit Configuration" — `cy.contains` is case-sensitive, use correct casing. Partial match works for "Download" and "Configure" but "Keyboard shortcuts" (lowercase s) fails to match "View Keyboard Shortcuts".
-- Settings page heading: `aiConfig.form.header` = "AI Assistant Configuration" — verified in `Settings.vue` and `en-us.yaml`
-
-## Anti-Patterns (updated)
 - Do NOT reference `rancher-ai-ui-delete-chat-confirm-button` — this testid does not exist. Always use `DeleteChatPromptPo` for delete confirm actions.
-- Do NOT use `cy.contains()` with wrong casing for i18n labels — always verify the exact rendered string from `en-us.yaml` before writing assertions.
-- Do NOT recommend `cy.wait(500)` in test plan notes — always prefer `.should('be.visible')` as implicit wait; remove any `cy.wait()` recommendations from plans.
+- Do NOT use `cy.contains()` with paraphrased or lowercase-adjusted i18n text — always verify the exact rendered string from `en-us.yaml` first.
+- Do NOT recommend `cy.wait(500)` in test plan notes — always prefer `.should('be.visible')` as implicit wait.
+- Do NOT use descriptive shortcut action names (e.g., "Toggle history", "Navigate history") — always use the exact i18n translation values from `en-us.yaml`.
