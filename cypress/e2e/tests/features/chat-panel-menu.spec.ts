@@ -67,6 +67,7 @@ describe('Feature: chat-panel-menu', () => {
   it('Test 4: "Edit Configuration" menu option navigates to the AI settings page', () => {
     // Navigate to cluster page to ensure cluster context is available for routing
     cy.visit('/c/local/');
+    chat.open();
     chat.isReady();
 
     menu.openMenu();
