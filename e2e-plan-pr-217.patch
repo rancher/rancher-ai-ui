@@ -1,0 +1,23 @@
+diff --git a/cypress/e2e/tests/features/test-plan-chat-panel-menu.md b/cypress/e2e/tests/features/test-plan-chat-panel-menu.md
+index a31c6f1..81578df 100644
+--- a/cypress/e2e/tests/features/test-plan-chat-panel-menu.md
++++ b/cypress/e2e/tests/features/test-plan-chat-panel-menu.md
+@@ -100,12 +100,12 @@
+ 
+ **Assertions**:
+ - Popover contains text for each shortcut action:
+-  - "Navigate history" (or the translated equivalent)
+-  - "Open / Close chat"
+-  - "New chat"
+-  - "Copy last response"
+-  - "Toggle history"
+-  - "Delete chat"
++  - "Previous / Next Prompt"
++  - "Open / Close Chat Panel"
++  - "New Chat"
++  - "Copy Last Response"
++  - "View Previous Chats"
++  - "Delete Current Chat"
+ - Each shortcut row has a keyboard key badge (`.shortcuts-key`)
+ 
+ **Selectors**:
