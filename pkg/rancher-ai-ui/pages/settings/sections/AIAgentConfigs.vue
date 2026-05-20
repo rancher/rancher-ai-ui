@@ -20,6 +20,8 @@ import { AIAgentConfigCRD } from '../../../types';
 import { AIAgentConfigAuthType, AiAgentConfigSecretPayload } from '../types';
 import { DEFAULT_AI_AGENT } from '../../../composables/useAgentComposable';
 
+const CA_BUNDLE_TLS_KEY = 'tls.crt';
+
 const store = useStore();
 const { t } = useI18n(store);
 
@@ -522,7 +524,7 @@ watch(validationErrors, (errors) => {
                   :value="selectedAgent.spec.caBundleRef?.name || undefined"
                   :secret-name-label="t('aiConfig.form.section.aiAgent.fields.caBundleRef.label')"
                   :namespace="AGENT_NAMESPACE"
-                  @update:value="(value: string) => updateAgent({ spec: { ...selectedAgent.spec, caBundleRef: value ? { name: value, key: 'tls.crt' } : undefined } })"
+                  @update:value="(value: string) => updateAgent({ spec: { ...selectedAgent.spec, caBundleRef: value ? { name: value, key: CA_BUNDLE_TLS_KEY } : undefined } })"
                 />
               </div>
             </div>
