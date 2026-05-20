@@ -43,15 +43,15 @@
 
 **Assertions**:
 - The dropdown is visible (`.v-popper__popper` exists and is visible, or `cy.contains` finds the option text)
-- Menu contains "Download" text
+- Menu contains "Download Messages" text
 - Menu contains "View Keyboard Shortcuts" text
-- Menu contains "Configure" text
+- Menu contains "Edit Configuration" text
 
 **Selectors**:
 - `[data-testid="rancher-ai-ui-chat-container"] .icon-actions` — menu trigger
-- `cy.contains('.v-popper__popper', 'Download')` — download option
+- `cy.contains('.v-popper__popper', 'Download Messages')` — download option
 - `cy.contains('.v-popper__popper', 'View Keyboard Shortcuts')` — shortcuts option
-- `cy.contains('.v-popper__popper', 'Configure')` — configure option
+- `cy.contains('.v-popper__popper', 'Edit Configuration')` — configure option
 
 **Screenshot**: `chat-panel-menu-test-1-menu-open`
 
@@ -116,9 +116,9 @@
 
 ---
 
-### Test 4: "Configure" menu option navigates to the AI settings page
+### Test 4: "Edit Configuration" menu option navigates to the AI settings page
 
-**Description**: Clicking "Configure" in the ⋮ menu closes the chat and navigates to the AI settings configuration page.
+**Description**: Clicking "Edit Configuration" in the ⋮ menu closes the chat and navigates to the AI settings configuration page.
 
 **Preconditions**:
 - User is logged in
@@ -127,23 +127,23 @@
 **Steps**:
 1. Open chat panel and wait for ready state
 2. Open the ⋮ menu
-3. Click "Configure"
+3. Click "Edit Configuration"
 
 **Assertions**:
 - The URL changes to the AI settings route (contains `/ai-assistant` or `/settings`)
 - The settings page heading "AI Assistant Configuration" is visible
 
 **Selectors**:
-- `cy.contains('.v-popper__popper', 'Configure')` — configure menu item
+- `cy.contains('.v-popper__popper', 'Edit Configuration')` — configure menu item
 - `cy.contains('AI Assistant Configuration')` — settings page title
 
 **Screenshot**: `chat-panel-menu-test-4-configure-navigation`
 
 ---
 
-### Test 5: "Download" menu option triggers a file download
+### Test 5: "Download Messages" menu option triggers a file download
 
-**Description**: Clicking "Download" in the ⋮ menu triggers a download of the current chat conversation.
+**Description**: Clicking "Download Messages" in the ⋮ menu triggers a download of the current chat conversation.
 
 **Preconditions**:
 - User is logged in
@@ -154,7 +154,7 @@
 1. Mock an LLM response and send a message to ensure chat history exists
 2. Open the ⋮ menu
 3. Intercept the download via `cy.window().then(win => cy.stub(win, 'URL').as('download'))`, or use `cy.readFile` after download
-4. Click "Download"
+4. Click "Download Messages"
 
 **Assertions**:
 - No JavaScript error is thrown
@@ -162,7 +162,7 @@
 - `downloadMessages` function was invoked (verified indirectly by no navigation occurring)
 
 **Selectors**:
-- `cy.contains('.v-popper__popper', 'Download')` — download menu item
+- `cy.contains('.v-popper__popper', 'Download Messages')` — download menu item
 - `[data-testid="rancher-ai-ui-chat-container"]` — still present after download
 
 **Screenshot**: `chat-panel-menu-test-5-download-chat`
