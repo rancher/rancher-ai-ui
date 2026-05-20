@@ -1,5 +1,6 @@
 import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
 import ToolPo from '@/cypress/e2e/po/ui-tools/tool.po';
+import BubbleButtonPo from '@/cypress/e2e/po/components/bubble-button.po';
 
 class RawMessagePo extends ComponentPo {
   private id: string;
@@ -33,12 +34,6 @@ class RawMessagePo extends ComponentPo {
     return this.self().get(`[data-testid^="rancher-ai-ui-chat-message-action-button-${ resourceIdPrefix }"]`);
   }
 
-  bubbleButton(icon: string) {
-    this.self().trigger('mouseenter', { force: true });
-
-    return this.self().find(`[data-testid="rancher-ai-ui-bubble-btn-${ icon }"]`);
-  }
-
   tool() {
     return new ToolPo(this.self());
   }
@@ -68,11 +63,11 @@ class RawMessagePo extends ComponentPo {
   }
 
   thinkingButton() {
-    return this.bubbleButton('icon-thinking-process');
+    return new BubbleButtonPo('icon-thinking-process', this.self());
   }
 
   resendButton() {
-    return this.bubbleButton('icon-backup');
+    return new BubbleButtonPo('icon-backup', this.self());
   }
 
   containsText(value: string) {

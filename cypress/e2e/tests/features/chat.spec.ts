@@ -664,7 +664,7 @@ describe('Chat', () => {
       chat.scrollButton().self().should('be.visible');
 
       // Re-send the first message
-      chat.getMessage(2).resendButton().click({ force: true });
+      chat.getMessage(2).resendButton().click();
 
       // Verify that the chat has scrolled to the bottom and the new request is visible
       chat.getMessage(6).self().should('be.visible');

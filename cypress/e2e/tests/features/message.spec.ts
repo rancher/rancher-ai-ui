@@ -107,7 +107,7 @@ describe('Messages', () => {
 
     resultMessage.thinkingLabel().should('exist');
 
-    resultMessage.thinkingButton().click({ force: true });
+    resultMessage.thinkingButton().click();
 
     resultMessage.containsText('Thinking about the response');
 

@@ -166,7 +166,7 @@ describe('History Messages', () => {
 
     // Verify thinking content
     historyResponseMessage.scrollIntoView();
-    historyResponseMessage.thinkingButton().click({ force: true });
+    historyResponseMessage.thinkingButton().click();
 
     historyResponseMessage.scrollIntoView();
     historyResponseMessage.containsText('Thinking about the response');
