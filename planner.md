@@ -48,3 +48,16 @@
 - Do NOT assume `:disabled` prop translates to HTML `disabled` attribute without verification — use `.should('be.disabled')` or class-based assertions
 - Do NOT reference `WorkloadsDeploymentsListPagePo` without checking the exact import path (it's in `@rancher/cypress/e2e/po/pages/explorer/workloads/workloads-deployments.po`)
 - Do NOT hardcode HTML element types (li, div, span) in `cy.contains()` selectors for third-party components — always use container-only scoping
+
+### chat-panel-menu (verified 2026-05-20, attempt 1 — NEEDS_FIX)
+- `[data-testid="rancher-ai-ui-chat-container"] .icon-actions` — correct selector for ⋮ menu trigger in `ChatPanelMenu.vue`
+- `.v-popper__popper` — correct global selector for teleported dropdown (NOT scoped via `.find()`)
+- `.shortcuts-title`, `.shortcuts-row`, `.shortcuts-action`, `.shortcuts-key` — verified CSS classes in `KeyboardShortcuts.vue`
+- **Delete confirm testid**: `rancher-ai-ui-delete-chat-confirm-button` does NOT exist; use `DeleteChatPromptPo` which wraps `prompt-remove-confirm-button` inside `[data-testid="card"].prompt-remove` (from `DeleteChatCard.vue`)
+- Menu item actual labels (from `en-us.yaml`): "Download Messages", "View Keyboard Shortcuts", "Edit Configuration" — `cy.contains` is case-sensitive, use correct casing. Partial match works for "Download" and "Configure" but "Keyboard shortcuts" (lowercase s) fails to match "View Keyboard Shortcuts".
+- Settings page heading: `aiConfig.form.header` = "AI Assistant Configuration" — verified in `Settings.vue` and `en-us.yaml`
+
+## Anti-Patterns (updated)
+- Do NOT reference `rancher-ai-ui-delete-chat-confirm-button` — this testid does not exist. Always use `DeleteChatPromptPo` for delete confirm actions.
+- Do NOT use `cy.contains()` with wrong casing for i18n labels — always verify the exact rendered string from `en-us.yaml` before writing assertions.
+- Do NOT recommend `cy.wait(500)` in test plan notes — always prefer `.should('be.visible')` as implicit wait; remove any `cy.wait()` recommendations from plans.
