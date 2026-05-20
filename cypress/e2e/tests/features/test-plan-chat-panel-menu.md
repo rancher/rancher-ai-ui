@@ -100,12 +100,12 @@
 
 **Assertions**:
 - Popover contains text for each shortcut action:
-  - "Navigate history" (or the translated equivalent)
-  - "Open / Close chat"
-  - "New chat"
-  - "Copy last response"
-  - "Toggle history"
-  - "Delete chat"
+  - "Previous / Next Prompt"
+  - "Open / Close Chat Panel"
+  - "New Chat"
+  - "Copy Last Response"
+  - "View Previous Chats"
+  - "Delete Current Chat"
 - Each shortcut row has a keyboard key badge (`.shortcuts-key`)
 
 **Selectors**:
