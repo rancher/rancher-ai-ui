@@ -190,7 +190,11 @@ export const enum MessageTemplateComponent {
 
 export interface MessageTemplate {
   component: MessageTemplateComponent;
-  content: any;
+  content: {
+    message?: string;
+    principal?: any;
+    [key: string]: unknown;
+  };
 }
 
 export const enum MessageLabelKey {
