@@ -5,6 +5,8 @@ description: |
   test plan document. Dispatches the planner verifier for review.
 
 on:
+  schedule:
+    - cron: '0 1 * * 1-5'
   workflow_dispatch:
     inputs:
       feature_area:
