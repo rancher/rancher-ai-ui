@@ -71,3 +71,8 @@
 - **Pattern**: The "Edit Configuration" menu item is not navigating to the settings/AI-assistant page. After clicking it, the page ends up on the cluster explorer instead. The navigation route used by the menu item is likely incorrect or the test is clicking the wrong element.
 - **Recommendation**: Inspect the `editConfiguration()` PO method — ensure it routes to the correct path (e.g., `/ai-assistant` or `/settings`). Also check if the test needs to wait for navigation after click (rather than relying purely on URL assertion without explicit wait).
 - Tests 1–3, 5–9 all passed on attempt 3.
+
+## PR #217 — chat-panel-menu (Attempt 4, 2026-05-21)
+- **All 9 tests passed** on attempt 4 — all previous fixes (Edit Configuration navigation, delete confirmation dialog) from attempts 1-3 were effective.
+- Tests 4 and 8, which failed on attempts 1-3, passed cleanly this time.
+- The feature is stable and fully working as of this attempt.
