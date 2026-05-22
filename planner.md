@@ -86,15 +86,17 @@
 - Do NOT use abbreviated menu labels (e.g., "Configure", "Download") — always use full exact i18n labels (e.g., "Edit Configuration", "Download Messages"). Partial matches may work but violate plan conventions and obscure intent; also some are not substrings (e.g., "Configure" ≠ substring of "Edit Configuration").
 - Do NOT trust quick reference testid tables as ground truth — always verify selectors against the actual `.vue` source files.
 
-### ui-tools / staging page (verified 2026-05-22, attempt 1, NEEDS_FIX)
+### ui-tools / staging page (verified 2026-05-22, attempt 2, NEEDS_FIX)
 - `[data-testid="rancher-ai-ui-tool-show-yaml-{kind}-{namespace}-{name}"]` — on `RcButton` in `ShowYaml.vue` ✅
 - `[data-testid="rancher-ai-ui-tool-show-yaml-diff-{kind}-{namespace}-{name}"]` — on `RcButton` in `ShowYamlDiff.vue` ✅
 - `[data-testid="staging-yaml-editor"]` — on `YamlEditor` inside `pages/staging/yaml-editor/index.vue` ✅
 - `.resource-label` — `<p>` tag in staging YAML editor header ✅
 - `cy.contains('h1', 'View YAML')` — uses `ai.staging.yaml-editor.title` = "View YAML" ✅ (default for both show-yaml and show-yaml-diff)
 - `.staging-yaml-actions button` for Close/Cancel/Apply — confirmed in template ✅
-- **FAIL**: `cy.contains('Show Diff')` — `showDiff` l10n key exists in `en-us.yaml` but is NOT used in any component. The staging yaml editor passes `EditorMode.DIFF_CODE` directly to YamlEditor; no "Show Diff" toggle button is rendered by this repo's code.
+- **showDiff/backToEdit i18n keys EXIST in en-us.yaml but are NOT rendered by any component** — `pages/staging/yaml-editor/index.vue` passes `EditorMode.DIFF_CODE` directly to `YamlEditor`; NO "Show Diff" or "Back to Edit" toggle button is rendered. Do NOT include `showDiffButton()` or `backToEditButton()` in `StagingPagePo` or in plan notes.
 - `ToolPo.showYaml(kind, namespace, name)` and `ToolPo.showYamlDiff(kind, namespace, name)` — both exist in `cypress/e2e/po/ui-tools/tool.po.ts` ✅
 - Confirming state: `isConfirmingMessage` = `message.confirmation?.status === ConfirmationStatus.Pending`; when true, `handleCancel`/`handleApply` are set → staging shows Cancel + Apply buttons ✅
 - Close button renders when `showActions` is false (no handleApply and no handleCancel) ✅
 - `cy.installUIToolsDefinition()` / `cy.uninstallUIToolsDefinition()` confirmed in `cypress/support/commands/ui-tools.ts` ✅
+- **StagingPagePo** valid methods: `yamlEditor()`, `heading()`, `resourceLabel()`, `closeButton()`, `cancelButton()`, `applyButton()`, `waitForPage()` — do NOT add `showDiffButton()` or `backToEditButton()`
+- Staging close navigates back via `previousRoute` (stored before staging navigation) or `$router.back()` if not set
