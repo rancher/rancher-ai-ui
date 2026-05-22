@@ -1,0 +1,22 @@
+diff --git a/cypress/e2e/tests/features/test-plan-ui-tools-2.md b/cypress/e2e/tests/features/test-plan-ui-tools-2.md
+index 86cf9c0..950e1fc 100644
+--- a/cypress/e2e/tests/features/test-plan-ui-tools-2.md
++++ b/cypress/e2e/tests/features/test-plan-ui-tools-2.md
+@@ -259,8 +259,6 @@ The staging page (`/c/local/explorer/staging`) and its YAML editor component hav
+   - `closeButton()` → `cy.contains('.staging-yaml-actions button', 'Close')`
+   - `cancelButton()` → `cy.contains('.staging-yaml-actions button', 'Cancel')`
+   - `applyButton()` → `cy.contains('.staging-yaml-actions button', 'Apply to Cluster')`
+-  - `showDiffButton()` → `cy.contains('Show Diff')`
+-  - `backToEditButton()` → `cy.contains('Back to Edit')`
+   - `waitForPage()` → `cy.url().should('include', '/explorer/staging')` and `cy.get('[data-testid="staging-yaml-editor"]').should('be.visible')`
+ 
+ ### Existing Page Objects (reuse)
+@@ -355,8 +353,6 @@ The new tests should be added inside the existing `describe('UI Tools', ...)` bl
+   - Close button: `"Close"` (`ai.staging.yaml-editor.close`)
+   - Cancel button: `"Cancel"` (`ai.staging.yaml-editor.cancel`)
+   - Apply button: `"Apply to Cluster"` (`ai.staging.yaml-editor.apply`)
+-  - Show Diff toggle: `"Show Diff"` (`ai.staging.yaml-editor.showDiff`)
+-  - Back to Edit toggle: `"Back to Edit"` (`ai.staging.yaml-editor.backToEdit`)
+ - The show-yaml tool requires only `yaml` + resource info; show-yaml-diff requires both `original` and `patched` YAML
+ - `ToolPo.showYaml(kind, namespace, name)` and `ToolPo.showYamlDiff(kind, namespace, name)` already exist in `tool.po.ts`
+ - Tests 6–8 require deeper knowledge of how the mock service triggers a confirming message — coordinate with the mcpTool mock API or adapt using existing patterns from `message.spec.ts` if it includes confirming message tests
