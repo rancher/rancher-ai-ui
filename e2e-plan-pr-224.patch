@@ -1,0 +1,22 @@
+diff --git a/cypress/e2e/tests/features/test-plan-ui-tools-2.md b/cypress/e2e/tests/features/test-plan-ui-tools-2.md
+index 210250e..86cf9c0 100644
+--- a/cypress/e2e/tests/features/test-plan-ui-tools-2.md
++++ b/cypress/e2e/tests/features/test-plan-ui-tools-2.md
+@@ -159,15 +159,13 @@ The staging page (`/c/local/explorer/staging`) and its YAML editor component hav
+ - The browser URL should change to `/c/local/explorer/staging`
+ - A heading `h1` with text "View YAML" should be visible
+ - The resource label (`.resource-label`) should display `Deployment: cattle-ai-agent-system/llm-mock`
+-- The YAML editor element `[data-testid="staging-yaml-editor"]` should be visible
+-- The staging YAML editor should have a "Show Diff" button visible (`cy.contains('Show Diff')`)
++- The YAML editor element `[data-testid="staging-yaml-editor"]` should be visible in diff mode (the staging page passes `EditorMode.DIFF_CODE` directly to the YamlEditor; no separate "Show Diff" toggle button is rendered)
+ 
+ **Selectors**:
+ - `cy.url()` for URL
+ - `cy.contains('h1', 'View YAML')` for heading
+ - `cy.get('.resource-label')` for resource label
+-- `cy.get('[data-testid="staging-yaml-editor"]')` for editor
+-- `cy.contains('Show Diff')` for diff toggle button
++- `cy.get('[data-testid="staging-yaml-editor"]')` for editor (visible in diff mode)
+ 
+ **Screenshot**: `ui-tools-test-5-staging-yaml-diff`
+ 
