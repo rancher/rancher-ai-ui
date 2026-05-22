@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { debounce } from 'lodash';
 import {
   ref, computed, watch, onBeforeUnmount, type PropType, type ComponentPublicInstance
 } from 'vue';
@@ -71,7 +70,7 @@ const containerRef = (count: number, index: number) => {
 };
 
 // Observes changes to the last message container to trigger auto-scrolling when content changes
-const setupObserver = debounce((newContainer: HTMLDivElement | null) => {
+function setupObserver(newContainer: HTMLDivElement | null) {
   // Clean up old observer
   if (lastMessageObserver.value) {
     lastMessageObserver.value.disconnect();
@@ -93,7 +92,7 @@ const setupObserver = debounce((newContainer: HTMLDivElement | null) => {
       characterData: true,
     });
   }
-}, 100);
+}
 
 const {
   fastScrollEnabled,
@@ -173,9 +172,6 @@ watch(
 );
 
 onBeforeUnmount(() => {
-  // Cancel pending debounced calls
-  setupObserver.cancel();
-
   // Cleanup observer
   if (lastMessageObserver.value) {
     lastMessageObserver.value.disconnect();

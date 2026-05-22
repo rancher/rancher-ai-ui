@@ -10,6 +10,7 @@ import { SettingsPagePo } from '@/cypress/e2e/po/settings.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
 import { SlidingBadgePo } from '@/cypress/e2e/po/hook.po';
+import ContextPo from '@/cypress/e2e/po/context.po';
 import ApplySettingsPromptPo from '@/cypress/e2e/po/dialog/apply-settings.po';
 import { rancherAgentConfig, fleetAgentConfig, provisioningAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
 
@@ -457,6 +458,54 @@ describe('Chat', () => {
       chat.getMessage(3).timestamp().should('be.visible');
 
       chat.scrollButton().checkNotExists();
+    });
+
+    it('it should automatically scroll to bottom when receiving a confirmation message', () => {
+      HomePagePo.goTo();
+
+      chat.open();
+      chat.isReady();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      cy.enqueueLLMResponse({
+        text:      'Pod creation confirmed.',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod',
+            resource:  {
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod',
+                namespace: 'default'
+              },
+            },
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      });
+
+      chat.sendMessage('Create a pod named my-pod in default namespace');
+
+      const userMessage = chat.getMessage(2);
+
+      userMessage.containsText('Create a pod named my-pod in default namespace');
+
+      // Verify the processing label is visible and not covered by the console panel
+      chat.phase('Awaiting confirmation').then(($phase) => {
+        new ContextPo().self().then(($context) => {
+          const phaseRect = $phase[0].getBoundingClientRect();
+          const contextRect = $context[0].getBoundingClientRect();
+
+          expect(contextRect.top + 2).to.be.greaterThan(phaseRect.top);
+        });
+      });
     });
 
     it('it should not scroll to bottom when message stream is in progress and user scrolls up', () => {
