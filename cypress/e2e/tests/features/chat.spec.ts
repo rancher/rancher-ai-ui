@@ -585,7 +585,7 @@ describe('Chat', () => {
       chat.scrollButton().checkNotExists();
     });
 
-    it('It should automatically scroll to bottom when close and reopen the chat panel', () => {
+    it('it should automatically scroll to bottom when close and reopen the chat panel', () => {
       HomePagePo.goTo();
 
       chat.open();

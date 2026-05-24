@@ -163,6 +163,9 @@ function copyUserPreviousMessage(direction: 'prev' | 'next') {
 
 /**
  * Helper to Clear the CompleteText and reset the HistoryIndex, used when sending a message or changing the chat to avoid showing wrong completeText
+ *
+ * It clears the input and handles the textarea resize before emitting the content
+ * to avoid potential flickering in messages view autoscroll
  */
 function clearCompleteTextHistory() {
   completeText.value = '';
@@ -175,13 +178,13 @@ function sendContent(event: Event) {
 
   const content = cleanInput(text.value);
 
-  if (content) {
-    emit('input:content', content);
-  }
-
   clearCompleteTextHistory();
   updateInput('');
-  nextTick(autoResizePrompt);
+  autoResizePrompt();
+
+  if (content) {
+    nextTick(() => emit('input:content', content));
+  }
 }
 
 function selectAgent(agentName: string) {

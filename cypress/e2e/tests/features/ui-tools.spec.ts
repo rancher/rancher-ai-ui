@@ -367,9 +367,12 @@ describe('UI Tools', () => {
     });
 
     describe('open-console-logs', () => {
-      it('it should open the console logs with correct parameters', () => {
+      before(() => {
+        cy.login();
         cy.createRancherResource('v1', 'pods', JSON.stringify(testPod), false);
+      });
 
+      it('it should open the console logs with correct parameters', () => {
         cy.enqueueLLMResponse({
           text:      ['Check the console logs using the button below.'],
           uiTools:   [
@@ -400,7 +403,9 @@ describe('UI Tools', () => {
         showLogs.click();
 
         cy.get(`[data-testid="horizontal-window-manager"]`).should('contain.text', testPod.metadata.name);
+      });
 
+      after(() => {
         cy.deleteRancherResource('v1', 'pods', `${ testPod.metadata.namespace }/${ testPod.metadata.name }`, false);
       });
     });
@@ -825,7 +830,7 @@ describe('UI Tools', () => {
         yamlEditor.cancelButton().should('not.exist');
       });
 
-      it('it should close the editor when cancel a confirmation request in the Chat', () => {
+      it('it should close the editor when confirm a confirmation request in the Chat', () => {
         cy.enqueueLLMResponse({
           text:      'Pod patch confirmed.',
           mcpTool: {
@@ -880,7 +885,7 @@ describe('UI Tools', () => {
         yamlEditor.cancelButton().should('not.exist');
       });
 
-      it('it should close the editor when confirm a confirmation request in the Chat', () => {
+      it('it should close the editor when cancel a confirmation request in the Chat', () => {
         cy.enqueueLLMResponse({
           text:      'Pod patch canceled.',
           mcpTool: {
