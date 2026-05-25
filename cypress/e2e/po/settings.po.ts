@@ -89,6 +89,38 @@ export class UiToolsConfig extends ComponentPo {
   intro() {
     return new UiToolsConfigIntro(this.self());
   }
+
+  enabledCheckbox() {
+    return CheckboxInputPo.byLabel(this.self(), 'Enable Tools');
+  }
+
+  guidelinesTextarea() {
+    return this.self().find('textarea').first();
+  }
+
+  resetConfigButton() {
+    return this.self().contains('button', 'Reset Configuration');
+  }
+
+  searchInput() {
+    return this.self().find('.search-input input');
+  }
+
+  toolsGrid() {
+    return this.self().find('.tools-grid');
+  }
+
+  toolCard(toolDisplayName: string) {
+    return this.toolsGrid().contains('.item-card', toolDisplayName);
+  }
+
+  toolToggle(toolDisplayName: string) {
+    return this.toolCard(toolDisplayName).find('.toggle-enable-tool');
+  }
+
+  resetFiltersLink() {
+    return this.self().find('.reset-filters-link');
+  }
 }
 
 class UiToolsConfigIntro extends ComponentPo {
