@@ -76,3 +76,9 @@
 - **All 9 tests passed** on attempt 4 — all previous fixes (Edit Configuration navigation, delete confirmation dialog) from attempts 1-3 were effective.
 - Tests 4 and 8, which failed on attempts 1-3, passed cleanly this time.
 - The feature is stable and fully working as of this attempt.
+
+## PR #226 — settings-ui-tools-config (Attempt 1, 2026-05-25)
+- **All 8 tests passed** on attempt 1 — no fixes were needed.
+- Tests covered: section visibility, install banner, enable/disable toggle, guidelines reset, tools list display, search filter, category filter, and individual tool toggle.
+- All tests completed within 1 minute 13 seconds total spec duration.
+- This confirms the `settings-ui-tools-config` spec is well-written and the feature is working correctly out of the box.
