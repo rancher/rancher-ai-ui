@@ -100,3 +100,20 @@
 - `cy.installUIToolsDefinition()` / `cy.uninstallUIToolsDefinition()` confirmed in `cypress/support/commands/ui-tools.ts` ✅
 - **StagingPagePo** valid methods: `yamlEditor()`, `heading()`, `resourceLabel()`, `closeButton()`, `cancelButton()`, `applyButton()`, `waitForPage()` — do NOT add `showDiffButton()` or `backToEditButton()`
 - Staging close navigates back via `previousRoute` (stored before staging navigation) or `$router.back()` if not set
+
+### settings-ui-tools-config (verified 2026-05-25, APPROVED attempt 1)
+- `[data-testid="rancher-ai-ui-settings-tools"]` — top-level section container in `Settings.vue` ✅
+- `[data-testid="rancher-ai-ui-tools-config-intro"]` — always rendered in `Intro.vue` ✅
+- `[data-testid="rancher-ai-ui-tools-config-info-banner"]` — `.tools-action-section` div, shown only when `requiredAction !== None` ✅
+- `[data-testid="rancher-ai-ui-tools-config-action-button"]` — `RcButton` in `Intro.vue`, visible when `!readOnly && requiredAction !== None` ✅
+- `.tools-grid` — tools cards container in `index.vue` ✅
+- `.version-badge` — inner div on slot `#item-card-sub-header` in `index.vue` ✅
+- `.toggle-enable-tool` — CSS class on `ToggleSwitch` in slot `#item-card-actions` ✅
+- `.search-input input` — div.search-input > input in `index.vue` ✅
+- `.reset-filters-link` — `<a>` element shown when `!noFiltersApplied` in `index.vue` ✅
+- `.app-chart-card-footer-button` — `RcButton` in `rc-item-card-action` footer slot ✅
+- `.item-card` — **UNVERIFIABLE**: `RcItemCard` from `@rancher/shell/rancher-components/RcItemCard` not resolvable from local node_modules. Use `cy.contains('.tools-grid > *', toolName)` as safer alternative.
+- `v-if="props.requiredAction === ToolsDefinitionActionType.None"` gates the entire tools management UI — tools grid + search + guidelines textarea are NOT rendered when tools are uninstalled
+- `UiToolsConfig` PO at `cypress/e2e/po/settings.po.ts` — only has `intro()` method; spec writer must add: `enabledCheckbox()`, `guidelinesTextarea()`, `resetConfigButton()`, `searchInput()`, `toolsGrid()`, `toolCard()`, `toolToggle()`, `resetFiltersLink()`
+- `ApplySettingsPromptPo` at `cypress/e2e/po/dialog/apply-settings.po.ts` — `.confirm()` uses `prompt-apply-settings-confirm-button` testid ✅
+- Component mapping: `settings-ui-tools-config` → `pages/settings/sections/ui-tools-config/index.vue` + `Intro.vue`
