@@ -63,6 +63,7 @@
   - Menu trigger: `.icon-actions` inside `.chat-console-menu-container` (no `data-testid`)
   - Popper: `.v-popper__popper` (global, teleported)
   - Shortcuts popover: `.shortcuts`, `.shortcuts-title`, `.shortcuts-row`, `.shortcuts-action`, `.shortcuts-key`
+- `console-input` feature → `panels/Console.vue`, `console/LlmModelLabel.vue`, `console/VerifyResultsDisclaimer.vue`, `popover/TextLabel.vue`
 
 ## Coverage Guidelines
 
@@ -100,6 +101,21 @@
 - `cy.installUIToolsDefinition()` / `cy.uninstallUIToolsDefinition()` confirmed in `cypress/support/commands/ui-tools.ts` ✅
 - **StagingPagePo** valid methods: `yamlEditor()`, `heading()`, `resourceLabel()`, `closeButton()`, `cancelButton()`, `applyButton()`, `waitForPage()` — do NOT add `showDiffButton()` or `backToEditButton()`
 - Staging close navigates back via `previousRoute` (stored before staging navigation) or `$router.back()` if not set
+
+### console-input (verified 2026-05-26, APPROVED attempt 1)
+- `[data-testid="rancher-ai-ui-chat-console"]` — root `div.chat-console` in `Console.vue` ✅
+- `[data-testid="rancher-ai-ui-chat-input-textarea"]` — `<textarea>` in `Console.vue` ✅
+- `.chat-input-complete` — `div.chat-input-complete` rendered via `v-if="completeText"` in `Console.vue` ✅
+- `.tab-label` — `<span class="tab-label">Tab</span>` inside `.tab-label-box` inside `.chat-input-complete` ✅
+- `.llm-model-label` — `<span class="llm-model-label">` in `LlmModelLabel.vue` ✅
+- `.v-popper__popper` — teleported popper for the VerifyResultsDisclaimer (via `TextLabel.vue` using RcDropdown) — must be global, not scoped ✅
+- `console-input` feature → `panels/Console.vue`, `console/LlmModelLabel.vue`, `console/VerifyResultsDisclaimer.vue`, `popover/TextLabel.vue`
+- ArrowUp/ArrowDown in textarea only triggers history when `inputText.value === ''` (verified in `handleTextareaKeydown`)
+- Tab completion: `clearCompleteTextHistory()` sets `completeText.value = ''` → `v-if` removes `.chat-input-complete` from DOM
+- Message IDs for 2-message setup: welcome=1, user1=2, AI1=3, user2=4, AI2=5 ✅
+- i18n `ai.configurations.label` = `"Uses AI, running {name} ({model})."` — test can assert prefix `"Uses AI, running"` ✅
+- i18n `ai.configurations.verifyResults.button.label` = `"Verify the results."` ✅
+- Disclaimer section titles: `"Verify All Results"`, `"Use at Your Own Risk"`, `"Do Not Share Secrets"` ✅
 
 ### settings-ui-tools-config (verified 2026-05-25, APPROVED attempt 1)
 - `[data-testid="rancher-ai-ui-settings-tools"]` — top-level section container in `Settings.vue` ✅
