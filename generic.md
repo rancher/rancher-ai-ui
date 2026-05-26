@@ -88,3 +88,9 @@
 - This is the same pattern as PR #208 Test 8 — the AI chat button may not be rendered if the page hasn't fully loaded, the feature flag is disabled, or the extension isn't installed in this environment.
 - **Recommendation**: Ensure the page is fully loaded before `ChatPo.open()` in `before each`. Add an explicit wait or navigate to a page where the AI button is guaranteed to be present (e.g., home/cluster page with the extension active).
 - All 7 tests were skipped due to the single hook failure — fixing the hook should unblock all tests.
+
+## PR #227 — console-input (Attempt 2, 2026-05-26)
+- **Test 2 (`CypressError`, `{tab}` not supported)**: `cy.type('{tab}')` throws "isn't a supported character sequence" in Cypress. Tab is not a valid `cy.type()` special character.
+- **Fix**: Use `cy.realPress('Tab')` (from `cypress-real-events`) or `cy.focused().trigger('keydown', { key: 'Tab', keyCode: 9 })` instead of `cy.type('{tab}')`.
+- **Anti-pattern**: Never use `cy.type('{tab}')` — Tab is not supported by `cy.type()`.
+- Tests 1, 3–7 all passed; only Test 2 failed due to this typing issue.
