@@ -1,3 +1,4 @@
+import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { ConsolePo } from '@/cypress/e2e/po/console.po';
 
@@ -7,6 +8,7 @@ describe('Feature: console-input', () => {
 
   beforeEach(() => {
     cy.login();
+    HomePagePo.goTo();
     chat.open();
     chat.isReady();
   });
