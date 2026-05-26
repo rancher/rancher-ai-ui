@@ -52,4 +52,20 @@ export class ConsolePo extends ComponentPo {
   enter() {
     this.textarea().type('{enter}');
   }
+
+  autocompleteOverlay() {
+    return this.self().find('.chat-input-complete');
+  }
+
+  tabBadge() {
+    return this.self().find('.tab-label');
+  }
+
+  llmModelLabel() {
+    return this.self().find('.llm-model-label');
+  }
+
+  verifyResultsLink() {
+    return this.self().contains('Verify the results.');
+  }
 }
