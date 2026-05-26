@@ -15,3 +15,21 @@ export const testPod = {
     ]
   }
 };
+
+export const errorPod = {
+  apiVersion: 'v1',
+  kind:       'Pod',
+  metadata:   {
+    name:      'error-pod',
+    namespace: 'default',
+    labels:    {}
+  },
+  spec: {
+    containers: [
+      {
+        name:  'container-0',
+        image: 'aaa'
+      }
+    ]
+  }
+};

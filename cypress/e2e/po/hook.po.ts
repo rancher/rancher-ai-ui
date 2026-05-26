@@ -1,10 +1,6 @@
 import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
 
 class TargetPo extends ComponentPo {
-  constructor(element: Cypress.Chainable) {
-    super(element);
-  }
-
   /**
    * Checks if the target element has an action registered for its hook.
    */
@@ -16,8 +12,8 @@ class TargetPo extends ComponentPo {
 class HookPo {
   protected target: TargetPo;
 
-  constructor(target: Cypress.Chainable) {
-    this.target = new TargetPo(target);
+  constructor(target: string | Cypress.Chainable) {
+    this.target = new TargetPo(target as any);
   }
 }
 
@@ -29,10 +25,10 @@ export class SlidingBadgePo extends HookPo {
     this.target.self().trigger('mouseenter', { force: true });
 
     // Trigger mouse enter on the sliding badge to reveal its second stage
-    const slidingBadge = this.target.self().get('[data-testid="rancher-ai-ui-sliding-badge"]');
+    const slidingBadge = this.target.self().get('[data-testid="rancher-ai-ui-hook-overlay"]');
 
     slidingBadge.trigger('mouseenter', { force: true });
 
-    slidingBadge.click();
+    slidingBadge.click({ force: true });
   }
 }

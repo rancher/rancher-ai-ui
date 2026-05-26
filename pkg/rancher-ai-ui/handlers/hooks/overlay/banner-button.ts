@@ -23,6 +23,8 @@ class BannerButtonOverlay extends HooksOverlay {
     const color = (ctx.value as any)?.bannerProps?.color || 'success';
     const height = 24;
 
+    overlay.setAttribute('data-testid', 'rancher-ai-ui-hook-overlay');
+
     overlay.className = `${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`;
 
     overlay.style.position = 'fixed';

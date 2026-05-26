@@ -174,7 +174,8 @@ class BadgeSlidingOverlay extends HooksOverlay {
     const badgeRect = badge.getBoundingClientRect();
     const badgeStyle = getComputedStyle(badge);
 
-    overlay.setAttribute('data-testid', 'rancher-ai-ui-sliding-badge');
+    overlay.setAttribute('data-testid', 'rancher-ai-ui-hook-overlay');
+
     overlay.classList.add(`${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`);
     overlay.style.zIndex = '10';
     overlay.style.backgroundColor = overlayProps.background;
