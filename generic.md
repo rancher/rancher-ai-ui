@@ -94,3 +94,9 @@
 - **Fix**: Use `cy.realPress('Tab')` (from `cypress-real-events`) or `cy.focused().trigger('keydown', { key: 'Tab', keyCode: 9 })` instead of `cy.type('{tab}')`.
 - **Anti-pattern**: Never use `cy.type('{tab}')` — Tab is not supported by `cy.type()`.
 - Tests 1, 3–7 all passed; only Test 2 failed due to this typing issue.
+
+## PR #227 — console-input (Attempt 3, 2026-05-26)
+- **All 7 tests passed** on attempt 3 — all previous fixes (Tab key, ChatPo.open() hook) resolved failures.
+- Tests 1–7 all passed cleanly: ArrowUp autocomplete, Tab acceptance, multiple ArrowUp navigation, ArrowDown navigation, typing clears autocomplete, LLM model label, disclaimer popover.
+- Previous fixes: `cy.realPress('Tab')` instead of `cy.type('{tab}')` for Test 2; `ChatPo.open()` hook reliability fix for `before each`.
+- The spec is now stable and the feature is working correctly.
