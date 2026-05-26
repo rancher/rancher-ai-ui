@@ -82,3 +82,9 @@
 - Tests covered: section visibility, install banner, enable/disable toggle, guidelines reset, tools list display, search filter, category filter, and individual tool toggle.
 - All tests completed within 1 minute 13 seconds total spec duration.
 - This confirms the `settings-ui-tools-config` spec is well-written and the feature is working correctly out of the box.
+
+## PR #227 — console-input (Attempt 1, 2026-05-26)
+- **`before each` hook failure (`[data-testid="extension-header-action-ai.action.openChat"]` not found, line 13)**: The `ChatPo.open()` → `RancherHeaderPo.askLizButton()` call timed out after 3 attempts (10s each). The AI chat header button was not found.
+- This is the same pattern as PR #208 Test 8 — the AI chat button may not be rendered if the page hasn't fully loaded, the feature flag is disabled, or the extension isn't installed in this environment.
+- **Recommendation**: Ensure the page is fully loaded before `ChatPo.open()` in `before each`. Add an explicit wait or navigate to a page where the AI button is guaranteed to be present (e.g., home/cluster page with the extension active).
+- All 7 tests were skipped due to the single hook failure — fixing the hook should unblock all tests.
