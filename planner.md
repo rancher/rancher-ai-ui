@@ -102,6 +102,19 @@
 - **StagingPagePo** valid methods: `yamlEditor()`, `heading()`, `resourceLabel()`, `closeButton()`, `cancelButton()`, `applyButton()`, `waitForPage()` — do NOT add `showDiffButton()` or `backToEditButton()`
 - Staging close navigates back via `previousRoute` (stored before staging navigation) or `$router.back()` if not set
 
+### message-actions (verified 2026-05-27, APPROVED attempt 1)
+- `[data-testid="rancher-ai-ui-bubble-btn-icon-copy"]` — `BubbleButton` uses `:data-testid="\`rancher-ai-ui-bubble-btn-${ props.icon }\`"` with `icon='icon-copy'` ✅
+- `[data-testid="rancher-ai-ui-bubble-btn-icon-edit"]` — same pattern, `icon='icon-edit'` ✅
+- `[data-testid="rancher-ai-ui-bubble-btn-icon-backup"]` — same pattern, `icon='icon-backup'` ✅
+- `[data-testid="rancher-ai-ui-chat-message-confirmation-confirm-button"]` — in `Confirmation.vue` line 119 ✅
+- `icon-edit` and `icon-backup` rendered only for `role === RoleEnum.User && !pendingConfirmation` (v-if verified)
+- `icon-copy` rendered for ALL messages (no v-if condition) ✅
+- `BubbleButton` `showSuccess` prop: `success.value = true` on click → icon class switches from `props.icon` to `icon-checkmark` → reverts after 1s timeout ✅
+- `BubbleButtonPo` at `cypress/e2e/po/components/bubble-button.po.ts` — `.click()` uses `{ force: true }` (handles CSS opacity hover-gating) ✅
+- `resendButton()` already exists in `RawMessagePo`; `copyButton()` and `editButton()` need to be added by spec writer
+- `mcpTool` param supported by `cy.enqueueLLMResponse()` — confirmed in `llm-mock-service-api.ts`
+- Component mapping: `message-actions` → `components/message/index.vue`, `components/BubbleButton.vue`, `composables/useInputComposable.ts`
+
 ### console-input (verified 2026-05-26, APPROVED attempt 1)
 - `[data-testid="rancher-ai-ui-chat-console"]` — root `div.chat-console` in `Console.vue` ✅
 - `[data-testid="rancher-ai-ui-chat-input-textarea"]` — `<textarea>` in `Console.vue` ✅
