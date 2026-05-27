@@ -104,6 +104,7 @@ describe('Feature: message-actions', () => {
 
   it('Test 7: Message action buttons not shown on pending-confirmation messages', () => {
     cy.enqueueLLMResponse({
+      text:    'Pod created successfully.',
       mcpTool: {
         name: 'createKubernetesResource',
         args: {
