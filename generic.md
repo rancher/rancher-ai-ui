@@ -111,3 +111,8 @@
 - **Test 7 (`AssertionError`, line 86)**: Same failure as Attempt 1 — `[data-testid="rancher-ai-ui-chat-message-box-3"]` still not found. The 4th chat message (pending-confirmation) is not being rendered. The mock setup for the confirmation step needs to be corrected.
 - Tests 2–6 remain passing on both attempts — copy feedback checkmark, copy user message, edit populates textarea, edit success checkmark, resend.
 - Both failures are persistent across 2 attempts, indicating the fixer's changes did not address the root causes yet.
+
+## PR #228 — message-actions (Attempt 3, 2026-05-27)
+- **Test 1 (`AssertionError`, line 26)**: Same as attempts 1 & 2 — `clipboard.writeText` called with `"Copy this message"` (button label) instead of `"The copy response text."`. Persistent across 3 attempts. The copy handler in `MessagePo` (or the component under test) is reading the button's own text, not the AI message body. The fixer must locate the actual copy handler and fix it to read message content.
+- **Test 7 (`AssertionError`, line 87)**: Selector changed from `rancher-ai-ui-chat-message-box-3` (attempts 1-2) to `rancher-ai-ui-chat-message-confirmation-confirm-button` (attempt 3). The confirmation message still doesn't render. The mock for the pending-confirmation response is not set up correctly — the confirm button never appears. Check how the mock AI response with `type: "confirmation"` or similar is configured.
+- Tests 2–6 remain stable across all 3 attempts.
