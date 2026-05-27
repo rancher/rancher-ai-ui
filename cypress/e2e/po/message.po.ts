@@ -66,6 +66,14 @@ class RawMessagePo extends ComponentPo {
     return new BubbleButtonPo('icon-thinking-process', this.self());
   }
 
+  copyButton() {
+    return new BubbleButtonPo('icon-copy', this.self());
+  }
+
+  editButton() {
+    return new BubbleButtonPo('icon-edit', this.self());
+  }
+
   resendButton() {
     return new BubbleButtonPo('icon-backup', this.self());
   }
