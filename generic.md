@@ -121,3 +121,11 @@
 - **Test 7 (`AssertionError`, line 85)**: Same persistent failure — `Expected to find content: 'Are you sure you want to proceed with this action?' but never did.` The confirmation dialog content is never rendered. The mock for the pending-confirmation AI response (`type: "confirmation"` or similar) is consistently failing to trigger the confirmation message. Now on 4th attempt — the fixer must fundamentally change how the mock returns a confirmation response. Check if the mock intercept is returning the correct response structure, or if the component expects a different field/format for a confirmation-type message.
 - Tests 1–6 remain stable across all 4 attempts.
 - Pattern: The `'Are you sure you want to proceed with this action?'` text is presumably part of a confirmation message rendered by the component. If the mock doesn't return the right shape for a confirmation message, the component will never render this text.
+
+## PR #228 — message-actions (Attempt 5, 2026-05-27)
+- **Test 7 (`AssertionError`, line 97)**: `<button.rc-button.btn.variant-tertiary.btn-sm>` exists but is NOT visible — clipped by a parent element with `overflow: hidden`, `scroll` or `auto`. This is a CSS overflow visibility issue, not a missing element.
+- **Progression across 5 attempts**: mock setup improved (element eventually renders), but final assertion fails due to overflow clipping. The button exists in DOM but is hidden by parent overflow.
+- **Fix options for Test 7**: (1) Use `.scrollIntoView()` before `.should('be.visible')`, (2) assert `should('not.be.visible')` or `should('not.exist')` if the intent is to confirm buttons are hidden on confirmation messages, (3) fix parent container CSS overflow.
+- **Key insight**: Test 7 name is "Message action buttons NOT shown on pending-confirmation messages" — the correct assertion is likely `should('not.be.visible')` or `should('not.exist')`, not `should('be.visible')`. The spec may have the wrong assertion polarity.
+- **Anti-pattern**: Do NOT assert `should('be.visible')` on elements inside overflow-hidden containers without `.scrollIntoView()`. Also verify the assertion polarity matches the test intent (hidden vs visible).
+- Auto-fix abandoned after 5 attempts; manual intervention required.
