@@ -100,3 +100,8 @@
 - Tests 1–7 all passed cleanly: ArrowUp autocomplete, Tab acceptance, multiple ArrowUp navigation, ArrowDown navigation, typing clears autocomplete, LLM model label, disclaimer popover.
 - Previous fixes: `cy.realPress('Tab')` instead of `cy.type('{tab}')` for Test 2; `ChatPo.open()` hook reliability fix for `before each`.
 - The spec is now stable and the feature is working correctly.
+
+## PR #228 — message-actions (Attempt 1, 2026-05-27)
+- **Test 1 (`AssertionError`, line 25)**: `clipboard.writeText` was called with `"Copy this message"` instead of `"The copy response text."`. The copy action is copying the wrong text — likely picking up the button label or tooltip rather than the actual AI response message content. Check the copy handler in the `MessagePo` PO — ensure it reads the message text content, not the button's own text.
+- **Test 7 (`AssertionError`, line 86)**: `[data-testid="rancher-ai-ui-chat-message-box-3"]` not found. The 4th chat message (index 3) was not rendered. Test 7 expects a pending-confirmation message to appear as the 4th message. The mock or setup may not be triggering the confirmation message correctly. Check how the pending-confirmation message is set up in the test — ensure the mock AI response includes the confirmation step.
+- Tests 2–6 all passed cleanly (copy success checkmark, copy user message, edit-before-resend, edit success checkmark, resend).
