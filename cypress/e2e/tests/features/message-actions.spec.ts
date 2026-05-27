@@ -9,6 +9,7 @@ describe('Feature: message-actions', () => {
     HomePagePo.goTo();
     chat.open();
     chat.isReady();
+    chat.getMessage(1).isCompleted();
   });
 
   afterEach(() => cy.cleanChatHistory());
@@ -104,8 +105,8 @@ describe('Feature: message-actions', () => {
   it('Test 7: Message action buttons not shown on pending-confirmation messages', () => {
     cy.enqueueLLMResponse({
       mcpTool: {
-        name: 'getKubernetesResource',
-        args: { kind: 'Pod', name: 'test-pod', namespace: 'default' }
+        name: 'createKubernetesResource',
+        args: [{ name: 'test-pod', kind: 'Pod', namespace: 'default', resource: { apiVersion: 'v1' } }]
       }
     });
     chat.sendMessage('Show pending confirmation');
