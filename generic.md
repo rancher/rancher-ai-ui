@@ -105,3 +105,9 @@
 - **Test 1 (`AssertionError`, line 25)**: `clipboard.writeText` was called with `"Copy this message"` instead of `"The copy response text."`. The copy action is copying the wrong text — likely picking up the button label or tooltip rather than the actual AI response message content. Check the copy handler in the `MessagePo` PO — ensure it reads the message text content, not the button's own text.
 - **Test 7 (`AssertionError`, line 86)**: `[data-testid="rancher-ai-ui-chat-message-box-3"]` not found. The 4th chat message (index 3) was not rendered. Test 7 expects a pending-confirmation message to appear as the 4th message. The mock or setup may not be triggering the confirmation message correctly. Check how the pending-confirmation message is set up in the test — ensure the mock AI response includes the confirmation step.
 - Tests 2–6 all passed cleanly (copy success checkmark, copy user message, edit-before-resend, edit success checkmark, resend).
+
+## PR #228 — message-actions (Attempt 2, 2026-05-27)
+- **Test 1 (`AssertionError`, line 25)**: Same failure as Attempt 1 — clipboard.writeText still called with `"Copy this message"` (button label) instead of `"The copy response text."` (AI message content). The copy handler in `MessagePo` is reading the wrong text source. Fix must ensure it reads the message body content, not the copy button's own label.
+- **Test 7 (`AssertionError`, line 86)**: Same failure as Attempt 1 — `[data-testid="rancher-ai-ui-chat-message-box-3"]` still not found. The 4th chat message (pending-confirmation) is not being rendered. The mock setup for the confirmation step needs to be corrected.
+- Tests 2–6 remain passing on both attempts — copy feedback checkmark, copy user message, edit populates textarea, edit success checkmark, resend.
+- Both failures are persistent across 2 attempts, indicating the fixer's changes did not address the root causes yet.
