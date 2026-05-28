@@ -155,3 +155,10 @@
 - `div.chat-container` — used by `ChatPo.isClosed()` to verify chat is closed. Note the inconsistency: open-check uses `data-testid` selector while close-check uses a CSS class selector. This mismatch may indicate the open/close logic targets different elements.
 - Alt+K keyboard shortcut: `cy.type('{alt}k')` or equivalent may not fire correctly in Cypress — consider using `cy.trigger('keydown', { altKey: true, key: 'k' })` on the document body instead.
 - After 4 fixer attempts, the root pattern remains the same: `openViaKeyboard` in `chat.po.ts` line ~80 fails to produce a visible chat container. The keyboard event dispatch approach likely needs changing.
+
+## PR #230 — chat-open-shortcut (Attempt 5, 2026-05-28)
+- **Same failure as all prior attempts**: Tests 1, 3, 4, 6 fail with `[data-testid="rancher-ai-ui-chat-container"]` not found after `openViaKeyboard()`. Test 2 fails with `div.chat-container` persisting (chat never closed because never opened). Test 5 passes.
+- **Auto-fix abandoned after 5 attempts** — manual intervention required.
+- **Definitive analysis**: After 5 attempts, the Alt+K keyboard event dispatch in `openViaKeyboard()` in `chat.po.ts` has never been fixed. The consistent 4/5 failure rate on open tests (with 5/5 close-when-open tests passing) confirms the issue is 100% in the keyboard trigger for opening.
+- **Inconsistent selectors confirmed**: `isOpen()` uses `[data-testid="rancher-ai-ui-chat-container"]` while `isClosed()` uses `div.chat-container`. These should be reconciled to the same selector.
+- **Key insight for manual fix**: (1) Verify actual data-testid on the chat container element in the component. (2) Change `openViaKeyboard()` keyboard dispatch to `cy.get('body').focus().trigger('keydown', { altKey: true, key: 'k', keyCode: 75 })` or use `cypress-real-events` `cy.realPress(['Alt', 'k'])`. (3) Align `isOpen()` and `isClosed()` to use the same selector.
