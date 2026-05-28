@@ -142,3 +142,10 @@
 - **Root cause confirmed persistent**: The Alt+K keyboard shortcut `openViaKeyboard()` at `chat.po.ts:75` is not working. After 2 attempts, the fixer has not yet fixed the keyboard trigger method.
 - **Fix required**: Replace whatever method is used to press Alt+K in `openViaKeyboard()` with `cy.get('body').trigger('keydown', { altKey: true, key: 'k', keyCode: 75 })` or `cy.realPress(['Alt', 'k'])` from cypress-real-events. Ensure body has focus first.
 - **Pattern**: When multiple attempts fail with the exact same error on the keyboard open tests but Test 5 (close via keyboard) passes, the issue is specifically in `openViaKeyboard()` — the open shortcut action is not working.
+
+## PR #230 — chat-open-shortcut (Attempt 3, 2026-05-28)
+- **Same failure as attempts 1 & 2**: Tests 1, 3, 4, 6 fail with `[data-testid="rancher-ai-ui-chat-container"]` not found after `openViaKeyboard()`.
+- Tests 2 and 5 (which start with chat already open) pass — confirming selector is correct.
+- After 3 attempts, `openViaKeyboard()` still doesn't work. The fix must replace the keyboard trigger method entirely.
+- **Critical fix needed**: Replace current keyboard trigger in `chat.po.ts:75` with `cy.get('body').focus().trigger('keydown', { altKey: true, key: 'k', keyCode: 75 })` or `cy.realPress(['Alt', 'k'])`. Ensure body has focus before the trigger.
+- **Pattern confirmed**: When `openViaKeyboard()` fails repeatedly but close tests pass, the issue is 100% in the keyboard event dispatch method, not in the selector or the feature implementation.
