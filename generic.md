@@ -129,3 +129,10 @@
 - **Key insight**: Test 7 name is "Message action buttons NOT shown on pending-confirmation messages" — the correct assertion is likely `should('not.be.visible')` or `should('not.exist')`, not `should('be.visible')`. The spec may have the wrong assertion polarity.
 - **Anti-pattern**: Do NOT assert `should('be.visible')` on elements inside overflow-hidden containers without `.scrollIntoView()`. Also verify the assertion polarity matches the test intent (hidden vs visible).
 - Auto-fix abandoned after 5 attempts; manual intervention required.
+
+## PR #230 — chat-open-shortcut (Attempt 1, 2026-05-28)
+- **Tests 1, 3, 4, 6 (`AssertionError`, lines 20/35/49/75)**: All fail with same error — `[data-testid="rancher-ai-ui-chat-container"]` not found after `ChatPo.openViaKeyboard()` presses Alt+K.
+- **Tests 2 and 5 passed** — these start with chat already open and only test closing; this confirms the chat container selector is correct when open.
+- **Root cause**: Alt+K keyboard shortcut is not opening the chat panel. `openViaKeyboard()` at `chat.po.ts:75` triggers the keypress but the panel doesn't render. The shortcut listener may not be registered, the key combo may differ (e.g., needs `cy.realPress` or `trigger` instead of `cy.type`), or focus needs to be on the document body first.
+- **Pattern**: When `openViaKeyboard()` fails consistently across all tests that rely on it, but close tests pass, the issue is in the open action, not the selector itself.
+- **Recommendation**: Check how Alt+K is triggered in `openViaKeyboard()` — use `cy.get('body').trigger('keydown', { altKey: true, key: 'k', keyCode: 75 })` instead of `cy.type('{alt+k}')` if applicable. Also ensure document body has focus before triggering the shortcut.
