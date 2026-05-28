@@ -146,3 +146,12 @@
 - `UiToolsConfig` PO at `cypress/e2e/po/settings.po.ts` — only has `intro()` method; spec writer must add: `enabledCheckbox()`, `guidelinesTextarea()`, `resetConfigButton()`, `searchInput()`, `toolsGrid()`, `toolCard()`, `toolToggle()`, `resetFiltersLink()`
 - `ApplySettingsPromptPo` at `cypress/e2e/po/dialog/apply-settings.po.ts` — `.confirm()` uses `prompt-apply-settings-confirm-button` testid ✅
 - Component mapping: `settings-ui-tools-config` → `pages/settings/sections/ui-tools-config/index.vue` + `Intro.vue`
+
+### chat-open-shortcut (verified 2026-05-28, APPROVED attempt 1)
+- `[data-testid="rancher-ai-ui-chat-container"]` — root div in `pages/Chat.vue` line 384 ✅
+- `[data-testid="rancher-ai-ui-chat-panel-ready"]` — dynamic testid in `Chat.vue` line 395: `rancher-ai-ui-chat-panel-${ isChatInitialized && ws?.readyState === 1 ? 'ready' : 'not-ready' }` ✅
+- `[data-testid="rancher-ai-ui-chat-input-textarea"]` — in `components/panels/Console.vue` ✅
+- Two keyboard shortcut handlers: (1) global `index.ts` `addAction` handler (body-focused), (2) `Console.vue` textarea keydown handler (line 115) — both call `Chat.open/close(store)`
+- `cy.clearLLMResponses()` exists in `cypress/support/commands/llm-mock-service-api.ts` ✅
+- `ClusterDashboardPagePo` API: `new ClusterDashboardPagePo('local').goTo()` — NOT a static method. Confirmed in `chat.spec.ts` and `context-selection.spec.ts`.
+- Component mapping: `chat-open-shortcut` → `pkg/rancher-ai-ui/index.ts` (global handler), `components/panels/Console.vue` (textarea handler), `handlers/chat.ts` (Chat.open/close)
