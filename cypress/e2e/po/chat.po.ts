@@ -64,14 +64,22 @@ export default class ChatPo extends ComponentPo {
   openViaKeyboard() {
     const isMac = Cypress.platform === 'darwin';
 
-    cy.get('body').type(isMac ? '{meta}{shift}k' : '{alt}k');
+    if (isMac) {
+      cy.get('body').trigger('keydown', { metaKey: true, shiftKey: true, key: 'k', keyCode: 75 });
+    } else {
+      cy.get('body').trigger('keydown', { altKey: true, key: 'k', keyCode: 75 });
+    }
     this.isOpen();
   }
 
   closeViaKeyboard() {
     const isMac = Cypress.platform === 'darwin';
 
-    cy.get('body').type(isMac ? '{meta}{shift}k' : '{alt}k');
+    if (isMac) {
+      cy.get('body').trigger('keydown', { metaKey: true, shiftKey: true, key: 'k', keyCode: 75 });
+    } else {
+      cy.get('body').trigger('keydown', { altKey: true, key: 'k', keyCode: 75 });
+    }
     this.isClosed();
   }
 
