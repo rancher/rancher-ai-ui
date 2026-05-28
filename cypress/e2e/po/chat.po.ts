@@ -61,6 +61,20 @@ export default class ChatPo extends ComponentPo {
     this.historyButton().click();
   }
 
+  openViaKeyboard() {
+    const isMac = Cypress.platform === 'darwin';
+
+    cy.get('body').type(isMac ? '{meta}{shift}k' : '{alt}k');
+    this.isOpen();
+  }
+
+  closeViaKeyboard() {
+    const isMac = Cypress.platform === 'darwin';
+
+    cy.get('body').type(isMac ? '{meta}{shift}k' : '{alt}k');
+    this.isClosed();
+  }
+
   getMessage(id: string | number) {
     return new MessagePo(id.toString());
   }
