@@ -95,7 +95,7 @@ describe('Feature: chat-open-shortcut', () => {
 
     cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]').click().type('partial message');
 
-    cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]').type('{alt}k');
+    cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]').trigger('keydown', { altKey: true, key: 'k', keyCode: 75 });
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').should('not.exist');
 
