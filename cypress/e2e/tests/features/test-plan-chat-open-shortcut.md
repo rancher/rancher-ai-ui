@@ -1,0 +1,255 @@
+# Test Plan: Chat Open/Close Keyboard Shortcut
+
+**Feature Area**: `chat-open-shortcut`  
+**Date Created**: 2026-05-28  
+**Plan Type**: Initial  
+**Source Components Analyzed**:
+- `pkg/rancher-ai-ui/index.ts` — registers the Alt+K / ⌘+Shift+K shortcut via `plugin.addAction`
+- `pkg/rancher-ai-ui/components/panels/Console.vue` — second handler: closes chat when the textarea is focused and Alt+K / ⌘+Shift+K is pressed
+- `pkg/rancher-ai-ui/components/header/KeyboardShortcuts.vue` — shortcut listed under "Open / Close Chat Panel"
+- `pkg/rancher-ai-ui/handlers/chat.ts` — `Chat.open(store)` / `Chat.close(store)` called by both handlers
+
+## Existing Coverage
+
+None. The existing `chat.spec.ts` opens and closes the chat exclusively via:
+- `rancherHeader.askLizButton().click()` → `chat.open()`
+- `closeButton().click()` → `chat.close()`
+
+No spec exercises the Alt+K (Windows/Linux) or ⌘+Shift+K (macOS) keyboard shortcut. This gap covers two distinct code paths:
+1. **Global handler** (`index.ts`) — fires via Rancher Shell's `addAction` shortcut registration when focus is outside the textarea
+2. **Textarea-focused handler** (`Console.vue` line 115) — fires when the user has typed in the input box and then presses the shortcut
+
+## Test Cases
+
+---
+
+### Test 1: Alt+K opens the chat panel when it is closed
+
+**Description**: Pressing Alt+K on the keyboard while the chat is closed opens the chat panel.
+
+**Preconditions**:
+- Logged in via `cy.login()`
+- Navigated to the Home page (`HomePagePo.goTo()`)
+- Chat panel is NOT open
+
+**Steps**:
+1. Verify the chat panel is not in the DOM.
+2. Press Alt+K on the `body` element.
+3. Assert the chat panel appears.
+4. Assert the panel reaches ready state.
+
+**Assertions**:
+- `[data-testid="rancher-ai-ui-chat-container"]` should exist after the keypress
+- `[data-testid="rancher-ai-ui-chat-panel-ready"]` should exist (panel is connected and ready)
+
+**Selectors**:
+- `cy.get('body').type('{alt}k')`
+- `[data-testid="rancher-ai-ui-chat-container"]`
+- `[data-testid="rancher-ai-ui-chat-panel-ready"]`
+
+**Screenshot**: `chat-open-shortcut-test-1-opens-chat`
+
+---
+
+### Test 2: Alt+K closes the chat panel when it is open
+
+**Description**: Pressing Alt+K while the chat is open closes the chat panel.
+
+**Preconditions**:
+- Logged in via `cy.login()`
+- Navigated to the Home page
+- Chat panel is open and ready (open via `chat.open()` or keyboard)
+
+**Steps**:
+1. Open the chat panel (via `chat.open()`).
+2. Wait for the welcome message to complete.
+3. Press Alt+K on the `body` element.
+4. Assert the chat panel is removed from the DOM.
+
+**Assertions**:
+- `[data-testid="rancher-ai-ui-chat-container"]` should not exist after the keypress
+
+**Selectors**:
+- `cy.get('body').type('{alt}k')`
+- `[data-testid="rancher-ai-ui-chat-container"]`
+
+**Screenshot**: `chat-open-shortcut-test-2-closes-chat`
+
+---
+
+### Test 3: Alt+K toggles the chat panel multiple times
+
+**Description**: Alt+K acts as a toggle — repeated presses open and close the chat alternately.
+
+**Preconditions**:
+- Logged in via `cy.login()`
+- Navigated to the Home page
+- Chat panel is initially closed
+
+**Steps**:
+1. Press Alt+K → assert chat opens.
+2. Wait for welcome message to complete.
+3. Press Alt+K → assert chat closes.
+4. Press Alt+K → assert chat opens again.
+5. Wait for welcome message to complete.
+
+**Assertions**:
+- After 1st Alt+K: `[data-testid="rancher-ai-ui-chat-container"]` should exist
+- After 2nd Alt+K: `[data-testid="rancher-ai-ui-chat-container"]` should not exist
+- After 3rd Alt+K: `[data-testid="rancher-ai-ui-chat-container"]` should exist
+
+**Selectors**:
+- `cy.get('body').type('{alt}k')`
+- `[data-testid="rancher-ai-ui-chat-container"]`
+- `[data-testid="rancher-ai-ui-chat-panel-ready"]`
+
+**Screenshot**: `chat-open-shortcut-test-3-toggle-multiple`
+
+---
+
+### Test 4: Chat is fully functional after being opened with Alt+K
+
+**Description**: The chat works normally (can send a message and receive a response) when opened via the keyboard shortcut rather than the button.
+
+**Preconditions**:
+- Logged in via `cy.login()`
+- Navigated to the Home page
+- LLM response enqueued via `cy.enqueueLLMResponse({ text: 'Hello from keyboard.' })`
+
+**Steps**:
+1. Press Alt+K to open the chat.
+2. Wait for the chat to become ready (`[data-testid="rancher-ai-ui-chat-panel-ready"]`).
+3. Wait for the welcome message (id=1) to complete.
+4. Enqueue a mock LLM response.
+5. Send a message via `chat.sendMessage('Hello')`.
+6. Assert the user message (id=2) is rendered.
+7. Assert the AI response (id=3) is completed and contains the expected text.
+
+**Assertions**:
+- `chat.getMessage(2).containsText('Hello')`
+- `chat.getMessage(3).isCompleted()`
+- `chat.getMessage(3).containsText('Hello from keyboard.')`
+
+**Selectors**:
+- `cy.get('body').type('{alt}k')`
+- `[data-testid="rancher-ai-ui-chat-panel-ready"]`
+- `[data-testid="rancher-ai-ui-chat-message-box-2"]`
+- `[data-testid="rancher-ai-ui-chat-message-box-3"]`
+
+**Mock Data**:
+- `cy.enqueueLLMResponse({ text: 'Hello from keyboard.' })`
+
+**Screenshot**: `chat-open-shortcut-test-4-functional-after-keyboard-open`
+
+---
+
+### Test 5: Alt+K closes the chat when the input textarea is focused
+
+**Description**: When the user has focused the chat input textarea, pressing Alt+K still closes the chat panel. This exercises the Console.vue keyboard handler code path (distinct from the global handler).
+
+**Preconditions**:
+- Logged in via `cy.login()`
+- Navigated to the Home page
+- Chat panel is open and ready
+
+**Steps**:
+1. Open the chat via `chat.open()`.
+2. Wait for the welcome message to complete.
+3. Click on the textarea to focus it (`[data-testid="rancher-ai-ui-chat-input-textarea"]`).
+4. Type some partial text in the textarea (e.g., `'partial message'`).
+5. Press Alt+K inside the textarea element (using `cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]').type('{alt}k')`).
+6. Assert the chat panel is removed from the DOM.
+
+**Assertions**:
+- `[data-testid="rancher-ai-ui-chat-container"]` should not exist after the keypress
+
+**Selectors**:
+- `[data-testid="rancher-ai-ui-chat-container"]`
+- `[data-testid="rancher-ai-ui-chat-input-textarea"]`
+
+**Note**: This uses the `Console.vue` event handler (line 115) which calls `Chat.close(store)` when the textarea has focus. The `{alt}k` keydown fires the handler and stops propagation.
+
+**Screenshot**: `chat-open-shortcut-test-5-closes-when-textarea-focused`
+
+---
+
+### Test 6: Alt+K works from a non-Home page (Cluster Dashboard)
+
+**Description**: The keyboard shortcut opens and closes the chat panel when the user is on a different page (Cluster Dashboard).
+
+**Preconditions**:
+- Logged in via `cy.login()`
+- Navigated to Cluster Dashboard (`ClusterDashboardPagePo.goTo('local')`)
+- Chat panel is initially closed
+
+**Steps**:
+1. Navigate to the Cluster Dashboard.
+2. Press Alt+K → assert chat opens.
+3. Wait for the chat panel to be ready.
+4. Press Alt+K (on body) → assert chat closes.
+
+**Assertions**:
+- After 1st Alt+K: `[data-testid="rancher-ai-ui-chat-container"]` should exist
+- `[data-testid="rancher-ai-ui-chat-panel-ready"]` should exist
+- After 2nd Alt+K: `[data-testid="rancher-ai-ui-chat-container"]` should not exist
+
+**Selectors**:
+- `cy.get('body').type('{alt}k')`
+- `[data-testid="rancher-ai-ui-chat-container"]`
+- `[data-testid="rancher-ai-ui-chat-panel-ready"]`
+
+**Screenshot**: `chat-open-shortcut-test-6-works-on-cluster-dashboard`
+
+---
+
+## Page Objects Needed
+
+### New PO Methods on `ChatPo` (`cypress/e2e/po/chat.po.ts`)
+
+```typescript
+openViaKeyboard() {
+  const isMac = Cypress.platform === 'darwin';
+  cy.get('body').type(isMac ? '{meta}{shift}k' : '{alt}k');
+  this.isOpen();
+}
+
+closeViaKeyboard() {
+  const isMac = Cypress.platform === 'darwin';
+  cy.get('body').type(isMac ? '{meta}{shift}k' : '{alt}k');
+  this.isClosed();
+}
+```
+
+These methods encapsulate the platform-aware shortcut. Specs should call `chat.openViaKeyboard()` and `chat.closeViaKeyboard()` rather than inlining `cy.get('body').type(...)`.
+
+### Existing POs Reused
+
+| PO | Usage |
+|----|-------|
+| `ChatPo` | `open()`, `close()`, `isReady()`, `isClosed()`, `isOpen()`, `getMessage(id)`, `sendMessage(text)` |
+| `HomePagePo` | `goTo()` |
+| `ClusterDashboardPagePo` | `goTo('local')` for Test 6 |
+
+## Custom Commands
+
+| Command | Usage |
+|---------|-------|
+| `cy.login()` | In `beforeEach` |
+| `cy.enqueueLLMResponse({ text })` | Before `sendMessage` in Test 4 |
+| `cy.cleanChatHistory()` | In `afterEach` |
+
+## Mock Data
+
+- **Test 4**: `cy.enqueueLLMResponse({ text: 'Hello from keyboard.' })`
+- Other tests do not require specific LLM response mocks (welcome message auto-appears)
+
+## Spec File Location
+
+`cypress/e2e/tests/features/chat-open-shortcut.spec.ts`
+
+## Notes
+
+- CI typically runs on Linux, so all tests use `'{alt}k'`. The `isMac` branch (`'{meta}{shift}k'`) is covered by the `openViaKeyboard()` / `closeViaKeyboard()` PO methods but won't be exercised in CI.
+- Test 5 is the only test that exercises the Console.vue handler (textarea-focused). The other tests exercise the global `index.ts` `addAction` handler (body focus).
+- Do NOT use `cy.wait()` before assertions. The `.should('exist')` and `.should('not.exist')` assertions retry automatically.
+- Use `cy.clearLLMResponses()` in `beforeEach` to prevent stale mocked responses from affecting subsequent tests.
