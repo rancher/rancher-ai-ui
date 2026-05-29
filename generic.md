@@ -206,3 +206,10 @@
 - **Test 5 passes (3147ms)** — consistent with all prior runs.
 - **Root cause confirmed again**: `openViaKeyboard()` in `chat.po.ts:82` fails to trigger the chat open. The Alt+K keyboard event dispatch is broken. The selector `[data-testid="rancher-ai-ui-chat-container"]` is correct (Tests 2 and 5 context shows it works once the chat IS open). The bug is purely in the keyboard event dispatch in `openViaKeyboard()`.
 - **Fixer must**: Change the Alt+K dispatch in `openViaKeyboard()` to use `cy.get('body').focus().trigger('keydown', { altKey: true, key: 'k', keyCode: 75 })` or `cy.realPress(['Alt', 'k'])`. The current approach (likely `cy.type('{alt}k')` or similar) does not fire the keyboard event correctly.
+
+## Feature-Specific Notes — chat-open-shortcut
+- `[data-testid="rancher-ai-ui-chat-container"]` — used by `ChatPo.isOpen()` to verify chat is open after Alt+K. Persistently fails across attempts 1-4; the element is never found after simulating Alt+K keyboard shortcut. This may indicate the keyboard event is not being captured by the app, or the chat panel is rendered under a different selector.
+- `<div.chat-container>` — used by `ChatPo.isClosed()` to verify chat is closed. Even when the test expects it removed, it remains in the DOM, suggesting the close action via keyboard shortcut is not working.
+- Test 5 (Alt+K closes when textarea focused) passes consistently, suggesting Alt+K IS registered but only when textarea is focused — or the close path works differently from the open path.
+- Pattern: Tests 1, 3, 4, 6 all fail at `openViaKeyboard` → `isOpen` → `checkExists` for `[data-testid="rancher-ai-ui-chat-container"]`. The chat open shortcut (Alt+K) consistently fails to open the chat panel when it is closed.
+- The fixer should investigate: (1) whether `data-testid="rancher-ai-ui-chat-container"` is the correct testid on the chat container element, (2) whether Alt+K simulation via `cy.type('{alt}k')` or similar works in Cypress, (3) adding a wait after keyboard event before asserting visibility.
