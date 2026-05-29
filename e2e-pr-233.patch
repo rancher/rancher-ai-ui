@@ -1,0 +1,22 @@
+diff --git a/cypress/e2e/tests/features/chat-scroll.spec.ts b/cypress/e2e/tests/features/chat-scroll.spec.ts
+index d70b1fe..45dbfe8 100644
+--- a/cypress/e2e/tests/features/chat-scroll.spec.ts
++++ b/cypress/e2e/tests/features/chat-scroll.spec.ts
+@@ -112,12 +112,12 @@ describe('Feature: chat-scroll', () => {
+ 
+     cy.enqueueLLMResponse({ text: 'Lorem ipsum dolor sit amet, '.repeat(80) });
+     chat.sendMessage('One more message');
+-    // Wait for AI response to appear (box 13 exists) — auto-scroll fires on first token,
+-    // so if suppression works, the scroll button will still be visible at this point.
+-    // Waiting for "completed" status consistently fails when the user is scrolled away
+-    // from the bottom, as the component may not update completion state for off-screen messages.
++    // Sending the user message forces a scroll-to-bottom (force=true in the MutationObserver).
++    // Scroll back up immediately to test that the AI response auto-scroll is suppressed.
++    cy.get('.chat-messages').scrollTo('top');
++    // Wait for AI response to appear (box 13 exists)
+     cy.get('[data-testid="rancher-ai-ui-chat-message-box-13"]').should('exist');
+-
++    // Scroll button must still be visible — AI response auto-scroll is suppressed when user is scrolled up
+     chat.scrollButton().checkExists();
+ 
+     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-scroll-test-5-button-stays-when-user-scrolled-up');
