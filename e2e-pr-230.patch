@@ -1,0 +1,37 @@
+diff --git a/cypress/e2e/po/chat.po.ts b/cypress/e2e/po/chat.po.ts
+index c322a27..27e5d8a 100644
+--- a/cypress/e2e/po/chat.po.ts
++++ b/cypress/e2e/po/chat.po.ts
+@@ -64,14 +64,30 @@ export default class ChatPo extends ComponentPo {
+   openViaKeyboard() {
+     const isMac = Cypress.platform === 'darwin';
+ 
+-    cy.get('body').click().type(isMac ? '{meta}{shift}k' : '{alt}k');
++    cy.document().trigger('keydown', {
++      altKey: !isMac,
++      metaKey: isMac,
++      shiftKey: isMac,
++      key:      'k',
++      keyCode:  75,
++      bubbles:  true,
++      cancelable: true
++    });
+     this.isOpen();
+   }
+ 
+   closeViaKeyboard() {
+     const isMac = Cypress.platform === 'darwin';
+ 
+-    cy.get('body').click().type(isMac ? '{meta}{shift}k' : '{alt}k');
++    cy.document().trigger('keydown', {
++      altKey: !isMac,
++      metaKey: isMac,
++      shiftKey: isMac,
++      key:      'k',
++      keyCode:  75,
++      bubbles:  true,
++      cancelable: true
++    });
+     this.isClosed();
+   }
+ 
