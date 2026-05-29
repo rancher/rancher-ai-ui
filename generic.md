@@ -230,3 +230,11 @@
 - Feature area: keyboard shortcut or button to open the chat panel.
 - Likely involves testing that a keyboard shortcut (e.g., Ctrl+K or similar) or a UI button opens the chat panel.
 - The chat open button testid has been seen as `extension-header-action-ai.action.openChat` in other tests — may be relevant here.
+
+## PR #230 — chat-open-shortcut (Attempt 2, 2026-05-29)
+- **Tests 1, 3, 4, 6 (`AssertionError`, `[data-testid="rancher-ai-ui-chat-container"]` not found)**: The Alt+K keyboard shortcut does not open the chat panel. `ChatPo.openViaKeyboard()` → `ChatPo.isOpen()` → `checkExists('[data-testid="rancher-ai-ui-chat-container"]')` times out after 10s on all 3 Cypress retries.
+- **Tests 2 and 5 (closing tests) pass**: These tests expect the chat to already be open (set up in `beforeEach`), then close it via Alt+K. The close direction works; only the open direction fails. This suggests Alt+K is partially implemented (close works) but the open path via keyboard is broken.
+- **Pattern**: When tests that *close* a feature work but tests that *open* via keyboard fail, the keyboard event listener is either not attached, uses the wrong key modifier (e.g., expects `altKey` but test sends `{alt}k`), or the shortcut only works in certain DOM contexts.
+- **Root cause hypothesis**: `openViaKeyboard()` in `chat.po.ts:75` likely uses `cy.type('{alt}k')` or similar. Verify that the keyboard shortcut handler is registered globally (not just on the chat component) and that the event is dispatched on `document` or `body`.
+- **Recommendation**: Check `ChatPo.openViaKeyboard()` implementation — ensure it dispatches the key event on `cy.get('body')` (not on a focused element). Also verify the actual key combination the shortcut handler listens for matches what Cypress dispatches.
+- **Line references**: Test 1 → line 20, Test 3 → line 35, Test 4 → line 49, Test 6 → line 76.
