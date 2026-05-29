@@ -64,36 +64,30 @@ export default class ChatPo extends ComponentPo {
   openViaKeyboard() {
     const isMac = Cypress.platform === 'darwin';
 
-    // Dispatch on window directly so shortcut handlers registered via window.addEventListener receive the event
-    cy.window().then((win) => {
-      if (isMac) {
-        win.dispatchEvent(new win.KeyboardEvent('keydown', {
-          metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
-        }));
-      } else {
-        win.dispatchEvent(new win.KeyboardEvent('keydown', {
-          altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
-        }));
-      }
-    });
+    if (isMac) {
+      cy.get('body').trigger('keydown', {
+        metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
+      });
+    } else {
+      cy.get('body').trigger('keydown', {
+        altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
+      });
+    }
     this.isOpen();
   }
 
   closeViaKeyboard() {
     const isMac = Cypress.platform === 'darwin';
 
-    // Dispatch on window directly so shortcut handlers registered via window.addEventListener receive the event
-    cy.window().then((win) => {
-      if (isMac) {
-        win.dispatchEvent(new win.KeyboardEvent('keydown', {
-          metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
-        }));
-      } else {
-        win.dispatchEvent(new win.KeyboardEvent('keydown', {
-          altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
-        }));
-      }
-    });
+    if (isMac) {
+      cy.get('body').trigger('keydown', {
+        metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
+      });
+    } else {
+      cy.get('body').trigger('keydown', {
+        altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
+      });
+    }
     this.isClosed();
   }
 
