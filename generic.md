@@ -248,3 +248,10 @@
   3. The `rancher-ai-ui-chat-container` testid may be wrong — check the actual rendered testid after opening chat via UI click.
 - **Pattern**: Tests that call `openViaKeyboard()` then immediately check `isOpen()` all fail; tests that open via UI and then call Alt+K to *close* pass. This confirms the shortcut listener isn't triggered by Cypress.
 - **Fix suggestions**: In `chat.po.ts:openViaKeyboard()`, replace the keyboard trigger mechanism with `cy.document().trigger('keydown', { key: 'k', altKey: true, bubbles: true })` or ensure `cy.get('body').type('{alt}k')`.
+
+## Feature-Specific Notes: chat-open-shortcut
+- Tests 1,3,4,6 all fail with `[data-testid="rancher-ai-ui-chat-container"]` not found after Alt+K — the keyboard shortcut may not be triggering properly in Cypress headless mode, OR the testid is missing from the component.
+- Test 2 uniquely fails with `<div.chat-container>` persisting in DOM after close attempt — confirms keyboard close is also broken, but proves the chat-container class exists (`.chat-container`).
+- `isOpen` checks `[data-testid="rancher-ai-ui-chat-container"]`; consider also checking `.chat-container` class as fallback.
+- Alt+K keyboard shortcut in Cypress: ensure `cy.get('body').type('{alt}k')` or `cy.get('body').trigger('keydown', { altKey: true, key: 'k' })` is used. Some implementations require focus on body before shortcut.
+- Test 5 passes (close when textarea focused) while open tests fail — suggests the panel may be open from a previous state, and Alt+K can close it but not open it. Could indicate the shortcut is only a "close" shortcut in current implementation.
