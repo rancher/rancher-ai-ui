@@ -64,12 +64,12 @@ export default class ChatPo extends ComponentPo {
   openViaKeyboard() {
     const isMac = Cypress.platform === 'darwin';
 
-    // Use cy.realPress (cypress-real-events) to dispatch actual OS-level keyboard events
-    // so Rancher's plugin.addAction shortcut handler receives them reliably.
+    // Use trigger('keydown') on the body to dispatch keyboard events reliably in CI headless mode.
+    // cy.realPress does not fire events that reach Rancher's plugin.addAction shortcut handler.
     if (isMac) {
-      cy.realPress(['Meta', 'Shift', 'k']);
+      cy.get('body').focus().trigger('keydown', { metaKey: true, shiftKey: true, key: 'k', keyCode: 75 });
     } else {
-      cy.realPress(['Alt', 'k']);
+      cy.get('body').focus().trigger('keydown', { altKey: true, key: 'k', keyCode: 75 });
     }
     this.isOpen();
   }
@@ -77,11 +77,11 @@ export default class ChatPo extends ComponentPo {
   closeViaKeyboard() {
     const isMac = Cypress.platform === 'darwin';
 
-    // Use cy.realPress (cypress-real-events) to dispatch actual OS-level keyboard events
+    // Use trigger('keydown') on the body — consistent with openViaKeyboard.
     if (isMac) {
-      cy.realPress(['Meta', 'Shift', 'k']);
+      cy.get('body').focus().trigger('keydown', { metaKey: true, shiftKey: true, key: 'k', keyCode: 75 });
     } else {
-      cy.realPress(['Alt', 'k']);
+      cy.get('body').focus().trigger('keydown', { altKey: true, key: 'k', keyCode: 75 });
     }
     this.isClosed();
   }
