@@ -95,7 +95,13 @@ describe('Feature: chat-open-shortcut', () => {
 
     cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]').click().type('partial message');
 
-    cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]').trigger('keydown', { altKey: true, key: 'k', keyCode: 75 });
+    // Console.vue's handleTextareaKeydown is a native @keydown listener (not v-shortkey),
+    // so the event must fire on the textarea element itself.
+    cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]')
+      .trigger('keydown', {
+        key:    'k',
+        altKey: true,
+      });
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').should('not.exist');
 
