@@ -64,12 +64,13 @@ export default class ChatPo extends ComponentPo {
   openViaKeyboard() {
     const isMac = Cypress.platform === 'darwin';
 
+    // Rancher's plugin.addAction shortcut handler listens on window, not body
     if (isMac) {
-      cy.get('body').trigger('keydown', {
+      cy.window().trigger('keydown', {
         metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
       });
     } else {
-      cy.get('body').trigger('keydown', {
+      cy.window().trigger('keydown', {
         altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
       });
     }
@@ -79,12 +80,13 @@ export default class ChatPo extends ComponentPo {
   closeViaKeyboard() {
     const isMac = Cypress.platform === 'darwin';
 
+    // Rancher's plugin.addAction shortcut handler listens on window, not body
     if (isMac) {
-      cy.get('body').trigger('keydown', {
+      cy.window().trigger('keydown', {
         metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
       });
     } else {
-      cy.get('body').trigger('keydown', {
+      cy.window().trigger('keydown', {
         altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true,
       });
     }
