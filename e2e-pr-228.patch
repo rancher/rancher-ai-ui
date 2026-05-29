@@ -1,0 +1,49 @@
+diff --git a/cypress/e2e/po/components/bubble-button.po.ts b/cypress/e2e/po/components/bubble-button.po.ts
+index 80e1467..e19d9ee 100644
+--- a/cypress/e2e/po/components/bubble-button.po.ts
++++ b/cypress/e2e/po/components/bubble-button.po.ts
+@@ -17,6 +17,11 @@ export default class BubbleButtonPo extends ComponentPo {
+   }
+ 
+   click() {
+-    this.self().first().click({ force: true });
++    // Use .within() to guarantee the click is scoped to the parent message element.
++    // This prevents .first() from picking the first matching button across all messages
++    // when the same button type (e.g. icon-copy) appears on multiple messages.
++    this.parentEl.within(() => {
++      cy.get(`[data-testid="rancher-ai-ui-bubble-btn-${ this.icon }"]`).click({ force: true });
++    });
+   }
+ }
+\ No newline at end of file
+diff --git a/cypress/e2e/tests/features/message-actions.spec.ts b/cypress/e2e/tests/features/message-actions.spec.ts
+index 87e0003..b96f091 100644
+--- a/cypress/e2e/tests/features/message-actions.spec.ts
++++ b/cypress/e2e/tests/features/message-actions.spec.ts
+@@ -16,7 +16,7 @@ describe('Feature: message-actions', () => {
+ 
+   it('Test 1: Copy AI response to clipboard', () => {
+     cy.window().then((win) => {
+-      cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite');
++      cy.stub(win.navigator.clipboard, 'writeText').resolves().as('clipboardWrite');
+     });
+ 
+     cy.enqueueLLMResponse({ text: 'The copy response text.' });
+@@ -32,7 +32,7 @@ describe('Feature: message-actions', () => {
+ 
+   it('Test 2: Copy button shows success checkmark feedback', () => {
+     cy.window().then((win) => {
+-      cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite');
++      cy.stub(win.navigator.clipboard, 'writeText').resolves().as('clipboardWrite');
+     });
+ 
+     cy.enqueueLLMResponse({ text: 'Feedback test.' });
+@@ -48,7 +48,7 @@ describe('Feature: message-actions', () => {
+ 
+   it('Test 3: Copy user message to clipboard', () => {
+     cy.window().then((win) => {
+-      cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite');
++      cy.stub(win.navigator.clipboard, 'writeText').resolves().as('clipboardWrite');
+     });
+ 
+     cy.enqueueLLMResponse({ text: 'Any response.' });
