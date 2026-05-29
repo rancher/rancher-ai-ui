@@ -17,6 +17,11 @@ export default class BubbleButtonPo extends ComponentPo {
   }
 
   click() {
-    this.self().first().click({ force: true });
+    // Use .within() to guarantee the click is scoped to the parent message element.
+    // This prevents .first() from picking the first matching button across all messages
+    // when the same button type (e.g. icon-copy) appears on multiple messages.
+    this.parentEl.within(() => {
+      cy.get(`[data-testid="rancher-ai-ui-bubble-btn-${ this.icon }"]`).click({ force: true });
+    });
   }
 }
