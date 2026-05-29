@@ -156,7 +156,7 @@
 - `ClusterDashboardPagePo` API: `new ClusterDashboardPagePo('local').goTo()` — NOT a static method. Confirmed in `chat.spec.ts` and `context-selection.spec.ts`.
 - Component mapping: `chat-open-shortcut` → `pkg/rancher-ai-ui/index.ts` (global handler), `components/panels/Console.vue` (textarea handler), `handlers/chat.ts` (Chat.open/close)
 
-### chat-scroll (verified 2026-05-29, attempt 1, NEEDS_FIX)
+### chat-scroll (verified 2026-05-29, attempt 2, APPROVED)
 - `[data-testid="rancher-ai-ui-scroll-button"]` — `<button>` inside `.scroll-button` div in `ScrollButton.vue` ✅
 - `[data-testid="rancher-ai-ui-chat-console"]` — root div of `Console.vue` (the **input/textarea area**), NOT the scrollable messages list ❌
 - The scrollable messages container is `<div ref="messagesView" class="chat-messages">` in `Messages.vue` — has **no data-testid**, only CSS class `.chat-messages`
@@ -165,3 +165,7 @@
 - `autoScrollEnabled`: true when `scrollTop + clientHeight >= scrollHeight - 2` — controls auto-scroll on new messages
 - `scrollButton()` already exists in `ChatPo` → `new ComponentPo('[data-testid="rancher-ai-ui-scroll-button"]')` ✅
 - Component mapping: `chat-scroll` → `ScrollButton.vue`, `panels/Messages.vue`, `composables/useScrollComposable.ts`
+- Plan correctly fixed in attempt 2: used `.chat-messages` for scroll container ✅
+- `chat.isNotReady()` → `[data-testid="rancher-ai-ui-chat-panel-not-ready"]` verified in ChatPo ✅
+- `chat.rancherHeader.askLizButton()` verified in ChatPo ✅
+- Message ID formula `2 + i * 2 + 1` for AI responses in loop starting at i=0 ✅
