@@ -199,3 +199,10 @@
 - **Test 2 still failing**: The chat was opened before Test 2 (prior state), but `closeViaKeyboard()` using Alt+K fails to close it. `div.chat-container` remains in DOM. This indicates the Alt+K shortcut does not work as a toggle either — OR the setup for Test 2 relies on `openViaKeyboard()` which also fails.
 - **Confirmed pattern after 2 consecutive new attempts**: The keyboard shortcut dispatch in `openViaKeyboard()` is not working. The selector inconsistency between `isOpen()` (data-testid) and `isClosed()` (CSS class) is also unresolved.
 - **High priority fix**: The fixer must address BOTH: (1) the keyboard trigger method in `openViaKeyboard()`, and (2) the selector in `isOpen()` to use `.chat-container` or ensure `data-testid="rancher-ai-ui-chat-container"` is applied to the actual element.
+
+## PR #230 — chat-open-shortcut (Attempt 3, 2026-05-29)
+- **Tests 1, 3, 4, 6 (AssertionError, lines 20/35/49/75)**: Same persistent failure — `[data-testid="rancher-ai-ui-chat-container"]` not found after `openViaKeyboard()`.
+- **Test 2 NOW PASSES (3217ms)** — unlike attempts 1 & 2 in this run session where Test 2 failed. This confirms Test 2's beforeEach opens the chat via a non-keyboard method (UI click), and only the Alt+K close shortcut is used. The close shortcut works; only the open shortcut fails.
+- **Test 5 passes (3147ms)** — consistent with all prior runs.
+- **Root cause confirmed again**: `openViaKeyboard()` in `chat.po.ts:82` fails to trigger the chat open. The Alt+K keyboard event dispatch is broken. The selector `[data-testid="rancher-ai-ui-chat-container"]` is correct (Tests 2 and 5 context shows it works once the chat IS open). The bug is purely in the keyboard event dispatch in `openViaKeyboard()`.
+- **Fixer must**: Change the Alt+K dispatch in `openViaKeyboard()` to use `cy.get('body').focus().trigger('keydown', { altKey: true, key: 'k', keyCode: 75 })` or `cy.realPress(['Alt', 'k'])`. The current approach (likely `cy.type('{alt}k')` or similar) does not fire the keyboard event correctly.
