@@ -232,7 +232,20 @@ Page Object best practices:
   }
   ```
 
-## Step 9 - Comment on PR
+## Step 9 - Lint
+
+Run ESLint with auto-fix on all files you created or modified:
+
+```bash
+yarn lint --fix cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts
+# Also lint any new PO files
+find cypress/e2e/po/ -name "*.po.ts" -newer cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts -exec yarn lint --fix {} +
+```
+
+If lint errors remain after `--fix`, fix them manually. The spec MUST pass
+`yarn lint` with zero warnings before committing.
+
+## Step 10 - Comment on PR
 
 Post a comment on the PR using add-comment:
 - **pull_request_number**: the PR number
@@ -242,7 +255,7 @@ Post a comment on the PR using add-comment:
   - Files created
   - Note that the spec will be pushed and then the runner triggered
 
-## Step 10 - Commit and Save Patch
+## Step 11 - Commit and Save Patch
 
 Commit all new files and generate a patch:
 
@@ -264,7 +277,7 @@ head -3 /tmp/gh-aw/repo-memory/default/e2e-spec-pr-$PR_NUMBER.patch
 
 Do NOT create subdirectories. After saving, call push_repo_memory.
 
-## Step 11 - Dispatch apply-spec-writer-patch
+## Step 12 - Dispatch apply-spec-writer-patch
 
 Dispatch `apply-e2e-automation-spec-writer-patch` to push the spec to the PR and trigger the runner.
 
@@ -290,5 +303,6 @@ Use the dispatch-workflow safe output:
 - Encapsulate internal DOM traversal (e.g. `.vs__selected .vs__deselect`) in named PO methods — specs should never contain raw multi-step DOM chains
 - Specs must NEVER call `.self().find(...)` on a Page Object directly — always expose a PO method
 - Never use conditional `afterEach` (e.g. `if (!this.currentTest?.title.includes(...))`) — use nested `describe` blocks instead
+- Run `yarn lint --fix` on all created/modified files before committing — the spec must pass lint with zero warnings
 - Do NOT create a new PR - save patch to repo-memory instead
 - Do NOT use git push - the apply-patch workflow handles that
