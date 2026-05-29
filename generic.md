@@ -178,3 +178,8 @@
 
 ## Feature-Specific Notes
 - **chat-scroll**: Test 5 ("Auto-scroll is suppressed when user has scrolled up") is flaky — it needed a retry (attempt 1 of 3) before passing. Consider adding `cy.wait()` or retry assertions around scroll position checks.
+
+## Feature-Specific Notes: message-actions
+
+- **Test 1 (Copy AI response to clipboard)**: The spec asserts clipboard receives the AI message body text (e.g. `"The copy response text."`). A common failure is the clipboard receiving the button label/tooltip (`"Copy this message"`) instead of the actual message content. Check that the copy handler passes `message.text` (or equivalent) rather than a static string.
+- Line 26 is where the clipboard assertion occurs in `message-actions.spec.ts`.
