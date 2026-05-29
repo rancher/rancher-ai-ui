@@ -166,3 +166,12 @@
 ## Feature-Specific Notes — chat-scroll
 - **Test 5 (chat-scroll)**: `[data-teststatus="rancher-ai-ui-chat-message-status-13-completed"]` — selector for 13th message completion status. Consistently times out (3 retries). The element may not be rendered, the message count may be wrong, or the status never reaches "completed". Consider checking: (1) whether message index 13 is actually produced by the mock, (2) whether the attribute name `data-teststatus` is correct vs `data-testid`, (3) whether the status value "completed" matches the actual rendered value.
 - **Test 5 (chat-scroll)**: Failure occurs at `message.po.ts:60` in `isCompleted()`. The PO method waits for `data-teststatus=...-completed`. If the mock stream never completes message 13, this will always time out.
+
+## PR #233 — chat-scroll (Attempt 2, 2026-05-29)
+- **Test 5 (`[data-testid="rancher-ai-ui-scroll-button"]` not found, line 91)**: The scroll button element is not found after the user scrolls up (which should suppress auto-scroll and show the button). Failed all 3 retry attempts.
+- **Pattern**: After scrolling up (to suppress auto-scroll), the scroll button should become visible. If not found, check:
+  1. Whether the scroll event is actually being detected by the component (manual scroll vs. programmatic scroll may behave differently).
+  2. Whether the `[data-testid="rancher-ai-ui-scroll-button"]` element is conditionally rendered (v-if) vs. conditionally shown (v-show). If v-if, the element won't exist in DOM until conditions met.
+  3. Whether the scroll position check in the component uses a threshold that the test's scroll amount doesn't cross.
+  4. Whether the `cy.scrollTo()` call is being detected as a user-initiated scroll in the component's scroll event handler.
+- **Note**: Tests 1-4 and 6 all pass, meaning the scroll button works in simpler scenarios. Test 5 specifically fails when auto-scroll suppression is expected — this is a timing/detection issue with the scroll-up interaction in the test.
