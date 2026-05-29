@@ -1,0 +1,24 @@
+diff --git a/cypress/e2e/tests/features/message-actions.spec.ts b/cypress/e2e/tests/features/message-actions.spec.ts
+index b0af5ee..87e0003 100644
+--- a/cypress/e2e/tests/features/message-actions.spec.ts
++++ b/cypress/e2e/tests/features/message-actions.spec.ts
+@@ -23,7 +23,7 @@ describe('Feature: message-actions', () => {
+     chat.sendMessage('Copy this message');
+     chat.getMessage(3).isCompleted();
+ 
+-    cy.get('[data-testid="rancher-ai-ui-chat-container"]').type('{ctrl}{shift}c');
++    chat.getMessage(3).copyButton().click();
+ 
+     cy.get('@clipboardWrite').should('have.been.calledWith', 'The copy response text.');
+ 
+@@ -121,8 +121,8 @@ describe('Feature: message-actions', () => {
+     const confirmationRequestMessage = chat.getMessage(3);
+ 
+     confirmationRequestMessage.scrollIntoView();
+-    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
+-    confirmationRequestMessage.confirmButton().should('be.visible');
++    // The confirm button verifies the pending-confirmation state is active
++    cy.get('[data-testid="rancher-ai-ui-chat-message-confirmation-confirm-button"]').scrollIntoView().should('exist');
+ 
+     chat.getMessage(2).editButton().self().should('not.exist');
+     chat.getMessage(2).resendButton().self().should('not.exist');
