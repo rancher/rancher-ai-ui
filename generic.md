@@ -193,3 +193,9 @@
 - **Test 5 passes** (3339ms) — Alt+K closes the chat when textarea is focused. This confirms the Alt+K close path works in at least one scenario.
 - **Selector inconsistency confirmed**: `isOpen()` uses `[data-testid="rancher-ai-ui-chat-container"]` but `isClosed()` uses `div.chat-container`. These likely target the same element but with different selectors, indicating the testid may not be applied to that element.
 - **Critical root cause**: The `data-testid="rancher-ai-ui-chat-container"` attribute is likely not present on the rendered `div.chat-container`. Fix: align `isOpen()` in chat.po.ts to use `.chat-container` (CSS class) consistent with `isClosed()`, OR add the testid to the component.
+
+## PR #230 — chat-open-shortcut (Attempt 2, 2026-05-29)
+- **Same failure pattern**: Tests 1, 3, 4, 6 fail with `[data-testid="rancher-ai-ui-chat-container"]` not found after `openViaKeyboard()`. Test 2 fails with `div.chat-container` continuously found. Test 5 passes.
+- **Test 2 still failing**: The chat was opened before Test 2 (prior state), but `closeViaKeyboard()` using Alt+K fails to close it. `div.chat-container` remains in DOM. This indicates the Alt+K shortcut does not work as a toggle either — OR the setup for Test 2 relies on `openViaKeyboard()` which also fails.
+- **Confirmed pattern after 2 consecutive new attempts**: The keyboard shortcut dispatch in `openViaKeyboard()` is not working. The selector inconsistency between `isOpen()` (data-testid) and `isClosed()` (CSS class) is also unresolved.
+- **High priority fix**: The fixer must address BOTH: (1) the keyboard trigger method in `openViaKeyboard()`, and (2) the selector in `isOpen()` to use `.chat-container` or ensure `data-testid="rancher-ai-ui-chat-container"` is applied to the actual element.
