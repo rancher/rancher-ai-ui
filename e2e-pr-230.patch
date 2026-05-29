@@ -1,0 +1,48 @@
+diff --git a/cypress/e2e/po/chat.po.ts b/cypress/e2e/po/chat.po.ts
+index ae2c793..7638065 100644
+--- a/cypress/e2e/po/chat.po.ts
++++ b/cypress/e2e/po/chat.po.ts
+@@ -64,25 +64,30 @@ export default class ChatPo extends ComponentPo {
+   openViaKeyboard() {
+     const isMac = Cypress.platform === 'darwin';
+ 
+-    // Use trigger('keydown') on the body to dispatch keyboard events reliably in CI headless mode.
+-    // cy.realPress does not fire events that reach Rancher's plugin.addAction shortcut handler.
+-    if (isMac) {
+-      cy.get('body').focus().trigger('keydown', { metaKey: true, shiftKey: true, key: 'k', keyCode: 75 });
+-    } else {
+-      cy.get('body').focus().trigger('keydown', { altKey: true, key: 'k', keyCode: 75 });
+-    }
++    // Dispatch a native KeyboardEvent directly on document so Rancher's plugin.addAction
++    // shortcut handler receives it. cy.get('body').trigger() does not reliably reach
++    // document-level listeners in headless CI mode.
++    cy.window().then((win) => {
++      const opts = isMac
++        ? { metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true }
++        : { altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true };
++
++      win.document.dispatchEvent(new win.KeyboardEvent('keydown', opts));
++    });
+     this.isOpen();
+   }
+ 
+   closeViaKeyboard() {
+     const isMac = Cypress.platform === 'darwin';
+ 
+-    // Use trigger('keydown') on the body — consistent with openViaKeyboard.
+-    if (isMac) {
+-      cy.get('body').focus().trigger('keydown', { metaKey: true, shiftKey: true, key: 'k', keyCode: 75 });
+-    } else {
+-      cy.get('body').focus().trigger('keydown', { altKey: true, key: 'k', keyCode: 75 });
+-    }
++    // Same dispatch approach as openViaKeyboard for consistency.
++    cy.window().then((win) => {
++      const opts = isMac
++        ? { metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true }
++        : { altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true };
++
++      win.document.dispatchEvent(new win.KeyboardEvent('keydown', opts));
++    });
+     this.isClosed();
+   }
+ 
