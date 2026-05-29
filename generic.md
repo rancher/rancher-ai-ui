@@ -255,3 +255,15 @@
 - `isOpen` checks `[data-testid="rancher-ai-ui-chat-container"]`; consider also checking `.chat-container` class as fallback.
 - Alt+K keyboard shortcut in Cypress: ensure `cy.get('body').type('{alt}k')` or `cy.get('body').trigger('keydown', { altKey: true, key: 'k' })` is used. Some implementations require focus on body before shortcut.
 - Test 5 passes (close when textarea focused) while open tests fail — suggests the panel may be open from a previous state, and Alt+K can close it but not open it. Could indicate the shortcut is only a "close" shortcut in current implementation.
+
+## PR #230 — chat-open-shortcut (Attempts 1–5, 2026-05-29)
+- **Tests 1, 3, 4, 6 all fail with same error**: `[data-testid="rancher-ai-ui-chat-container"]` never found after `ChatPo.openViaKeyboard()` (chat.po.ts:75 → isOpen at :56).
+- **Tests 2 and 5 pass**: These test closing the chat, not opening — they start with chat already open via a different method. The keyboard shortcut is not working to OPEN the chat.
+- **Root cause candidates**: (1) Alt+K keystroke not being recognized by the app; (2) `data-testid="rancher-ai-ui-chat-container"` missing from the DOM; (3) keyboard handler not yet attached when test fires keystroke; (4) shortcut requires a specific focused element.
+- **Pattern**: When a test consistently fails to find a container element after a keyboard action, consider: (a) verifying the testid exists in the actual component source, (b) adding a `cy.wait()` after the keystroke before asserting, (c) ensuring `cy.get('body').type('{alt}k')` is the correct Cypress syntax for Alt+K (may need `{alt}` modifier correctly applied), (d) checking if the shortcut is registered globally or only on specific pages.
+- **Cypress Alt+K syntax**: The correct Cypress syntax for Alt+K is `cy.get('body').type('{alt}k')` — verify `openViaKeyboard()` uses this exact form and not e.g. `cy.type('{alt}{k}')` which may not work.
+- **5 attempts exhausted** — manual investigation required into the actual shortcut handler and `data-testid` presence.
+
+## Feature-Specific Notes (chat-open-shortcut)
+- The chat container uses `data-testid="rancher-ai-ui-chat-container"` — verify this is actually rendered in the DOM when the chat is open.
+- Tests that CLOSE the chat pass reliably; tests that OPEN via keyboard fail reliably — suggests the shortcut either doesn't work or opens a different element than expected.
