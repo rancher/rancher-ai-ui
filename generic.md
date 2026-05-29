@@ -183,3 +183,6 @@
 
 - **Test 1 (Copy AI response to clipboard)**: The spec asserts clipboard receives the AI message body text (e.g. `"The copy response text."`). A common failure is the clipboard receiving the button label/tooltip (`"Copy this message"`) instead of the actual message content. Check that the copy handler passes `message.text` (or equivalent) rather than a static string.
 - Line 26 is where the clipboard assertion occurs in `message-actions.spec.ts`.
+
+## Feature-Specific Notes
+- **message-actions** (Attempt 2, PR 228): All 7 tests passed successfully after 1 fix attempt. Tests cover: copy AI response, copy success checkmark, copy user message, edit-before-resend textarea population, edit success checkmark, resend button, and action buttons hidden on pending-confirmation messages.
