@@ -155,3 +155,13 @@
 - `cy.clearLLMResponses()` exists in `cypress/support/commands/llm-mock-service-api.ts` ✅
 - `ClusterDashboardPagePo` API: `new ClusterDashboardPagePo('local').goTo()` — NOT a static method. Confirmed in `chat.spec.ts` and `context-selection.spec.ts`.
 - Component mapping: `chat-open-shortcut` → `pkg/rancher-ai-ui/index.ts` (global handler), `components/panels/Console.vue` (textarea handler), `handlers/chat.ts` (Chat.open/close)
+
+### chat-scroll (verified 2026-05-29, attempt 1, NEEDS_FIX)
+- `[data-testid="rancher-ai-ui-scroll-button"]` — `<button>` inside `.scroll-button` div in `ScrollButton.vue` ✅
+- `[data-testid="rancher-ai-ui-chat-console"]` — root div of `Console.vue` (the **input/textarea area**), NOT the scrollable messages list ❌
+- The scrollable messages container is `<div ref="messagesView" class="chat-messages">` in `Messages.vue` — has **no data-testid**, only CSS class `.chat-messages`
+- To scroll the messages list: use `cy.get('.chat-messages').scrollTo('top')` — NOT `cy.get('[data-testid="rancher-ai-ui-chat-console"]')`
+- `fastScrollEnabled` in `useScrollComposable.ts`: true when `scrollTop + clientHeight < scrollHeight - 150` — controls ScrollButton `v-if`
+- `autoScrollEnabled`: true when `scrollTop + clientHeight >= scrollHeight - 2` — controls auto-scroll on new messages
+- `scrollButton()` already exists in `ChatPo` → `new ComponentPo('[data-testid="rancher-ai-ui-scroll-button"]')` ✅
+- Component mapping: `chat-scroll` → `ScrollButton.vue`, `panels/Messages.vue`, `composables/useScrollComposable.ts`
