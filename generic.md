@@ -220,3 +220,13 @@
 - **Alt+K keyboard shortcut** — the shortcut does not appear to trigger the chat open/close in headless Chrome Cypress tests. Consider using `cy.get('body').trigger('keydown', { altKey: true, key: 'k', keyCode: 75 })` instead of `cy.get('body').type('{alt}k')`.
 - **Test 5 passes** while others fail — Test 5 opens chat via setup (not keyboard) then uses Alt+K to close when textarea is focused. The fact it passes suggests chat CAN open but the keyboard shortcut triggering may fail when body is focused.
 - **Feature flag** — verify the chat feature flag is enabled in the test environment before triggering Alt+K.
+
+## PR #230 — chat-open-shortcut (Attempt 1, 2026-05-29)
+- **Outcome: Skipped** — The spec runner reported `outcome: skipped`. No `cypress-output.txt` was produced.
+- This indicates the spec file `features/chat-open-shortcut.spec.ts` likely does not exist yet and needs to be created by the spec fixer.
+- Dispatched `e2e-automation-spec-fixer` to create the spec file for the `chat-open-shortcut` feature area.
+
+## Feature-Specific Notes (chat-open-shortcut)
+- Feature area: keyboard shortcut or button to open the chat panel.
+- Likely involves testing that a keyboard shortcut (e.g., Ctrl+K or similar) or a UI button opens the chat panel.
+- The chat open button testid has been seen as `extension-header-action-ai.action.openChat` in other tests — may be relevant here.
