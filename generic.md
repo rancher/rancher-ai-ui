@@ -238,3 +238,13 @@
 - **Root cause hypothesis**: `openViaKeyboard()` in `chat.po.ts:75` likely uses `cy.type('{alt}k')` or similar. Verify that the keyboard shortcut handler is registered globally (not just on the chat component) and that the event is dispatched on `document` or `body`.
 - **Recommendation**: Check `ChatPo.openViaKeyboard()` implementation — ensure it dispatches the key event on `cy.get('body')` (not on a focused element). Also verify the actual key combination the shortcut handler listens for matches what Cypress dispatches.
 - **Line references**: Test 1 → line 20, Test 3 → line 35, Test 4 → line 49, Test 6 → line 76.
+
+## PR #230 — chat-open-shortcut (Attempt 3, 2026-05-29)
+- **Tests 1, 3, 4, 6 failed** — all with the same error: `[data-testid="rancher-ai-ui-chat-container"]` not found after Alt+K keyboard shortcut (via `ChatPo.openViaKeyboard()` at `chat.po.ts:75`).
+- **Tests 2, 5 passed** — both start from an already-open chat state (Alt+K to close), confirming the element *does* exist once the chat is open.
+- **Root cause**: The `openViaKeyboard()` method dispatches Alt+K but the chat panel does not open. Possible issues:
+  1. The keyboard event is not being dispatched correctly (wrong event type, missing `altKey: true`).
+  2. The Alt+K handler may be listening on `document` but Cypress dispatches to `body` by default — ensure `cy.get('body').type('{alt}k')` or `cy.document().trigger('keydown', { key: 'k', altKey: true })` is used.
+  3. The `rancher-ai-ui-chat-container` testid may be wrong — check the actual rendered testid after opening chat via UI click.
+- **Pattern**: Tests that call `openViaKeyboard()` then immediately check `isOpen()` all fail; tests that open via UI and then call Alt+K to *close* pass. This confirms the shortcut listener isn't triggered by Cypress.
+- **Fix suggestions**: In `chat.po.ts:openViaKeyboard()`, replace the keyboard trigger mechanism with `cy.document().trigger('keydown', { key: 'k', altKey: true, bubbles: true })` or ensure `cy.get('body').type('{alt}k')`.
