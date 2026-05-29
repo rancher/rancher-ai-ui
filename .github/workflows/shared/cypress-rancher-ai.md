@@ -36,6 +36,18 @@ yarn cypress:run --spec cypress/e2e/tests/features/<spec>.spec.ts \
   --config video=true,screenshotOnRunFailure=true
 ```
 
+### Linting
+
+The project uses ESLint with `--max-warnings 0` (zero tolerance for warnings).
+
+```bash
+yarn lint --fix cypress/e2e/tests/features/<spec>.spec.ts
+```
+
+- Always run `yarn lint --fix` on any file you create or modify before committing
+- If `--fix` cannot resolve an issue, fix it manually
+- Common lint issues in generated specs: unused imports, trailing spaces, missing newlines at EOF
+
 ### Imports & Setup Pattern
 
 ```typescript

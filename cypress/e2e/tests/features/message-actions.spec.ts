@@ -112,7 +112,14 @@ describe('Feature: message-actions', () => {
           kind:      'Pod',
           namespace: 'default',
           cluster:   'local',
-          resource:  { apiVersion: 'v1', kind: 'Pod', metadata: { name: 'test-pod', namespace: 'default' } }
+          resource:  {
+            apiVersion: 'v1',
+            kind:       'Pod',
+            metadata:   {
+              name:      'test-pod',
+              namespace: 'default'
+            }
+          }
         }
       }
     });
