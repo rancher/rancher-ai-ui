@@ -169,3 +169,11 @@
 - `chat.isNotReady()` → `[data-testid="rancher-ai-ui-chat-panel-not-ready"]` verified in ChatPo ✅
 - `chat.rancherHeader.askLizButton()` verified in ChatPo ✅
 - Message ID formula `2 + i * 2 + 1` for AI responses in loop starting at i=0 ✅
+
+### message-actions (re-verified 2026-05-29, attempt 2, APPROVED)
+- Plan was correctly approved in attempt 1. Re-verified after spec fixer reached 5/5 attempts.
+- Spec bug in Test 7: spec writer used `.should('be.visible')` for the confirmation button, but the button is inside overflow:hidden container — must use `.should('exist')` instead.
+- `confirmButton()` from `RawMessagePo` wraps `[data-testid="rancher-ai-ui-chat-message-confirmation-confirm-button"]` which is inside `.confirmation-buttons` div inside a potentially clipped container.
+- Plan assertion "assert it exists to verify pending state" is correct — spec writer must NOT change this to `be.visible`.
+- `containsText('Are you sure you want to proceed with this action?')` IS correct i18n text (`ai.confirmation.message.question`) ✅
+- When asserting confirmation button in a scrollable panel, always use `.should('exist')` not `.should('be.visible')`
