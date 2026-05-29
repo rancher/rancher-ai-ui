@@ -62,32 +62,15 @@ export default class ChatPo extends ComponentPo {
   }
 
   openViaKeyboard() {
-    const isMac = Cypress.platform === 'darwin';
-
-    // Dispatch a native KeyboardEvent directly on document so Rancher's plugin.addAction
-    // shortcut handler receives it. cy.get('body').trigger() does not reliably reach
-    // document-level listeners in headless CI mode.
-    cy.window().then((win) => {
-      const opts = isMac
-        ? { metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true }
-        : { altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true };
-
-      win.document.dispatchEvent(new win.KeyboardEvent('keydown', opts));
-    });
+    // v-shortkey disables its document listener when NODE_ENV=test (shortkey.js:208).
+    // Trigger the same 'shortkey' CustomEvent that v-shortkey would dispatch,
+    // exercising the @shortkey → handleExtensionAction → invoke path.
+    this.rancherHeader.askLizButton().trigger('shortkey');
     this.isOpen();
   }
 
   closeViaKeyboard() {
-    const isMac = Cypress.platform === 'darwin';
-
-    // Same dispatch approach as openViaKeyboard for consistency.
-    cy.window().then((win) => {
-      const opts = isMac
-        ? { metaKey: true, shiftKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true }
-        : { altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true };
-
-      win.document.dispatchEvent(new win.KeyboardEvent('keydown', opts));
-    });
+    this.rancherHeader.askLizButton().trigger('shortkey');
     this.isClosed();
   }
 
