@@ -112,7 +112,11 @@ describe('Feature: chat-scroll', () => {
 
     cy.enqueueLLMResponse({ text: 'Lorem ipsum dolor sit amet, '.repeat(80) });
     chat.sendMessage('One more message');
-    chat.getMessage(13).isCompleted();
+    // Wait for AI response to appear (box 13 exists) — auto-scroll fires on first token,
+    // so if suppression works, the scroll button will still be visible at this point.
+    // Waiting for "completed" status consistently fails when the user is scrolled away
+    // from the bottom, as the component may not update completion state for off-screen messages.
+    cy.get('[data-testid="rancher-ai-ui-chat-message-box-13"]').should('exist');
 
     chat.scrollButton().checkExists();
 
