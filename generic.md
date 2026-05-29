@@ -175,3 +175,6 @@
   3. Whether the scroll position check in the component uses a threshold that the test's scroll amount doesn't cross.
   4. Whether the `cy.scrollTo()` call is being detected as a user-initiated scroll in the component's scroll event handler.
 - **Note**: Tests 1-4 and 6 all pass, meaning the scroll button works in simpler scenarios. Test 5 specifically fails when auto-scroll suppression is expected — this is a timing/detection issue with the scroll-up interaction in the test.
+
+## Feature-Specific Notes
+- **chat-scroll**: Test 5 ("Auto-scroll is suppressed when user has scrolled up") is flaky — it needed a retry (attempt 1 of 3) before passing. Consider adding `cy.wait()` or retry assertions around scroll position checks.
