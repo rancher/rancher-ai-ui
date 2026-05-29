@@ -16,7 +16,7 @@ describe('Feature: message-actions', () => {
 
   it('Test 1: Copy AI response to clipboard', () => {
     cy.window().then((win) => {
-      cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite');
+      cy.stub(win.navigator.clipboard, 'writeText').resolves().as('clipboardWrite');
     });
 
     cy.enqueueLLMResponse({ text: 'The copy response text.' });
@@ -32,7 +32,7 @@ describe('Feature: message-actions', () => {
 
   it('Test 2: Copy button shows success checkmark feedback', () => {
     cy.window().then((win) => {
-      cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite');
+      cy.stub(win.navigator.clipboard, 'writeText').resolves().as('clipboardWrite');
     });
 
     cy.enqueueLLMResponse({ text: 'Feedback test.' });
@@ -48,7 +48,7 @@ describe('Feature: message-actions', () => {
 
   it('Test 3: Copy user message to clipboard', () => {
     cy.window().then((win) => {
-      cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite');
+      cy.stub(win.navigator.clipboard, 'writeText').resolves().as('clipboardWrite');
     });
 
     cy.enqueueLLMResponse({ text: 'Any response.' });
