@@ -213,3 +213,10 @@
 - Test 5 (Alt+K closes when textarea focused) passes consistently, suggesting Alt+K IS registered but only when textarea is focused — or the close path works differently from the open path.
 - Pattern: Tests 1, 3, 4, 6 all fail at `openViaKeyboard` → `isOpen` → `checkExists` for `[data-testid="rancher-ai-ui-chat-container"]`. The chat open shortcut (Alt+K) consistently fails to open the chat panel when it is closed.
 - The fixer should investigate: (1) whether `data-testid="rancher-ai-ui-chat-container"` is the correct testid on the chat container element, (2) whether Alt+K simulation via `cy.type('{alt}k')` or similar works in Cypress, (3) adding a wait after keyboard event before asserting visibility.
+
+## Feature-Specific Notes — chat-open-shortcut
+- `[data-testid="rancher-ai-ui-chat-container"]` — used in `ChatPo.isOpen()` to verify the chat panel is visible. After 5 attempts, this selector is NEVER found when triggered via Alt+K keyboard shortcut. The actual rendered element may have a different testid or not match this selector.
+- `<div.chat-container>` — used in `ChatPo.isClosed()` to verify chat is not in DOM. This element persists even after Alt+K close attempt, suggesting the keyboard shortcut is not working.
+- **Alt+K keyboard shortcut** — the shortcut does not appear to trigger the chat open/close in headless Chrome Cypress tests. Consider using `cy.get('body').trigger('keydown', { altKey: true, key: 'k', keyCode: 75 })` instead of `cy.get('body').type('{alt}k')`.
+- **Test 5 passes** while others fail — Test 5 opens chat via setup (not keyboard) then uses Alt+K to close when textarea is focused. The fact it passes suggests chat CAN open but the keyboard shortcut triggering may fail when body is focused.
+- **Feature flag** — verify the chat feature flag is enabled in the test environment before triggering Alt+K.
