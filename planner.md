@@ -82,6 +82,8 @@
 - Do NOT hardcode HTML element types (li, div, span) in `cy.contains()` selectors for third-party components — always use container-only scoping
 - Do NOT reference `rancher-ai-ui-delete-chat-confirm-button` — this testid does not exist. Always use `DeleteChatPromptPo` for delete confirm actions.
 - Do NOT use `cy.contains()` with paraphrased or lowercase-adjusted i18n text — always verify the exact rendered string from `en-us.yaml` first.
+- Do NOT use `cy.get('body').type('{alt}k')` or `win.dispatchEvent(new win.KeyboardEvent('keydown', ...))` to trigger Rancher Shell's global `addAction` keyboard shortcuts — neither reliably reaches Rancher Shell's `document`-level listener. Always use `cy.get('body').trigger('keydown', { altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true })` for global keyboard shortcuts.
+- Do NOT assume `win.dispatchEvent` (on the window object) will reach `document.addEventListener` handlers — events dispatched on `window` do NOT propagate to `document` listeners because events bubble FROM document TO window, not the other direction.
 - Do NOT recommend `cy.wait(500)` in test plan notes — always prefer `.should('be.visible')` as implicit wait.
 - Do NOT use descriptive shortcut action names (e.g., "Toggle history", "Navigate history") — always use the exact i18n translation values from `en-us.yaml`.
 - Do NOT use abbreviated menu labels (e.g., "Configure", "Download") — always use full exact i18n labels (e.g., "Edit Configuration", "Download Messages"). Partial matches may work but violate plan conventions and obscure intent; also some are not substrings (e.g., "Configure" ≠ substring of "Edit Configuration").
@@ -147,13 +149,17 @@
 - `ApplySettingsPromptPo` at `cypress/e2e/po/dialog/apply-settings.po.ts` — `.confirm()` uses `prompt-apply-settings-confirm-button` testid ✅
 - Component mapping: `settings-ui-tools-config` → `pages/settings/sections/ui-tools-config/index.vue` + `Intro.vue`
 
-### chat-open-shortcut (verified 2026-05-28, APPROVED attempt 1)
+### chat-open-shortcut (verified 2026-05-29, NEEDS_FIX attempt 2)
 - `[data-testid="rancher-ai-ui-chat-container"]` — root div in `pages/Chat.vue` line 384 ✅
-- `[data-testid="rancher-ai-ui-chat-panel-ready"]` — dynamic testid in `Chat.vue` line 395: `rancher-ai-ui-chat-panel-${ isChatInitialized && ws?.readyState === 1 ? 'ready' : 'not-ready' }` ✅
+- `[data-testid="rancher-ai-ui-chat-panel-ready"]` — dynamic testid in `Chat.vue` line 395 ✅
 - `[data-testid="rancher-ai-ui-chat-input-textarea"]` — in `components/panels/Console.vue` ✅
 - Two keyboard shortcut handlers: (1) global `index.ts` `addAction` handler (body-focused), (2) `Console.vue` textarea keydown handler (line 115) — both call `Chat.open/close(store)`
 - `cy.clearLLMResponses()` exists in `cypress/support/commands/llm-mock-service-api.ts` ✅
-- `ClusterDashboardPagePo` API: `new ClusterDashboardPagePo('local').goTo()` — NOT a static method. Confirmed in `chat.spec.ts` and `context-selection.spec.ts`.
+- `ClusterDashboardPagePo` API: `new ClusterDashboardPagePo('local').goTo()` — NOT a static method ✅
+- **CRITICAL — Global shortcut dispatch**: `cy.get('body').type('{alt}k')` and `win.dispatchEvent(new win.KeyboardEvent(...))` both FAIL to trigger Rancher Shell's `addAction` shortcut. Rancher Shell registers the handler at the `document` level, NOT the `window` level. Events dispatched on `window` do NOT propagate to `document` listeners (events bubble FROM document TO window, not the reverse).
+- **Correct approach for global shortcut**: `cy.get('body').trigger('keydown', { altKey: true, key: 'k', keyCode: 75, bubbles: true, cancelable: true })` — dispatches on `body` element so event bubbles normally through DOM (body → document → window), reaching the document-level Rancher Shell listener.
+- **Evidence**: Test 5 (`cy.get(textarea).trigger('keydown', { altKey: true, key: 'k', keyCode: 75 })`) PASSES consistently; all tests using `cy.type` or `win.dispatchEvent` FAIL.
+- `openViaKeyboard()` and `closeViaKeyboard()` PO methods must use `cy.get('body').trigger('keydown', ...)` NOT `cy.get('body').type('{alt}k')` or `win.dispatchEvent`
 - Component mapping: `chat-open-shortcut` → `pkg/rancher-ai-ui/index.ts` (global handler), `components/panels/Console.vue` (textarea handler), `handlers/chat.ts` (Chat.open/close)
 
 ### chat-scroll (verified 2026-05-29, attempt 2, APPROVED)
