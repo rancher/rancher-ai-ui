@@ -186,3 +186,10 @@
 
 ## Feature-Specific Notes
 - **message-actions** (Attempt 2, PR 228): All 7 tests passed successfully after 1 fix attempt. Tests cover: copy AI response, copy success checkmark, copy user message, edit-before-resend textarea population, edit success checkmark, resend button, and action buttons hidden on pending-confirmation messages.
+
+## PR #230 — chat-open-shortcut (Attempt 1 — new run, 2026-05-29)
+- **Tests 1, 3, 4, 6 (AssertionError, lines 20/35/49/75)**: All fail with `[data-testid="rancher-ai-ui-chat-container"]` not found after `openViaKeyboard()`.
+- **Test 2 fails** with `div.chat-container` continuously found — unlike prior runs where Test 2 passed. This suggests the keyboard shortcut also fails to CLOSE the chat. The chat container remains open after Alt+K press in `closeViaKeyboard()`.
+- **Test 5 passes** (3339ms) — Alt+K closes the chat when textarea is focused. This confirms the Alt+K close path works in at least one scenario.
+- **Selector inconsistency confirmed**: `isOpen()` uses `[data-testid="rancher-ai-ui-chat-container"]` but `isClosed()` uses `div.chat-container`. These likely target the same element but with different selectors, indicating the testid may not be applied to that element.
+- **Critical root cause**: The `data-testid="rancher-ai-ui-chat-container"` attribute is likely not present on the rendered `div.chat-container`. Fix: align `isOpen()` in chat.po.ts to use `.chat-container` (CSS class) consistent with `isClosed()`, OR add the testid to the component.
