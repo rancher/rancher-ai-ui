@@ -12,8 +12,12 @@ export default class ChatPo extends ComponentPo {
     this.rancherHeader = new RancherHeaderPo();
   }
 
-  phase(label: string) {
-    return this.self().get(`[data-testid="rancher-ai-ui-processing-phase-${ label.toLowerCase().replace(/\s/g, '-') }"]`);
+  processingState(label?: string) {
+    if (label) {
+      return this.self().get(`[data-testid="rancher-ai-ui-processing-state-${ label.toLowerCase().replace(/\s/g, '-') }"]`);
+    }
+
+    return this.self().get('[data-testid^="rancher-ai-ui-processing-state-"]');
   }
 
   header() {
@@ -26,6 +30,14 @@ export default class ChatPo extends ComponentPo {
 
   scrollButton() {
     return new ComponentPo('[data-testid="rancher-ai-ui-scroll-button"]');
+  }
+
+  scrollTop(args?: { wait?: number }) {
+    if (args?.wait) {
+      cy.wait(args.wait);
+    }
+
+    this.getMessage(1).scrollIntoView();
   }
 
   isReady(timeout = 10000) {

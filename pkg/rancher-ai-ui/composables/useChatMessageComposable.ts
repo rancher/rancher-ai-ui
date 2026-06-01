@@ -16,6 +16,7 @@ import {
   MessageInternalSource,
   MessageLabelKey,
   MessagePhase,
+  MessageProcessingState,
   MessageTag,
   MessageTemplateComponent,
   Role,
@@ -26,9 +27,10 @@ import {
   formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationActions, formatFileMessages,
   formatErrorMessage, formatSourceLinks,
   formatChatMetadata,
-  formatAgentMetadata,
   formatChatErrorMessage,
-  formatTools
+  formatTools,
+  formatSubAgentProcessingMetadata,
+  formatAgentMetadata,
 } from '../utils/format';
 import { downloadFile } from '@shell/utils/download';
 import { useContextComposable } from './useContextComposable';
@@ -36,7 +38,9 @@ import { useToolsComposable } from './useToolsComposable';
 import { DEFAULT_AI_AGENT } from './useAgentComposable';
 
 const EXPAND_THINKING = false;
+
 const DISMISS_RECOMMENDED_AGENT_KEY = 'dismissed-agent-recommendation';
+const MAX_MESSAGES_BEFORE_RECOMMENDATION = 5;
 
 /**
  * Composable for managing chat messages within the AI chat.
@@ -71,13 +75,12 @@ export function useChatMessageComposable(
   const chatMetadata = computed<ChatMetadata>(() => store.getters['rancher-ai-ui/chat/metadata'] || {});
   const isChatInitialized = computed(() => !!chatMetadata.value.chatId);
 
-  const phase = computed(() => store.getters['rancher-ai-ui/chat/phase'](chatId) || MessagePhase.Initializing);
+  const processingState = computed(() => store.getters['rancher-ai-ui/chat/processingState'](chatId) || { phase: MessagePhase.Initializing });
 
-  // Set phase in store
-  const setPhase = (phase: MessagePhase) => {
-    store.commit('rancher-ai-ui/chat/setPhase', {
+  const setProcessingState = (processingState: MessageProcessingState) => {
+    store.commit('rancher-ai-ui/chat/setProcessingState', {
       chatId,
-      phase
+      processingState
     });
   };
 
@@ -135,7 +138,7 @@ export function useChatMessageComposable(
       clearMessageBox();
     }
 
-    setPhase(MessagePhase.Processing);
+    setProcessingState({ phase: MessagePhase.Processing });
   }
 
   async function addMessage(message: Message) {
@@ -178,14 +181,20 @@ export function useChatMessageComposable(
     });
   }
 
-  function buildMessage(): Message {
+  function buildMessage(agentName?: string): Message {
+    const agent = agentName ? agents.value.find((a) => a.name === agentName) : null;
+
     return {
       role:                     Role.Assistant,
       thinkingContent: '',
       messageContent:  '',
       showThinking:             EXPAND_THINKING,
       thinking:                 false,
-      completed:                false
+      agentMetadata:   {
+        agent:         agent || null,
+        selectionMode: agentName ? AgentSelectionMode.Manual : AgentSelectionMode.Auto,
+      },
+      completed: false
     };
   }
 
@@ -241,7 +250,7 @@ export function useChatMessageComposable(
       agentName &&
       !store.getters['rancher-ai-ui/chat/session']?.[DISMISS_RECOMMENDED_AGENT_KEY] &&
       currentMsg.value.agentMetadata?.selectionMode === AgentSelectionMode.Auto &&
-      Number(currentMsg.value.id) > 10
+      Number(currentMsg.value.id) >= MAX_MESSAGES_BEFORE_RECOMMENDATION
     ) {
       const agent = agents.value.find((a) => a.name === agentName);
 
@@ -326,7 +335,7 @@ export function useChatMessageComposable(
       }
     }));
 
-    setPhase(MessagePhase.Processing);
+    setProcessingState({ phase: MessagePhase.Processing });
   }
 
   async function onmessage(event: MessageEvent) {
@@ -362,7 +371,7 @@ export function useChatMessageComposable(
         const welcomeMessageInProgress = messages.value.find((msg) => msg.source === MessageInternalSource.Welcome && !msg.completed);
 
         if (isEmptyChat || welcomeMessageInProgress) {
-          setPhase(MessagePhase.Initializing);
+          setProcessingState({ phase: MessagePhase.Initializing });
           await processWelcomeData(data);
         } else {
           await processMessageData(data);
@@ -380,7 +389,7 @@ export function useChatMessageComposable(
 
     clearMessageBox();
 
-    setPhase(MessagePhase.Idle);
+    setProcessingState({ phase: MessagePhase.Idle });
   }
 
   function processChatErrors(data: string) {
@@ -407,7 +416,7 @@ export function useChatMessageComposable(
       currentMsg.value = getMessage(msgId);
       break;
     case Tag.MessageEnd:
-      setPhase(MessagePhase.Idle);
+      setProcessingState({ phase: MessagePhase.Idle });
       currentMsg.value.messageContent = '';
       currentMsg.value.completed = true;
 
@@ -438,24 +447,24 @@ export function useChatMessageComposable(
   async function processMessageData(data: string) {
     switch (data) {
     case Tag.MessageStart:
-      setPhase(MessagePhase.Working);
+      setProcessingState({ phase: MessagePhase.Working });
 
-      const msgId = await addMessage(buildMessage());
+      const msgId = await addMessage(buildMessage(agentName.value));
 
       currentMsg.value = getMessage(msgId);
       break;
     case Tag.ThinkingStart: {
-      setPhase(MessagePhase.Thinking);
+      setProcessingState({ phase: MessagePhase.Thinking });
       currentMsg.value.thinking = true;
       break;
     }
     case Tag.ThinkingEnd: {
-      setPhase(MessagePhase.GeneratingResponse);
+      setProcessingState({ phase: MessagePhase.GeneratingResponse });
       currentMsg.value.thinking = false;
       break;
     }
     case Tag.MessageEnd:
-      setPhase(MessagePhase.Idle);
+      setProcessingState({ phase: MessagePhase.Idle });
       currentMsg.value.messageContent = currentMsg.value.messageContent?.replace(/[\r\n]+$/, '');
       currentMsg.value.thinking = false;
       currentMsg.value.completed = true;
@@ -464,13 +473,29 @@ export function useChatMessageComposable(
 
       break;
     default:
-      setPhase(MessagePhase.GeneratingResponse);
+      setProcessingState({ phase: MessagePhase.GeneratingResponse });
 
-      if (data.startsWith(Tag.AgentMetadataStart) && data.endsWith(Tag.AgentMetadataEnd)) {
-        const metadata = formatAgentMetadata(data, agents.value);
+      if (data.startsWith(Tag.ProcessingSubagentInitStart) && data.endsWith(Tag.ProcessingSubagentInitEnd)) {
+        const metadata = formatSubAgentProcessingMetadata(data, agents.value);
 
         if (metadata) {
-          currentMsg.value.agentMetadata = metadata;
+          setProcessingState({
+            phase: MessagePhase.ProcessingSubagent,
+            label: metadata.query ? `${ metadata.agent?.displayName || metadata.agent || '' }: ${ metadata.query.slice(0, 100) }` : ''
+          });
+        }
+        break;
+      }
+
+      if (data.startsWith(Tag.ProcessingSubagentCompleteStart) && data.endsWith(Tag.ProcessingSubagentCompleteEnd)) {
+        break;
+      }
+
+      if (data.startsWith(Tag.AgentMetadataStart) && data.endsWith(Tag.AgentMetadataEnd)) {
+        const metadata = formatAgentMetadata(data);
+
+        if (metadata && currentMsg.value.agentMetadata) {
+          currentMsg.value.agentMetadata.recommended = metadata.recommended;
         }
         break;
       }
@@ -489,7 +514,7 @@ export function useChatMessageComposable(
         }
 
         if (data.startsWith(Tag.McpResultStart) && data.endsWith(Tag.McpResultEnd)) {
-          setPhase(MessagePhase.Finalizing);
+          setProcessingState({ phase: MessagePhase.Finalizing });
 
           const relatedResourcesActions = formatMessageRelatedResourcesActions(data);
 
@@ -528,7 +553,7 @@ export function useChatMessageComposable(
         }
 
         if (data === Tag.ProcessingTools) {
-          setPhase(MessagePhase.ProcessingTools);
+          setProcessingState({ phase: MessagePhase.ProcessingTools });
 
           break;
         }
@@ -551,7 +576,7 @@ export function useChatMessageComposable(
   }
 
   function processMessageErrorData(error: Error) {
-    setPhase(MessagePhase.Idle);
+    setProcessingState({ phase: MessagePhase.Idle });
 
     addMessage({
       role:           Role.System,
@@ -624,7 +649,7 @@ export function useChatMessageComposable(
     chatMetadata,
     isChatInitialized,
     resetChatMetadata,
-    phase,
+    processingState,
     error,
     resetErrors: () => setErrors(null),
   };

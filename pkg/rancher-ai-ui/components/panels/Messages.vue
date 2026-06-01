@@ -6,7 +6,8 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import {
   Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase,
-  MessageInternalSource
+  MessageInternalSource,
+  MessageProcessingState
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
@@ -39,9 +40,9 @@ const props = defineProps({
     type:    Array as PropType<ChatError[]>,
     default: () => [],
   },
-  messagePhase: {
-    type:    String,
-    default: '',
+  processingState: {
+    type:    Object as PropType<MessageProcessingState | null>,
+    default: null,
   },
   layout: {
     type:    String,
@@ -92,6 +93,10 @@ function setupObserver(newContainer: HTMLDivElement | null) {
       characterData: true,
     });
   }
+}
+
+function onPhaseChange() {
+  requestAnimationFrame(() => scrollToBottom());
 }
 
 const {
@@ -159,12 +164,6 @@ watch(
   { immediate: true }
 );
 
-// Scroll when the phase changes
-watch(
-  () => props.messagePhase,
-  () => scrollToBottom()
-);
-
 // Scroll when the last message/error changes (HTML content update)
 watch(
   lastMessageContainer,
@@ -199,7 +198,7 @@ onBeforeUnmount(() => {
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
         :disabled="props.disabled"
-        :pending-confirmation="messagePhase === MessagePhase.AwaitingConfirmation"
+        :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
         :message="message"
         @update:message="emit('update:message', $event)"
         @send:message="emit('send:message', $event)"
@@ -211,7 +210,7 @@ onBeforeUnmount(() => {
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
         :message="message"
         :disabled="props.disabled"
-        :pending-confirmation="messagePhase === MessagePhase.AwaitingConfirmation"
+        :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
         @update:message="emit('update:message', $event)"
         @confirm:message="emit('confirm:message', $event)"
         @send:message="emit('send:message', $event)"
@@ -232,7 +231,9 @@ onBeforeUnmount(() => {
         /* It avoids pushing the System messages up (Welcome template) */
         'sticky-bottom': formattedMessages.filter((m: Message) => m.role === Role.User).length > 0
       }"
-      :phase="messagePhase"
+      :phase="props.processingState?.phase"
+      :label="props.processingState?.label"
+      @change:phase="onPhaseChange"
     />
     <ScrollButton
       v-if="fastScrollEnabled && !props.disabled"

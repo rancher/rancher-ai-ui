@@ -22,7 +22,7 @@ Cypress.Commands.add('getRancherResource', (prefix, resourceType, resourceId?, e
       method:  'GET',
       url,
       headers: {
-        'x-api-csrf': token.value,
+        'x-api-csrf': token?.value,
         Accept:       'application/json'
       },
     }).then((resp) => {
@@ -52,7 +52,7 @@ Cypress.Commands.add('createRancherResource', (prefix, resourceType, body, failO
       method:  'POST',
       url:     `/${ prefix }/${ resourceType }`,
       headers: {
-        'x-api-csrf': token.value,
+        'x-api-csrf': token?.value,
         Accept:       'application/json'
       },
       body,
@@ -83,7 +83,7 @@ Cypress.Commands.add('setRancherResource', (prefix, resourceType, resourceId, bo
       method:  'PUT',
       url:     `/${ prefix }/${ resourceType }/${ resourceId }`,
       headers: {
-        'x-api-csrf': token.value,
+        'x-api-csrf': token?.value,
         Accept:       'application/json'
       },
       body
@@ -112,7 +112,7 @@ Cypress.Commands.add('deleteRancherResource', (prefix, resourceType, resourceId,
       method:  'DELETE',
       url:     `/${ prefix }/${ resourceType }/${ resourceId }`,
       headers: {
-        'x-api-csrf': token.value,
+        'x-api-csrf': token?.value,
         Accept:       'application/json'
       },
       failOnStatusCode,

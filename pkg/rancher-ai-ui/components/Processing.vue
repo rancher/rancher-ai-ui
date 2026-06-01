@@ -3,7 +3,8 @@ import debounce from 'lodash/debounce';
 import {
   ref, computed, onMounted,
   onBeforeUnmount,
-  watch
+  watch,
+  nextTick
 } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
@@ -16,12 +17,18 @@ const now = ref(Date.now());
 
 let interval: any;
 
+const emit = defineEmits(['change:phase']);
+
 const props = defineProps({
   phases: {
     type:    Array as () => string[],
     default: () => [],
   },
   phase: {
+    type:    String,
+    default: '',
+  },
+  label: {
     type:    String,
     default: '',
   },
@@ -41,11 +48,15 @@ const dots = computed(() => {
 const phase = ref(props.phase);
 const applyPhase = debounce((v) => {
   phase.value = v;
-}, 150);
 
-watch(() => props.phase, (v) => applyPhase(v), { immediate: true });
+  nextTick(() => emit('change:phase', v));
+}, 200);
 
 const label = computed(() => {
+  if (props.label) {
+    return props.label;
+  }
+
   if (phase.value && phase.value !== IDLE && (!props.phases.length || props.phases.includes(phase.value))) {
     return t(`ai.phase.${ phase.value }`);
   }
@@ -57,6 +68,8 @@ onMounted(() => {
   interval = setInterval(() => {
     now.value = Date.now();
   }, 500);
+
+  watch(() => props.phase, (v) => applyPhase(v), { immediate: true });
 });
 
 onBeforeUnmount(() => {
@@ -70,7 +83,7 @@ onBeforeUnmount(() => {
   <div
     v-if="label"
     class="processing-message"
-    :data-testid="`rancher-ai-ui-processing-phase-${ label.toLowerCase().replace(/\s/g, '-') }`"
+    :data-testid="`rancher-ai-ui-processing-state-${ label.toLowerCase().replace(/\s/g, '-') }`"
   >
     <span>
       {{ label }}

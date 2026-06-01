@@ -21,7 +21,6 @@ describe('Messages', () => {
     cy.enqueueLLMResponse({
       text:      'Init message',
       chunkSize: 30,
-      agent:     null, // Welcome message uses 'rancher' as manual agent - the backend skips the agent selection.
       uiTools:   [
         {
           name: 'suggestions',
@@ -124,15 +123,18 @@ describe('Messages', () => {
     welcomeMessage.isCompleted();
 
     cy.enqueueLLMResponse({
-      text:      ['Here', ' are the resources'],
-      mcpTool: {
-        name: 'listKubernetesResources',
-        args: {
-          kind:      'Deployment',
-          cluster:   'local',
-          namespace: 'cattle-ai-agent-system'
+      text:           ['Here', ' are the resources'],
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'listKubernetesResources',
+          args: {
+            kind:      'Deployment',
+            cluster:   'local',
+            namespace: 'cattle-ai-agent-system'
+          }
         }
-      },
+      }]
     });
 
     chat.sendMessage('Show me the deployments in cattle-ai-agent-system namespace');
@@ -150,11 +152,11 @@ describe('Messages', () => {
     const deployments = [
       'llm-mock',
       'rancher-ai-agent',
-      'rancher-mcp',
+      'rancher-mcp-server',
     ];
 
     deployments.forEach((name) => {
-      const btn = resourceMessage.resourceButton(name);
+      const btn = resourceMessage.resourceButton({ name });
 
       btn.should('exist');
       btn.click();
@@ -218,24 +220,27 @@ describe('Messages', () => {
     welcomeMessage.isCompleted();
 
     cy.enqueueLLMResponse({
-      text:      'Pod created successfully.',
-      mcpTool: {
-        name: 'createKubernetesResource',
-        args: {
-          kind:      'Pod',
-          name:      'my-pod',
-          resource:  {
-            apiVersion: 'v1',
-            kind:       'Pod',
-            metadata:   {
-              name:      'my-pod',
-              namespace: 'default'
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod',
+            resource:  {
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod',
+                namespace: 'default'
+              },
             },
-          },
-          cluster:   'local',
-          namespace: 'default'
-        }
-      },
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      }],
+      text: 'Pod created successfully.'
     });
 
     chat.sendMessage('Create a pod named my-pod in default namespace');
@@ -272,24 +277,27 @@ describe('Messages', () => {
      * TODO: add a test with multiple resources when the backend supports it.
      */
     cy.enqueueLLMResponse({
-      text:      'Pod created successfully.',
-      mcpTool: {
-        name: 'createKubernetesResource',
-        args: {
-          kind:      'Pod',
-          name:      'my-pod',
-          resource:  {
-            apiVersion: 'v1',
-            kind:       'Pod',
-            metadata:   {
-              name:      'my-pod',
-              namespace: 'default'
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod',
+            resource:  {
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod',
+                namespace: 'default'
+              },
             },
-          },
-          cluster:   'local',
-          namespace: 'default'
-        }
-      },
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      }],
+      text: 'Pod created successfully.'
     });
 
     chat.sendMessage('Create a pod named my-pod in default namespace');
@@ -320,24 +328,27 @@ describe('Messages', () => {
     welcomeMessage.isCompleted();
 
     cy.enqueueLLMResponse({
-      text:      'Pod creation canceled.',
-      mcpTool: {
-        name: 'createKubernetesResource',
-        args: {
-          kind:      'Pod',
-          name:      'my-pod',
-          resource:  {
-            apiVersion: 'v1',
-            kind:       'Pod',
-            metadata:   {
-              name:      'my-pod',
-              namespace: 'default'
+      text:           'Pod creation canceled.',
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod',
+            resource:  {
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod',
+                namespace: 'default'
+              },
             },
-          },
-          cluster:   'local',
-          namespace: 'default'
-        }
-      },
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      }]
     });
 
     chat.sendMessage('Create a pod named my-pod in default namespace');

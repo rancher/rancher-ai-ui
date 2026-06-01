@@ -21,6 +21,9 @@ describe('Multi Agent Chat', () => {
     beforeEach(() => {
       cy.login();
 
+      cy.clearLLMResponses();
+      cy.cleanChatHistory();
+
       HomePagePo.goTo();
 
       chat.open();
@@ -35,7 +38,7 @@ describe('Multi Agent Chat', () => {
 
       const selectAgent = chat.console().selectAgent();
 
-      selectAgent.self().contains('Adaptive Agent Selection');
+      selectAgent.self().contains('Adaptive Agent(s) Selection');
 
       selectAgent.open();
 
@@ -54,17 +57,23 @@ describe('Multi Agent Chat', () => {
     });
 
     it('It should be possible to switch agent selection mode from a system recommendation message', () => {
-      // Sending 5 messages to trigger a system recommendation to switch agent selection mode
-      for (let i = 0; i < 5; i++) {
+      // Sending 3 messages to trigger a system recommendation to switch agent selection mode
+      for (let i = 0; i < 3; i++) {
+        cy.enqueueLLMResponse({
+          agentResponses: [{ agent: 'rancher' }],
+          text:           `Response ${ i + 1 }`
+        });
         chat.sendMessage(`Request ${ i + 1 }`);
 
         const responseMessage = chat.getMessage(3 + (i * 2));
 
         responseMessage.isCompleted();
+
+        responseMessage.agentSelectionLabel().contains('Adaptive Agent(s) Selection');
       }
 
       // Confirm the mode switch from the system message
-      const switchAgentMessage = chat.getMessage(12);
+      const switchAgentMessage = chat.getMessage(7);
 
       switchAgentMessage.confirmButton().click();
 
@@ -73,12 +82,12 @@ describe('Multi Agent Chat', () => {
       // Verify that the selection mode has been switched in the console
       const selectAgent = chat.console().selectAgent();
 
-      selectAgent.self().should('not.contain', 'Adaptive Agent Selection');
+      selectAgent.self().should('not.contain', 'Adaptive Agent(s) Selection');
 
       // Verify that the selection mode is reflected in the next messages
       chat.sendMessage('Check current agent');
 
-      const responseMessage = chat.getMessage(14);
+      const responseMessage = chat.getMessage(8);
 
       responseMessage.scrollIntoView();
       responseMessage.containsText('Rancher');
@@ -86,17 +95,24 @@ describe('Multi Agent Chat', () => {
     });
 
     it('It should be possible to dismiss agent switch from a system recommendation message', () => {
-      // Sending 5 messages to trigger a system recommendation to switch agent selection mode
-      for (let i = 0; i < 5; i++) {
+      // Sending 3 messages to trigger a system recommendation to switch agent selection mode
+      for (let i = 0; i < 3; i++) {
+        cy.enqueueLLMResponse({
+          agentResponses: [{ agent: 'rancher' }],
+          text:           `Response ${ i + 1 }`
+        });
+
         chat.sendMessage(`Request ${ i + 1 }`);
 
         const responseMessage = chat.getMessage(3 + (i * 2));
 
         responseMessage.isCompleted();
+
+        responseMessage.agentSelectionLabel().contains('Adaptive Agent(s) Selection');
       }
 
       // Dismiss the mode switch from the system message
-      const switchAgentMessage = chat.getMessage(12);
+      const switchAgentMessage = chat.getMessage(7);
 
       switchAgentMessage.cancelButton().click();
 
@@ -105,7 +121,7 @@ describe('Multi Agent Chat', () => {
       // Verify that the selection mode is still adaptive in the console
       const selectAgent = chat.console().selectAgent();
 
-      selectAgent.self().contains('Adaptive Agent Selection');
+      selectAgent.self().contains('Adaptive Agent(s) Selection');
 
       // Verify that the switch message is not shown again in the next messages
       history.open();
@@ -116,15 +132,22 @@ describe('Multi Agent Chat', () => {
       welcomeMessage.isCompleted();
 
       for (let i = 0; i < 6; i++) {
+        // Verify that switch message is not shown anymore
+        chat.self().should('not.contain', 'Agent has been selected in adaptive mode');
+
+        cy.enqueueLLMResponse({
+          agentResponses: [{ agent: 'rancher' }],
+          text:           `Response ${ i + 1 }`
+        });
+
         chat.sendMessage(`Request ${ i + 1 }`);
 
         const responseMessage = chat.getMessage(3 + (i * 2));
 
         responseMessage.isCompleted();
-      }
 
-      // Verify that no switch message is shown
-      chat.getMessage(14).checkNotExists();
+        responseMessage.agentSelectionLabel().contains('Adaptive Agent(s) Selection');
+      }
     });
 
     it('It should show invalid agents in the agent switcher', () => {
@@ -143,7 +166,7 @@ describe('Multi Agent Chat', () => {
       cy.deleteAgentConfig(invalidAgentConfig);
     });
 
-    it('It should not show the adaptive agent selection when only one agent is enabled and active', () => {
+    it('It should not show the Adaptive Agent(s) Selection when only one agent is enabled and active', () => {
       // Invalidate all agents except Rancher by setting an invalid MCP URL
       cy.updateAgentConfig({
         ...harvesterAgentConfig,
@@ -166,8 +189,8 @@ describe('Multi Agent Chat', () => {
 
       selectAgent.open();
 
-      // Verify that the adaptive agent selection option is not shown when only one agent is available (Rancher)
-      selectAgent.self().should('not.contain', 'Adaptive Agent Selection');
+      // Verify that the Adaptive Agent(s) Selection option is not shown when only one agent is available (Rancher)
+      selectAgent.self().should('not.contain', 'Adaptive Agent(s) Selection');
 
       // Verify that the only available agent is the rancher agent and it is selected
       const rancherAgent = selectAgent.agentItem('rancher');
@@ -177,8 +200,8 @@ describe('Multi Agent Chat', () => {
       // Restore the harvester agent config to have 2 active agents
       cy.updateAgentConfig(harvesterAgentConfig);
 
-      // Verify that the adaptive agent selection option is shown again and is selected by default
-      selectAgent.self().contains('Adaptive Agent Selection');
+      // Verify that the Adaptive Agent(s) Selection option is shown again and is selected by default
+      selectAgent.self().contains('Adaptive Agent(s) Selection');
 
       selectAgent.open();
 
@@ -193,6 +216,7 @@ describe('Multi Agent Chat', () => {
       cy.updateAgentConfig(rancherAgentConfig);
       cy.updateAgentConfig(fleetAgentConfig);
       cy.updateAgentConfig(provisioningAgentConfig);
+      cy.clearLLMResponses();
       cy.cleanChatHistory();
     });
   });
@@ -203,6 +227,9 @@ describe('Multi Agent Chat', () => {
 
     beforeEach(() => {
       cy.login();
+
+      cy.clearLLMResponses();
+      cy.cleanChatHistory();
 
       HomePagePo.goTo();
     });
@@ -249,8 +276,8 @@ describe('Multi Agent Chat', () => {
 
       chat.open();
 
-      chat.getSystemErrorMessage(1).containsText('Failed to load MCP tools for all enabled agents.');
-      chat.getSystemErrorMessage(1).containsText('Please check the AI Agents configuration and ensure the MCP server is accessible with the provided connection details.');
+      chat.getSystemErrorMessage(1).containsText(`Failed to load MCP tools for agent 'invalid-agent'`);
+      chat.getSystemErrorMessage(1).containsText('Please check the AI Agents configuration and ensure the MCP server is accessible.');
     });
 
     after(() => {

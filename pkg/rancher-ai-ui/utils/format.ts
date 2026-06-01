@@ -15,6 +15,8 @@ import {
   SourceLinkItem,
   ToolsConfig,
   ToolCall,
+  SubAgentProcessingMetadata,
+  AgentSelectionMode,
 } from '../types';
 import { error } from '../utils/log';
 import { validateActionResource } from './validator';
@@ -111,27 +113,38 @@ export function formatAgentFromCRD(config: AIAgentConfigCRD): Agent {
   };
 }
 
-export function formatAgentMetadata(data: string, agents: Agent[]): AgentMetadata | null {
+export function formatAgentMetadata(data: string): Partial<AgentMetadata> | null {
   const cleaned = data.replaceAll(Tag.AgentMetadataStart, '').replaceAll(Tag.AgentMetadataEnd, '').trim();
 
   try {
     const rawMetadata = JSON.parse(cleaned);
 
     if (rawMetadata) {
-      const { agentName, selectionMode, recommended } = rawMetadata;
+      const { recommended } = rawMetadata;
 
-      const agent = agents.find((a) => a.name === agentName);
-
-      if (agent) {
-        return {
-          agent,
-          selectionMode,
-          recommended,
-        };
-      }
+      return { recommended };
     }
   } catch (err) {
     error('Failed to parse agent metadata:', err);
+  }
+
+  return null;
+}
+
+export function formatSubAgentProcessingMetadata(data: string, agents: Agent[]): SubAgentProcessingMetadata | null {
+  const cleaned = data.replaceAll(Tag.ProcessingSubagentInitStart, '').replaceAll(Tag.ProcessingSubagentInitEnd, '').trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+
+    const agent = agents.find((a) => a.name === parsed.name) || null;
+
+    return {
+      agent,
+      query: parsed.query
+    };
+  } catch (err) {
+    error('Failed to parse sub-agent processing metadata:', err);
   }
 
   return null;
@@ -277,22 +290,12 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
   /**
    * Parsing agent metadata
    */
-  let agentMetadata = undefined;
+  const agent = msg.agent ? agents.find((a) => a.name === msg.agent) : null;
 
-  if (msg.agent?.name) {
-    const { name, mode: selectionMode } = msg.agent;
-
-    const agent = agents.find((a) => a.name === name) || {
-      name,
-      displayName: name,
-      description: 'Unknown agent',
-    };
-
-    agentMetadata = {
-      agent,
-      selectionMode,
-    };
-  }
+  const agentMetadata = {
+    agent:         agent || null,
+    selectionMode: msg.agent ? AgentSelectionMode.Manual : AgentSelectionMode.Auto,
+  };
 
   /**
    * Parsing context

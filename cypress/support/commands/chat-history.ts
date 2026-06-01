@@ -11,7 +11,7 @@ Cypress.Commands.add('cleanChatHistory', () => {
       method:           'DELETE',
       url:              `${ Cypress.env('chatServiceProxyPath') }/chats`,
       headers:          {
-        'x-api-csrf': token.value,
+        'x-api-csrf': token?.value,
         Accept:       'application/json'
       },
       failOnStatusCode: false,
@@ -35,7 +35,7 @@ Cypress.Commands.add('agentDBPersistencyEnabled', (value: boolean) => {
       method:  'POST',
       url:     '/v3/clusters/local?action=generateKubeconfig',
       headers: {
-        'x-api-csrf': token.value,
+        'x-api-csrf': token?.value,
         Accept:       'application/json'
       },
     }).then((resp) => {

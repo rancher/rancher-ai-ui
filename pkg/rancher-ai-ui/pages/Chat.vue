@@ -65,7 +65,7 @@ const {
   chatMetadata,
   isChatInitialized,
   resetChatMetadata,
-  phase: messagePhase,
+  processingState,
   error: chatError,
   resetErrors: resetChatErrors
 } = useChatMessageComposable(
@@ -149,7 +149,7 @@ const systemErrors = computed(() => {
 const disabled = computed(() => {
   return aiAgentDeploymentState.value !== AIServiceState.Active ||
     systemErrors.value.length > 0 ||
-    messagePhase.value === MessagePhase.AwaitingConfirmation;
+    processingState.value?.phase === MessagePhase.AwaitingConfirmation;
 });
 
 async function toggleHistoryPanel() {
@@ -408,7 +408,7 @@ function unmount() {
         :messages="messages"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
-        :message-phase="hasPermissions ? messagePhase : MessagePhase.Idle"
+        :processing-state="hasPermissions ? processingState : { phase: MessagePhase.Idle }"
         v-bind="$attrs"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"

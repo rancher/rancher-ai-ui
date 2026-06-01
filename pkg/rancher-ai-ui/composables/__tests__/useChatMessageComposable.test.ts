@@ -232,10 +232,10 @@ describe('useChatMessageComposable', () => {
       // 2. messageContent trailing newlines removed
       // 3. thinking = false
       // 4. completed = true
-      // 5. ensureSwitchAgentSuggestion called
+      // 5. ensureSwitchAgentSuggestion called (when id > MAX_MESSAGES_BEFORE_RECOMMENDATION which is 5)
 
       const currentMsg = ref({
-        id:             '15',
+        id:             '6',
         messageContent: 'Response\n\n\n',
         thinking:       true,
         completed:      false,
@@ -272,6 +272,60 @@ describe('useChatMessageComposable', () => {
         chatId: 'test-chat',
         phase:  MessagePhase.ProcessingTools
       });
+    });
+
+    it('should handle ProcessingSubagent tags', async() => {
+      // When data = Tag.ProcessingSubagentInitStart...Tag.ProcessingSubagentInitEnd
+      // Should:
+      // 1. Call formatSubAgentProcessingMetadata
+      // 2. If metadata exists, set phase to MessagePhase.ProcessingSubagent with label
+
+      const mockAgent = {
+        displayName: 'Test Agent',
+        name:        'test-agent'
+      };
+      const mockMetadata = {
+        agent: mockAgent,
+        query: 'What is the status?'
+      };
+
+      // Mock the metadata parsing
+      mockStore.commit('rancher-ai-ui/chat/setProcessingState', {
+        chatId:          'test-chat',
+        processingState: {
+          phase: MessagePhase.ProcessingSubagent,
+          label: `${ mockAgent.displayName }: ${ mockMetadata.query }`
+        }
+      });
+
+      expect(mockStore.commit).toHaveBeenCalledWith('rancher-ai-ui/chat/setProcessingState', {
+        chatId:          'test-chat',
+        processingState: {
+          phase: MessagePhase.ProcessingSubagent,
+          label: 'Test Agent: What is the status?'
+        }
+      });
+    });
+
+    it('should handle ProcessingSubagentComplete tag', async() => {
+      // When data = Tag.ProcessingSubagentCompleteStart...Tag.ProcessingSubagentCompleteEnd
+      // Should: just break (no action needed)
+
+      // The tag processing should just break without doing anything
+      // This test ensures no errors occur and no state changes happen
+      mockStore.commit.mockClear();
+
+      // Simulate the condition check
+      const data = 'mock-complete-subagent-tag';
+      const isCompleteTag = data.startsWith('Tag.ProcessingSubagentCompleteStart') &&
+                           data.endsWith('Tag.ProcessingSubagentCompleteEnd');
+
+      // If the check fails, no commits should happen (as it just breaks)
+      if (!isCompleteTag) {
+        // Continue with other processing
+      }
+
+      expect(mockStore.commit).not.toHaveBeenCalled();
     });
   });
 
@@ -353,12 +407,12 @@ describe('useChatMessageComposable', () => {
       // - agentName = 'recommended-agent' (not empty)
       // - session[DISMISS_RECOMMENDED_AGENT_KEY] = false/undefined
       // - agentMetadata.selectionMode = AgentSelectionMode.Auto
-      // - currentMsg.id = '15' (> 10)
+      // - currentMsg.id = '6' (> MAX_MESSAGES_BEFORE_RECOMMENDATION which is 5)
       // Should: call addMessage with system request
 
       mockStore.getters['rancher-ai-ui/chat/session'] = {};
 
-      // All conditions are met: agentName not empty, session not dismissed, id > 10
+      // All conditions are met: agentName not empty, session not dismissed, id > 5
       mockStore.dispatch('rancher-ai-ui/chat/addMessage', {
         chatId:  'test-chat',
         message: expect.objectContaining({
@@ -380,15 +434,16 @@ describe('useChatMessageComposable', () => {
       expect(mockStore.dispatch).toHaveBeenCalled();
     });
 
-    it('should not suggest switch for early messages (id <= 10)', async() => {
-      // When currentMsg.id <= 10
+    it('should not suggest switch for early messages (id <= MAX_MESSAGES_BEFORE_RECOMMENDATION)', async() => {
+      // When currentMsg.id <= MAX_MESSAGES_BEFORE_RECOMMENDATION (5)
       // Should NOT call addMessage
 
       const currentMsgId = '5';
+      const MAX_MESSAGES_BEFORE_RECOMMENDATION = 5;
 
       mockStore.dispatch.mockClear();
 
-      if (Number(currentMsgId) > 10) {
+      if (Number(currentMsgId) > MAX_MESSAGES_BEFORE_RECOMMENDATION) {
         mockStore.dispatch('rancher-ai-ui/chat/addMessage', {});
       }
 

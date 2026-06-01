@@ -7,10 +7,7 @@ import { LlmResponseArgs } from '@/cypress/globals';
  *
  * arg.agent (Optional)
  *   This agent will be selected by the AI service in Adaptive Mode.
- *    - If not provided, the default agent will be used (rancher).
- *    - If provided, the specified agent will be used when Adaptive Mode is enabled.
- *   Note: This parameter must be omitted when multiple agents are not configured or there is only 1 agent enabled and active.
- *         This parameter must be Null when the Agent is selected by Manual Mode.
+ *     - It must be null when Manual Mode is enabled or only one agent is available in the system.
  *
  * arg.text (Optional)
  *   The text content to be received. Can be a string or an array of strings (chunks).
@@ -132,10 +129,8 @@ Cypress.Commands.add('enqueueLLMResponse', (args: LlmResponseArgs) => {
     }
   }
 
-  // We are in a multi-agent environment, select the default agent if not specified.
-  const agent = args.agent === undefined ? 'rancher' : args.agent;
+  const agentResponses = args.agentResponses || [];
   const text = chunks.length > 0 ? { chunks } : undefined;
-  const mcpTool = args.mcpTool;
   const uiTools = args.uiTools || [];
 
   return cy.getCookie('R_SESS').then((token) => {
@@ -147,9 +142,8 @@ Cypress.Commands.add('enqueueLLMResponse', (args: LlmResponseArgs) => {
         'Cookie':       `R_SESS=${ token?.value }`,
       },
       body: {
-        agent,
+        agentResponses,
         text,
-        mcpTool,
         uiTools
       },
     })

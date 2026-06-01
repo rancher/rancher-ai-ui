@@ -29,11 +29,20 @@ export const enum Tag {
   ErrorEnd = '</error>',
   // Processing tags
   ProcessingTools = '<processing-ui-tools/>',
+  ProcessingSubagentInitStart = '<processing-subagent-start>',
+  ProcessingSubagentInitEnd = '</processing-subagent-start>',
+  ProcessingSubagentCompleteStart = '<processing-subagent-end>',
+  ProcessingSubagentCompleteEnd = '</processing-subagent-end>',
 }
 
 /**
  * Types used in Rancher AI Chat UI.
  */
+
+export interface MessageProcessingState {
+  phase: MessagePhase;
+  label?: string;
+}
 export interface ChatError {
   key?:     string;
   message?: string;
@@ -89,6 +98,7 @@ export const enum MessagePhase {
   Processing = 'processing',
   AwaitingConfirmation = 'awaitingConfirmation',
   GeneratingResponse = 'generatingResponse',
+  ProcessingSubagent = 'processingSubagent',
   ProcessingTools = 'processingTools',
   Confirming = 'confirming',
   Finalizing = 'finalizing',
@@ -260,6 +270,11 @@ export const enum StorageType {
   Postgres = 'postgres',
 }
 
+export interface SubAgentProcessingMetadata {
+  agent: Agent | null;
+  query?: string;
+}
+
 export interface AgentMetadata {
   agent: Agent | null;
   selectionMode?: AgentSelectionMode; // user messages will not have this field
@@ -371,10 +386,7 @@ export interface HistoryChat {
 export interface HistoryChatMessage {
   chatId: string;
   role: string | Role;
-  agent: {
-    name: string;
-    mode: AgentSelectionMode;
-  }
+  agent: string | null;
   message: string;
   context?: string;
   labels?: Record<MessageLabelKey, string>;

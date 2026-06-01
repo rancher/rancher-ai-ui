@@ -3,7 +3,7 @@ import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
 import {
   ChatError,
   ChatMetadata,
-  ConfirmationStatus, Message, MessageInternalSource, MessagePhase, Role
+  ConfirmationStatus, Message, MessageInternalSource, MessagePhase, MessageProcessingState, Role
 } from '../types';
 
 /**
@@ -18,7 +18,7 @@ interface Chat {
   msgIdCnt?: number;
   agentName?: string;
   messages: Record<string, Message>;
-  phase?: MessagePhase;
+  processingState?: MessageProcessingState;
   error?: ChatError | null;
 }
 
@@ -47,32 +47,32 @@ const getters = {
   message: (state: State) => ({ chatId, messageId }: { chatId: string; messageId: number | string }) => {
     return state.chats[chatId]?.messages[messageId] || null;
   },
-  phase: (state: State) => (chatId: string) => {
+  processingState: (state: State) => (chatId: string) => {
     const messages = Object.values(state.chats[chatId]?.messages || {});
 
     if (
       messages.length && messages[messages.length - 1]?.role === Role.Assistant &&
       messages[messages.length - 1]?.confirmation?.status === ConfirmationStatus.Confirmed
     ) {
-      return MessagePhase.Confirming;
+      return { phase: MessagePhase.Confirming };
     }
 
     // If there is a message pending confirmation, enforce AwaitingConfirmation phase
     if (messages.find((msg) => msg.confirmation?.status === ConfirmationStatus.Pending)) {
-      return MessagePhase.AwaitingConfirmation;
+      return { phase: MessagePhase.AwaitingConfirmation };
     }
 
     // If last message is from user, It mocks the MessagePhase.Processing phase in wsSend in advance
     if (messages.length && messages[messages.length - 1]?.role === Role.User) {
-      return state.chats[chatId]?.phase;
+      return state.chats[chatId]?.processingState;
     }
 
     // Enforce current phase if there is a message being processed
     if (!!messages.find((msg) => msg.completed !== undefined && msg.completed === false)) {
-      return state.chats[chatId]?.phase;
+      return state.chats[chatId]?.processingState;
     }
 
-    return MessagePhase.Idle;
+    return { phase: MessagePhase.Idle };
   },
   error: (state: State) => (chatId: string) => {
     return state.chats[chatId]?.error || null;
@@ -190,14 +190,14 @@ const mutations = {
     state.chats[chatId].messages = {};
   },
 
-  setPhase(state: State, args: { chatId: string; phase: MessagePhase }) {
-    const { chatId, phase } = args;
+  setProcessingState(state: State, args: { chatId: string; processingState: MessageProcessingState }) {
+    const { chatId, processingState } = args;
 
     if (!chatId || !state.chats[chatId]) {
       return;
     }
 
-    state.chats[chatId].phase = phase;
+    state.chats[chatId].processingState = processingState;
   },
 
   setError(state: State, args: { chatId: string; error: ChatError | null }) {

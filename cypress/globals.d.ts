@@ -1,8 +1,11 @@
-export interface LlmResponseArgs {
+export interface AgentReponse {
   agent?: string | null;
+  mcpTool?: Tool;
+}
+export interface LlmResponseArgs {
+  agentResponses?: AgentReponse[];
   text?: string | string[];
   chunkSize?: number;
-  mcpTool?: Tool;
   uiTools?: Tool[];
 }
 

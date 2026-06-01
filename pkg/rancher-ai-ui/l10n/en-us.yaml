@@ -176,6 +176,7 @@ ai:
     processing: 'Processing'
     awaitingConfirmation: 'Awaiting confirmation'
     generatingResponse: 'Generating response'
+    processingSubagent: 'Processing Agent'
     processingTools: 'Processing UI tools'
     confirming: 'Confirming'
     finalizing: 'Finalizing results'
@@ -256,17 +257,16 @@ ai:
         delete: Delete Chat
   agents:
     selectAgent:
-      tooltip: 'Select an Agent to handle your request or use "Adaptive Agent Selection" to let the system choose the best agent based on your context and needs.'
+      tooltip: 'Select an Agent to handle your request or use "Adaptive Agent(s) Selection" to let the system choose the best agent based on your context and needs.'
     selectedAgent:
       label: "Agent: {agent}"
-    selectionMode:
-      none: ''
-      auto: (Adaptive Mode)
-      manual: ''
+    adaptiveMode:
+      label: Adaptive Agent(s) Selection
+      tooltip: The message is being processed by the most suitable agent(s) based on your configuration and environment.
     items:
       default:
-        displayName: Adaptive Agent Selection
-        description: Automatically selects the best available agent based on your configuration and environment
+        displayName: Adaptive Agent(s) Selection
+        description: Automatically selects the best available agent(s) based on your configuration and environment
       unavailable: 'This AI agent is currently unavailable.<br>Please check its status in the AI Agents configuration<br>and ensure it is properly configured.'
       unknown: Unknown Agent
 
@@ -345,7 +345,7 @@ aiConfig:
         description: Manage all your MCP servers
         allAgentsFailedBanner: 'None of your enabled AI agents are currently available.'
         allAgentsDisabledBanner: 'None of your AI agents are currently enabled'
-        adaptiveModeBanner: 'Because you have multiple AI agents enabled, you will be able to choose between “Adaptive Mode” (the most suitable AI agent will be selected for you automatically) and “Manual Mode” (you have to select a specific AI agent) each time you prompt the AI assistant. Whilst powerful, the “Adaptive Mode” might take longer to respond - in this case, we recommend you to <b>select "Manual Mode" for faster responses</b>.'
+        adaptiveModeBanner: 'Because you have multiple AI agents enabled, you will be able to choose between “Adaptive Mode” (the most suitable AI agent(s) will be selected for you automatically) and “Manual Mode” (you have to select a specific AI agent) each time you prompt the AI assistant. Whilst powerful, the “Adaptive Mode” might take longer to respond - in this case, we recommend you to <b>select "Manual Mode" for faster responses</b>.'
         noPermission:
           list: You do not have permission to view or edit the AI Agents configuration. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>.
           edit: You do not have permission to edit the AI Agents configuration.
@@ -353,7 +353,7 @@ aiConfig:
         sections:
           description:
             title: Agent Profile
-            tooltip: 'This is used to identify the most suitable AI agent when "Adaptive Mode" is selected (available only when you have multiple agents enabled). Please make sure you provide a short, clear and relevant description.'
+            tooltip: 'This is used to identify the most suitable AI agent(s) when "Adaptive Mode" is selected (available only when you have multiple agents enabled). Please make sure you provide a short, clear and relevant description.'
             requiredTooltip: '"Agent Profile" is required'
           mcp:
             title: MCP Configuration

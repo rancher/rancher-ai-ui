@@ -149,15 +149,23 @@ function handleToolAction(event: ToolActionEvent) {
         </div>
         <div class="chat-msg-text">
           <div
-            v-if="props.message.role === RoleEnum.Assistant && props.message.agentMetadata?.agent"
-            class="chat-msg-selected-agent"
+            v-if="props.message.role === RoleEnum.Assistant"
+            class="chat-msg-selected-agent-mode"
+            data-testid="rancher-ai-ui-chat-message-selected-agent-label"
           >
             <span
+              v-if="props.message.agentMetadata?.agent"
               v-clean-tooltip="props.message.agentMetadata?.agent?.description"
-              class="chat-msg-selected-agent-label"
-              :data-testid="`rancher-ai-ui-chat-message-selected-agent-label-${ props.message.agentMetadata?.agent?.name }`"
+              class="chat-msg-selected-agent-mode-label"
             >
-              {{ t('ai.agents.selectedAgent.label', { agent: props.message.agentMetadata?.agent?.displayName }) }} {{ t(`ai.agents.selectionMode.${ props.message.agentMetadata?.selectionMode || 'none' }`) }}
+              {{ t('ai.agents.selectedAgent.label', { agent: props.message.agentMetadata?.agent?.displayName }) }}
+            </span>
+            <span
+              v-else
+              v-clean-tooltip="t('ai.agents.adaptiveMode.tooltip')"
+              class="chat-msg-selected-agent-mode-label"
+            >
+              {{ t('ai.agents.adaptiveMode.label') }}
             </span>
           </div>
           <div v-if="!props.disabled && isThinking">
@@ -441,10 +449,10 @@ function handleToolAction(event: ToolActionEvent) {
   gap: 4px;
 }
 
-.chat-msg-selected-agent {
+.chat-msg-selected-agent-mode {
   margin-bottom: 4px;
 }
-.chat-msg-selected-agent-label {
+.chat-msg-selected-agent-mode-label {
   color: #BFC1D3;
   font-family: Lato;
   font-size: 14px;

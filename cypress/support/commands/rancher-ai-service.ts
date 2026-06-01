@@ -9,7 +9,7 @@ Cypress.Commands.add('installRancherAIService', ( args: InstallRancherAIServiceA
       method:  'POST',
       url:     '/v3/clusters/local?action=generateKubeconfig',
       headers: {
-        'x-api-csrf': token.value,
+        'x-api-csrf': token?.value,
         Accept:       'application/json'
       },
     }).then((resp) => {
@@ -50,7 +50,7 @@ Cypress.Commands.add('uninstallRancherAIService', () => {
       method:  'POST',
       url:     '/v3/clusters/local?action=generateKubeconfig',
       headers: {
-        'x-api-csrf': token.value,
+        'x-api-csrf': token?.value,
         Accept:       'application/json'
       },
     }).then((resp) => {
