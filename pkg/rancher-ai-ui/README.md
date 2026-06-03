@@ -1,84 +1,28 @@
-# rancher-ai-ui
+# SUSE AI Assistant
 
-The Rancher AI UI extension adds an AI-powered chat assistant directly into the Rancher Dashboard.
+**Provides context-aware guidance and automated troubleshooting for complex cluster workloads.**
 
-It helps users interact with clusters and workloads using conversational queries and suggested actions — improving discoverability, troubleshooting, and automation.
+### Overview
+The SUSE AI Assistant is your dedicated AI Site Reliability Engineer. Unlike generic chatbots, Liz is built with deep "platform-context," meaning she has real-time access to your cluster state, logs, and events, allowing her to provide tailored advice that generic AI simply cannot.
 
-It also adds direct links in the Rancher UI to the Chat, available on resource lists, resource detail pages and the global navigation — making it quick to start a conversation about any cluster object or action.
+Documentation for SUSE AI Assistant can be found [**here**](https://documentation.suse.com/cloudnative/rancher-ai/latest/en/introduction.html).
 
-Key features
-- Conversational assistant integrated into Rancher UI
-- Actionable suggestions and templates to speed common workflows
-- Support for configurable LLM backends (local or remote)
+### Core Architecture
+Liz utilizes a **Multi-Agent AI** architecture. When you ask a question, different "specialist" agents (one for Security, one for Networking, one for Diagnostics) collaborate to provide a verified answer. It supports the Model Context Protocol (MCP) to pull in data from your specific Rancher environment securely.
 
-## Running for Development
-This is what you probably want to get started.
-```bash
-# Install dependencies
-yarn install
+### Key Technical Features
+* **Context-Aware Troubleshooting**: Ask "Why is the checkout-service failing?" and Liz will analyze pod logs, events, and resource limits to provide a specific diagnosis.
+* **"Ask Liz" UI Integration**: Find Liz icons embedded throughout the Rancher UI (e.g., next to error messages) for instant, one-click troubleshooting of specific resources.
+* **Privacy-First Operations**: Supports integration with local, air-gapped Large Language Models (via Ollama) to ensure that your cluster data never leaves your infrastructure.
+* **YAML & CLI Generation**: Ask Liz to "Create a network policy to block traffic from namespace A to B," and receive a ready-to-apply manifest formatted to best practices.
 
-# For development, serve with hot reload at https://localhost:8005
-# using the endpoint for your Rancher API
-API=https://your-rancher yarn dev
-# or put the variable into a .env file
-# Goto https://localhost:8005
-```
+### Target Use Cases
+* **On-Call Assistance**: Rapidly diagnosing production issues during high-pressure incidents by summarizing complex log data.
+* **Skill Leveling**: Helping junior engineers navigate the complexities of Kubernetes without leaving the Rancher Dashboard.
 
-## Updating @shell package
-This is about updating the @shell package which is the base from rancher/dashboard
-```bash
-# Update
-yarn create @rancher/update
-```
-
-## Building the extension for production
-Bump the app version on `package.json` file, then run:
-```bash
-# Build for production
-./scripts/publish -g 
-# add flag -f if you need to overwrite an existing version
-
-
-# If you need to test the built extension
-yarn serve-pkgs
-```
-
-## E2E tests
-
-#### Install AI Agent chart
-
-This will install the AI Agent Helm chart into your Kubernetes cluster.
-The LLM is configured to use a mock service for testing purposes.
-
-```bash
-./.github/scripts/deploy-rancher-ai.sh $YOUR_KUBECONFIG_PATH
-```
-
-#### Launch UI in dev mode
-
-```bash
-API=https://your-rancher yarn dev
-```
-
-#### Launch Cypress
-
-```bash
-# Launch Cypress dashboard - interactive mode
-TEST_SKIP=setup TEST_PASSWORD=${rancher-password} yarn cypress:open
-
-# Run Cypress tests in background
-TEST_SKIP=setup TEST_PASSWORD=${rancher-password} yarn cypress:run
-```
-
-#### Environment variables
-- `API`, the address of your Rancher instance.
-- `TEST_USERNAME`, default `admin`.
-- `TEST_PASSWORD`, user password or custom during first Rancher run.
-- `CATTLE_BOOTSTRAP_PASSWORD`, initialization password.
-- `TEST_BASE_URL`, Rancher UI dev URL, default `https://localhost:8005`.
-- `TEST_SKIP=setup`, avoid to execute bootstrap setup tests for already initialized Rancher instances, it has to be toggled in case of new instances
-
-
-License
-=======
-Check Rancher AI UI Apache License details [here](LICENSE)
+### Deployment Path
+* **Prerequisites**:
+  - Rancher Prime subscription; API key for an LLM provider (OpenAI, Gemini, or a local Ollama instance).
+  - The AI Assistant chart must be installed. GitHub repository: [https://github.com/rancher/ai-assistant](https://github.com/rancher/rancher-ai-agent).
+* **First Step**: After installation, configure the AI Assistant with your API key and preferred model in the **AI Assistant** settings page (Global Settings -> AI Assistant).
+* **Next Step**: Click the **SUSE AI Assistant** icon in the sidebar to start a conversation.
