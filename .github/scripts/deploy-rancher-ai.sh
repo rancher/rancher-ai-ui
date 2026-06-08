@@ -49,6 +49,7 @@ fi
 helm upgrade --install llm-mock ./rancher-ai-llm-mock/chart/llm-mock \
   --namespace cattle-ai-agent-system \
   --create-namespace \
+  --set image.tag=v1.1.10 \
   --wait --timeout 1m
 
 kubectl -n cattle-ai-agent-system rollout status deployment/llm-mock --timeout=1m
