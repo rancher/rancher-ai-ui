@@ -2,7 +2,9 @@ import { ComputedRef } from 'vue';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
 import { error } from '../utils/log';
 import {
-  Agent, AgentSettings, HistoryChat, HistoryChatMessage, LLMProvider, Message,
+  Agent, AgentSettings, Context, HistoryChat, HistoryChatMessage, LLMProvider, Message,
+  ToolCall,
+  ToolsConfig,
 } from '../types';
 import { Settings } from '../pages/settings/types';
 import { buildMessageFromHistoryMessage } from '../utils/format';
@@ -16,6 +18,12 @@ interface LLMOptions {
 interface LLMConfig {
   name: LLMProvider;
   options: LLMOptions;
+}
+
+interface UIToolsCallsPayload {
+  context: Context[];
+  prompt: string;
+  tools: ToolsConfig
 }
 
 /**
@@ -122,6 +130,28 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
     }
   }
 
+  async function fetchUIToolsCalls(payload: UIToolsCallsPayload): Promise<ToolCall[]> {
+    try {
+      const data = await fetch(`${ apiPath }/complete/ui-tools`, {
+        method:  'POST',
+        body:    JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!data.ok) {
+        const errorMessage = await data.text();
+
+        throw new Error(errorMessage);
+      }
+
+      return await data.json() as ToolCall[];
+    } catch (err) {
+      error('Failed to fetch UI tools calls:', err);
+
+      throw err;
+    }
+  }
+
   async function fetchChats(): Promise<HistoryChat[]> {
     try {
       const data = await fetch(`${ apiPath }/chats`);
@@ -207,6 +237,7 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
     fetchLLMModels,
     fetchSettings,
     saveSettings,
+    fetchUIToolsCalls,
     fetchChats,
     fetchMessages,
     updateChat,
