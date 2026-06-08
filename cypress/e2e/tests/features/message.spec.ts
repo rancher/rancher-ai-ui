@@ -9,6 +9,7 @@ describe('Messages', () => {
   before(() => {
     cy.login();
     cy.installUIToolsDefinition();
+    cy.clearLLMResponses();
   });
 
   beforeEach(() => {
@@ -18,9 +19,8 @@ describe('Messages', () => {
   });
 
   it('Show welcome message', () => {
+    // This enqueues a response for the welcome message http request.
     cy.enqueueLLMResponse({
-      text:      'Init message',
-      chunkSize: 30,
       uiTools:   [
         {
           name: 'suggestions',

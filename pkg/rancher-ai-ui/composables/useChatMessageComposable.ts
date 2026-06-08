@@ -23,6 +23,7 @@ import {
   Tag
 } from '../types';
 import { ToolName } from '../components/tools/types';
+import { warn } from '../utils/log';
 import {
   formatWSInputMessage, formatMessageRelatedResourcesActions, formatConfirmationActions, formatFileMessages,
   formatErrorMessage, formatSourceLinks,
@@ -34,8 +35,8 @@ import {
 } from '../utils/format';
 import { downloadFile } from '@shell/utils/download';
 import { useContextComposable } from './useContextComposable';
+import { useAIAgentApiComposable } from './useAIAgentApiComposable';
 import { useToolsComposable } from './useToolsComposable';
-import { DEFAULT_AI_AGENT } from './useAgentComposable';
 
 const EXPAND_THINKING = false;
 
@@ -64,6 +65,7 @@ export function useChatMessageComposable(
 
   const { selectContext, selectedContext } = useContextComposable();
   const { toolsSelector } = useToolsComposable();
+  const { fetchUIToolsCalls } = useAIAgentApiComposable();
 
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};
 
@@ -301,41 +303,10 @@ export function useChatMessageComposable(
       return;
     }
 
-    // A message is in the message box, the welcome message is not required.
+    // A message is in the message box, send it immediately when WS connection is established
     if (messageBox.value) {
       sendMessage(messageBox.value, ws);
-
-      return;
     }
-
-    // Conversation is already started, the welcome message is not required.
-    if (messages.value.length > 0) {
-      return;
-    }
-
-    // The chat is empty, we want to trigger the suggestions tool to build the welcome message
-    const initPrompt = `This is an initialization prompt to start the conversation:
-      - DO NOT provide a response to this message, this ONLY is to call the ui-tools.
-      - USE the 'suggestions' ui-tool and provides ${ selectedContext.value?.length ? 'suggestions based on the context.' : 'generic suggestions.' }.
-        - The first two suggestions must be directly relevant to the current context. If none fallback to the next rule.
-        - The third suggestion should be a 'discovery' action. It introduces a related but broader Rancher or Kubernetes topic, helping the user learn.
-        Examples: 1: How do I scale a deployment? 2: Check the resource usage for this cluster 3: Show me the logs for the failing pod
-      - DO NOT use any other ui-tool except 'suggestions'.
-      - DO NOT ask for any confirmation or additional information.
-    `;
-
-    wsSend(ws, formatWSInputMessage({
-      prompt:  initPrompt,
-      context: selectedContext.value,
-      agent:   DEFAULT_AI_AGENT,
-      tags:    [MessageTag.Ephemeral, MessageTag.Welcome],
-      tools:   {
-        name:  toolsSelector.value?.name || '',
-        tools: [ToolName.Suggestions]
-      }
-    }));
-
-    setProcessingState({ phase: MessagePhase.Processing });
   }
 
   async function onmessage(event: MessageEvent) {
@@ -345,6 +316,8 @@ export function useChatMessageComposable(
       try {
         processChatErrors(data);
         processChatMetadata(data);
+
+        await ensureWelcomeMessage();
       } catch (err) {
         setErrors({
           message: (err as Error)?.message || t('ai.error.chat.generic'),
@@ -360,22 +333,7 @@ export function useChatMessageComposable(
       }
     } else {
       try {
-        /**
-         * No messages in the chat, next message should be welcome message.
-         */
-        const isEmptyChat = messages.value.length === 0;
-
-        /**
-         * Welcome message is in progress, continue processing it.
-         */
-        const welcomeMessageInProgress = messages.value.find((msg) => msg.source === MessageInternalSource.Welcome && !msg.completed);
-
-        if (isEmptyChat || welcomeMessageInProgress) {
-          setProcessingState({ phase: MessagePhase.Initializing });
-          await processWelcomeData(data);
-        } else {
-          await processMessageData(data);
-        }
+        await processMessageData(data);
       } catch (err) {
         processMessageErrorData(err as Error);
       }
@@ -408,39 +366,54 @@ export function useChatMessageComposable(
     }
   }
 
-  async function processWelcomeData(data: string) {
-    switch (data) {
-    case Tag.MessageStart:
-      const msgId = await addMessage(buildWelcomeMessage());
+  async function ensureWelcomeMessage() {
+    // Conversation already started, no need to add welcome message
+    if (messages.value?.length > 0) {
+      return;
+    }
 
-      currentMsg.value = getMessage(msgId);
-      break;
-    case Tag.MessageEnd:
-      setProcessingState({ phase: MessagePhase.Idle });
-      currentMsg.value.messageContent = '';
+    // Add Welcome message first
+    setProcessingState({ phase: MessagePhase.Initializing });
+
+    const msgId = await addMessage(buildWelcomeMessage());
+
+    currentMsg.value = getMessage(msgId);
+
+    // Complete the welcome message with suggestions from tools call
+    if (!toolsSelector.value?.name) {
       currentMsg.value.completed = true;
 
-      break;
-    default:
-      if (currentMsg.value.completed === false) {
-        if (data.startsWith(Tag.ErrorStart) && data.endsWith(Tag.ErrorEnd)) {
-          const errorMessage = formatErrorMessage(data);
+      setProcessingState({ phase: MessagePhase.Idle });
 
-          throw errorMessage;
+      return;
+    }
+
+    let prompt = `Provides 3 generic suggestions.
+      - The suggestions should be a 'discovery' action. It introduces a related but broader Rancher or Kubernetes topic, helping the user learn.
+      Examples: 1: How do I scale a deployment? 2: Check the resource usage for the local cluster 3: Show me the logs for the failing pod`;
+
+    if (selectedContext.value?.length) {
+      prompt = `Provides suggestions based on the CONTEXT.
+        - The first 2 suggestions must be directly relevant to the current CONTEXT.
+        - The third suggestion should be a 'discovery' action. It introduces a related but broader Rancher or Kubernetes topic, helping the user learn.
+        Examples: 1: How do I scale the deployment? 2: Check the resource usage for the cluster 3: Show me the logs for the failing pod`;
+    }
+
+    try {
+      currentMsg.value.tools = await fetchUIToolsCalls({
+        prompt,
+        context: selectedContext.value,
+        tools:   {
+          name:  toolsSelector.value.name,
+          tools: [ToolName.Suggestions]
         }
+      });
+    } catch (err) {
+      warn('Failed to fetch UI tools calls for the Welcome message:', err);
+    } finally {
+      currentMsg.value.completed = true;
 
-        currentMsg.value.messageContent += data;
-
-        if (currentMsg.value.messageContent?.includes(Tag.ToolsStart) && currentMsg.value.messageContent?.includes(Tag.ToolsEnd)) {
-          const { tools, remaining } = formatTools(currentMsg.value.tools || [], currentMsg.value.messageContent);
-
-          currentMsg.value.tools = tools;
-          currentMsg.value.messageContent = remaining;
-
-          break;
-        }
-      }
-      break;
+      setProcessingState({ phase: MessagePhase.Idle });
     }
   }
 
