@@ -613,6 +613,60 @@ describe('AIAgentConfigs.vue', () => {
       expect(emitted[0].spec.authenticationType).toBe(AIAgentConfigAuthType.BASIC);
     });
 
+    it('should update caBundleRef with name and key', () => {
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [mockAgent()] }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateAgent({
+        spec: {
+          ...vm.selectedAgent.spec,
+          caBundleRef: {
+            name: 'ca-bundle-secret',
+            key:  'tls.crt'
+          }
+        }
+      });
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.caBundleRef?.name).toBe('ca-bundle-secret');
+      expect(emitted[0].spec.caBundleRef?.key).toBe('tls.crt');
+    });
+
+    it('should clear caBundleRef when value is cleared', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          caBundleRef: {
+            name: 'existing-bundle',
+            key:  'tls.crt'
+          }
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [agent] }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateAgent({
+        spec: {
+          ...vm.selectedAgent.spec,
+          caBundleRef: undefined
+        }
+      });
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.caBundleRef).toBeUndefined();
+    });
+
     it('should update systemPrompt', () => {
       const wrapper = shallowMount(AIAgentConfigs, {
         ...requiredSetup(),

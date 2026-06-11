@@ -372,10 +372,16 @@ aiConfig:
           enabled:
             label: Enable this agent
             tooltip: Enable or disable this AI agent without removing its configuration
+          authentication:
+            title: Authentication
           authenticationType:
-            label: Authentication Type
+            label: Type
           authenticationSecret:
-            label: Authentication Secret
+            label: Secret
+          caBundleRef:
+            title: CA Bundle
+            label: TLS Secret
+            tooltip: 'If your MCP server uses a self-signed certificate, please provide the TLS secret name containing the CA certificate to allow the AI agent to trust the MCP server. The secret must be in the same namespace as the AI agent and contain the `tls.crt` key with a valid CA certificate. If your MCP server uses a certificate signed by a well-known CA, you can leave this field empty.'
           mcpURL:
             label: Endpoint
             placeholder: https://endpoint.mcp
