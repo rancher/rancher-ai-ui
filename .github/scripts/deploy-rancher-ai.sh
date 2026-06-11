@@ -59,6 +59,7 @@ helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
   --namespace cattle-ai-agent-system \
   --create-namespace \
   --set global.cattle.systemDefaultRegistry=stgregistry.suse.com \
+  --set aiAgent.image.tag=v1.0.2 \
   --set googleApiKey=empty \
   --set ollamaUrl="http://localhost:11434" \
   --set ollamaLlmModel=ollama \
