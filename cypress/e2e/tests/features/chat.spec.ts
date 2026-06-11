@@ -6,13 +6,13 @@ import UsersPo from '@rancher/cypress/e2e/po/pages/users-and-auth/users.po';
 import ExtensionsPagePo from '@rancher/cypress/e2e/po/pages/extensions.po';
 import ProductNavPo from '@rancher/cypress/e2e/po/side-bars/product-side-nav.po';
 import { SettingsPagePo as GlobalSettings } from '@rancher/cypress/e2e/po/pages/global-settings/settings.po';
-import { BannersPagePo } from '@rancher/cypress/e2e/po/pages/global-settings/banners.po';
 import { SettingsPagePo } from '@/cypress/e2e/po/settings.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
 import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import { SlidingBadgePo } from '@/cypress/e2e/po/hook.po';
 import ContextPo from '@/cypress/e2e/po/context.po';
+import RancherSettingsBannersPo from '@/cypress/e2e/po/components/rancher-settings-banners.po';
 import ApplySettingsPromptPo from '@/cypress/e2e/po/dialog/apply-settings.po';
 import { rancherAgentConfig, fleetAgentConfig, provisioningAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
 
@@ -1026,18 +1026,9 @@ describe('Chat', () => {
 
         sideNav.navToSideMenuEntryByLabel('Banners');
 
-        const bannersPage = new BannersPagePo();
+        const bannersPage = new RancherSettingsBannersPo();
 
-        // Apply banners
-        bannersPage.headerBannerCheckbox().set();
-
-        bannersPage.headerInput().set('test\ntest\ntest');
-
-        bannersPage.footerBannerCheckbox().set();
-
-        bannersPage.footerInput().set('test\ntest\ntest');
-
-        bannersPage.applyAndWait('**/ui-banners', 200);
+        bannersPage.addBanners();
 
         HomePagePo.goTo();
 
@@ -1053,11 +1044,7 @@ describe('Chat', () => {
 
         sideNav.navToSideMenuEntryByLabel('Banners');
 
-        // Remove banners
-        bannersPage.headerBannerCheckbox().set();
-        bannersPage.footerBannerCheckbox().set();
-
-        bannersPage.applyAndWait('**/ui-banners', 200);
+        bannersPage.removeBanners();
       });
     });
 
@@ -1098,18 +1085,9 @@ describe('Chat', () => {
 
         sideNav.navToSideMenuEntryByLabel('Banners');
 
-        const bannersPage = new BannersPagePo();
+        const bannersPage = new RancherSettingsBannersPo();
 
-        // Apply banners
-        bannersPage.headerBannerCheckbox().set();
-
-        bannersPage.headerInput().set('test\ntest\ntest');
-
-        bannersPage.footerBannerCheckbox().set();
-
-        bannersPage.footerInput().set('test\ntest\ntest');
-
-        bannersPage.applyAndWait('**/ui-banners', 200);
+        bannersPage.addBanners();
 
         HomePagePo.goTo();
 
@@ -1141,11 +1119,7 @@ describe('Chat', () => {
 
         sideNav.navToSideMenuEntryByLabel('Banners');
 
-        // Remove banners
-        bannersPage.headerBannerCheckbox().set();
-        bannersPage.footerBannerCheckbox().set();
-
-        bannersPage.applyAndWait('**/ui-banners', 200);
+        bannersPage.removeBanners();
       });
     });
   });
