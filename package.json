@@ -26,7 +26,8 @@
     "test:ci": "NODE_OPTIONS=--max_old_space_size=8192 jest --silent",
     "cypress:open": "rancher-cypress open --e2e --browser chrome",
     "cypress:run": "rancher-cypress run",
-    "e2e": "CATTLE_BOOTSTRAP_PASSWORD=$CATTLE_BOOTSTRAP_PASSWORD TEST_USERNAME=$TEST_USERNAME VAI_ENABLED=$VAI_ENABLED API=$API yarn cypress:run"
+    "e2e": "CATTLE_BOOTSTRAP_PASSWORD=$CATTLE_BOOTSTRAP_PASSWORD TEST_USERNAME=$TEST_USERNAME VAI_ENABLED=$VAI_ENABLED API=$API TEST_SKIP=global-ui yarn cypress:run",
+    "screenshots:ui-tools": "set -e && yarn cypress:run --browser chrome --config video=false,retries=0 --spec \"cypress/e2e/tests/global-ui/screenshots/ui-tools/*.spec.ts\" && sh scripts/collect-screenshots.sh cypress/screenshots assets/ui-tools/screenshots"
   },
   "devDependencies": {
     "@babel/core": "^7.28.5",

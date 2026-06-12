@@ -6,6 +6,7 @@ import './commands/llm-mock-service-api';
 import './commands/chat-history';
 import './commands/multi-agent';
 import './commands/ui-tools';
+import './commands/screen';
 
 // The AI Assistant extension is prime-only: when developer-loaded (i.e. not a built-in
 // extension) into a community Rancher it gates itself off with a "requires Rancher Prime"
