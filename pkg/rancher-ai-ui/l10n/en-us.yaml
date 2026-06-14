@@ -522,6 +522,31 @@ aiConfig:
               tooltip:
                 label: Category
                 action: Filter tools by this category
+        details:
+          category: 'Category:'
+          preview: 'Preview'
+          detail: 'DETAIL'
+          usage: 'Usage'
+          support: 'Support'
+          tools:
+            show-yaml:
+              detail: 'View the complete YAML configuration of a specific Kubernetes resource. This tool displays the exact resource definition including all fields, annotations, labels, and settings in a syntax-highlighted YAML editor format.'
+              usage: 'Click the button to open the YAML editor displaying the resource configuration. You can review the complete resource definition, copy the YAML content, or use the full-screen view for detailed inspection.'
+            show-yaml-diff:
+              detail: 'Compare the current configuration of a Kubernetes resource with a proposed or updated version. This tool displays a side-by-side diff view showing what has changed, making it easy to review modifications before applying them to the cluster.'
+              usage: 'Click the button to see the differences between the original and modified YAML. The diff view highlights additions, deletions, and changes. Review the changes carefully and apply them to the cluster when ready.'
+            explore:
+              detail: 'Navigate directly to different sections and pages within the Rancher dashboard. This tool provides quick access to various Rancher UI pages such as clusters, deployments, pods, nodes, settings, and more.'
+              usage: 'Click the link to jump to the specified Rancher dashboard page. You can navigate to cluster-specific pages like deployments or pods, or to global pages like clusters or settings. Each link takes you directly to the relevant section.'
+            open-console-logs:
+              detail: 'Access and view the real-time logs from a specific container running in a pod. This tool opens the Rancher console logs viewer, allowing you to inspect container output for debugging and troubleshooting.'
+              usage: 'Click the button to open the console logs view for the specified pod and container. The logs viewer will display real-time output from the container. You can use this to troubleshoot application issues and monitor container behavior.'
+            select-option:
+              detail: 'Choose from a set of available options presented by the AI assistant. This tool is used when the assistant needs additional information from you to complete a task, such as selecting a cluster, namespace, or resource.'
+              usage: 'Click one of the presented options to select it. The selection will be sent back to the AI assistant to continue processing your request. Select the option that best matches your needs.'
+            suggestions:
+              detail: 'Receive quick action suggestions based on the current context and your interaction with the AI assistant. This tool provides up to 3 recommended next steps you can take to continue your workflow.'
+              usage: 'Click on any suggestion to send it to the AI assistant. Suggestions are tailored to your current context and can help you discover new capabilities or continue your workflow more efficiently.'
         publish:
           message:
             admin:
