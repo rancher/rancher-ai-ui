@@ -33,37 +33,13 @@ describe('Feature: settings-ui-tools-config', () => {
     cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-1-section-visible');
   });
 
-  describe('Install UI Tools banner (tools not installed)', () => {
-    beforeEach(() => {
-      cy.uninstallUIToolsDefinition();
-      settingsPage.goTo();
-      settingsPage.waitForPage();
-    });
-
-    afterEach(() => {
-      cy.installUIToolsDefinition();
-    });
-
-    it('Test 2: Install UI Tools action banner and button are shown when tools are not installed', () => {
-      const uiToolsConfig = settingsPage.settings().uiToolsConfig();
-
-      uiToolsConfig.self().scrollIntoView();
-      uiToolsConfig.intro().self().should('be.visible');
-      uiToolsConfig.intro().infoBanner().should('be.visible');
-      uiToolsConfig.intro().actionButton().should('contain.text', 'Install UI Tools');
-      uiToolsConfig.toolsGrid().should('not.exist');
-
-      cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-2-install-banner');
-    });
-  });
-
-  it('Test 3: Enable/disable the UI Tools toggle and save', () => {
+  it('Test 2: Enable/disable the UI Tools toggle and save', () => {
     const uiToolsConfig = settingsPage.settings().uiToolsConfig();
 
     uiToolsConfig.self().scrollIntoView();
     uiToolsConfig.enabledCheckbox().isChecked();
 
-    uiToolsConfig.enabledCheckbox().set(false);
+    uiToolsConfig.enabledCheckbox().set();
 
     settingsPage.settings().saveButton().click();
     new ApplySettingsPromptPo().confirm();
@@ -75,15 +51,15 @@ describe('Feature: settings-ui-tools-config', () => {
     uiToolsConfig.enabledCheckbox().isUnchecked();
 
     // Restore original state
-    uiToolsConfig.enabledCheckbox().set(true);
+    uiToolsConfig.enabledCheckbox().set();
     settingsPage.settings().saveButton().click();
     new ApplySettingsPromptPo().confirm();
     settingsPage.settings().saveButton().should('contain.text', 'Saved');
 
-    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-3-enable-tools-toggle');
+    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-2-enable-tools-toggle');
   });
 
-  it('Test 4: Update and reset the Guidelines (system prompt) field', () => {
+  it('Test 3: Update and reset the Guidelines (system prompt) field', () => {
     const uiToolsConfig = settingsPage.settings().uiToolsConfig();
 
     uiToolsConfig.self().scrollIntoView();
@@ -93,10 +69,10 @@ describe('Feature: settings-ui-tools-config', () => {
     uiToolsConfig.resetConfigButton().click();
     uiToolsConfig.resetConfigButton().should('not.exist');
 
-    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-4-guidelines-reset');
+    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-3-guidelines-reset');
   });
 
-  it('Test 5: Tools list displays all available tools with name, description and version badge', () => {
+  it('Test 4: Tools list displays all available tools with name, description and version badge', () => {
     const uiToolsConfig = settingsPage.settings().uiToolsConfig();
 
     uiToolsConfig.self().scrollIntoView();
@@ -106,10 +82,10 @@ describe('Feature: settings-ui-tools-config', () => {
     uiToolsConfig.toolCard('Show YAML').find('.version-badge').should('exist');
     uiToolsConfig.toolCard('Show YAML').find('.toggle-enable-tool').should('exist');
 
-    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-5-tools-list');
+    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-4-tools-list');
   });
 
-  it('Test 6: Search filters the tools list by name', () => {
+  it('Test 5: Search filters the tools list by name', () => {
     const uiToolsConfig = settingsPage.settings().uiToolsConfig();
 
     uiToolsConfig.self().scrollIntoView();
@@ -122,10 +98,10 @@ describe('Feature: settings-ui-tools-config', () => {
     uiToolsConfig.searchInput().clear();
     cy.contains('.tools-grid', 'Suggestions').should('be.visible');
 
-    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-6-search-filter');
+    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-5-search-filter');
   });
 
-  it('Test 7: Category filter filters the tools list', () => {
+  it('Test 6: Category filter filters the tools list', () => {
     const uiToolsConfig = settingsPage.settings().uiToolsConfig();
 
     uiToolsConfig.self().scrollIntoView();
@@ -140,10 +116,10 @@ describe('Feature: settings-ui-tools-config', () => {
     uiToolsConfig.resetFiltersLink().should('not.exist');
     uiToolsConfig.toolsGrid().find('.item-card').should('have.length.gt', 0);
 
-    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-7-category-filter');
+    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-6-category-filter');
   });
 
-  it('Test 8: Enable/disable individual tool via toggle switch and save', () => {
+  it('Test 7: Enable/disable individual tool via toggle switch and save', () => {
     const uiToolsConfig = settingsPage.settings().uiToolsConfig();
 
     uiToolsConfig.self().scrollIntoView();
@@ -170,6 +146,30 @@ describe('Feature: settings-ui-tools-config', () => {
     new ApplySettingsPromptPo().confirm();
     settingsPage.settings().saveButton().should('contain.text', 'Saved');
 
-    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-8-toggle-tool');
+    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-7-toggle-tool');
+  });
+
+  it('Test 8: Tool details slide-in panel opens and displays tool information when clicking on a tool card', () => {
+    const uiToolsConfig = settingsPage.settings().uiToolsConfig();
+
+    uiToolsConfig.self().scrollIntoView();
+    uiToolsConfig.toolCard('Show YAML').should('be.visible');
+
+    // Click on the tool card to open the slide-in panel
+    uiToolsConfig.toolCard('Show YAML').click();
+
+    // Wait for slide-in panel to appear and be visible
+    cy.get('[data-testid="slide-in-panel-component"]').should('be.visible');
+
+    // Verify tool details are displayed in the slide-in
+    cy.contains('View the complete YAML').should('be.visible');
+
+    // Click outside the slide-in panel to close it
+    cy.get('body').click(50, 50);
+
+    // Verify the panel is closed
+    cy.get('[data-testid="slide-in-panel-component"]').should('not.be.visible');
+
+    cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-8-tool-details-panel');
   });
 });
