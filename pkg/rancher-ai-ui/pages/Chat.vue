@@ -471,7 +471,7 @@ function unmount() {
 .chat-container {
   display: flex;
   flex-direction: row;
-  height: calc(100vh - 55px);
+  height: 100%;
   position: relative;
   z-index: 20;
   outline: none;

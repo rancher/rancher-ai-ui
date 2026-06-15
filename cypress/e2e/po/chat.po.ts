@@ -1,6 +1,7 @@
 import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
 import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import { MessagePo, ErrorMessagePo } from '@/cypress/e2e/po/message.po';
+import { HeaderPo } from '@/cypress/e2e/po/header.po';
 import { ConsolePo } from '@/cypress/e2e/po/console.po';
 
 export default class ChatPo extends ComponentPo {
@@ -15,12 +16,8 @@ export default class ChatPo extends ComponentPo {
     return this.self().get(`[data-testid="rancher-ai-ui-processing-phase-${ label.toLowerCase().replace(/\s/g, '-') }"]`);
   }
 
-  closeButton() {
-    return this.self().get('[data-testid="rancher-ai-ui-chat-close-button"]');
-  }
-
-  historyButton() {
-    return this.self().get('[data-testid="rancher-ai-ui-chat-history-button"]');
+  header() {
+    return new HeaderPo();
   }
 
   console() {
@@ -53,12 +50,12 @@ export default class ChatPo extends ComponentPo {
   }
 
   close() {
-    this.closeButton().click();
+    this.header().closeButton().click();
     this.isClosed();
   }
 
   openHistory() {
-    this.historyButton().click();
+    this.header().historyButton().click();
   }
 
   getMessage(id: string | number) {

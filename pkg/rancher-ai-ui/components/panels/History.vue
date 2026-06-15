@@ -207,10 +207,17 @@ function dismissEdit() {
 .history-panel {
   width: min(75%, 100vw);
   max-width: 90vw;
-  height: 100vh;
+  height: 100%;
   background: var(--body-bg);
   opacity: 0.95; /* semi-transparent background */
   box-shadow: 2px 0 8px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.history-chat-panel {
+  flex: 1;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -220,8 +227,11 @@ function dismissEdit() {
 }
 
 .history-body {
+  flex: 1;
   padding: 16px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .history-chat-list {
@@ -229,7 +239,7 @@ function dismissEdit() {
   flex-direction: column;
   gap: 4px;
   overflow-y: auto;
-  max-height: calc(100vh - 250px);
+  flex: 1;
   padding-bottom: 8px;
 }
 

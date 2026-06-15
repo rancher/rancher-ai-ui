@@ -9,8 +9,10 @@ import { SettingsPagePo as GlobalSettings } from '@rancher/cypress/e2e/po/pages/
 import { SettingsPagePo } from '@/cypress/e2e/po/settings.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
+import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import { SlidingBadgePo } from '@/cypress/e2e/po/hook.po';
 import ContextPo from '@/cypress/e2e/po/context.po';
+import RancherSettingsBannersPo from '@/cypress/e2e/po/components/rancher-settings-banners.po';
 import ApplySettingsPromptPo from '@/cypress/e2e/po/dialog/apply-settings.po';
 import { rancherAgentConfig, fleetAgentConfig, provisioningAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
 
@@ -996,6 +998,129 @@ describe('Chat', () => {
       cy.login();
       cy.cleanChatHistory();
       cy.uninstallUIToolsDefinition();
+    });
+  });
+
+  describe('Panels dimension', () => {
+    describe('Chat panel', () => {
+      beforeEach(() => {
+        cy.login();
+      });
+
+      it('it should have the correct height', () => {
+        HomePagePo.goTo();
+
+        chat.open();
+
+        chat.header().closeButton().should('be.visible');
+
+        chat.console().llmInfo().should('be.visible');
+      });
+
+      it('it should have the correct height when Header and Footer banners are visible', () => {
+        const globalSettings = new GlobalSettings('_');
+        const sideNav = new ProductNavPo();
+
+        globalSettings.goTo();
+        globalSettings.waitForPage();
+
+        sideNav.navToSideMenuEntryByLabel('Banners');
+
+        const bannersPage = new RancherSettingsBannersPo();
+
+        bannersPage.addBanners();
+
+        HomePagePo.goTo();
+
+        chat.open();
+        chat.isReady();
+
+        chat.header().closeButton().should('be.visible');
+
+        chat.console().llmInfo().should('be.visible');
+
+        globalSettings.goTo();
+        globalSettings.waitForPage();
+
+        sideNav.navToSideMenuEntryByLabel('Banners');
+
+        bannersPage.removeBanners();
+      });
+    });
+
+    describe('History panel', () => {
+      it('it should have the correct height', () => {
+        HomePagePo.goTo();
+
+        chat.open();
+        chat.isReady();
+
+        chat.header().historyButton().click();
+
+        const historyPanel = new HistoryPo();
+
+        historyPanel.self()
+          .should('exist')
+          .then(($el) => {
+            cy.get('.main-layout').then(($mainLayout) => {
+              new RancherHeaderPo().self().then(($header) => {
+                const panelRect = $el[0].getBoundingClientRect();
+
+                const rancherHeaderRect = $header[0].getBoundingClientRect();
+                const rancherMainLayoutRect = $mainLayout[0].getBoundingClientRect();
+
+                // History panel should not extend beyond main layout (+ 10px tolerance)
+                expect(panelRect.bottom).to.be.lessThan(rancherHeaderRect.bottom + rancherMainLayoutRect.bottom + 10);
+              });
+            });
+          });
+      });
+
+      it('it should have the correct height when Header and Footer banners are visible', () => {
+        const globalSettings = new GlobalSettings('_');
+        const sideNav = new ProductNavPo();
+
+        globalSettings.goTo();
+        globalSettings.waitForPage();
+
+        sideNav.navToSideMenuEntryByLabel('Banners');
+
+        const bannersPage = new RancherSettingsBannersPo();
+
+        bannersPage.addBanners();
+
+        HomePagePo.goTo();
+
+        chat.open();
+        chat.isReady();
+
+        chat.header().historyButton().click();
+
+        const historyPanel = new HistoryPo();
+
+        historyPanel.self()
+          .should('exist')
+          .then(($el) => {
+            cy.get('.main-layout').then(($mainLayout) => {
+              new RancherHeaderPo().self().then(($header) => {
+                const panelRect = $el[0].getBoundingClientRect();
+
+                const rancherHeaderRect = $header[0].getBoundingClientRect();
+                const rancherMainLayoutRect = $mainLayout[0].getBoundingClientRect();
+
+                // History panel should not extend beyond main layout (+ 10px tolerance)
+                expect(panelRect.bottom).to.be.lessThan(rancherHeaderRect.bottom + rancherMainLayoutRect.bottom + 10);
+              });
+            });
+          });
+
+        globalSettings.goTo();
+        globalSettings.waitForPage();
+
+        sideNav.navToSideMenuEntryByLabel('Banners');
+
+        bannersPage.removeBanners();
+      });
     });
   });
 });
