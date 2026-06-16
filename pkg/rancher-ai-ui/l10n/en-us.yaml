@@ -168,23 +168,26 @@ ai:
     cancel: Cancel
     confirmed: Confirmed
     canceled: Canceled
-  phase:
-    idle: ''
-    initializing: 'Initializing'
-    thinking: 'Thinking'
-    working: 'Working'
-    processing: 'Processing'
-    awaitingConfirmation: 'Awaiting confirmation'
-    generatingResponse: 'Generating response'
-    processingSubagent: 'Processing Agent'
-    processingTools: 'Processing UI tools'
-    confirming: 'Confirming'
-    finalizing: 'Finalizing results'
-    connecting: 'Connecting'
-    reconnecting: 'Reconnecting'
-    connected: 'Connected'
-    disconnected: 'Disconnected'
-    connectionClosed: 'Connection closed'
+  processing:
+    phase:
+      idle: ''
+      initializing: 'Initializing'
+      thinking: 'Thinking'
+      working: 'Working'
+      processing: 'Processing'
+      awaitingConfirmation: 'Awaiting confirmation'
+      generatingResponse: 'Generating response'
+      processingSubagent: 'Processing Agent'
+      processingTools: 'Processing UI tools'
+      confirming: 'Confirming'
+      finalizing: 'Finalizing results'
+      connecting: 'Connecting'
+      reconnecting: 'Reconnecting'
+      connected: 'Connected'
+      disconnected: 'Disconnected'
+      connectionClosed: 'Connection closed'
+    label:
+      default: processing request
   error:
     chat:
       generic: 'An error occurred initializing the chat'

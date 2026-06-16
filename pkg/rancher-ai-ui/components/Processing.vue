@@ -58,7 +58,7 @@ const label = computed(() => {
   }
 
   if (phase.value && phase.value !== IDLE && (!props.phases.length || props.phases.includes(phase.value))) {
-    return t(`ai.phase.${ phase.value }`);
+    return t(`ai.processing.phase.${ phase.value }`);
   }
 
   return '';

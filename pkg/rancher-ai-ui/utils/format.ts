@@ -137,12 +137,16 @@ export function formatSubAgentProcessingMetadata(data: string, agents: Agent[]):
   try {
     const parsed = JSON.parse(cleaned);
 
-    const agent = agents.find((a) => a.name === parsed.name) || null;
+    const agent = agents.find((a) => a.name === parsed.name);
 
-    return {
-      agent,
-      query: parsed.query
-    };
+    const agentName = agent?.displayName || parsed.name;
+
+    if (agentName) {
+      return {
+        agent: agentName,
+        query: parsed.query
+      };
+    }
   } catch (err) {
     error('Failed to parse sub-agent processing metadata:', err);
   }

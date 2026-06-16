@@ -454,7 +454,7 @@ export function useChatMessageComposable(
         if (metadata) {
           setProcessingState({
             phase: MessagePhase.ProcessingSubagent,
-            label: metadata.query ? `${ metadata.agent?.displayName || metadata.agent || '' }: ${ metadata.query.slice(0, 100) }` : ''
+            label: `${ metadata.agent }: ${ metadata.query?.slice(0, 100) || t('ai.processing.label.default') }`
           });
         }
         break;

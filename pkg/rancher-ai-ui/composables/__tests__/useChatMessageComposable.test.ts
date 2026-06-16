@@ -1013,9 +1013,15 @@ describe('useChatMessageComposable', () => {
     });
 
     it('Tag.ProcessingSubagentInitStart - should set processing subagent phase', async() => {
-      const agentName = computed(() => 'test-agent');
+      const agents = computed(() => [
+        {
+          name:        'test-agent',
+          displayName: 'Test Agent',
+          description: 'Test'
+        }
+      ]);
 
-      mockComponent = mount(createTestComponent({ agentName }));
+      mockComponent = mount(createTestComponent({ agents }));
       const { onmessage } = mockComponent.vm;
 
       // Setup: trigger message start first
@@ -1023,7 +1029,7 @@ describe('useChatMessageComposable', () => {
 
       mockStore.commit.mockClear();
 
-      const subagentEvent = { data: '<processing-subagent-start>{"agent":"test-agent","query":"What is Kubernetes?"}</processing-subagent-start>' } as MessageEvent;
+      const subagentEvent = { data: '<processing-subagent-start>{"name":"test-agent","query":"What is Kubernetes?"}</processing-subagent-start>' } as MessageEvent;
 
       await onmessage(subagentEvent);
 

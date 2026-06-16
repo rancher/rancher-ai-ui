@@ -271,7 +271,7 @@ export const enum StorageType {
 }
 
 export interface SubAgentProcessingMetadata {
-  agent: Agent | null;
+  agent: string;
   query?: string;
 }
 
