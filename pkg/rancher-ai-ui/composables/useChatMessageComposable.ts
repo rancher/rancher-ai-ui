@@ -377,11 +377,11 @@ export function useChatMessageComposable(
 
     const msgId = await addMessage(buildWelcomeMessage());
 
-    currentMsg.value = getMessage(msgId);
+    const welcomeMessage = getMessage(msgId);
 
     // Complete the welcome message with suggestions from tools call
     if (!toolsSelector.value?.name) {
-      currentMsg.value.completed = true;
+      welcomeMessage.completed = true;
 
       setProcessingState({ phase: MessagePhase.Idle });
 
@@ -400,7 +400,7 @@ export function useChatMessageComposable(
     }
 
     try {
-      currentMsg.value.tools = await fetchUIToolsCalls({
+      welcomeMessage.tools = await fetchUIToolsCalls({
         prompt,
         context: selectedContext.value,
         tools:   {
@@ -411,7 +411,7 @@ export function useChatMessageComposable(
     } catch (err) {
       warn('Failed to fetch UI tools calls for the Welcome message:', err);
     } finally {
-      currentMsg.value.completed = true;
+      welcomeMessage.completed = true;
 
       setProcessingState({ phase: MessagePhase.Idle });
     }
