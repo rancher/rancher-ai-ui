@@ -109,9 +109,6 @@ describe('useChatMessageComposable', () => {
     });
   });
 
-  describe('Chat initialization', () => {
-  });
-
   describe('Error handling', () => {
     it('should expose resetErrors method that resets errors in store', () => {
       mockStore.commit.mockClear();
