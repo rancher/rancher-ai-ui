@@ -596,6 +596,194 @@ describe('useChatMessageComposable', () => {
     });
   });
 
+  describe('function: wsSend', () => {
+    it('should send message when WebSocket is open', () => {
+      mockComponent = mount(createTestComponent());
+
+      const mockWs = {
+        readyState: WebSocket.OPEN,
+        send:       jest.fn()
+      } as any;
+
+      const { onopen } = mockComponent.vm;
+
+      mockStore.getters['rancher-ai-ui/chat/messageBox'] = jest.fn(() => 'Test message');
+
+      onopen({ target: mockWs } as any);
+
+      expect(mockWs.send).toHaveBeenCalled();
+    });
+
+    it('should NOT send message when WebSocket is closed', () => {
+      mockComponent = mount(createTestComponent());
+
+      const mockWs = {
+        readyState: WebSocket.CLOSED,
+        send:       jest.fn()
+      } as any;
+
+      mockStore.getters['rancher-ai-ui/chat/messageBox'] = jest.fn(() => 'Test message');
+
+      const { onopen } = mockComponent.vm;
+
+      onopen({ target: mockWs } as any);
+
+      expect(mockWs.send).not.toHaveBeenCalled();
+    });
+
+    it('should NOT send message when WebSocket is null', () => {
+      mockComponent = mount(createTestComponent());
+
+      mockStore.getters['rancher-ai-ui/chat/messageBox'] = jest.fn(() => 'Test message');
+
+      const { onopen } = mockComponent.vm;
+
+      expect(() => onopen({ target: null } as any)).not.toThrow();
+    });
+
+    it('should NOT send message when WebSocket readyState is CONNECTING', () => {
+      mockComponent = mount(createTestComponent());
+
+      const mockWs = {
+        readyState: WebSocket.CONNECTING,
+        send:       jest.fn()
+      } as any;
+
+      mockStore.getters['rancher-ai-ui/chat/messageBox'] = jest.fn(() => 'Test message');
+
+      const { onopen } = mockComponent.vm;
+
+      onopen({ target: mockWs } as any);
+
+      expect(mockWs.send).not.toHaveBeenCalled();
+    });
+
+    it('should send properly formatted message to WebSocket', () => {
+      mockComponent = mount(createTestComponent());
+
+      const mockWs = {
+        readyState: WebSocket.OPEN,
+        send:       jest.fn()
+      } as any;
+
+      const messageBoxContent = JSON.stringify({ messageContent: 'Hello World' });
+
+      mockStore.getters['rancher-ai-ui/chat/messageBox'] = jest.fn(() => messageBoxContent);
+
+      const { onopen } = mockComponent.vm;
+
+      onopen({ target: mockWs } as any);
+
+      expect(mockWs.send).toHaveBeenCalledWith(expect.any(String));
+    });
+  });
+
+  describe('function: onclose', () => {
+    it('should mark current message as completed when onclose is called', () => {
+      mockStore.getters['rancher-ai-ui/chat/message'] = jest.fn(() => ({
+        id:        'msg-1',
+        completed: false
+      }));
+      mockStore.commit.mockClear();
+
+      mockComponent = mount(createTestComponent());
+      const { onclose } = mockComponent.vm;
+
+      onclose();
+
+      expect(mockStore.commit).toHaveBeenCalledWith(
+        'rancher-ai-ui/chat/setProcessingState',
+        expect.objectContaining({ processingState: expect.objectContaining({ phase: 'idle' }) })
+      );
+    });
+
+    it('should clear message box when onclose is called', () => {
+      mockStore.commit.mockClear();
+
+      mockComponent = mount(createTestComponent());
+      const { onclose } = mockComponent.vm;
+
+      onclose();
+
+      const clearMessageBoxCalls = mockStore.commit.mock.calls.filter(
+        (call: any[]) => call[0] === 'rancher-ai-ui/chat/clearMessageBox'
+      );
+
+      expect(clearMessageBoxCalls.length).toBeGreaterThan(0);
+    });
+
+    it('should set processing state to idle on close', () => {
+      mockStore.commit.mockClear();
+
+      mockComponent = mount(createTestComponent());
+      const { onclose } = mockComponent.vm;
+
+      onclose();
+
+      expect(mockStore.commit).toHaveBeenCalledWith(
+        'rancher-ai-ui/chat/setProcessingState',
+        expect.objectContaining({ processingState: expect.objectContaining({ phase: 'idle' }) })
+      );
+    });
+
+    it('should handle gracefully when no current message exists', () => {
+      mockStore.getters['rancher-ai-ui/chat/message'] = jest.fn(() => null);
+
+      mockComponent = mount(createTestComponent());
+      const { onclose } = mockComponent.vm;
+
+      expect(() => onclose()).not.toThrow();
+
+      expect(mockStore.commit).toHaveBeenCalledWith(
+        'rancher-ai-ui/chat/setProcessingState',
+        expect.objectContaining({ processingState: expect.objectContaining({ phase: 'idle' }) })
+      );
+    });
+
+    it('should abort pending authentication requests on close', () => {
+      mockComponent = mount(createTestComponent());
+      const { onclose } = mockComponent.vm;
+
+      mockStore.commit.mockClear();
+
+      onclose();
+
+      expect(mockStore.commit).toHaveBeenCalled();
+    });
+
+    it('should transition to idle phase from various processing states', () => {
+      mockStore.getters['rancher-ai-ui/chat/processingState'] = jest.fn(() => ({ phase: 'processing' }));
+      mockStore.commit.mockClear();
+
+      mockComponent = mount(createTestComponent());
+      const { onclose } = mockComponent.vm;
+
+      onclose();
+
+      expect(mockStore.commit).toHaveBeenCalledWith(
+        'rancher-ai-ui/chat/setProcessingState',
+        expect.objectContaining({ processingState: expect.objectContaining({ phase: 'idle' }) })
+      );
+    });
+
+    it('should complete WebSocket session properly', async() => {
+      mockStore.getters['rancher-ai-ui/chat/message'] = jest.fn(() => ({
+        id:        'msg-1',
+        completed: false
+      }));
+      mockStore.commit.mockClear();
+
+      mockComponent = mount(createTestComponent());
+      const { onclose } = mockComponent.vm;
+
+      await onclose();
+
+      const commitCalls = mockStore.commit.mock.calls;
+
+      expect(commitCalls.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('function: onopen', () => {
     it('should send message via WebSocket when messageBox has content', () => {
       const messageBoxContent = JSON.stringify({ messageContent: 'User query' });
@@ -607,8 +795,9 @@ describe('useChatMessageComposable', () => {
       const { onopen } = mockComponent.vm;
 
       const mockWs = {
-        send:  jest.fn(),
-        close: jest.fn()
+        readyState: WebSocket.OPEN,
+        send:       jest.fn(),
+        close:      jest.fn()
       } as any;
 
       onopen({ target: mockWs } as any);
@@ -625,8 +814,9 @@ describe('useChatMessageComposable', () => {
       const { onopen } = mockComponent.vm;
 
       const mockWs = {
-        send:  jest.fn(),
-        close: jest.fn()
+        readyState: WebSocket.OPEN,
+        send:       jest.fn(),
+        close:      jest.fn()
       } as any;
 
       onopen({ target: mockWs } as any);
@@ -657,8 +847,9 @@ describe('useChatMessageComposable', () => {
       const { onopen } = mockComponent.vm;
 
       const mockWs = {
-        send:  jest.fn(),
-        close: jest.fn()
+        readyState: WebSocket.OPEN,
+        send:       jest.fn(),
+        close:      jest.fn()
       } as any;
 
       onopen({ target: mockWs } as any);

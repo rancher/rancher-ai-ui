@@ -64,10 +64,18 @@ export const enum AIAgentConfigAuthType {
   RANCHER = 'RANCHER',
   BASIC = 'BASIC',
   HEADER = 'HEADER',
+  OAUTH2 = 'OAUTH2'
 }
 
-export interface AiAgentConfigSecretPayload {
+export interface AiAgentConfigBasicSecretPayload {
   selected: '_none' | '_basic' | string;
   privateKey: string;
   publicKey: string;
+}
+
+export interface AiAgentConfigOAuth2SecretPayload {
+  clientID: string;
+  clientSecret: string;
+  metadataEndpoint: string;
+  scopes: string[];
 }

@@ -40,6 +40,14 @@ ai:
         results:
           confirm: Switched to <code>{agent}</code> Agent
           dismiss: Keeping adaptive selection
+      agentTokenRefresh:
+        info: '<b>The tool you have selected requires authentication</b>. This is normal, especially for short-lived tokens.<br><br>Before you continue, <b>make sure your browser allows popups</b> - the authentication will open in a new browser window.<br><br>Once you log in, I’ll resume my response automatically...'
+        actions:
+          confirm: 'Continue'
+          dismiss: 'Cancel'
+        results:
+          confirm: Authentication window open
+          dismiss: Canceled
       noPermission:
         info: 'You do not have permission to access the Rancher AI Assistant. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>'
     assistant:
@@ -179,6 +187,8 @@ ai:
       awaitingConfirmation: 'Awaiting confirmation'
       generatingResponse: 'Generating response'
       processingSubagent: 'Processing Agent'
+      resumingAgent: 'Resuming Agent'
+      refreshingMcpToken: 'Refreshing authentication token'
       processingTools: 'Processing UI tools'
       confirming: 'Confirming'
       finalizing: 'Finalizing results'
@@ -189,11 +199,12 @@ ai:
       connectionClosed: 'Connection closed'
     label:
       default: processing request
+      authenticationRequired: 'Awaiting authentication'
   error:
     chat:
       generic: 'An error occurred initializing the chat'
-    message:
-      processing: 'Error processing messages: '
+    message: 'Error processing message: '
+    authentication: 'Authentication error: '
     websocket:
       generic: WebSocket error occurred. Please check the status of the Rancher AI Agent and ensure you have the necessary permissions to establish a connection to it.
       connection: Failed to connect to Rancher AI Agent.

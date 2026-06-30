@@ -14,6 +14,7 @@ import MessageComponent from '../message/index.vue';
 import Welcome from '../message/template/Welcome.vue';
 import NoPermission from '../message/template/NoPermissions.vue';
 import SystemRequest from '../message/template/SystemRequest.vue';
+import McpAuthenticationRequest from '../message/template/McpAuthenticationRequest.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
 import { useScrollComposable } from '../../composables/useScrollComposable';
@@ -143,6 +144,8 @@ function getMessageTemplate(component: MessageTemplateComponent) {
     return NoPermission;
   case MessageTemplateComponent.SystemRequest:
     return SystemRequest;
+  case MessageTemplateComponent.McpAuthenticationRequest:
+    return McpAuthenticationRequest;
   default:
     return null;
   }
