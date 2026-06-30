@@ -389,6 +389,38 @@ aiConfig:
             title: CA Bundle
             label: TLS Secret
             tooltip: 'If your MCP server uses a self-signed certificate, please provide the TLS secret name containing the CA certificate to allow the AI agent to trust the MCP server. The secret must be in the same namespace as the AI agent and contain the `tls.crt` key with a valid CA certificate. If your MCP server uses a certificate signed by a well-known CA, you can leave this field empty.'
+          oauth2:
+            metadata:
+              label: Metadata endpoint
+              placeholder: Enter a valid URL
+              discoverInfo:
+                info: 'Try to <action>automatically discover the metadata endpoint</action> below based on the <b>MCP endpoint</b> URL.'
+                inProgress: 'Metadata endpoint discovery is now in progress... <action>Cancel</action>'
+                success: 'The metadata endpoint was successfully retrieved and filled it automatically. <action>Run it again</action>.'
+                warning: 'Based on the current <b>MCP endpoint</b> URL, the metadata endpoint could not be retrieved automatically.<message></message><br>Please review it and <action>Try again.</action>'
+                message: '<br>{message}<br>'
+            client:
+              discoverInfo:
+                info: 'Try to <action>automatically discover the client registration and the scope details</action> below based on the <b>Metadata endpoint</b> URL.'
+                inProgress: 'Client registration and scope details discovery is now in progress... <action>Cancel</action>'
+                success: 'The client registration and the scope details were successfully retrieved and filled it automatically. <action>Run it again</action>.'
+                warning: 'Based on the current <b>Metadata endpoint</b> URL, the client registration and the scope details could not be retrieved automatically.<message></message><br>Please review it and <action>Try again.</action>'
+                message: '<br>{message}<br>'
+            clientId:
+              label: Client ID
+              placeholder: 'Enter the client ID'
+            clientSecret:
+              label: Client Secret
+              placeholder: 'Enter the client secret'
+            scopes:
+              label: Scopes
+              placeholder:
+                input: 'No scopes discovered, enter them manually separated by whitespace (optional)'
+                select: |-
+                  {count, plural,
+                    =1 { {count} scope available (optional) }
+                    other { {count} scopes to choose from (optional) }
+                  }
           mcpURL:
             label: Endpoint
             placeholder: https://endpoint.mcp
@@ -417,6 +449,7 @@ aiConfig:
               basic: Basic authentication
               rancher: Rancher authentication
               header: Custom Headers authentication
+              oauth2: OAuth2 authentication
       tools:
         header: UI Tools
         description: Configure the UI tools

@@ -521,8 +521,7 @@ onMounted(() => {
       <Password
         :value="formData[chatbotConfigKey]"
         :label="t(`aiConfig.form.${ chatbotConfigKey }.label`)"
-        :disabled="readOnly"
-        :mode="_EDIT"
+        :mode="readOnly ? _VIEW : _EDIT"
         :required="true"
         data-testid="rancher-ai-ui-settings-llm-api-key-input"
         @update:value="(val: string) => updateValue(chatbotConfigKey, val)"

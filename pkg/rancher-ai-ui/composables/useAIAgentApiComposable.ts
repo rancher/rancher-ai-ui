@@ -2,7 +2,7 @@ import { ComputedRef } from 'vue';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
 import { error } from '../utils/log';
 import {
-  Agent, AgentSettings, Context, HistoryChat, HistoryChatMessage, LLMProvider, Message,
+  Agent, AgentSettings, AiAgentAPIEvent, Context, HistoryChat, HistoryChatMessage, LLMProvider, Message,
   ToolCall,
   ToolsConfig,
 } from '../types';
@@ -18,6 +18,21 @@ interface LLMOptions {
 interface LLMConfig {
   name: LLMProvider;
   options: LLMOptions;
+}
+
+interface McpAuthenticationMetadata {
+  metadataEndpoint?: string;
+  scopesSupported?: string[];
+}
+
+interface McpAuthenticationClientInfo {
+  clientId?: string;
+  clientSecret?: string;
+}
+
+interface McpAuthenticationEvent {
+  code?: AiAgentAPIEvent.Abort | AiAgentAPIEvent.Error;
+  message?: string;
 }
 
 interface UIToolsCallsPayload {
@@ -42,13 +57,16 @@ interface UIToolsCallsPayload {
 
 export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
   const apiPath = `/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_REST_API_PATH }`;
+
   let llmModelsAbortController: AbortController | null = null;
+  let mcpAuthenticationMetadataAbortController: AbortController | null = null;
+  let mcpAuthenticationClientInfoAbortController: AbortController | null = null;
+
+  const mcpScopesCache: Record<string, string[]> = {};
 
   async function fetchLLMModels(llmConfig: LLMConfig): Promise<string[]> {
-    // Abort and refresh the AbortController for fetching LLM models
-    if (llmModelsAbortController) {
-      llmModelsAbortController.abort();
-    }
+    cancelFetchLLMModels();
+
     llmModelsAbortController = new AbortController();
 
     const queryParams = new URLSearchParams();
@@ -86,6 +104,153 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
     }
 
     return await data.json() as string[];
+  }
+
+  function cancelFetchLLMModels() {
+    if (llmModelsAbortController) {
+      llmModelsAbortController.abort();
+    }
+  }
+
+  async function refreshMcpAuthenticationToken(agent: string) {
+    try {
+      const data = await fetch(`${ apiPath }/oauth2/refresh`, {
+        method:      'POST',
+        credentials: 'same-origin',
+        body:        JSON.stringify({ agent }),
+        headers:     { 'Content-Type': 'application/json' },
+      });
+
+      if (!data.ok) {
+        const errorMessage = await data.text();
+
+        throw new Error(errorMessage);
+      }
+
+      return;
+    } catch (err) {
+      error('Failed to trigger MCP authentication token refresh:', err);
+
+      throw err;
+    }
+  }
+
+  async function fetchMcpAuthenticationMetadata(args: { mcpUrl: string, abort?: boolean } = {
+    mcpUrl: '',
+    abort:  true
+  }): Promise<McpAuthenticationMetadata & McpAuthenticationEvent | null> {
+    const { mcpUrl, abort } = args;
+
+    if (abort) {
+      cancelFetchMcpAuthenticationMetadata();
+    }
+
+    mcpAuthenticationMetadataAbortController = new AbortController();
+
+    try {
+      const queryParams = new URLSearchParams();
+
+      queryParams.append('mcpUrl', mcpUrl);
+
+      const data = await fetch(`${ apiPath }/oauth2/metadata?${ queryParams.toString() }`, { signal: mcpAuthenticationMetadataAbortController.signal });
+
+      if (!data.ok) {
+        const errorMessage = await data.text();
+
+        throw new Error(errorMessage);
+      }
+
+      const metadata = await data.json() as McpAuthenticationMetadata;
+
+      if (metadata?.scopesSupported) {
+        mcpScopesCache[mcpUrl] = metadata.scopesSupported;
+      }
+
+      return metadata;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return { code: AiAgentAPIEvent.Abort };
+      }
+
+      error('Failed to fetch MCP authentication metadata:', err);
+
+      return {
+        code:    AiAgentAPIEvent.Error,
+        message: (err as Error).message || ''
+      };
+    }
+  }
+
+  function cancelFetchMcpAuthenticationMetadata() {
+    if (mcpAuthenticationMetadataAbortController) {
+      mcpAuthenticationMetadataAbortController.abort();
+    }
+  }
+
+  async function fetchMcpAuthenticationScopes(args: { mcpUrl: string }): Promise<string[]> {
+    const { mcpUrl } = args;
+
+    if (mcpScopesCache[mcpUrl]) {
+      return mcpScopesCache[mcpUrl];
+    }
+
+    const metadata = await fetchMcpAuthenticationMetadata({
+      mcpUrl,
+      abort: false
+    });
+
+    if (!!metadata?.scopesSupported) {
+      return metadata.scopesSupported;
+    }
+
+    return [];
+  }
+
+  async function fetchMcpAuthenticationClientInfo(args: { metadataEndpoint: string, abort?: boolean } = {
+    metadataEndpoint: '',
+    abort:            true
+  }): Promise<McpAuthenticationClientInfo & McpAuthenticationEvent | null> {
+    const { metadataEndpoint, abort } = args;
+
+    if (abort) {
+      cancelFetchMcpAuthenticationClientInfo();
+    }
+
+    mcpAuthenticationClientInfoAbortController = new AbortController();
+
+    try {
+      const data = await fetch(`${ apiPath }/oauth2/dynamic-registration`, {
+        method:  'POST',
+        body:    JSON.stringify({ metadataEndpoint }),
+        headers: { 'Content-Type': 'application/json' },
+        signal:  mcpAuthenticationClientInfoAbortController.signal,
+      });
+
+      if (!data.ok) {
+        const errorMessage = await data.text();
+
+        throw new Error(errorMessage);
+      }
+
+      return await data.json() as McpAuthenticationClientInfo;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return { code: AiAgentAPIEvent.Abort };
+      }
+
+      error('Failed to fetch MCP authentication client info:', err);
+
+      return {
+        code:    AiAgentAPIEvent.Error,
+        message: (err as Error).message || ''
+      };
+    }
+  }
+
+  function cancelFetchMcpAuthenticationClientInfo() {
+    if (mcpAuthenticationClientInfoAbortController) {
+      mcpAuthenticationClientInfoAbortController.abort();
+    }
   }
 
   async function fetchSettings(): Promise<AgentSettings | null> {
@@ -234,6 +399,12 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
   }
 
   return {
+    refreshMcpAuthenticationToken,
+    fetchMcpAuthenticationMetadata,
+    cancelFetchMcpAuthenticationMetadata,
+    fetchMcpAuthenticationClientInfo,
+    cancelFetchMcpAuthenticationClientInfo,
+    fetchMcpAuthenticationScopes,
     fetchLLMModels,
     fetchSettings,
     saveSettings,

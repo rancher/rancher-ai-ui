@@ -1,5 +1,5 @@
 import { shallowMount } from '@vue/test-utils';
-import AIAgentConfigs from '../AIAgentConfigs.vue';
+import AIAgentConfigs from '../ai-agent-configs/index.vue';
 import { AIAgentConfigCRD } from '../../../../types';
 import { AIAgentConfigAuthType } from '../../types';
 
@@ -22,7 +22,16 @@ jest.mock('@shell/components/form/FileSelector.vue', () => ({
     name:     'FileSelector',
     template: '<div />',
     props:    ['value', 'label', 'required'],
-    emits:    ['update:value']
+    emits:    ['update:value'],
+  }
+}));
+
+// Mock Password component to avoid clipboard-polyfill dependency
+jest.mock('@shell/components/form/Password.vue', () => ({
+  default: {
+    name:     'Password',
+    props:    ['value', 'label', 'mode', 'disabled'],
+    template: '<div />'
   }
 }));
 
@@ -742,6 +751,40 @@ describe('AIAgentConfigs.vue', () => {
       expect(vm.agentSecrets['test-agent']).toEqual(secretPayload);
     });
 
+    it('should store new secret in agentSecrets when OAUTH2 is selected', () => {
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: { value: [mockAgent()] }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateAgent({
+        spec: {
+          ...vm.selectedAgent.spec,
+          authenticationType:   AIAgentConfigAuthType.OAUTH2,
+          authenticationSecret: 'test-secret'
+        }
+      });
+
+      const oauth2Payload = {
+        metadataEnpoint: 'http://metadata',
+        scopes:          ['test-scope'],
+        clientId:        'client-id',
+        clientSecret:    'client-secret'
+      };
+
+      vm.updateOauth2AuthSecret(vm.selectedAgent, oauth2Payload);
+
+      // Verify the secret is stored in agentSecrets
+      expect(vm.agentSecrets['test-agent']).toEqual(oauth2Payload);
+
+      // Verify the emission happened with the secrets
+      const emittedSecrets = wrapper.emitted('update:authentication-secrets');
+
+      expect((emittedSecrets as any)?.[(emittedSecrets?.length || 0) - 1]?.[0]['test-agent']).toEqual(oauth2Payload);
+    });
+
     it('should use selected secret directly when existing secret selected', () => {
       const wrapper = shallowMount(AIAgentConfigs, {
         ...requiredSetup(),
@@ -963,7 +1006,7 @@ describe('AIAgentConfigs.vue', () => {
       const vm = wrapper.vm as any;
 
       // Valid agent should not have errors
-      expect(vm.validationErrors['test-agent']).toBeUndefined();
+      expect(vm.validationErrors['test-agent']).toBe(false);
 
       // Create a new agent without mcpURL
       const invalidAgent = mockAgent({
@@ -1003,7 +1046,7 @@ describe('AIAgentConfigs.vue', () => {
 
       const vm = wrapper.vm as any;
 
-      expect(vm.validationErrors['test-agent']).toBeUndefined();
+      expect(vm.validationErrors['test-agent']).toBe(false);
     });
 
     it('should compute validation errors for empty description', () => {
@@ -1086,7 +1129,7 @@ describe('AIAgentConfigs.vue', () => {
 
       const vm = wrapper.vm as any;
 
-      expect(vm.validationErrors['test-agent']).toBeUndefined();
+      expect(vm.validationErrors['test-agent']).toBe(false);
     });
   });
 
@@ -1848,6 +1891,28 @@ describe('AIAgentConfigs.vue', () => {
         expect(emitted[0].spec.authenticationType).toBe(AIAgentConfigAuthType.HEADER);
       });
 
+      it('should change auth type to OAUTH2', () => {
+        const agent = mockAgent({
+          spec: {
+            ...mockAgent().spec,
+            authenticationType: AIAgentConfigAuthType.RANCHER
+          }
+        });
+
+        const wrapper = shallowMount(AIAgentConfigs, {
+          ...requiredSetup(),
+          props: { value: [agent] }
+        });
+
+        const vm = wrapper.vm as any;
+
+        vm.updateAuthType(AIAgentConfigAuthType.OAUTH2);
+
+        const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+        expect(emitted[0].spec.authenticationType).toBe(AIAgentConfigAuthType.OAUTH2);
+      });
+
       it('should clear authenticationSecret when changing from RANCHER to HEADER', () => {
         const agent = mockAgent({
           spec: {
@@ -1894,6 +1959,31 @@ describe('AIAgentConfigs.vue', () => {
         const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
 
         expect(emitted[0].spec.authenticationType).toBe(AIAgentConfigAuthType.HEADER);
+        expect(emitted[0].spec.authenticationSecret).toBeUndefined();
+      });
+
+      it('should clear authenticationSecret when changing from HEADER to OAUTH2', () => {
+        const agent = mockAgent({
+          spec: {
+            ...mockAgent().spec,
+            authenticationType:   AIAgentConfigAuthType.HEADER,
+            authenticationSecret: 'header-secret'
+          }
+        });
+
+        const wrapper = shallowMount(AIAgentConfigs, {
+          ...requiredSetup(),
+          props: { value: [agent] }
+        });
+
+        const vm = wrapper.vm as any;
+
+        // Update to OAUTH2 type
+        vm.updateAuthType(AIAgentConfigAuthType.OAUTH2);
+
+        const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+        expect(emitted[0].spec.authenticationType).toBe(AIAgentConfigAuthType.OAUTH2);
         expect(emitted[0].spec.authenticationSecret).toBeUndefined();
       });
 
@@ -2035,6 +2125,26 @@ describe('AIAgentConfigs.vue', () => {
           spec: {
             ...mockAgent().spec,
             authenticationType: AIAgentConfigAuthType.HEADER
+          }
+        });
+
+        const wrapper = shallowMount(AIAgentConfigs, {
+          ...requiredSetup(),
+          props: { value: [agent] }
+        });
+
+        await wrapper.vm.$nextTick();
+
+        const selectOrCreate = wrapper.findComponent({ name: 'SelectOrCreateAuthSecret' });
+
+        expect(selectOrCreate.exists()).toBe(false);
+      });
+
+      it('should not render SelectOrCreateAuthSecret when OAUTH2 auth is selected', async() => {
+        const agent = mockAgent({
+          spec: {
+            ...mockAgent().spec,
+            authenticationType: AIAgentConfigAuthType.OAUTH2
           }
         });
 
@@ -2215,6 +2325,196 @@ describe('AIAgentConfigs.vue', () => {
         expect(emitted[0].spec.description).toBe('Important Description');
         expect(emitted[0].spec.systemPrompt).toBe('Important Prompt');
         expect(emitted[0].spec.humanValidationTools).toEqual(['tool1', 'tool2']);
+      });
+    });
+
+    describe('OAUTH2 Auth Type', () => {
+      it('should change auth type to OAUTH2', () => {
+        const agent = mockAgent({
+          spec: {
+            ...mockAgent().spec,
+            authenticationType: AIAgentConfigAuthType.RANCHER
+          }
+        });
+
+        const wrapper = shallowMount(AIAgentConfigs, {
+          ...requiredSetup(),
+          props: { value: [agent] }
+        });
+
+        const vm = wrapper.vm as any;
+
+        vm.updateAuthType(AIAgentConfigAuthType.OAUTH2);
+
+        const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+        expect(emitted[0].spec.authenticationType).toBe(AIAgentConfigAuthType.OAUTH2);
+      });
+
+      it('should store OAUTH2 secret payload in agentSecrets', () => {
+        const agent = mockAgent({
+          spec: {
+            ...mockAgent().spec,
+            authenticationType: AIAgentConfigAuthType.OAUTH2
+          }
+        });
+
+        const wrapper = shallowMount(AIAgentConfigs, {
+          ...requiredSetup(),
+          props: { value: [agent] }
+        });
+
+        const vm = wrapper.vm as any;
+
+        const oauth2Payload = {
+          metadataEndpoint: 'https://oauth.example.com/.well-known/openid-configuration',
+          clientID:         'client-id-123',
+          clientSecret:     'client-secret-456',
+          scopes:           ['openid', 'profile', 'email']
+        };
+
+        vm.updateOauth2AuthSecret(vm.selectedAgent, oauth2Payload);
+
+        expect(vm.agentSecrets['test-agent']).toEqual(oauth2Payload);
+      });
+
+      it('should clear authenticationSecret when changing from OAUTH2 to RANCHER', () => {
+        const agent = mockAgent({
+          spec: {
+            ...mockAgent().spec,
+            authenticationType:   AIAgentConfigAuthType.OAUTH2,
+            authenticationSecret: 'oauth2-secret'
+          }
+        });
+
+        const wrapper = shallowMount(AIAgentConfigs, {
+          ...requiredSetup(),
+          props: { value: [agent] }
+        });
+
+        const vm = wrapper.vm as any;
+
+        vm.updateAuthType(AIAgentConfigAuthType.RANCHER);
+
+        const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+        expect(emitted[0].spec.authenticationType).toBe(AIAgentConfigAuthType.RANCHER);
+        expect(emitted[0].spec.authenticationSecret).toBeUndefined();
+      });
+
+      it('should emit update:authentication-secrets when OAUTH2 secret is updated', () => {
+        const agent = mockAgent({
+          spec: {
+            ...mockAgent().spec,
+            authenticationType: AIAgentConfigAuthType.OAUTH2
+          }
+        });
+
+        const wrapper = shallowMount(AIAgentConfigs, {
+          ...requiredSetup(),
+          props: { value: [agent] }
+        });
+
+        const vm = wrapper.vm as any;
+
+        const oauth2Payload = {
+          metadataEndpoint: 'https://oauth.example.com/.well-known/openid-configuration',
+          clientID:         'client-id-123',
+          clientSecret:     'client-secret-456',
+          scopes:           ['openid', 'profile']
+        };
+
+        vm.updateOauth2AuthSecret(oauth2Payload);
+
+        const emitted = wrapper.emitted('update:authentication-secrets');
+
+        expect(emitted).toBeTruthy();
+        expect(emitted![0][0]).toEqual(vm.agentSecrets);
+      });
+
+      it('should handle multiple agents with independent OAUTH2 secrets', async() => {
+        const agent1 = mockAgent({
+          metadata: {
+            name:      'agent-1',
+            namespace: 'ai-agent'
+          },
+          spec: {
+            ...mockAgent().spec,
+            authenticationType: AIAgentConfigAuthType.OAUTH2
+          }
+        });
+
+        const agent2 = mockAgent({
+          metadata: {
+            name:      'agent-2',
+            namespace: 'ai-agent'
+          },
+          spec: {
+            ...mockAgent().spec,
+            authenticationType: AIAgentConfigAuthType.OAUTH2
+          }
+        });
+
+        const wrapper = shallowMount(AIAgentConfigs, {
+          ...requiredSetup(),
+          props: { value: [agent1, agent2] }
+        });
+
+        const vm = wrapper.vm as any;
+
+        // Set OAUTH2 secret for agent-1
+        vm.updateOauth2AuthSecret(agent1, {
+          metadataEndpoint: 'https://oauth1.example.com/.well-known/openid-configuration',
+          clientID:         'client-1',
+          clientSecret:     'secret-1',
+          scopes:           ['openid']
+        });
+
+        // Set OAUTH2 secret for agent-2
+        vm.updateOauth2AuthSecret(agent2, {
+          metadataEndpoint: 'https://oauth2.example.com/.well-known/openid-configuration',
+          clientID:         'client-2',
+          clientSecret:     'secret-2',
+          scopes:           ['openid', 'profile']
+        });
+
+        expect(vm.agentSecrets['agent-1'].clientID).toEqual('client-1');
+        expect(vm.agentSecrets['agent-2'].clientID).toEqual('client-2');
+        expect(vm.agentSecrets['agent-1'].scopes).toEqual(['openid']);
+        expect(vm.agentSecrets['agent-2'].scopes).toEqual(['openid', 'profile']);
+      });
+
+      it('should not affect other agent properties when updating OAUTH2 secret', () => {
+        const agent = mockAgent({
+          spec: {
+            ...mockAgent().spec,
+            displayName:          'Important Agent',
+            description:          'Important Description',
+            systemPrompt:         'Important Prompt',
+            humanValidationTools: ['tool1', 'tool2'],
+            authenticationType:   AIAgentConfigAuthType.OAUTH2
+          }
+        });
+
+        const wrapper = shallowMount(AIAgentConfigs, {
+          ...requiredSetup(),
+          props: { value: [agent] }
+        });
+
+        const vm = wrapper.vm as any;
+
+        vm.updateOauth2AuthSecret({
+          metadataEndpoint: 'https://oauth.example.com/.well-known/openid-configuration',
+          clientID:         'client-id',
+          clientSecret:     'client-secret',
+          scopes:           ['openid']
+        });
+
+        // Verify other properties remain unchanged via emitted events if available
+        expect(vm.selectedAgent.spec.displayName).toBe('Important Agent');
+        expect(vm.selectedAgent.spec.description).toBe('Important Description');
+        expect(vm.selectedAgent.spec.systemPrompt).toBe('Important Prompt');
+        expect(vm.selectedAgent.spec.humanValidationTools).toEqual(['tool1', 'tool2']);
       });
     });
   });

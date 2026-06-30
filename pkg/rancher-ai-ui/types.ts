@@ -270,6 +270,11 @@ export const enum StorageType {
   Postgres = 'postgres',
 }
 
+export const enum AiAgentAPIEvent {
+  Error = '__error__',
+  Abort = '__abort__',
+}
+
 export interface SubAgentProcessingMetadata {
   agent: string;
   query?: string;
