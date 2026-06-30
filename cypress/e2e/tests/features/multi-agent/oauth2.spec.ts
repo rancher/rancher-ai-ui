@@ -9,6 +9,8 @@ const OAUTH2_SUCCESS_MESSAGE = 'oauth_success';
 /**
  * Stubs the OAuth2 popup behavior for testing purposes.
  *
+ * Also stores a spy on the popup's close method on the window for later access.
+ *
  * if result is 'success'
  *   it simulates a successful OAuth2 authentication
  *   by sending a message to the BroadcastChannel after a short delay.
@@ -40,7 +42,17 @@ function stubOauth2Popup(result: 'success' | 'failure' | 'idle') {
         }, 200);
       }
 
-      const mockPopup = { closed: false };
+      let closeCalled = false;
+
+      const mockPopup = {
+        closed: false,
+        close:  () => {
+          closeCalled = true;
+        }
+      };
+
+      // Store close tracking on window
+      (win as any).testPopupCloseCalled = () => closeCalled;
 
       setTimeout(() => {
         mockPopup.closed = true;
@@ -55,6 +67,8 @@ function stubOauth2Popup(result: 'success' | 'failure' | 'idle') {
  * Stubs the WebSocket send method to intercept messages sent by the main UI.
  * This allows us to verify that the correct messages are sent after OAuth2 authentication.
  *
+ * Also stores the WebSocket instance and its send spy on the window for later access.
+ *
  * IMPORTANT:
  *   This function should be called before chat opening to ensure that the WebSocket is stubbed
  *   before the WebSocket connection is established.
@@ -66,7 +80,12 @@ function stubWebSocketSend() {
     cy.stub(win, 'WebSocket').callsFake((url, protocols) => {
       const wsInstance = new OriginalWebSocket(url, protocols);
 
-      cy.spy(wsInstance, 'send').as('wsSend');
+      const wsSpy = cy.spy(wsInstance, 'send');
+
+      (win as any).testWebSocket = wsInstance;
+      (win as any).testWsSpy = wsSpy;
+
+      wsSpy.as('wsSend');
 
       return wsInstance;
     });
@@ -309,42 +328,6 @@ describe('Multi Agent OAuth2 Authentication', () => {
     cy.get('@wsSend').should('be.calledWithMatch', McpAuthenticationResponse.Cancel);
   });
 
-  it('It should abort pending authentication requests when closing the chat panel', () => {
-    stubOauth2Popup('success');
-
-    const selectAgent = chat.console().selectAgent();
-
-    selectAgent.open();
-
-    const item = selectAgent.agentItem(customAgent.name);
-
-    item.select();
-
-    selectAgent.self().contains(customAgent.displayName);
-
-    cy.enqueueLLMResponse({ text: oauth2Response });
-
-    chat.sendMessage('Request message.');
-
-    const authRequestMessage = chat.getMessage(4);
-
-    authRequestMessage.agentSelectionLabel().contains(`Agent: ${ defaultAgent.displayName }`);
-    authRequestMessage.containsText('The tool you have selected requires authentication');
-
-    authRequestMessage.confirmButton().click();
-
-    authRequestMessage.isConfirmed();
-
-    chat.close();
-
-    // Verify that the popup was opened
-    cy.get('@popupStub').should('be.calledOnce');
-    cy.get('@popupStub').should('be.calledWithMatch', popupUrl);
-
-    // Verify that the WebSocket send method was called with the expected message after the popup is closed without sending the OAuth2 success message
-    cy.get('@wsSend').should('be.calledWithMatch', McpAuthenticationResponse.Cancel);
-  });
-
   it('It should abort pending authentication requests when connection is lost', () => {
     stubOauth2Popup('success');
 
@@ -367,18 +350,85 @@ describe('Multi Agent OAuth2 Authentication', () => {
     authRequestMessage.agentSelectionLabel().contains(`Agent: ${ defaultAgent.displayName }`);
     authRequestMessage.containsText('The tool you have selected requires authentication');
 
+    // Reset spy before clicking confirm
+    cy.window().then((win) => {
+      (win as any).testWsSpy.resetHistory();
+    });
+
     authRequestMessage.confirmButton().click();
 
     authRequestMessage.isConfirmed();
 
-    // Simulate connection loss re-installing the Rancher AI service
-    cy.installRancherAIService();
+    // Simulate connection loss by closing the WebSocket
+    cy.window().then((win) => {
+      (win as any).testWebSocket.close();
+    });
+
+    // Wait for the connection loss to be processed (> 200ms delay in the stubbed popup)
+    cy.wait(300);
 
     // Verify that the popup was opened
     cy.get('@popupStub').should('be.calledOnce');
     cy.get('@popupStub').should('be.calledWithMatch', popupUrl);
 
+    // Verify popup has been closed
+    cy.window().then((win) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      expect((win as any).testPopupCloseCalled()).to.be.true;
+    });
+
+    // Verify that the WebSocket send method was not called after connection loss
     cy.get('@wsSend').should('not.be.called');
+  });
+
+  it('It should abort pending authentication requests when closing the chat panel', () => {
+    stubOauth2Popup('failure');
+
+    const selectAgent = chat.console().selectAgent();
+
+    selectAgent.open();
+
+    const item = selectAgent.agentItem(customAgent.name);
+
+    item.select();
+
+    selectAgent.self().contains(customAgent.displayName);
+
+    cy.enqueueLLMResponse({ text: oauth2Response });
+
+    chat.sendMessage('Request message.');
+
+    const authRequestMessage = chat.getMessage(4);
+
+    authRequestMessage.agentSelectionLabel().contains(`Agent: ${ defaultAgent.displayName }`);
+    authRequestMessage.containsText('The tool you have selected requires authentication');
+
+    // Reset spy before clicking confirm
+    cy.window().then((win) => {
+      (win as any).testWsSpy.resetHistory();
+    });
+
+    authRequestMessage.confirmButton().click();
+
+    authRequestMessage.isConfirmed();
+
+    chat.close();
+
+    // Wait for the normal success message (> 200ms delay in the stubbed popup) to proof that the popup was closed due to the chat panel being closed and not due to the normal success message.
+    cy.wait(300);
+
+    // Verify that the popup was opened
+    cy.get('@popupStub').should('be.calledOnce');
+    cy.get('@popupStub').should('be.calledWithMatch', popupUrl);
+
+    // Verify popup has been closed
+    cy.window().then((win) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      expect((win as any).testPopupCloseCalled()).to.be.true;
+    });
+
+    // Verify that the WebSocket send method was called with Cancel after closing the chat
+    cy.get('@wsSend').should('be.calledWithMatch', McpAuthenticationResponse.Cancel);
   });
 
   after(() => {
