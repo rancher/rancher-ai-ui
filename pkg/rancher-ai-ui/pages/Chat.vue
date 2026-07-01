@@ -146,6 +146,24 @@ const systemErrors = computed(() => {
   }
 });
 
+const processingMessageState = computed(() => {
+  if (!hasPermissions) {
+    return null;
+  }
+
+  // We don't want to show the processing message state when the websocket connection is not open.
+  if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
+    return null;
+  }
+
+  // Connection phase takes priority over the processing message state.
+  if (connectionPhase.value && connectionPhase.value !== ConnectionPhase.Idle) {
+    return null;
+  }
+
+  return processingState.value;
+});
+
 const disabled = computed(() => {
   return aiAgentDeploymentState.value !== AIServiceState.Active ||
     systemErrors.value.length > 0 ||
@@ -408,7 +426,7 @@ function unmount() {
         :messages="messages"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
-        :processing-state="hasPermissions ? processingState : { phase: MessagePhase.Idle }"
+        :processing-state="processingMessageState"
         v-bind="$attrs"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
@@ -416,6 +434,7 @@ function unmount() {
       />
       <Processing
         class="connection-processing-label text-label"
+        data-test-prefix="connection"
         :phase="connectionPhase"
         :show-progress="![
           ConnectionPhase.Connected,
@@ -424,8 +443,8 @@ function unmount() {
         ].includes(connectionPhase)"
       />
       <Context
-        :value="!hasPermissions || systemErrors.length ? [] : context"
-        :disabled="disabled"
+        :value="hasPermissions ? context : []"
+        :disabled="!isChatInitialized || disabled"
         @select="selectContext"
       />
       <Console
@@ -433,7 +452,7 @@ function unmount() {
         :llm-config="llmConfig"
         :agents="chatAgents"
         :agent-name="agentName"
-        :disabled="disabled"
+        :disabled="!isChatInitialized || disabled"
         :messages="messages"
         :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"

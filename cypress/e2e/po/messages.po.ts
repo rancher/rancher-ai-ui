@@ -8,10 +8,10 @@ export default class MessagesPo extends ComponentPo {
 
   processingState(label?: string) {
     if (label) {
-      return this.self().get(`[data-testid="rancher-ai-ui-processing-state-${ label.toLowerCase().replace(/\s/g, '-') }"]`);
+      return this.self().get(`[data-testid="rancher-ai-ui-processing-message-state-${ label.toLowerCase().replace(/\s/g, '-') }"]`);
     }
 
-    return this.self().get('[data-testid^="rancher-ai-ui-processing-state-"]');
+    return this.self().get('[data-testid^="rancher-ai-ui-processing-message-state-"]');
   }
 
   scrollButton() {

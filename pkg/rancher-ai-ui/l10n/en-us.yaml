@@ -180,6 +180,7 @@ ai:
   processing:
     phase:
       idle: ''
+      setup: 'Preparing chat'
       initializing: 'Initializing'
       thinking: 'Thinking'
       working: 'Working'

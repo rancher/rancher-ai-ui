@@ -98,6 +98,7 @@ export const enum HookContextTag {
 
 export const enum MessagePhase {
   Idle = 'idle',
+  Setup = 'setup',
   Initializing = 'initializing',
   Thinking = 'thinking',
   Working = 'working',

@@ -36,6 +36,10 @@ const props = defineProps({
     type:    Boolean,
     default: true,
   },
+  dataTestPrefix: {
+    type:    String,
+    default: '',
+  }
 });
 
 const dots = computed(() => {
@@ -85,7 +89,7 @@ onBeforeUnmount(() => {
   <div
     v-if="label"
     class="processing-message"
-    :data-testid="`rancher-ai-ui-processing-state-${ label.toLowerCase().replace(/\s/g, '-') }`"
+    :data-testid="`rancher-ai-ui-processing-${ props.dataTestPrefix }-state-${ label.toLowerCase().replace(/\s/g, '-') }`"
   >
     <span>
       {{ label }}

@@ -11,7 +11,6 @@ import ChatPo from '@/cypress/e2e/po/chat.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
 import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import { SlidingBadgePo } from '@/cypress/e2e/po/hook.po';
-import ContextPo from '@/cypress/e2e/po/context.po';
 import RancherSettingsBannersPo from '@/cypress/e2e/po/components/rancher-settings-banners.po';
 import ApplySettingsPromptPo from '@/cypress/e2e/po/dialog/apply-settings.po';
 import { rancherAgentConfig, fleetAgentConfig, provisioningAgentConfig } from '@/cypress/e2e/blueprints/aiAgentConfigs';
@@ -91,9 +90,125 @@ describe('Chat', () => {
     });
   });
 
-  describe('Disconnections handling', () => {
+  describe('Connection and Processing labels', () => {
+    before(() => {
+      cy.login();
+      cy.cleanChatHistory();
+      cy.clearLLMResponses();
+    });
+
     beforeEach(() => {
       cy.login();
+    });
+
+    it('It should become ready when chat is initialized', () => {
+      const localClusterDashboard = new ClusterDashboardPagePo('local');
+
+      localClusterDashboard.goTo();
+
+      chat.open();
+
+      chat.isNotReady();
+      chat.console().isDisabled();
+      chat.context().isDisabled();
+
+      chat.isReady();
+      chat.console().isNotDisabled();
+      chat.context().isNotDisabled();
+      chat.messagesPanel().processingState().should('not.exist');
+    });
+
+    it('It should not become ready when chat is not initialized', () => {
+      const localClusterDashboard = new ClusterDashboardPagePo('local');
+
+      localClusterDashboard.goTo();
+
+      // Mock th WebSocket to never receive the chat-metadata message, so the chat will never become ready
+      // We want to simulate delayed initialization of the chat - this can happen when several agents are defined
+      // so the server takes longer to check all MCP servers and send the chat-metadata containing the agents list.
+      cy.window().then((win) => {
+        const OriginalWebSocket = win.WebSocket;
+
+        cy.stub(win, 'WebSocket').callsFake((url, protocols) => {
+          const ws = new OriginalWebSocket(url, protocols);
+
+          Object.defineProperty(ws, 'onmessage', {
+            set(originalListener) {
+              this._onmessage = function(event: MessageEvent) {
+                // Intercept the chat-metadata message and replace it with a fake one
+                if (event.data.includes('<chat-metadata>')) {
+                  const mockEvent = new MessageEvent('message', { data: '<chat-metadata></chat-metadata>' });
+
+                  return originalListener.call(this, mockEvent);
+                }
+
+                return originalListener.call(this, event);
+              };
+            },
+          });
+
+          return ws;
+        });
+      });
+
+      chat.open();
+
+      chat.messagesPanel().processingState().contains('Preparing chat').should('be.visible');
+      chat.isNotReady();
+      chat.console().isDisabled();
+      chat.context().isDisabled();
+    });
+
+    it('it should show Generating response label and NOT UI tools label', () => {
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      for (let i = 0; i < 2; i++) {
+        chat.sendMessage(`Request ${ i + 1 }`);
+
+        chat.messagesPanel().processingState('Generating response').should('be.visible');
+
+        chat.messagesPanel().processingState('Processing UI tools').should('not.exist');
+
+        const responseMessage = chat.getMessage(3 + (i * 2));
+
+        responseMessage.isCompleted();
+      }
+
+      chat.messagesPanel().processingState().should('not.exist');
+    });
+
+    it('it should show Generating response label AND UI tools label', () => {
+      cy.installUIToolsDefinition();
+
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      for (let i = 0; i < 2; i++) {
+        chat.sendMessage(`Request ${ i + 1 }`);
+
+        chat.messagesPanel().processingState('Generating response').should('be.visible');
+
+        chat.messagesPanel().processingState('Processing UI tools').should('be.visible');
+
+        const responseMessage = chat.getMessage(3 + (i * 2));
+
+        responseMessage.isCompleted();
+      }
+
+      chat.messagesPanel().processingState().should('not.exist');
+
+      cy.uninstallUIToolsDefinition();
     });
 
     it('it should support reconnections on settings changes', () => {
@@ -132,6 +247,9 @@ describe('Chat', () => {
       // Check for the reconnecting phase
       chat.isNotReady();
       chat.processingState('Reconnecting').should('be.visible');
+
+      // Verify that the processing message state is not visible when connection phase is visible
+      chat.messagesPanel().processingState().should('not.exist');
 
       chat.isReady(20000);
       chat.processingState('Reconnecting').should('not.exist');
@@ -187,12 +305,18 @@ describe('Chat', () => {
       chat.isNotReady();
       chat.processingState('Reconnecting').should('be.visible');
 
+      // Verify that the processing message state is not visible when connection phase is visible
+      chat.messagesPanel().processingState().should('not.exist');
+
       chat.close();
       chat.open();
 
       // Reconnection should happen and the chat should be ready after that
       chat.isNotReady();
       chat.processingState('Connecting').should('be.visible');
+
+      // Verify that the processing message state is not visible when connection phase is visible
+      chat.messagesPanel().processingState().should('not.exist');
 
       chat.isReady(20000);
       chat.processingState('Connecting').should('not.exist');
@@ -222,6 +346,9 @@ describe('Chat', () => {
 
       cy.installRancherAIService({ waitForAIServiceReady: false });
 
+      // Verify that the processing message state is not visible when connection phase is visible
+      chat.messagesPanel().processingState().should('not.exist');
+
       // Check for the disconnected phase and error message
       chat.isNotReady();
       chat.processingState('Disconnected').should('be.visible');
@@ -231,6 +358,9 @@ describe('Chat', () => {
       // Check for the reconnecting phase
       chat.isNotReady();
       chat.processingState('Connecting').should('be.visible');
+
+      // Verify that the processing message state is not visible when connection phase is visible
+      chat.messagesPanel().processingState().should('not.exist');
 
       chat.isReady(20000);
       chat.processingState('Connecting').should('not.exist');
@@ -259,6 +389,9 @@ describe('Chat', () => {
       // Check for the reconnecting phase
       chat.isNotReady();
       chat.processingState('Connecting').should('be.visible');
+
+      // Verify that the processing message state is not visible when connection phase is visible
+      chat.messagesPanel().processingState().should('not.exist');
 
       chat.isReady(20000);
       chat.processingState('Connecting').should('not.exist');
@@ -316,6 +449,9 @@ describe('Chat', () => {
 
       chat.processingState('Connecting').should('be.visible');
 
+      // Verify that the processing message state is not visible when connection phase is visible
+      chat.messagesPanel().processingState().should('not.exist');
+
       chat.isReady(20000);
       chat.processingState('Connecting').should('not.exist');
 
@@ -334,6 +470,8 @@ describe('Chat', () => {
     });
 
     after(() => {
+      cy.login();
+      cy.uninstallUIToolsDefinition();
       cy.installRancherAIService();
     });
   });
@@ -502,11 +640,11 @@ describe('Chat', () => {
 
       chat.sendMessage('Create a pod named my-pod in default namespace');
 
-      const processingState = chat.processingState('Awaiting confirmation');
+      const processingState = chat.messagesPanel().processingState('Awaiting confirmation');
 
       // Verify the processing label is visible and not covered by the console panel
       processingState.should('be.visible').then(($phase) => {
-        new ContextPo().self().then(($context) => {
+        chat.context().panel().then(($context) => {
           const phaseRect = $phase[0].getBoundingClientRect();
           const contextRect = $context[0].getBoundingClientRect();
 
@@ -557,7 +695,7 @@ describe('Chat', () => {
       responseMessage.self().should('not.be.visible');
 
       // Verify that the processing state is not visible as we scroll up
-      chat.processingState().should('not.be.visible');
+      chat.messagesPanel().processingState().should('not.be.visible');
 
       // Response is still streaming...
       responseMessage.isCompleted();
@@ -646,7 +784,7 @@ describe('Chat', () => {
         responseMessage.isCompleted();
       }
 
-      chat.processingState().should('not.exist');
+      chat.messagesPanel().processingState().should('not.exist');
 
       chat.messagesPanel().scrollTop();
 
@@ -684,7 +822,7 @@ describe('Chat', () => {
         responseMessage.isCompleted();
       }
 
-      chat.processingState().should('not.exist');
+      chat.messagesPanel().processingState().should('not.exist');
 
       chat.messagesPanel().scrollTop();
 
@@ -745,7 +883,7 @@ describe('Chat', () => {
         responseMessage.isCompleted();
       }
 
-      chat.processingState().should('not.exist');
+      chat.messagesPanel().processingState().should('not.exist');
 
       chat.messagesPanel().scrollTop();
 
@@ -785,7 +923,7 @@ describe('Chat', () => {
         responseMessage.isCompleted();
       }
 
-      chat.processingState().should('not.exist');
+      chat.messagesPanel().processingState().should('not.exist');
 
       chat.messagesPanel().scrollTop();
 
@@ -918,7 +1056,7 @@ describe('Chat', () => {
         responseMessage.isCompleted();
       }
 
-      chat.processingState().should('not.exist');
+      chat.messagesPanel().processingState().should('not.exist');
 
       chat.messagesPanel().scrollTop();
 
@@ -973,7 +1111,7 @@ describe('Chat', () => {
         responseMessage.isCompleted();
       }
 
-      chat.processingState().should('not.exist');
+      chat.messagesPanel().processingState().should('not.exist');
 
       // Verify that the request message is not visible and the last message is visible, meaning that the chat has scrolled to the bottom
       chat.getMessage(2).self().should('not.be.visible');
@@ -995,77 +1133,6 @@ describe('Chat', () => {
       systemErrorMessage.containsText('Rancher AI Agent pod not found. Please ensure the Rancher AI assistant services are correctly installed and you have the necessary permissions to access it.');
 
       cy.installRancherAIService({ waitForAIServiceReady: true });
-    });
-
-    after(() => {
-      cy.login();
-      cy.clearLLMResponses();
-      cy.cleanChatHistory();
-      cy.uninstallUIToolsDefinition();
-    });
-  });
-
-  describe('Processing label', () => {
-    before(() => {
-      cy.login();
-      cy.cleanChatHistory();
-      cy.clearLLMResponses();
-    });
-
-    beforeEach(() => {
-      cy.login();
-    });
-
-    it('it should show Generating response label and NOT UI tools label', () => {
-      HomePagePo.goTo();
-
-      chat.open();
-
-      const welcomeMessage = chat.getMessage(1);
-
-      welcomeMessage.isCompleted();
-
-      for (let i = 0; i < 2; i++) {
-        chat.sendMessage(`Request ${ i + 1 }`);
-
-        chat.processingState('Generating response').should('be.visible');
-
-        chat.processingState('Processing UI tools').should('not.exist');
-
-        const responseMessage = chat.getMessage(3 + (i * 2));
-
-        responseMessage.isCompleted();
-      }
-
-      chat.processingState().should('not.exist');
-    });
-
-    it('it should show Generating response label AND UI tools label', () => {
-      cy.installUIToolsDefinition();
-
-      HomePagePo.goTo();
-
-      chat.open();
-
-      const welcomeMessage = chat.getMessage(1);
-
-      welcomeMessage.isCompleted();
-
-      for (let i = 0; i < 2; i++) {
-        chat.sendMessage(`Request ${ i + 1 }`);
-
-        chat.processingState('Generating response').should('be.visible');
-
-        chat.processingState('Processing UI tools').should('be.visible');
-
-        const responseMessage = chat.getMessage(3 + (i * 2));
-
-        responseMessage.isCompleted();
-      }
-
-      chat.processingState().should('not.exist');
-
-      cy.uninstallUIToolsDefinition();
     });
 
     after(() => {

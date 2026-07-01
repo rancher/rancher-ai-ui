@@ -37,6 +37,10 @@ export class ConsolePo extends ComponentPo {
     super('[data-testid="rancher-ai-ui-chat-console"]');
   }
 
+  isNotDisabled() {
+    return this.self().should('not.have.class', 'disabled-panel');
+  }
+
   textarea() {
     return this.self().get('textarea[data-testid="rancher-ai-ui-chat-input-textarea"]');
   }

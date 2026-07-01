@@ -88,7 +88,7 @@ export function useChatMessageComposable(
 
   const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
-  const processingState = computed(() => store.getters['rancher-ai-ui/chat/processingState'](chatId) || { phase: MessagePhase.Initializing });
+  const processingState = computed(() => store.getters['rancher-ai-ui/chat/processingState'](chatId));
 
   const setProcessingState = (processingState: MessageProcessingState) => {
     store.commit('rancher-ai-ui/chat/setProcessingState', {
@@ -414,9 +414,9 @@ export function useChatMessageComposable(
       currentMsg.value.completed = true;
     }
 
-    clearMessageBox();
-
     AuthenticationHandler.abortPendingRequests();
+
+    clearMessageBox();
 
     setProcessingState({ phase: MessagePhase.Idle });
   }
