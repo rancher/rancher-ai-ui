@@ -78,7 +78,7 @@ button {
     background: var(--body-bg);
     line-height: initial;
 
-    &.btn-medium {
+    &.rc-button.btn-medium {
       padding: 14px 0;
     }
   }

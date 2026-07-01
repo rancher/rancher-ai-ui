@@ -1,6 +1,6 @@
 import { shallowMount } from '@vue/test-utils';
 import AIAgentSettings from '../AIAgentSettings.vue';
-import { Settings, SettingsFormData } from '../../types';
+import { Settings, SettingsFormData, ValidationStatus } from '../../types';
 import { LLMProvider as ChatBotEnum } from '../../../../types';
 
 // Mock Password component to avoid clipboard-polyfill dependency
@@ -215,6 +215,25 @@ describe('AIAgentSettings.vue', () => {
 
       expect(passwordInputs.length).toBeGreaterThan(0);
     });
+
+    it('should use GENERIC_OPENAI_URL and GENERIC_OPENAI_API_KEY for GenericOpenAI chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:         ChatBotEnum.GenericOpenAI,
+            [Settings.GENERIC_OPENAI_URL]:     'https://api.example.com/v1',
+            [Settings.GENERIC_OPENAI_API_KEY]:       'api-key-xxx'
+          } as SettingsFormData
+        },
+      });
+
+      const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
+      const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
+
+      expect(inputs.length).toBeGreaterThanOrEqual(1);
+      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
+    });
   });
 
   describe('Bedrock Configuration', () => {
@@ -280,6 +299,68 @@ describe('AIAgentSettings.vue', () => {
 
       // The banners should be present in the template but hidden based on bedrockErrorField value
       expect(errorBanners.length).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('GenericOpenAI Configuration', () => {
+    it('should render GenericOpenAI fields for GenericOpenAI chatbot', () => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:      ChatBotEnum.GenericOpenAI,
+            [Settings.GENERIC_OPENAI_URL]: 'https://api.example.com/v1'
+          } as SettingsFormData
+        },
+      });
+
+      const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
+
+      expect(inputs.length).toBeGreaterThanOrEqual(1);
+
+      const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
+
+      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should not render GenericOpenAI fields for other chatbots', () => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+            [Settings.OPENAI_API_KEY]: 'sk-xxx'
+          } as SettingsFormData
+        },
+      });
+
+      const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
+      const hasGenericOpenAIUrl = inputs.some((input) => {
+        return input.props('label')?.includes(Settings.GENERIC_OPENAI_URL);
+      });
+
+      expect(hasGenericOpenAIUrl).toBe(false);
+    });
+
+    it('should render both Endpoint URL and API Key fields for GenericOpenAI chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:         ChatBotEnum.GenericOpenAI,
+            [Settings.GENERIC_OPENAI_URL]:     'https://api.example.com/v1',
+            [Settings.GENERIC_OPENAI_API_KEY]: 'api-key-xxx'
+          } as SettingsFormData
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
+      const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
+
+      expect(inputs.length).toBeGreaterThanOrEqual(1);
+      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -562,6 +643,28 @@ describe('AIAgentSettings.vue', () => {
       expect(passwordInputs.length).toBe(0);
     });
 
+    it('should render GenericOpenAI fields for GenericOpenAI chatbot in readOnly mode', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value:    {
+            [Settings.ACTIVE_CHATBOT]:         ChatBotEnum.GenericOpenAI,
+            [Settings.GENERIC_OPENAI_URL]:     'https://api.example.com/v1',
+            [Settings.GENERIC_OPENAI_API_KEY]: 'api-key-xxx'
+          } as SettingsFormData,
+          readOnly: true,
+        },
+      });
+
+      const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
+
+      expect(inputs.length).toBeGreaterThanOrEqual(1);
+
+      const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
+
+      expect(passwordInputs.length).toBe(0);
+    });
+
     it('should render form in read-only state when readOnly is true', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
@@ -642,7 +745,12 @@ describe('AIAgentSettings.vue', () => {
     it('should emit validation error when required fields are missing for Local chatbot', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+            [Settings.OLLAMA_MODEL]:   'mistral'
+          } as SettingsFormData
+        },
       });
 
       await wrapper.vm.$nextTick();
@@ -655,7 +763,68 @@ describe('AIAgentSettings.vue', () => {
     it('should emit validation error when API key is missing for OpenAI chatbot', async() => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData },
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+            [Settings.OPENAI_MODEL]:   'gpt-4'
+          } as SettingsFormData
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[0]?.[0]).toBe(true);
+    });
+
+    it('should emit validation error when API key is missing for Gemini chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini,
+            [Settings.GEMINI_MODEL]:   'gemini-1.5-pro'
+          } as SettingsFormData
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[0]?.[0]).toBe(true);
+    });
+
+    it('should emit validation error when bearer token is missing for Bedrock chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock,
+            [Settings.AWS_REGION]:     'us-east-1',
+            [Settings.BEDROCK_MODEL]:  'anthropic.claude-3-opus-20240229-v1:0',
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[0]?.[0]).toBe(true);
+    });
+
+    it('should emit validation error when region is missing for Bedrock chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:           ChatBotEnum.Bedrock,
+            [Settings.AWS_BEARER_TOKEN_BEDROCK]: 'aws-token',
+            [Settings.BEDROCK_MODEL]:            'anthropic.claude-3-opus-20240229-v1:0',
+          } as SettingsFormData,
+        },
       });
 
       await wrapper.vm.$nextTick();
@@ -683,6 +852,218 @@ describe('AIAgentSettings.vue', () => {
 
       expect(emittedErrors).toBeTruthy();
       expect(emittedErrors?.[0]?.[0]).toBe(false);
+    });
+
+    it('should emit validation error when model validation fails for Bedrock chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:           ChatBotEnum.Bedrock,
+            [Settings.AWS_BEARER_TOKEN_BEDROCK]: 'aws-token',
+            [Settings.AWS_REGION]:               'us-east-1',
+            [Settings.BEDROCK_MODEL]:            'anthropic.claude-3-opus-20240229-v1:0',
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      // Simulate model validation failure
+      const vm = wrapper.vm as any;
+
+      vm.modelValidation[ChatBotEnum.Bedrock].status = ValidationStatus.ERROR;
+
+      // Trigger validation with all fields but error status
+      vm.validateSettings(vm.formData);
+
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      // Should have error because model validation failed
+      expect(emittedErrors?.[emittedErrors.length - 1]?.[0]).toBe(true);
+    });
+
+    it('should emit validation error when endpoint URL is missing for GenericOpenAI chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:         ChatBotEnum.GenericOpenAI,
+            [Settings.GENERIC_OPENAI_API_KEY]: 'api-key-xxx',
+            [Settings.GENERIC_OPENAI_MODEL]:   'gpt-3.5-turbo'
+          } as SettingsFormData
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[0]?.[0]).toBe(true);
+    });
+
+    it('should emit validation error when API key is missing for GenericOpenAI chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:       ChatBotEnum.GenericOpenAI,
+            [Settings.GENERIC_OPENAI_URL]:   'https://api.example.com/v1',
+            [Settings.GENERIC_OPENAI_MODEL]:        'gpt-3.5-turbo'
+          } as SettingsFormData
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[0]?.[0]).toBe(true);
+    });
+
+    it('should not emit validation error when all required fields are provided for GenericOpenAI chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:         ChatBotEnum.GenericOpenAI,
+            [Settings.GENERIC_OPENAI_URL]:     'https://api.example.com/v1',
+            [Settings.GENERIC_OPENAI_API_KEY]: 'api-key-xxx',
+            [Settings.GENERIC_OPENAI_MODEL]:   'gpt-3.5-turbo',
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[0]?.[0]).toBe(false);
+    });
+
+    it('should emit validation error when model is missing for Local chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+            [Settings.OLLAMA_URL]:     'http://localhost:11434'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      // Manually trigger validation with all fields but no model
+      const vm = wrapper.vm as any;
+
+      vm.validateSettings({
+        [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+        [Settings.OLLAMA_URL]:     'http://localhost:11434'
+      });
+
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[emittedErrors.length - 1]?.[0]).toBe(true);
+    });
+
+    it('should emit validation error when model is missing for OpenAI chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:  ChatBotEnum.OpenAI,
+            [Settings.OPENAI_API_KEY]: 'sk-xxx'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      // Manually trigger validation with all fields but no model
+      const vm = wrapper.vm as any;
+
+      vm.validateSettings({
+        [Settings.ACTIVE_CHATBOT]:  ChatBotEnum.OpenAI,
+        [Settings.OPENAI_API_KEY]: 'sk-xxx'
+      });
+
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[emittedErrors.length - 1]?.[0]).toBe(true);
+    });
+
+    it('should emit validation error when model is missing for Gemini chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini,
+            [Settings.GOOGLE_API_KEY]: 'api-key-xxx'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      // Manually trigger validation with all fields but no model
+      const vm = wrapper.vm as any;
+
+      vm.validateSettings({
+        [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini,
+        [Settings.GOOGLE_API_KEY]: 'api-key-xxx'
+      });
+
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[emittedErrors.length - 1]?.[0]).toBe(true);
+    });
+
+    it('should emit validation error when model is missing for Bedrock chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:           ChatBotEnum.Bedrock,
+            [Settings.AWS_BEARER_TOKEN_BEDROCK]: 'aws-token',
+            [Settings.AWS_REGION]:               'us-east-1'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      // Manually trigger validation with all fields but no model
+      const vm = wrapper.vm as any;
+
+      vm.validateSettings({
+        [Settings.ACTIVE_CHATBOT]:           ChatBotEnum.Bedrock,
+        [Settings.AWS_BEARER_TOKEN_BEDROCK]: 'aws-token',
+        [Settings.AWS_REGION]:               'us-east-1'
+      });
+
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[emittedErrors.length - 1]?.[0]).toBe(true);
+    });
+
+    it('should emit validation error when model is missing for GenericOpenAI chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:         ChatBotEnum.GenericOpenAI,
+            [Settings.GENERIC_OPENAI_URL]:     'https://api.example.com/v1',
+            [Settings.GENERIC_OPENAI_API_KEY]: 'api-key-xxx'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      const emittedErrors = wrapper.emitted('update:validation-error');
+
+      expect(emittedErrors).toBeTruthy();
+      expect(emittedErrors?.[0]?.[0]).toBe(true);
     });
   });
 

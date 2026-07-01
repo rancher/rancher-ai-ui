@@ -329,8 +329,11 @@ aiConfig:
         header: AI Provider
         description: Configure the provider for your personal AI assistant
         banner:
-          header: "Privacy Notice:"
-          description: 'When using external, third-party providers, please be aware that SUSE does not own or control this LLM and is not responsible for its output. Your prompts and data will be sent to the provider’s servers (e.g., Google’s servers for Gemini). These providers may use your data according to their own privacy policies. The additional risk with public LLMs is the much wider dataset they use for training. Your input data could potentially be incorporated into that dataset, making it accessible to other users or used for future model training.<br><br>For highly sensitive or confidential information, we strongly recommend using a local provider instead.'
+          privacy:
+            header: "Privacy Notice:"
+            description: 'When using external, third-party providers, please be aware that SUSE does not own or control this LLM and is not responsible for its output. Your prompts and data will be sent to the provider’s servers (e.g., Google’s servers for Gemini). These providers may use your data according to their own privacy policies. The additional risk with public LLMs is the much wider dataset they use for training. Your input data could potentially be incorporated into that dataset, making it accessible to other users or used for future model training.<br><br>For highly sensitive or confidential information, we strongly recommend using a local provider instead.'
+          thirdParty:
+            description: 'Use this option if you want to configure another AI provider using OpenAI API standards (e.g. same protocol, same structure, ...)'
         noPermission:
           list: You do not have permission to view or edit the AI Provider settings. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>.
           edit: You do not have permission to edit the AI Provider settings.
@@ -537,12 +540,24 @@ aiConfig:
         bedrock:
           name: Bedrock
           description: Use Amazon's Bedrock models
+        generic-openai:
+          name: Custom
+          description: Use other 3rd party models
     AWS_REGION:
       label: AWS Region
       description: The AWS region where your Bedrock instance is hosted
     AWS_BEARER_TOKEN_BEDROCK:
       label: AWS Bedrock Bearer Token
       description: The bearer token to authenticate requests to AWS Bedrock
+    GENERIC_OPENAI_URL:
+      label: Endpoint URL
+      description: A valid HTTP/HTTPS endpoint for the LLM
+    GENERIC_OPENAI_API_KEY:
+      label: API Key
+      description: The API key to authenticate requests
+    GENERIC_OPENAI_MODEL:
+      label: Model
+      description: The AI model to use for generating responses
   dialog:
     applySettings:
       title: Are you sure?
