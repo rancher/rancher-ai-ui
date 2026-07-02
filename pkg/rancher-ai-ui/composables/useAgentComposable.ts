@@ -1,8 +1,9 @@
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useStore } from 'vuex';
 import { RANCHER_AI_SCHEMA } from '../product';
 import { Agent, AIAgentConfigCRD } from '../types';
 import { formatAgentFromCRD } from '../utils/format';
+import { error } from '../utils/log';
 
 export const DEFAULT_AI_AGENT = 'rancher';
 
@@ -24,7 +25,12 @@ export function useAgentComposable(chatId: string) {
 
   async function fetchAgents() {
     if (store.getters['management/canList'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG)) {
-      await store.dispatch('management/findAll', { type: RANCHER_AI_SCHEMA.AI_AGENT_CONFIG });
+      // This can throw errors if called in the middle of server redeployments
+      try {
+        await store.dispatch('management/findAll', { type: RANCHER_AI_SCHEMA.AI_AGENT_CONFIG });
+      } catch (err) {
+        error('Failed to fetch AI agents:', err);
+      }
     }
   }
 
@@ -35,13 +41,10 @@ export function useAgentComposable(chatId: string) {
     });
   }
 
-  onMounted(() => {
-    fetchAgents();
-  });
-
   return {
     agents,
-    selectAgent,
     agentName,
+    fetchAgents,
+    selectAgent,
   };
 }

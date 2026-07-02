@@ -47,6 +47,7 @@ const {
   agents,
   agentName,
   selectAgent,
+  fetchAgents,
 } = useAgentComposable(CHAT_ID);
 
 const {
@@ -315,6 +316,7 @@ watch(() => aiAgentDeploymentState.value, (newState, oldState) => {
    * AI agent became active on mount or after a service state update - connect to the existing chat if there is one in memory, otherwise start a new one
    */
   if (oldState !== AIServiceState.Active && newState === AIServiceState.Active) {
+    fetchAgents();
     connect(storageType === StorageType.InMemory ? null : chatId);
   }
 
