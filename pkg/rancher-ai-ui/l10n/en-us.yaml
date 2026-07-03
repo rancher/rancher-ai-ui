@@ -567,7 +567,7 @@ aiConfig:
       description: The URL where your Ollama instance is hosted
     OPENAI_URL:
       label: OpenAI Third-Party URL
-      description: (Deprecated) The URL of a third-party OpenAI-compatible service, e.g., Azure or Evroc - Try to use the "Custom" option instead, which supports any OpenAI-compatible provider.
+      description: '(Deprecated) The URL of a third-party OpenAI-compatible service, e.g., Azure or Evroc - Try to use the "Custom" option instead, which supports any OpenAI-compatible provider.'
     OPENAI_API_KEY:
       label: OpenAI Key
       description: The key to authenticate requests to OpenAI’s services
