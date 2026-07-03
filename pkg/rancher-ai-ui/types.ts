@@ -427,4 +427,5 @@ export const enum LLMProvider {
   OpenAI = 'openai',
   Gemini = 'gemini',
   Bedrock = 'bedrock',
+  GenericOpenAI = 'generic-openai',
 }

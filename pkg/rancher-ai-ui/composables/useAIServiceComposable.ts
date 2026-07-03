@@ -2,6 +2,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { warn } from '../utils/log';
+import { decodeModelKey } from '../utils/settings';
 import { AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME, PERMISSIONS_DOCS_URL } from '../product';
 import { CONFIG_MAP, WORKLOAD_TYPES } from '@shell/config/types';
 import { AIServiceState, ChatError, LLMConfig } from '../types';
@@ -67,7 +68,7 @@ export function useAIServiceComposable() {
 
     try {
       if (activeLLM) {
-        const modelKey = `${ activeLLM.toUpperCase() }_MODEL`;
+        const modelKey = decodeModelKey(activeLLM);
 
         model = configMapData[modelKey] || '';
       }

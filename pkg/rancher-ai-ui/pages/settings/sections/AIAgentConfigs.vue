@@ -655,7 +655,6 @@ watch(validationErrors, (errors) => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 70rem;
   flex-grow: 1;
 }
 

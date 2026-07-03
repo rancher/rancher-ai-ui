@@ -129,6 +129,10 @@ onMounted(() => {
   }
 }
 
+.body {
+  max-width: 85rem;
+}
+
 .clickable {
   cursor: pointer;
 }

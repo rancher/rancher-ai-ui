@@ -198,7 +198,17 @@ describe('Multi Agent Chat', () => {
       rancherAgent.checkSelected();
 
       // Restore the harvester agent config to have 2 active agents
-      cy.updateAgentConfig(harvesterAgentConfig);
+      // TODO:
+      //   Adding a change to systemPrompt to trigger a force update of the agent status.
+      //   This is a known issue with the controller that it does not update the status of an agent.
+      //   Once fixed, we can remove the systemPrompt change and just update the mcpURL.
+      cy.updateAgentConfig({
+        ...harvesterAgentConfig,
+        spec: {
+          ...harvesterAgentConfig.spec,
+          systemPrompt: 'Harvester system prompt new',
+        }
+      });
 
       // Verify that the Adaptive Agent(s) Selection option is shown again and is selected by default
       selectAgent.self().contains('Adaptive Agent(s) Selection');

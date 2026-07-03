@@ -14,10 +14,13 @@ import AdvancedSection from '@shell/components/AdvancedSection.vue';
 import Password from '@shell/components/form/Password.vue';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import formRulesGenerator from '@shell/utils/validators/formRules';
+import { decodeModelKey } from '../../../utils/settings';
 import { LLMProvider as ChatBotEnum } from '../../../types';
 import { Settings, SettingsFormData, ValidationStatus } from '../types';
 import ToggleGroup from '../../../components/toggle/toggle-group.vue';
 import { useAIAgentApiComposable } from '../../../composables/useAIAgentApiComposable';
+
+type ChatBotConfigKey = Settings.OLLAMA_URL | Settings.GOOGLE_API_KEY | Settings.OPENAI_API_KEY | Settings.AWS_BEARER_TOKEN_BEDROCK | Settings.GENERIC_OPENAI_URL;
 
 interface ModelValidationPayload {
   status?: ValidationStatus;
@@ -104,6 +107,12 @@ const activeChatbotOptions = [
     icon:        'icon-aws-bedrock',
     value:       ChatBotEnum.Bedrock,
   },
+  {
+    name:        t(`aiConfig.form.${ Settings.ACTIVE_CHATBOT }.options.${ ChatBotEnum.GenericOpenAI }.name`),
+    description: t(`aiConfig.form.${ Settings.ACTIVE_CHATBOT }.options.${ ChatBotEnum.GenericOpenAI }.description`, {}, true),
+    icon:        'icon-cloud-plus',
+    value:       ChatBotEnum.GenericOpenAI,
+  },
 ];
 
 const formData = computed<SettingsFormData>(() => {
@@ -114,7 +123,9 @@ const formData = computed<SettingsFormData>(() => {
 });
 
 function getModelKey(chatbot: ChatBotEnum | string) {
-  return Settings[`${ chatbot.toUpperCase() }_MODEL` as keyof typeof Settings] as Settings.OLLAMA_MODEL | Settings.GEMINI_MODEL | Settings.OPENAI_MODEL | Settings.BEDROCK_MODEL;
+  const key = decodeModelKey(chatbot);
+
+  return Settings[key as keyof typeof Settings];
 }
 
 const models = ref<Record<ChatBotEnum, string[]>>({} as Record<ChatBotEnum, string[]>);
@@ -126,7 +137,8 @@ const modelValidation = ref([
   ChatBotEnum.Local,
   ChatBotEnum.OpenAI,
   ChatBotEnum.Gemini,
-  ChatBotEnum.Bedrock
+  ChatBotEnum.Bedrock,
+  ChatBotEnum.GenericOpenAI
 ].reduce((acc, key) => {
   acc[key] = {
     status:  ValidationStatus.VALIDATING,
@@ -144,7 +156,8 @@ const errorField = ref([
   ChatBotEnum.Bedrock,
   ChatBotEnum.Local,
   ChatBotEnum.OpenAI,
-  ChatBotEnum.Gemini
+  ChatBotEnum.Gemini,
+  ChatBotEnum.GenericOpenAI
 ].reduce((acc, key) => ({
   ...acc,
   [key]: {}
@@ -153,7 +166,7 @@ const errorField = ref([
 const isModelsAvailable = computed(() => {
   const activeChatbot = formData.value[Settings.ACTIVE_CHATBOT];
 
-  if (activeChatbot === ChatBotEnum.Bedrock) {
+  if (activeChatbot === ChatBotEnum.Bedrock || activeChatbot === ChatBotEnum.GenericOpenAI) {
     return true;
   }
 
@@ -185,7 +198,7 @@ const isRequiredRule = (key: string) => {
   ];
 };
 
-const chatbotConfigKey = computed<Settings.OLLAMA_URL | Settings.GOOGLE_API_KEY | Settings.OPENAI_API_KEY | Settings.AWS_BEARER_TOKEN_BEDROCK>(() => {
+const chatbotConfigKey = computed<ChatBotConfigKey>(() => {
   const activeChatbot = formData.value[Settings.ACTIVE_CHATBOT];
 
   switch (activeChatbot) {
@@ -195,6 +208,8 @@ const chatbotConfigKey = computed<Settings.OLLAMA_URL | Settings.GOOGLE_API_KEY 
     return Settings.GOOGLE_API_KEY;
   case ChatBotEnum.Bedrock:
     return Settings.AWS_BEARER_TOKEN_BEDROCK;
+  case ChatBotEnum.GenericOpenAI:
+    return Settings.GENERIC_OPENAI_URL;
   case ChatBotEnum.Local:
   default:
     return Settings.OLLAMA_URL;
@@ -230,6 +245,11 @@ function validateSettings(updatedForm: SettingsFormData) {
       hasError = true;
     }
     if (modelValidation.value[ChatBotEnum.Bedrock].status === ValidationStatus.ERROR) {
+      hasError = true;
+    }
+    break;
+  case ChatBotEnum.GenericOpenAI:
+    if (!updatedForm[Settings.GENERIC_OPENAI_URL] || !updatedForm[Settings.GENERIC_OPENAI_API_KEY]) {
       hasError = true;
     }
     break;
@@ -355,7 +375,7 @@ const updateChatbotValue = async(val: ChatBotEnum) => {
   updateValue(Settings.ACTIVE_CHATBOT, val);
 
   // Fetch models only when they are not already fetched for the selected chatbot
-  if (models.value[val] === undefined) {
+  if (models.value[val] === undefined && val !== ChatBotEnum.GenericOpenAI) {
     fetchModels(val);
   }
 };
@@ -421,7 +441,12 @@ onMounted(() => {
   const activeChatbot = formData.value[Settings.ACTIVE_CHATBOT];
 
   if (activeChatbot) {
-    fetchModels(activeChatbot as ChatBotEnum);
+    // We don't need to fetch models but we want to validate the settings
+    if (activeChatbot === ChatBotEnum.GenericOpenAI) {
+      validateSettings(formData.value);
+    } else {
+      fetchModels(activeChatbot as ChatBotEnum);
+    }
   }
 });
 </script>
@@ -450,10 +475,18 @@ onMounted(() => {
       class="mt-0 mb-0"
     >
       <span>
-        <b>{{ t('aiConfig.form.section.provider.banner.header', {}, true) }}</b>
+        <b>{{ t('aiConfig.form.section.provider.banner.privacy.header', {}, true) }}</b>
         <br>
-        <span v-clean-html="t('aiConfig.form.section.provider.banner.description', {}, true)" />
+        <span v-clean-html="t('aiConfig.form.section.provider.banner.privacy.description', {}, true)" />
       </span>
+    </banner>
+
+    <banner
+      v-if="formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.GenericOpenAI && !readOnly"
+      color="info"
+      class="mt-0 mb-0"
+    >
+      <span v-clean-html="t('aiConfig.form.section.provider.banner.thirdParty.description', {}, true)" />
     </banner>
 
     <div
@@ -482,7 +515,7 @@ onMounted(() => {
     </div>
 
     <div
-      v-if="!props.readOnly && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Bedrock"
+      v-if="!props.readOnly && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Bedrock && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.GenericOpenAI"
       class="form-field"
     >
       <Password
@@ -544,9 +577,41 @@ onMounted(() => {
       </div>
     </template>
 
+    <template v-if="formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.GenericOpenAI">
+      <div class="form-field">
+        <LabeledInput
+          :value="formData[Settings.GENERIC_OPENAI_URL]"
+          :label="t(`aiConfig.form.${ Settings.GENERIC_OPENAI_URL }.label`)"
+          :disabled="readOnly"
+          :required="true"
+          :rules="isRequiredRule(`aiConfig.form.${ Settings.GENERIC_OPENAI_URL }.label`)"
+          :mode="readOnly ? _VIEW : _EDIT"
+          @update:value="(val: string) => updateValue(Settings.GENERIC_OPENAI_URL, val)"
+        />
+        <label class="text-label">
+          {{ t(`aiConfig.form.${ Settings.GENERIC_OPENAI_URL }.description`) }}
+        </label>
+      </div>
+      <div
+        v-if="!props.readOnly"
+        class="form-field"
+      >
+        <Password
+          :value="formData[Settings.GENERIC_OPENAI_API_KEY]"
+          :label="t(`aiConfig.form.${ Settings.GENERIC_OPENAI_API_KEY }.label`)"
+          :mode="_EDIT"
+          :required="true"
+          @update:value="(val: string) => updateValue(Settings.GENERIC_OPENAI_API_KEY, val)"
+        />
+        <label class="text-label">
+          {{ t(`aiConfig.form.${ Settings.GENERIC_OPENAI_API_KEY }.description`) }}
+        </label>
+      </div>
+    </template>
+
     <div class="form-field">
       <component
-        :is="formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.Bedrock && modelValidation[ChatBotEnum.Bedrock]?.status === ValidationStatus.ERROR ? LabeledInput : LabeledSelect"
+        :is="(formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.Bedrock && modelValidation[ChatBotEnum.Bedrock]?.status === ValidationStatus.ERROR) || formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.GenericOpenAI ? LabeledInput : LabeledSelect"
         :value="formData[getModelKey(formData[Settings.ACTIVE_CHATBOT])]"
         :label="t(`aiConfig.form.${ getModelKey(formData[Settings.ACTIVE_CHATBOT]) }.label`)"
         :options="models[formData[Settings.ACTIVE_CHATBOT] as ChatBotEnum] || []"
@@ -706,7 +771,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 70rem;
   flex-grow: 1;
 }
 

@@ -16,6 +16,16 @@ jest.mock('vuex', () => {
 // Mock i18n
 jest.mock('@shell/composables/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 
+// Mock FileSelector component - it fixes ButtonVariantProps compiler error
+jest.mock('@shell/components/form/FileSelector.vue', () => ({
+  default: {
+    name:     'FileSelector',
+    template: '<div />',
+    props:    ['value', 'label', 'required'],
+    emits:    ['update:value']
+  }
+}));
+
 const DEFAULT_AI_AGENT = 'rancher';
 
 const mockAgent = (overrides = {}): AIAgentConfigCRD => ({
