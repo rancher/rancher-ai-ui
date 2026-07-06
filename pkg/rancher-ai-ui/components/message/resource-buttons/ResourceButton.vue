@@ -149,23 +149,29 @@ async function loadSchemaAndResource() {
 }
 
 function goTo() {
-  if (!props.value.resource) {
+  if (!resource.value) {
     return;
   }
 
-  if (!!resource.value) {
-    const detailLocation = getDetailLocation(
-      store,
-      product.value.name,
-      schema.value,
-      inStore.value,
-      props.value.resource
-    );
+  const detailLocation = getDetailLocation(
+    store,
+    product.value.name,
+    schema.value,
+    inStore.value,
+    props.value.resource
+  );
 
-    if (detailLocation) {
-      store.state.$router.push(detailLocation);
-    }
+  if (!detailLocation) {
+    const {
+      cluster, type, name, namespace
+    } = props.value.resource || {};
+
+    warn(`No detail location found for resource with { store: ${ inStore.value }, cluster: ${ cluster }, type: ${ type }, name: ${ name }, namespace: ${ namespace } }`);
+
+    return;
   }
+
+  store.state.$router.push(detailLocation);
 }
 
 /**
