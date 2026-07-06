@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, type PropType } from 'vue';
 import { useStore } from 'vuex';
-import { warn } from '../../../utils/log';
 import { useI18n } from '@shell/composables/useI18n';
+import { STORE } from '@shell/store/store-types';
+import { warn } from '../../../utils/log';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { Message, ToolCall } from '../../../types';
 
 const store = useStore();
 const { t } = useI18n(store);
 
-const inStore = 'management';
+const inStore = STORE.MANAGEMENT;
 const POD_TYPE = 'pod';
 
 const props = defineProps({
