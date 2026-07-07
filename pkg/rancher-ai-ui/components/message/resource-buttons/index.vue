@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { MessageAction } from '../../../types';
-import { computed, type PropType, ref } from 'vue';
+import {
+  computed, nextTick, onBeforeUnmount, onMounted, type PropType, ref,
+  useTemplateRef
+} from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import Action from './Action.vue';
+import { MessageAction } from '../../../types';
+import ResourceButton from './ResourceButton.vue';
 
 const THRESHOLD = 7; // Maximum number of actions for human readability
 
@@ -20,6 +23,10 @@ const props = defineProps({
     default: () => ([] as MessageAction[]),
   },
 });
+
+const resourceButtonsRef = useTemplateRef('resourceButtonsRef');
+const visibilityObserver = ref<IntersectionObserver | null>(null);
+const isVisible = ref(false);
 
 const showRemaining = ref(false);
 
@@ -42,6 +49,34 @@ const remaining = computed(() => {
 const toggleRemaining = () => {
   showRemaining.value = !showRemaining.value;
 };
+
+/**
+ * Observe the visibility of the resource buttons container and update isVisible.
+ * This is used to determine when to load the schema and resource for the buttons
+ * to avoid unnecessary API calls when the buttons are not visible in the viewport.
+ */
+function observeButtonsVisibility() {
+  visibilityObserver.value = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      isVisible.value = !!entry.isIntersecting;
+    });
+  }, { threshold: 0.1 });
+
+  nextTick(() => {
+    if (resourceButtonsRef.value) {
+      visibilityObserver.value?.observe(resourceButtonsRef.value);
+    }
+  });
+}
+
+onMounted(observeButtonsVisibility);
+
+onBeforeUnmount(() => {
+  if (visibilityObserver.value) {
+    visibilityObserver.value.disconnect();
+    visibilityObserver.value = null;
+  }
+});
 </script>
 
 <template>
@@ -50,13 +85,19 @@ const toggleRemaining = () => {
       <span>{{ props.label || 'ACTIONS' }}</span>
     </div>
     <div class="chat-msg-actions-container">
-      <div class="chat-msg-action-tags">
+      <div
+        ref="resourceButtonsRef"
+        class="chat-msg-action-tags"
+      >
         <div
           v-for="(action, index) in actions"
           :key="index"
           class="mt-2 chat-msg-actions"
         >
-          <Action :value="action" />
+          <ResourceButton
+            :value="action"
+            :is-visible="isVisible"
+          />
         </div>
         <template v-if="showRemaining">
           <div
@@ -64,7 +105,10 @@ const toggleRemaining = () => {
             :key="index"
             class="mt-2 chat-msg-actions"
           >
-            <Action :value="action" />
+            <ResourceButton
+              :value="action"
+              :is-visible="isVisible"
+            />
           </div>
         </template>
       </div>
