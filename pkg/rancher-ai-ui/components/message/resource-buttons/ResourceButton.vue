@@ -101,13 +101,7 @@ async function fetchResource() {
     const normalizedType = normalizeType(inStore.value, type);
     const id = normalizeId(schema.value, cluster, namespace, name);
 
-    if (isManagementGroup(schema.value)) {
-      await store.dispatch(`${ inStore.value }/find`, {
-        cluster,
-        type: normalizedType,
-        id,
-      });
-    } else if (cluster === 'local') {
+    if (isManagementGroup(schema.value) || cluster === 'local') {
       await store.dispatch(`${ inStore.value }/find`, {
         cluster,
         type: normalizedType,

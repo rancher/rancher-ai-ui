@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
-  computed, nextTick, onBeforeUnmount, onMounted, type PropType, ref
+  computed, nextTick, onBeforeUnmount, onMounted, type PropType, ref,
+  useTemplateRef
 } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
@@ -23,7 +24,7 @@ const props = defineProps({
   },
 });
 
-const resourceButtonsRef = ref<HTMLDivElement | null>(null);
+const resourceButtonsRef = useTemplateRef('resourceButtonsRef');
 const visibilityObserver = ref<IntersectionObserver | null>(null);
 const isVisible = ref(false);
 

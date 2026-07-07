@@ -7,7 +7,7 @@ import { warn } from '../../../utils/log';
 type Store = VuexStore<any> & { rootGetters?: Record<string, string> };
 
 interface Schema {
-  attributes: {
+  attributes?: {
     crd?: boolean | string;
     namespaced?: boolean;
     group?: string;
@@ -46,7 +46,7 @@ const MANAGEMENT_CLOUD_CREDENTIAL = 'management.cattle.io.cloudcredential';
  * @returns True if the schema represents a Custom Resource Definition (CRD), false otherwise
  */
 export function isCRD(schema: Schema | null): boolean {
-  return schema?.attributes.crd === true || schema?.attributes.crd === 'true';
+  return schema?.attributes?.crd === true || schema?.attributes?.crd === 'true';
 }
 
 /**
