@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import { STORE } from '@shell/store/store-types';
 import {
   CATALOG, EVENT, FLEET, MANAGEMENT, NODE, POD, WORKLOAD_TYPES
 } from '@shell/config/types';
@@ -94,7 +95,9 @@ const props = defineProps({
 
 const emit = defineEmits(['action']); // eslint-disable-line no-unused-vars
 
-const inStore = 'management';
+// Explore tool is only for management routes at this time, so we can hardcode the store.
+// If we add more routes in the future, we can make this dynamic based on the route config.
+const inStore = STORE.MANAGEMENT;
 
 const isLoading = ref(true);
 
