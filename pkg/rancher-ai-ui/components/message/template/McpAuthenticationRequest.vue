@@ -117,7 +117,7 @@ function doAction(type: 'confirm' | 'cancel') {
 <style lang='scss' scoped>
 .chat-system-mcp-request-request-message {
   display: flex;
-  gap: 8px;
+  gap: var(--gap);
 }
 
 .chat-system-mcp-request-request-msg-bubble {
@@ -189,12 +189,12 @@ function doAction(type: 'confirm' | 'cancel') {
 .chat-system-mcp-request-request-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--gap);
   margin-top: 16px;
 
   &-buttons {
     display: flex;
-    gap: 8px;
+    gap: var(--gap);
   }
 }
 
