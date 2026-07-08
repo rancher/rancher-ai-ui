@@ -11,7 +11,7 @@ import LabeledInput from '@components/Form/LabeledInput/LabeledInput.vue';
 import formRulesGenerator from '@shell/utils/validators/formRules';
 import { warn } from '../../../../utils/log';
 import { AGENT_NAMESPACE } from '../../../../product';
-import { AiAgentAPIEvent } from '../../../../types';
+import { AIAgentAPIEvent } from '../../../../types';
 import { AiAgentConfigOAuth2SecretPayload } from '../../types';
 import DiscoveryBanner from '../../../../components/DiscoveryBanner/DiscoveryBanner.vue';
 import { useAIAgentApiComposable } from '../../../../composables/useAIAgentApiComposable';
@@ -123,7 +123,7 @@ async function confirmMetadataDiscovery() {
 
   const data = await fetchMcpAuthenticationMetadata({ mcpUrl: props.mcpUrl });
 
-  if (!data || data.code === AiAgentAPIEvent.Error) {
+  if (!data || data.code === AIAgentAPIEvent.Error) {
     mcpScopes.value = [];
 
     metadataDiscoveryStatus.value = {
@@ -134,7 +134,7 @@ async function confirmMetadataDiscovery() {
     return;
   }
 
-  if (data.code === AiAgentAPIEvent.Abort) {
+  if (data.code === AIAgentAPIEvent.Abort) {
     metadataDiscoveryStatus.value = { result: 'info' };
 
     return;
@@ -156,7 +156,7 @@ async function confirmClientInfoDiscovery() {
 
   const data = await fetchMcpAuthenticationClientInfo({ metadataEndpoint: props.value.metadataEndpoint || '' });
 
-  if (!data || data.code === AiAgentAPIEvent.Error) {
+  if (!data || data.code === AIAgentAPIEvent.Error) {
     clientInfoDiscoveryStatus.value = {
       result:  'warning',
       message: data?.message || ''
@@ -165,7 +165,7 @@ async function confirmClientInfoDiscovery() {
     return;
   }
 
-  if (data.code === AiAgentAPIEvent.Abort) {
+  if (data.code === AIAgentAPIEvent.Abort) {
     clientInfoDiscoveryStatus.value = { result: 'info' };
 
     return;

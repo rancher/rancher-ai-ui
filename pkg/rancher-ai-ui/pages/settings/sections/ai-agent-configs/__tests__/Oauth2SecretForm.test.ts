@@ -2,7 +2,7 @@ import { shallowMount, flushPromises } from '@vue/test-utils';
 import { Buffer } from 'buffer';
 import Oauth2SecretForm from '../Oauth2SecretForm.vue';
 import { AiAgentConfigOAuth2SecretPayload } from '../../../types';
-import { AiAgentAPIEvent } from '../../../../../types';
+import { AIAgentAPIEvent } from '../../../../../types';
 
 const mockStore = { dispatch: jest.fn() };
 
@@ -435,7 +435,7 @@ describe('Oauth2SecretForm', () => {
       const payload = mockOauth2Payload();
 
       mockApiComposable.fetchMcpAuthenticationScopes.mockResolvedValueOnce([]);
-      mockApiComposable.fetchMcpAuthenticationMetadata.mockResolvedValueOnce({ code: AiAgentAPIEvent.Error });
+      mockApiComposable.fetchMcpAuthenticationMetadata.mockResolvedValueOnce({ code: AIAgentAPIEvent.Error });
 
       const wrapper = shallowMount(Oauth2SecretForm, {
         ...requiredSetup(),
@@ -489,7 +489,7 @@ describe('Oauth2SecretForm', () => {
 
       // fetchMcpAuthenticationScopes is mocked -> doesn't call fetchMcpAuthenticationMetadata
       mockApiComposable.fetchMcpAuthenticationMetadata = jest.fn().mockResolvedValueOnce({
-        code:    AiAgentAPIEvent.Error,
+        code:    AIAgentAPIEvent.Error,
         message: 'Metadata endpoint unreachable'
       });
 
@@ -619,7 +619,7 @@ describe('Oauth2SecretForm', () => {
       const payload = mockOauth2Payload();
 
       mockApiComposable.fetchMcpAuthenticationClientInfo.mockResolvedValueOnce({
-        code:    AiAgentAPIEvent.Error,
+        code:    AIAgentAPIEvent.Error,
         message: 'Failed to retrieve client info'
       });
 
@@ -644,7 +644,7 @@ describe('Oauth2SecretForm', () => {
     it('should handle client info discovery abort', async() => {
       const payload = mockOauth2Payload();
 
-      mockApiComposable.fetchMcpAuthenticationClientInfo.mockResolvedValueOnce({ code: AiAgentAPIEvent.Abort });
+      mockApiComposable.fetchMcpAuthenticationClientInfo.mockResolvedValueOnce({ code: AIAgentAPIEvent.Abort });
 
       const wrapper = shallowMount(Oauth2SecretForm, {
         ...requiredSetup(),

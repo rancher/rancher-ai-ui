@@ -276,7 +276,7 @@ export const enum StorageType {
   Postgres = 'postgres',
 }
 
-export const enum AiAgentAPIEvent {
+export const enum AIAgentAPIEvent {
   Error = '__error__',
   Abort = '__abort__',
 }

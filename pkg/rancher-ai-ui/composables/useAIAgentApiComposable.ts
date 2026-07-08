@@ -2,7 +2,7 @@ import { ComputedRef } from 'vue';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
 import { error } from '../utils/log';
 import {
-  Agent, AgentSettings, AiAgentAPIEvent, Context, HistoryChat, HistoryChatMessage, LLMProvider, Message,
+  Agent, AgentSettings, AIAgentAPIEvent, Context, HistoryChat, HistoryChatMessage, LLMProvider, Message,
   ToolCall,
   ToolsConfig,
 } from '../types';
@@ -31,7 +31,7 @@ interface McpAuthenticationClientInfo {
 }
 
 interface McpAuthenticationEvent {
-  code?: AiAgentAPIEvent.Abort | AiAgentAPIEvent.Error;
+  code?: AIAgentAPIEvent.Abort | AIAgentAPIEvent.Error;
   message?: string;
 }
 
@@ -169,13 +169,13 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
       return metadata;
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
-        return { code: AiAgentAPIEvent.Abort };
+        return { code: AIAgentAPIEvent.Abort };
       }
 
       error('Failed to fetch MCP authentication metadata:', err);
 
       return {
-        code:    AiAgentAPIEvent.Error,
+        code:    AIAgentAPIEvent.Error,
         message: (err as Error).message || ''
       };
     }
@@ -235,13 +235,13 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
       return await data.json() as McpAuthenticationClientInfo;
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
-        return { code: AiAgentAPIEvent.Abort };
+        return { code: AIAgentAPIEvent.Abort };
       }
 
       error('Failed to fetch MCP authentication client info:', err);
 
       return {
-        code:    AiAgentAPIEvent.Error,
+        code:    AIAgentAPIEvent.Error,
         message: (err as Error).message || ''
       };
     }
