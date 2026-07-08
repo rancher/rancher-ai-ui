@@ -445,11 +445,11 @@ describe('Chat', () => {
       const deployments = [
         'llm-mock',
         'rancher-ai-agent',
-        'rancher-mcp',
+        'rancher-mcp-server',
       ];
 
       deployments.forEach((name) => {
-        const btn = chat.getMessage(3).resourceButton(name);
+        const btn = chat.getMessage(3).resourceButton({ name });
 
         btn.should('be.visible');
       });
@@ -936,11 +936,11 @@ describe('Chat', () => {
       const deployments = [
         'llm-mock',
         'rancher-ai-agent',
-        'rancher-mcp',
+        'rancher-mcp-server',
       ];
 
       deployments.forEach((name) => {
-        const btn = chat.getMessage(2).resourceButton(name);
+        const btn = chat.getMessage(2).resourceButton({ name });
 
         btn.should('be.visible');
       });

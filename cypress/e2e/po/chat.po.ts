@@ -2,6 +2,7 @@ import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
 import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import { MessagePo, ErrorMessagePo } from '@/cypress/e2e/po/message.po';
 import { ConsolePo } from '@/cypress/e2e/po/console.po';
+import MessagesPo from '@/cypress/e2e/po/messages.po';
 
 export default class ChatPo extends ComponentPo {
   rancherHeader: RancherHeaderPo;
@@ -21,6 +22,10 @@ export default class ChatPo extends ComponentPo {
 
   historyButton() {
     return this.self().get('[data-testid="rancher-ai-ui-chat-history-button"]');
+  }
+
+  messagesPanel() {
+    return new MessagesPo();
   }
 
   console() {

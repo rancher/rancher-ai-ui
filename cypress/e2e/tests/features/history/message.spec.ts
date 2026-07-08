@@ -214,11 +214,11 @@ describe('History Messages', () => {
     const deployments = [
       'llm-mock',
       'rancher-ai-agent',
-      'rancher-mcp',
+      'rancher-mcp-server',
     ];
 
     deployments.forEach((name) => {
-      const btn = historyResponseMessage.resourceButton(name);
+      const btn = historyResponseMessage.resourceButton({ name });
 
       btn.should('exist');
     });
