@@ -128,6 +128,7 @@ const confirmationText = computed(() => {
     <div
       v-else
       class="confirmation-status"
+      data-testid="rancher-ai-ui-chat-message-confirmation-status"
     >
       <template v-if="props.message.confirmation?.status === ConfirmationStatus.Confirmed">
         <div

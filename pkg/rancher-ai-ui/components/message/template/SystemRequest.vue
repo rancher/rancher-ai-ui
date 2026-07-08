@@ -58,7 +58,7 @@ function doAction(type: 'confirm' | 'cancel') {
       <div class="chat-system-request-actions">
         <div
           v-if="props.message.confirmation"
-          :data-testid="`rancher-ai-ui-chat-message-confirmation-${props.message.confirmation.status}`"
+          data-testid="rancher-ai-ui-chat-message-confirmation-status"
           :class="['chat-system-request-actions-result', `status-${props.message.confirmation.status}` ]"
         >
           <i :class="[ 'icon', props.message.confirmation.icon ]" />

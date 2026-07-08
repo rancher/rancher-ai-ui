@@ -87,14 +87,20 @@ describe('Multi Agent Messages', () => {
           name: 'createKubernetesResource',
           args: {
             kind:      'Pod',
-            name:      'my-pod',
+            name:      'my-pod-2',
             resource:  {
               apiVersion: 'v1',
               kind:       'Pod',
               metadata:   {
-                name:      'my-pod',
+                name:      'my-pod-2',
                 namespace: 'default'
               },
+              spec: {
+                containers: [{
+                  name:  'my-container',
+                  image: 'nginx'
+                }]
+              }
             },
             cluster:   'local',
             namespace: 'default'
@@ -112,9 +118,10 @@ describe('Multi Agent Messages', () => {
     confirmationRequestMessage.isCompleted();
     confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
     confirmationRequestMessage.confirmButton().click();
-    confirmationRequestMessage.isConfirmed();
-    confirmationRequestMessage.containsText('Confirmed');
+
     confirmationRequestMessage.agentSelectionLabel().contains('Adaptive Agent(s) Selection');
+    confirmationRequestMessage.resourceButton({ name: 'my-pod-2' }).should('exist');
+    confirmationRequestMessage.isConfirmed();
 
     let resultMessage = chat.getMessage(6);
 
@@ -144,6 +151,7 @@ describe('Multi Agent Messages', () => {
     resultMessage.scrollIntoView();
     resultMessage.containsText('Pod created successfully.');
     resultMessage.agentSelectionLabel().contains('Adaptive Agent(s) Selection');
+    resultMessage.resourceButton({ name: 'my-pod-2' }).should('exist');
   });
 
   it('It should correctly parse messages when agent selection is adaptive and multiple agents respond', () => {
@@ -323,6 +331,12 @@ describe('Multi Agent Messages', () => {
                 name:      'my-pod',
                 namespace: 'default'
               },
+              spec: {
+                containers: [{
+                  name:  'my-container',
+                  image: 'nginx'
+                }]
+              }
             },
             cluster:   'local',
             namespace: 'default'
@@ -340,13 +354,13 @@ describe('Multi Agent Messages', () => {
     confirmationRequestMessage.isCompleted();
     confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
 
-    chat.processingState('Awaiting confirmation').should('be.visible');
+    chat.messagesPanel().processingState('Awaiting confirmation').should('be.visible');
 
     confirmationRequestMessage.confirmButton().click();
 
-    confirmationRequestMessage.isConfirmed();
-    confirmationRequestMessage.containsText('Confirmed');
     confirmationRequestMessage.agentSelectionLabel().contains(defaultAgent.displayName);
+    confirmationRequestMessage.isConfirmed();
+    confirmationRequestMessage.resourceButton({ name: 'my-pod' }).should('exist');
 
     let resultMessage = chat.getMessage(4);
 
@@ -401,13 +415,16 @@ describe('Multi Agent Messages', () => {
 
     confirmationRequestMessage.scrollIntoView();
     confirmationRequestMessage.agentSelectionLabel().contains(defaultAgent.displayName);
-    confirmationRequestMessage.containsText('Confirmed');
+
+    confirmationRequestMessage.confirmationStatus().scrollIntoView();
+    confirmationRequestMessage.isConfirmed();
 
     resultMessage = chat.getMessage(4);
 
     resultMessage.scrollIntoView();
     resultMessage.agentSelectionLabel().contains(defaultAgent.displayName);
     resultMessage.containsText('Pod created successfully.');
+    resultMessage.resourceButton({ name: 'my-pod' }).should('exist');
 
     responseMessage = chat.getMessage(6);
 
@@ -528,6 +545,11 @@ describe('Multi Agent Messages', () => {
   });
 
   after(() => {
+    cy.login();
+
+    cy.deleteRancherResource('v1', 'pods', 'default/my-pod', false);
+    cy.deleteRancherResource('v1', 'pods', 'default/my-pod-2', false);
+
     cy.deleteAgentConfig(harvesterAgentConfig);
     cy.cleanChatHistory();
     cy.clearLLMResponses();
