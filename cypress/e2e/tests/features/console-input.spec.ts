@@ -44,7 +44,12 @@ describe('Feature: console-input', () => {
 
       console.autocompleteOverlay().should('be.visible');
 
-      cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]').trigger('keydown', { key: 'Tab', keyCode: 9, which: 9, bubbles: true });
+      cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]').trigger('keydown', {
+        key:     'Tab',
+        keyCode: 9,
+        which:   9,
+        bubbles: true
+      });
 
       console.autocompleteOverlay().should('not.exist');
       cy.get('[data-testid="rancher-ai-ui-chat-input-textarea"]')
