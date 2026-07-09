@@ -46,7 +46,7 @@ ai:
           confirm: 'Continue'
           dismiss: 'Cancel'
         results:
-          confirm: Authentication window open
+          confirm: Authentication window opened
           dismiss: Canceled
       noPermission:
         info: 'You do not have permission to access the Rancher AI Assistant. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>'
@@ -394,7 +394,7 @@ aiConfig:
           authentication:
             title: Authentication
           authenticationType:
-            label: Type
+            label: Authentication Type
           authenticationSecret:
             label: Secret
           caBundleRef:
@@ -406,17 +406,17 @@ aiConfig:
               label: Metadata endpoint
               placeholder: Enter a valid URL
               discoverInfo:
-                info: 'Try to <action>automatically discover the metadata endpoint</action> below based on the <b>MCP endpoint</b> URL.'
-                inProgress: 'Metadata endpoint discovery is now in progress... <action>Cancel</action>'
-                success: 'The metadata endpoint was successfully retrieved and filled it automatically. <action>Run it again</action>.'
-                warning: 'Based on the current <b>MCP endpoint</b> URL, the metadata endpoint could not be retrieved automatically.<message></message><br>Please review it and <action>Try again.</action>'
+                info: 'Try to <action>automatically discover the metadata endpoint and scope details</action> below based on the <b>MCP endpoint</b> URL.'
+                inProgress: 'Metadata endpoint and scope details discovery is now in progress... <action>Cancel</action>'
+                success: 'The metadata endpoint and scope details were successfully retrieved and filled it automatically. <action>Run it again</action>.'
+                warning: 'Based on the current <b>MCP endpoint</b> URL, the metadata endpoint and scope details could not be retrieved automatically.<message></message><br>Please review it and <action>Try again.</action>'
                 message: '<br>{message}<br>'
             client:
               discoverInfo:
-                info: 'Try to <action>automatically discover the client registration and the scope details</action> below based on the <b>Metadata endpoint</b> URL.'
-                inProgress: 'Client registration and scope details discovery is now in progress... <action>Cancel</action>'
-                success: 'The client registration and the scope details were successfully retrieved and filled it automatically. <action>Run it again</action>.'
-                warning: 'Based on the current <b>Metadata endpoint</b> URL, the client registration and the scope details could not be retrieved automatically.<message></message><br>Please review it and <action>Try again.</action>'
+                info: 'Try to <action>automatically discover the client registration details</action> below based on the <b>metadata endpoint</b> URL.'
+                inProgress: 'Client registration details discovery is now in progress... <action>Cancel</action>'
+                success: 'The client registration details were successfully retrieved and filled it automatically. <action>Run it again</action>.'
+                warning: 'Based on the current <b>metadata endpoint</b> URL, the client registration details could not be retrieved automatically.<message></message><br>Please review it and <action>Try again.</action>'
                 message: '<br>{message}<br>'
             clientId:
               label: Client ID
@@ -434,7 +434,7 @@ aiConfig:
                     other { {count} scopes to choose from (optional) }
                   }
           mcpURL:
-            label: Endpoint
+            label: MCP Endpoint
             placeholder: https://endpoint.mcp
           humanValidationTools:
             addLabel: Add Validation Tool
