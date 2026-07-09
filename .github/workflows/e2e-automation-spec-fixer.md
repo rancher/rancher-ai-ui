@@ -182,7 +182,18 @@ Rules for fixes:
 - Never use {tab} in cy.type() - it is not supported
 - Keep the same test structure (same number of tests, same screenshot names)
 
-## Step 7 - Comment on PR
+## Step 7 - Lint
+
+Run ESLint with auto-fix on the modified spec file:
+
+```bash
+yarn lint --fix "$SPEC_FILE"
+```
+
+If lint errors remain after `--fix`, fix them manually. The spec MUST pass
+`yarn lint` with zero warnings before committing.
+
+## Step 8 - Comment on PR
 
 **Always** post a comment on the PR explaining this fix attempt using add-comment:
 - **pull_request_number**: `${{ github.event.inputs.pr_number }}`
@@ -191,7 +202,7 @@ Rules for fixes:
 
 Older comments from previous fixer runs will be automatically hidden.
 
-## Step 8 - Commit and Save Patch
+## Step 9 - Commit and Save Patch
 
 Find the spec file path:
 ```bash
@@ -221,7 +232,7 @@ Put the .patch file directly in `/tmp/gh-aw/repo-memory/default/`.
 
 After saving, call the push_repo_memory tool to validate the size is within limits.
 
-## Step 9 - Dispatch the apply-patch workflow
+## Step 10 - Dispatch the apply-patch workflow
 
 After saving the patch to repo-memory, dispatch the apply-e2e-automation-spec-patch
 workflow so it picks up the patch, pushes it to the PR branch, and
@@ -241,6 +252,7 @@ workflow handles that.
 
 ## Important Rules
 
+- Run `yarn lint --fix` on the spec file before committing — it must pass with zero warnings
 - ALWAYS check the loop guard FIRST. If attempt >= 5, create an issue and stop.
 - Parse the failure summary carefully - it contains specific test names and errors.
 - Be surgical with fixes - only change what is broken.
