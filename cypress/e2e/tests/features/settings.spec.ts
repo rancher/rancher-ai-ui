@@ -203,7 +203,7 @@ describe('AI Assistant Configuration', () => {
       cy.wait('@metadataDiscovery');
 
       // Verify that the metadata discovery populated the metadata endpoint and scopes
-      aiAgentConfigs.self().should('contain.text', 'The metadata endpoint was successfully retrieved and filled it automatically.');
+      aiAgentConfigs.self().should('contain.text', 'The metadata endpoint and scope details were successfully retrieved and filled it automatically.');
       aiAgentConfigs.metadataEndpointInput().self().should('have.value', 'http://my-metadata-endpoint:8080');
 
       // Save button should still be disabled since the client registration is not done yet
@@ -223,7 +223,7 @@ describe('AI Assistant Configuration', () => {
       aiAgentConfigs.clientInfoDiscoveryButton().click();
 
       // Verify that the client registration discovery populated the client ID and secret
-      aiAgentConfigs.self().should('contain.text', 'The client registration and the scope details were successfully retrieved and filled it automatically.');
+      aiAgentConfigs.self().should('contain.text', 'The client registration details were successfully retrieved and filled it automatically.');
       aiAgentConfigs.clientIdInput().self().should('have.value', 'my-client-id');
       aiAgentConfigs.clientSecretInput().self().should('have.value', 'my-client-secret');
 
@@ -266,8 +266,8 @@ describe('AI Assistant Configuration', () => {
       aiAgentConfigs.authenticationTypeSelector().self().scrollIntoView();
 
       aiAgentConfigs.authenticationTypeSelector().self().should('contain.text', 'OAuth2 authentication');
-      aiAgentConfigs.self().should('contain.text', 'Try to automatically discover the metadata endpoint below based on the MCP endpoint URL.');
-      aiAgentConfigs.self().should('contain.text', 'Try to automatically discover the client registration and the scope details below based on the Metadata endpoint URL.');
+      aiAgentConfigs.self().should('contain.text', 'Try to automatically discover the metadata endpoint and scope details below based on the MCP endpoint URL.');
+      aiAgentConfigs.self().should('contain.text', 'Try to automatically discover the client registration details below based on the metadata endpoint URL.');
       aiAgentConfigs.metadataEndpointInput().self().should('have.value', 'http://my-metadata-endpoint:8080');
       aiAgentConfigs.self().should('contain.text', 'scope1');
       aiAgentConfigs.clientIdInput().self().should('have.value', 'my-client-id');
