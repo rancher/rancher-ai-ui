@@ -125,7 +125,9 @@ describe('Feature: settings-ui-tools-config', () => {
     uiToolsConfig.self().scrollIntoView();
     uiToolsConfig.toolsGrid().find('.item-card').should('have.length.gt', 0);
 
-    uiToolsConfig.toolsGrid().find('.item-card').first().find('.app-chart-card-footer-button').first().click();
+    uiToolsConfig.toolsGrid().find('.item-card').first().find('.app-chart-card-footer-button')
+      .first()
+      .click();
     uiToolsConfig.resetFiltersLink().should('be.visible').and('contain.text', 'Clear all filters');
 
     uiToolsConfig.resetFiltersLink().click();
