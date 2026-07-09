@@ -15,6 +15,12 @@ describe('Feature: settings-ui-tools-config', () => {
     cy.cleanChatHistory();
   });
 
+  after(() => {
+    // This spec installs the UI tools definition in beforeEach; uninstall it so
+    // subsequent specs (e.g. ui-tools.spec.ts) start from a clean, uninstalled state.
+    cy.uninstallUIToolsDefinition();
+  });
+
   it('Test 1: UI Tools configuration section is visible on the settings page', () => {
     const uiToolsConfig = settingsPage.settings().uiToolsConfig();
 
