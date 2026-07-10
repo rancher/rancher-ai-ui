@@ -45,6 +45,10 @@ export class ConsolePo extends ComponentPo {
     return new SelectAgentPo();
   }
 
+  llmInfo() {
+    return this.self().get('[data-testid="rancher-ai-ui-chat-console-llm-info"]');
+  }
+
   sendMessage(value: string) {
     this.textarea().type(value).type('{enter}');
   }

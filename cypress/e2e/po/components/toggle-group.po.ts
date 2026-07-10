@@ -1,11 +1,8 @@
 import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
 
 export class ToggleOptionPo extends ComponentPo {
-  private optionName: string;
-
   constructor(optionName: string) {
     super(`[data-testid="rancher-ai-ui-toggle-group-item-${ optionName }"]`);
-    this.optionName = optionName;
   }
 
   select() {

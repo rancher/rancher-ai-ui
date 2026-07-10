@@ -302,6 +302,7 @@ onMounted(() => {
     <div
       v-if="props.hasPermissions"
       class="chat-console-row chat-console-chat-text-info"
+      data-testid="rancher-ai-ui-chat-console-llm-info"
     >
       <LlmModelLabel
         :llm-config="props.llmConfig"

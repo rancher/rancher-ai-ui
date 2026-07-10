@@ -41,7 +41,10 @@ function toggleHistory() {
 </script>
 
 <template>
-  <div class="chat-header">
+  <div
+    class="chat-header"
+    data-testid="rancher-ai-ui-chat-header"
+  >
     <div class="chat-title">
       <div class="chat-name">
         <div
