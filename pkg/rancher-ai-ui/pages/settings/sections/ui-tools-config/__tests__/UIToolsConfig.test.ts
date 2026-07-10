@@ -26,6 +26,9 @@ jest.mock('vuex', () => {
 // Mock i18n with proper parameterized translation support
 jest.mock('@shell/composables/useI18n', () => ({ useI18n: () => ({ t: () => '' }) }));
 
+// Mock useShell from @shell/apis
+jest.mock('@shell/apis', () => ({ useShell: jest.fn(() => ({ slideIn: { open: jest.fn() } })) }));
+
 // Mock getRancherVersion
 jest.mock('../../../../../utils/version', () => ({ getRancherVersion: jest.fn(() => '2.7.0') }));
 

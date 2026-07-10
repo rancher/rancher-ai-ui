@@ -6,3 +6,4 @@ import './commands/llm-mock-service-api';
 import './commands/chat-history';
 import './commands/multi-agent';
 import './commands/ui-tools';
+import './commands/screen';

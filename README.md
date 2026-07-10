@@ -64,10 +64,10 @@ API=https://your-rancher yarn dev
 
 ```bash
 # Launch Cypress dashboard - interactive mode
-TEST_SKIP=setup TEST_PASSWORD=${rancher-password} yarn cypress:open
+TEST_SKIP=setup,global-ui TEST_PASSWORD=${rancher-password} yarn cypress:open
 
 # Run Cypress tests in background
-TEST_SKIP=setup TEST_PASSWORD=${rancher-password} yarn cypress:run
+TEST_SKIP=setup,global-ui TEST_PASSWORD=${rancher-password} yarn cypress:run
 ```
 
 #### Environment variables
@@ -76,7 +76,7 @@ TEST_SKIP=setup TEST_PASSWORD=${rancher-password} yarn cypress:run
 - `TEST_PASSWORD`, user password or custom during first Rancher run.
 - `CATTLE_BOOTSTRAP_PASSWORD`, initialization password.
 - `TEST_BASE_URL`, Rancher UI dev URL, default `https://localhost:8005`.
-- `TEST_SKIP=setup`, avoid to execute bootstrap setup tests for already initialized Rancher instances, it has to be toggled in case of new instances
+- `TEST_SKIP=setup,global-ui`, avoid to execute bootstrap setup tests for already initialized Rancher instances and global UI tests, it has to be toggled in case of new instances
 
 
 License

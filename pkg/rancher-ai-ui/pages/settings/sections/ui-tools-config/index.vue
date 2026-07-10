@@ -4,6 +4,7 @@ import { isEqual, debounce } from 'lodash';
 import { ref, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import { useShell } from '@shell/apis';
 import Checkbox from '@components/Form/Checkbox/Checkbox.vue';
 import ToggleSwitch from '@components/Form/ToggleSwitch/ToggleSwitch.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
@@ -12,12 +13,14 @@ import TextAreaAutoGrow from '@components/Form/TextArea/TextAreaAutoGrow.vue';
 import RcItemCard from '@components/RcItemCard/RcItemCard.vue';
 import RcItemCardAction from '@components/RcItemCard/RcItemCardAction.vue';
 import { getRancherVersion } from '../../../../utils/version';
-import { UIToolsConfig, UIToolsConfigs, ToolsDefinitionActionType } from '../../../../types';
+import { UIToolsConfig, UIToolsConfigs, ToolsDefinitionActionType, UITool } from '../../../../types';
 import Intro from './Intro.vue';
+import ToolDetails from './tool-details/index.vue';
 
 type FilterState = Record<string, string[]>;
 
 const store = useStore();
+const shellApi = useShell();
 const { t } = useI18n(store);
 
 const RANCHER_VERSION_KEY = 'rancher-version';
@@ -226,6 +229,28 @@ const resetToolsToDefaults = () => {
 
   emit('update:value', updatedValue);
 };
+
+function openToolDetails(tool: UITool) {
+  if (!shellApi?.slideIn?.open) {
+    return;
+  }
+
+  const windowId = '#tool-details-slide-in';
+
+  // Don't open the slide-in until the current one is closed
+  if (!!document.querySelector(windowId)) {
+    return;
+  }
+
+  shellApi.slideIn.open(ToolDetails, {
+    showHeader:          false,
+    props:               { tool },
+    width:               '50%',
+    height:              '100vh',
+    top:                 '0',
+    returnFocusSelector: windowId,
+  });
+}
 </script>
 
 <template>
@@ -408,6 +433,7 @@ const resetToolsToDefaults = () => {
                   v-for="tool in filteredTools"
                   :id="tool.name"
                   :key="tool.name"
+                  class="tool-card"
                   :value="tool"
                   variant="medium"
                   :header="{
@@ -419,6 +445,7 @@ const resetToolsToDefaults = () => {
                   :content="{
                     text: tool.description
                   }"
+                  @click="() => openToolDetails(tool)"
                 >
                   <template
                     v-once
@@ -439,6 +466,7 @@ const resetToolsToDefaults = () => {
                       class="toggle-enable-tool"
                       :value="tool.enabled"
                       :disabled="readOnly"
+                      @click.stop
                       @update:value="updateToolEnabled(tool.name, $event)"
                     />
                   </template>
@@ -449,7 +477,7 @@ const resetToolsToDefaults = () => {
                       <rc-button
                         variant="ghost"
                         class="app-chart-card-footer-button secondary-text-link"
-                        @click="filterByCategory(tool.category)"
+                        @click.stop="filterByCategory(tool.category)"
                       >
                         <i
                           v-clean-tooltip="t('aiConfig.form.section.tools.fields.tools.category.tooltip.label', {}, true)"
@@ -634,19 +662,11 @@ const resetToolsToDefaults = () => {
 }
 
 .tool-card {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card-background);
-  overflow: hidden;
+  cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 0;
-  height: 200px;
 
   &:hover {
-    border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px var(--shadow);
   }
 }
 
