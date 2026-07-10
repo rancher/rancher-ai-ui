@@ -3,6 +3,7 @@ import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import { MessagePo, ErrorMessagePo } from '@/cypress/e2e/po/message.po';
 import { HeaderPo } from '@/cypress/e2e/po/header.po';
 import { ConsolePo } from '@/cypress/e2e/po/console.po';
+import MessagesPo from '@/cypress/e2e/po/messages.po';
 
 export default class ChatPo extends ComponentPo {
   rancherHeader: RancherHeaderPo;
@@ -18,6 +19,10 @@ export default class ChatPo extends ComponentPo {
 
   header() {
     return new HeaderPo();
+  }
+
+  messagesPanel() {
+    return new MessagesPo();
   }
 
   console() {

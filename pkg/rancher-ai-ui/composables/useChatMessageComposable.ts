@@ -343,8 +343,10 @@ export function useChatMessageComposable(
             label:    t('ai.settings.goToSettings'),
             type:     ActionType.Button,
             resource: {
-              cluster:        'local',
-              detailLocation: { name: `c-cluster-settings-${ PRODUCT_NAME }` }
+              detailLocation: {
+                name:    `c-cluster-settings-${ PRODUCT_NAME }`,
+                params: { cluster: 'local' }
+              }
             }
           },
         });

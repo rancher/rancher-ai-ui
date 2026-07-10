@@ -9,7 +9,8 @@ import {
 import { ToolName } from '../tools/types';
 import { extractMessageText } from '../../utils/label';
 import Tools from '../tools/index.vue';
-import Actions from '../message/actions/index.vue';
+import ResourceButtons from '../message/resource-buttons/index.vue';
+import RouteButtons from '../message/route-buttons/index.vue';
 import Tool from '../tools/Tool.vue';
 import SourceLinks from '../tools/components/SourceLinks.vue';
 import Confirmation from './Confirmation.vue';
@@ -270,7 +271,7 @@ function handleToolAction(event: ToolActionEvent) {
         v-if="props.message.relatedResourcesActions?.length"
         class="mmt-2"
       >
-        <Actions
+        <ResourceButtons
           :label="t('ai.message.relatedResourcesActions.label')"
           :actions="props.message.relatedResourcesActions"
         />
@@ -279,7 +280,7 @@ function handleToolAction(event: ToolActionEvent) {
         v-if="props.message.actions?.length"
         class="mmt-2"
       >
-        <Actions
+        <RouteButtons
           :label="t('ai.message.quickActions.label')"
           :actions="props.message.actions"
         />

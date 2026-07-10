@@ -150,11 +150,11 @@ describe('Messages', () => {
     const deployments = [
       'llm-mock',
       'rancher-ai-agent',
-      'rancher-mcp',
+      'rancher-mcp-server',
     ];
 
     deployments.forEach((name) => {
-      const btn = resourceMessage.resourceButton(name);
+      const btn = resourceMessage.resourceButton({ name });
 
       btn.should('exist');
       btn.click();
