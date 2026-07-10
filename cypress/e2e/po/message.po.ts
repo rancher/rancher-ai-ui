@@ -51,7 +51,7 @@ class RawMessagePo extends ComponentPo {
   }
 
   confirmationStatus() {
-    return this.self().get('[data-testid="rancher-ai-ui-chat-message-confirmation-status"]');
+    return this.self().get('[data-testid^="rancher-ai-ui-chat-message-confirmation-status-"]');
   }
 
   isCompleted() {
@@ -59,11 +59,11 @@ class RawMessagePo extends ComponentPo {
   }
 
   isConfirmed(args = { withLabel: 'Confirmed' }) {
-    return this.confirmationStatus().get('.status-confirmed').should('contain.text', args.withLabel);
+    return this.self().get('[data-testid="rancher-ai-ui-chat-message-confirmation-status-confirmed"]').should('contain.text', args.withLabel);
   }
 
   isCanceled(args = { withLabel: 'Canceled' }) {
-    return this.confirmationStatus().get('.status-canceled').should('contain.text', args.withLabel);
+    return this.self().get('[data-testid="rancher-ai-ui-chat-message-confirmation-status-canceled"]').should('contain.text', args.withLabel);
   }
 
   thinkingLabel() {
