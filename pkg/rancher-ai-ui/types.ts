@@ -284,6 +284,10 @@ export interface AIAgentConfigCRD {
     mcpURL?: string;
     authenticationType: string;
     authenticationSecret?: string;
+    caBundleRef?: {
+      name: string;
+      key: string;
+    };
     humanValidationTools?: string[];
     systemPrompt?: string;
     toolSet?: string;

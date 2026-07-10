@@ -20,6 +20,8 @@ import { AIAgentConfigCRD } from '../../../types';
 import { AIAgentConfigAuthType, AiAgentConfigSecretPayload } from '../types';
 import { DEFAULT_AI_AGENT } from '../../../composables/useAgentComposable';
 
+const CA_BUNDLE_TLS_KEY = 'tls.crt';
+
 const store = useStore();
 const { t } = useI18n(store);
 
@@ -264,6 +266,7 @@ function addAgent() {
         enabled:              true,
         mcpURL:               '',
         authenticationType:   AIAgentConfigAuthType.RANCHER,
+        caBundleRef:          undefined,
         humanValidationTools: [],
         description:          '',
         systemPrompt:         '',
@@ -441,7 +444,7 @@ watch(validationErrors, (errors) => {
             {{ t('aiConfig.form.section.aiAgent.sections.mcp.title') }}
           </h3>
           <div class="row">
-            <div class="col span-6">
+            <div class="col span-12">
               <LabeledInput
                 required
                 :value="selectedAgent.spec.mcpURL"
@@ -452,47 +455,78 @@ watch(validationErrors, (errors) => {
                 @update:value="(val: string) => updateAgent({ spec: { ...selectedAgent.spec, mcpURL: val } })"
               />
             </div>
-            <div class="col span-6">
-              <LabeledSelect
-                :value="selectedAgent.spec.authenticationType"
-                :disabled="isAgentLocked || props.readOnly"
-                :label="t('aiConfig.form.section.aiAgent.fields.authenticationType.label')"
-                :options="authOptions"
-                @update:value="updateAuthType"
-              />
+          </div>
+
+          <div class="form-values-row">
+            <h4 class="m-0">
+              {{ t('aiConfig.form.section.aiAgent.fields.authentication.title') }}
+            </h4>
+            <div class="row">
+              <div class="col span-6">
+                <LabeledSelect
+                  :value="selectedAgent.spec.authenticationType"
+                  :disabled="isAgentLocked || props.readOnly"
+                  :label="t('aiConfig.form.section.aiAgent.fields.authenticationType.label')"
+                  :options="authOptions"
+                  @update:value="updateAuthType"
+                />
+              </div>
+            </div>
+            <div
+              v-if="selectedAgent.spec.authenticationType === AIAgentConfigAuthType.BASIC && !isAgentLocked && !props.readOnly"
+              class="row"
+            >
+              <div class="col span-12">
+                <SelectOrCreateAuthSecret
+                  :key="selectedAgent.metadata.name + selectedAgent.spec.authenticationSecret"
+                  :value="selectedAgent.spec.authenticationSecret || undefined"
+                  :pre-select="agentSecrets[selectedAgentName]"
+                  :namespace="AGENT_NAMESPACE"
+                  :allow-ssh="false"
+                  :delegate-create-to-parent="true"
+                  :cache-secrets="true"
+                  :register-before-hook="() => {}"
+                  in-store="management"
+                  label-key="aiConfig.form.section.aiAgent.fields.authenticationSecret.label"
+                  @inputauthval="updateBasicAuthSecret"
+                />
+              </div>
+            </div>
+            <div
+              v-else-if="selectedAgent.spec.authenticationType === AIAgentConfigAuthType.HEADER && !isAgentLocked && !props.readOnly"
+              class="row"
+            >
+              <div class="col span-6">
+                <SecretSelector
+                  :value="selectedAgent.spec.authenticationSecret || undefined"
+                  :secret-name-label="t('aiConfig.form.section.aiAgent.fields.authenticationSecret.label')"
+                  :namespace="AGENT_NAMESPACE"
+                  @update:value="(value: string) => updateAgent({ spec: { ...selectedAgent.spec, authenticationSecret: value || undefined } })"
+                />
+              </div>
             </div>
           </div>
+
           <div
-            v-if="selectedAgent.spec.authenticationType === AIAgentConfigAuthType.BASIC && !isAgentLocked && !props.readOnly"
-            class="row"
+            v-if="!isAgentLocked && !props.readOnly"
+            class="form-values-row"
           >
-            <div class="col span-12">
-              <SelectOrCreateAuthSecret
-                :key="selectedAgent.metadata.name + selectedAgent.spec.authenticationSecret"
-                :value="selectedAgent.spec.authenticationSecret || undefined"
-                :pre-select="agentSecrets[selectedAgentName]"
-                :namespace="AGENT_NAMESPACE"
-                :allow-ssh="false"
-                :delegate-create-to-parent="true"
-                :cache-secrets="true"
-                :register-before-hook="() => {}"
-                in-store="management"
-                label-key="aiConfig.form.section.aiAgent.fields.authenticationSecret.label"
-                @inputauthval="updateBasicAuthSecret"
+            <h4 class="m-0">
+              {{ t('aiConfig.form.section.aiAgent.fields.caBundleRef.title') }}
+              <i
+                v-clean-tooltip="t('aiConfig.form.section.aiAgent.fields.caBundleRef.tooltip')"
+                class="icon icon-info tooltip-icon subrow-title-icon"
               />
-            </div>
-          </div>
-          <div
-            v-else-if="selectedAgent.spec.authenticationType === AIAgentConfigAuthType.HEADER && !isAgentLocked && !props.readOnly"
-            class="row"
-          >
-            <div class="col span-6">
-              <SecretSelector
-                :value="selectedAgent.spec.authenticationSecret || undefined"
-                :secret-name-label="t('aiConfig.form.section.aiAgent.fields.authenticationSecret.label')"
-                :namespace="AGENT_NAMESPACE"
-                @update:value="(value: string) => updateAgent({ spec: { ...selectedAgent.spec, authenticationSecret: value || undefined } })"
-              />
+            </h4>
+            <div class="row">
+              <div class="col span-6">
+                <SecretSelector
+                  :value="selectedAgent.spec.caBundleRef?.name || undefined"
+                  :secret-name-label="t('aiConfig.form.section.aiAgent.fields.caBundleRef.label')"
+                  :namespace="AGENT_NAMESPACE"
+                  @update:value="(value: string) => updateAgent({ spec: { ...selectedAgent.spec, caBundleRef: value ? { name: value, key: CA_BUNDLE_TLS_KEY } : undefined } })"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -646,6 +680,10 @@ watch(validationErrors, (errors) => {
   color: var(--input-label);
   margin-left: 8px;
   cursor: pointer;
+}
+
+.subrow-title-icon {
+  font-size: 12px;
 }
 
 .textarea-with-validation {
