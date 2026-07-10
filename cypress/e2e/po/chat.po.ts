@@ -58,6 +58,19 @@ export default class ChatPo extends ComponentPo {
     this.header().historyButton().click();
   }
 
+  openViaKeyboard() {
+    // v-shortkey disables its document listener when NODE_ENV=test (shortkey.js:208).
+    // Trigger the same 'shortkey' CustomEvent that v-shortkey would dispatch,
+    // exercising the @shortkey → handleExtensionAction → invoke path.
+    this.rancherHeader.askLizButton().trigger('shortkey');
+    this.isOpen();
+  }
+
+  closeViaKeyboard() {
+    this.rancherHeader.askLizButton().trigger('shortkey');
+    this.isClosed();
+  }
+
   getMessage(id: string | number) {
     return this.messagesPanel().getMessage(id);
   }
