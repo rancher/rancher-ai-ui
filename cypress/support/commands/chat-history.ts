@@ -1,3 +1,5 @@
+import { rancherApiUrl } from '../utils/rancher-url';
+
 /**
  * Deletes all chat history for the logged-in user.
  * Tolerates 503 (Service Unavailable) since the AI service may not be running
@@ -9,7 +11,7 @@ Cypress.Commands.add('cleanChatHistory', () => {
   return cy.getCookie('CSRF').then((token) => {
     cy.request({
       method:           'DELETE',
-      url:              `${ Cypress.env('chatServiceProxyPath') }/chats`,
+      url:              rancherApiUrl(`${ Cypress.env('chatServiceProxyPath') }/chats`),
       headers:          {
         'x-api-csrf': token?.value,
         Accept:       'application/json'
@@ -33,7 +35,7 @@ Cypress.Commands.add('agentDBPersistencyEnabled', (value: boolean) => {
   return cy.getCookie('CSRF').then((token) => {
     cy.request({
       method:  'POST',
-      url:     '/v3/clusters/local?action=generateKubeconfig',
+      url:     rancherApiUrl('/v3/clusters/local?action=generateKubeconfig'),
       headers: {
         'x-api-csrf': token?.value,
         Accept:       'application/json'

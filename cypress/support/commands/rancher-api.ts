@@ -1,8 +1,10 @@
+import { rancherApiUrl } from '../utils/rancher-url';
+
 /**
  * Gets a Rancher resource via the Rancher API
  *
  * Note: this is overriding the default implementation in @rancher/cypress
- * to remove the dev host from the request URL.
+ * to target the API root (see rancherApiUrl).
  *
  * @param prefix The API prefix (e.g., 'v1')
  * @param resourceType The type of the resource (e.g., 'ai.cattle.io.aiagentconfig')
@@ -12,15 +14,15 @@
  */
 Cypress.Commands.add('getRancherResource', (prefix, resourceType, resourceId?, expectedStatusCode = 200) => {
   return cy.getCookie('CSRF').then((token) => {
-    let url = `/${ prefix }/${ resourceType }`;
+    let path = `/${ prefix }/${ resourceType }`;
 
     if (resourceId) {
-      url += `/${ resourceId }`;
+      path += `/${ resourceId }`;
     }
 
     return cy.request({
       method:  'GET',
-      url,
+      url:     rancherApiUrl(path),
       headers: {
         'x-api-csrf': token?.value,
         Accept:       'application/json'
@@ -50,7 +52,7 @@ Cypress.Commands.add('createRancherResource', (prefix, resourceType, body, failO
   return cy.getCookie('CSRF').then((token) => {
     return cy.request({
       method:  'POST',
-      url:     `/${ prefix }/${ resourceType }`,
+      url:     rancherApiUrl(`/${ prefix }/${ resourceType }`),
       headers: {
         'x-api-csrf': token?.value,
         Accept:       'application/json'
@@ -81,7 +83,7 @@ Cypress.Commands.add('setRancherResource', (prefix, resourceType, resourceId, bo
   return cy.getCookie('CSRF').then((token) => {
     return cy.request({
       method:  'PUT',
-      url:     `/${ prefix }/${ resourceType }/${ resourceId }`,
+      url:     rancherApiUrl(`/${ prefix }/${ resourceType }/${ resourceId }`),
       headers: {
         'x-api-csrf': token?.value,
         Accept:       'application/json'
@@ -110,7 +112,7 @@ Cypress.Commands.add('deleteRancherResource', (prefix, resourceType, resourceId,
   return cy.getCookie('CSRF').then((token) => {
     return cy.request({
       method:  'DELETE',
-      url:     `/${ prefix }/${ resourceType }/${ resourceId }`,
+      url:     rancherApiUrl(`/${ prefix }/${ resourceType }/${ resourceId }`),
       headers: {
         'x-api-csrf': token?.value,
         Accept:       'application/json'

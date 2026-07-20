@@ -1,4 +1,5 @@
 import { LlmResponseArgs } from '@/cypress/globals';
+import { rancherApiUrl } from '../utils/rancher-url';
 
 /**
  * Enqueue a response to be sent by the llm mock service.
@@ -136,7 +137,7 @@ Cypress.Commands.add('enqueueLLMResponse', (args: LlmResponseArgs) => {
   return cy.getCookie('R_SESS').then((token) => {
     cy.request({
       method:  'POST',
-      url:     `${ Cypress.env('llmMockServiceProxyPath') }/v1/control/push`,
+      url:     rancherApiUrl(`${ Cypress.env('llmMockServiceProxyPath') }/v1/control/push`),
       headers: {
         'Content-Type': 'application/json',
         'Cookie':       `R_SESS=${ token?.value }`,
@@ -162,7 +163,7 @@ Cypress.Commands.add('clearLLMResponses', () => {
   return cy.getCookie('R_SESS').then((token) => {
     cy.request({
       method:  'POST',
-      url:     `${ Cypress.env('llmMockServiceProxyPath') }/v1/control/clear`,
+      url:     rancherApiUrl(`${ Cypress.env('llmMockServiceProxyPath') }/v1/control/clear`),
       headers: {
         'Content-Type': 'application/json',
         'Cookie':       `R_SESS=${ token?.value }`,
