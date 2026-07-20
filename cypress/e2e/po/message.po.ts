@@ -80,6 +80,12 @@ class RawMessagePo extends ComponentPo {
     });
   }
 
+  // Asserts the message contains the text without requiring it to be in the viewport - useful for
+  // long messages (e.g. the welcome message) whose top content is scrolled out of the chat panel.
+  containsTextValue(value: string) {
+    return this.self().should('contain.text', value);
+  }
+
   scrollIntoView() {
     return this.self().scrollIntoView();
   }

@@ -3,6 +3,7 @@ import { useStore } from 'vuex';
 import { RANCHER_AI_SCHEMA } from '../product';
 import { Agent, AIAgentConfigCRD } from '../types';
 import { formatAgentFromCRD } from '../utils/format';
+import { warn } from '../utils/log';
 
 export const DEFAULT_AI_AGENT = 'rancher';
 
@@ -23,8 +24,17 @@ export function useAgentComposable(chatId: string) {
   const agentName = computed<string>(() => store.getters['rancher-ai-ui/chat/agentName'](chatId));
 
   async function fetchAgents() {
-    if (store.getters['management/canList'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG)) {
+    if (!store.getters['management/canList'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG)) {
+      return;
+    }
+
+    try {
       await store.dispatch('management/findAll', { type: RANCHER_AI_SCHEMA.AI_AGENT_CONFIG });
+    } catch (err) {
+      // The AIAgentConfig CRD/cache can be torn down while the AI service is being
+      // (re)installed - swallow the resulting rejection so it doesn't surface as an
+      // unhandled promise rejection when the chat mounts while the service is unavailable.
+      warn('Failed to fetch AI agent configs:', err);
     }
   }
 

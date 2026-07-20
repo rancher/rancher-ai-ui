@@ -127,8 +127,16 @@ export function useAIServiceComposable() {
   }
 
   async function fetchDeployments() {
-    if (hasPermissions.value) {
+    if (!hasPermissions.value) {
+      return;
+    }
+
+    try {
       await store.dispatch('management/findAll', { type: WORKLOAD_TYPES.DEPLOYMENT });
+    } catch (err) {
+      // Guard against the resource cache being torn down while the AI service is being
+      // (re)installed, so a transient rejection doesn't become an unhandled promise rejection.
+      warn('Failed to fetch AI agent deployments:', err);
     }
   }
 

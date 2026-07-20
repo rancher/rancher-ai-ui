@@ -210,6 +210,10 @@ describe('Multi Agent Chat', () => {
         }
       });
 
+      // updateAgentConfig only PUTs the spec; wait for the controller to reconcile harvester back to
+      // active (2 active agents) before asserting the UI reflects it, instead of racing the reconcile.
+      cy.waitForAgentConfigActive(harvesterAgentConfig);
+
       // Verify that the Adaptive Agent(s) Selection option is shown again and is selected by default
       selectAgent.self().contains('Adaptive Agent(s) Selection');
 
