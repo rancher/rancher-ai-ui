@@ -113,14 +113,14 @@ describe('History Messages', () => {
           args: {
             kind:      'Pod',
             name:      'my-pod',
-            resource:  {
+            manifest:  `{
               apiVersion: 'v1',
               kind:       'Pod',
               metadata:   {
                 name:      'my-pod',
                 namespace: 'default'
               },
-            },
+            }`,
             cluster:   'local',
             namespace: 'default'
           }
@@ -152,14 +152,14 @@ describe('History Messages', () => {
           args: {
             kind:      'Pod',
             name:      'my-pod',
-            resource:  {
+            manifest:  `{
               apiVersion: 'v1',
               kind:       'Pod',
               metadata:   {
                 name:      'my-pod',
                 namespace: 'default'
               },
-            },
+            }`,
             cluster:   'local',
             namespace: 'default'
           }

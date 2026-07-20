@@ -327,6 +327,8 @@ export interface AIAgentConfigCRD {
     description?: string;
     builtIn?: boolean;
     mcpURL?: string;
+    llmModel?: string | null;
+    llmModelEnabled?: boolean;
     authenticationType: string;
     authenticationSecret?: string;
     caBundleRef?: {

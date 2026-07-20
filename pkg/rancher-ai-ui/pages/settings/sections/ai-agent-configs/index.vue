@@ -17,7 +17,7 @@ import FileSelector from '@shell/components/form/FileSelector.vue';
 import formRulesGenerator from '@shell/utils/validators/formRules';
 import { AGENT_NAMESPACE } from '../../../../product';
 import { AIAgentConfigCRD } from '../../../../types';
-import { AIAgentConfigAuthType, AiAgentConfigBasicSecretPayload, AiAgentConfigOAuth2SecretPayload } from '../../types';
+import { AIAgentConfigAuthType, AiAgentConfigBasicSecretPayload, AiAgentConfigOAuth2SecretPayload, ModelOption } from '../../types';
 import { DEFAULT_AI_AGENT } from '../../../../composables/useAgentComposable';
 import Oauth2SecretForm from './Oauth2SecretForm.vue';
 import { useAIAgentApiComposable } from '../../../../composables/useAIAgentApiComposable';
@@ -43,6 +43,10 @@ const props = defineProps({
   },
   initValue: {
     type:     Array as PropType<AIAgentConfigCRD[]>,
+    default:  () => [],
+  },
+  models: {
+    type:     Array as PropType<ModelOption[]>,
     default:  () => [],
   },
   readOnly: {
@@ -114,6 +118,26 @@ const isAgentUnavailable = computed(() => {
   const errorMessage = getAgentErrorMessage(selectedAgent.value);
 
   return !!errorMessage;
+});
+
+const modelOptions = computed(() => props.models.map(({ value }) => value));
+
+/**
+ * When the selected agent has a model set, we use that model.
+ * If not, we use the selected model from the available models list (current model in AI agent settings).
+ */
+const llmModel = computed(() => {
+  const agentModel = selectedAgent.value?.spec.llmModel;
+
+  if (agentModel) {
+    return agentModel;
+  }
+
+  if (props.models.length) {
+    return props.models.find((model) => model.isSelected)?.value;
+  }
+
+  return null;
 });
 
 const agentSecrets = ref<Record<string, AiAgentConfigBasicSecretPayload | AiAgentConfigOAuth2SecretPayload | null>>({});
@@ -252,6 +276,21 @@ function updateOauth2AuthSecret(agent: AIAgentConfigCRD, value: Partial<AiAgentC
   agentSecrets.value[agent.metadata?.name || ''] = value as AiAgentConfigOAuth2SecretPayload;
 
   emit('update:authentication-secrets', agentSecrets.value);
+}
+
+function updateLlmModelEnabled() {
+  const llmModelEnabled = !selectedAgent.value.spec.llmModelEnabled;
+
+  // When llmModelEnabled is reset, we clear the llmModel field to avoid having a model which is not in the available models list.
+  const llmModel = modelOptions.value.includes(selectedAgent.value.spec.llmModel || '') ? selectedAgent.value.spec.llmModel : undefined;
+
+  updateAgent({
+    spec: {
+      ...selectedAgent.value.spec,
+      llmModelEnabled,
+      llmModel
+    }
+  });
 }
 
 function updateAgent(patch: Partial<AIAgentConfigCRD>) {
@@ -553,6 +592,41 @@ watch(validationErrors, (errors) => {
                 :secret-name-label="t('aiConfig.form.section.aiAgent.fields.caBundleRef.label')"
                 :namespace="AGENT_NAMESPACE"
                 @update:value="(value: string) => updateAgent({ spec: { ...selectedAgent.spec, caBundleRef: value ? { name: value, key: CA_BUNDLE_TLS_KEY } : undefined } })"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-values-row">
+          <h3 class="m-0">
+            {{ t('aiConfig.form.section.aiAgent.sections.llmModel.title') }}
+            <span
+              class="required"
+              aria-hidden="true"
+            >*</span>
+            <i
+              v-clean-tooltip="t('aiConfig.form.section.aiAgent.sections.llmModel.tooltip')"
+              class="icon icon-info tooltip-icon"
+            />
+          </h3>
+          <Checkbox
+            class="form-value-checkbox"
+            :value="!selectedAgent.spec.llmModelEnabled"
+            :label="t('aiConfig.form.section.aiAgent.fields.llmModelEnabled.label')"
+            :disabled="props.readOnly || !props.models.length"
+            @update:value="updateLlmModelEnabled"
+          />
+          <div
+            class="row"
+          >
+            <div class="col span-6">
+              <LabeledSelect
+                :value="llmModel"
+                :disabled="props.readOnly || !selectedAgent.spec.llmModelEnabled"
+                :label="t('aiConfig.form.section.aiAgent.fields.modelName.label')"
+                :options="modelOptions"
+                :clearable="true"
+                @update:value="(value: string) => updateAgent({ spec: { ...selectedAgent.spec, llmModel: value } })"
               />
             </div>
           </div>
