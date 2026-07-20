@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cloneDeep } from 'lodash';
 import dayjs from 'dayjs';
 import {
   ref,
@@ -70,6 +71,8 @@ const aiAgentConfigCRDs = ref<AIAgentConfigCRD[] | null>(null);
 const initAiAgentConfigCRDs = ref<AIAgentConfigCRD[]>([]);
 const uiToolsSettings = ref<UIToolsConfigs | null>(null);
 
+const availableModels = ref<string[]>([]);
+
 const authenticationSecrets = ref<Record<string, AiAgentConfigBasicSecretPayload | AiAgentConfigOAuth2SecretPayload | null>>({});
 
 const permissions = ref<SettingsPermissions | null>(null);
@@ -84,6 +87,8 @@ const buttonProps = ref({
 });
 
 const toolsActionResultBanner = ref<{ color: string; label: string } | null>(null);
+
+const isAiAgentSettingsTouched = ref<boolean | null>(false);
 
 /**
  * Fetches the rancher-ai-agent deployment.
@@ -174,7 +179,7 @@ async function fetchAiAgentConfigCRDs() {
   }
 
   aiAgentConfigCRDs.value = crds;
-  initAiAgentConfigCRDs.value = [...crds];
+  initAiAgentConfigCRDs.value = cloneDeep(crds);
 }
 
 /**
@@ -207,6 +212,21 @@ async function fetchUIToolsConfigSettings() {
 }
 
 /**
+ * Updates the AI agent settings and marks the form as touched to control the growl notifications.
+ *
+ * When isAiAgentSettingsTouched is null, it indicates that we don't want to show the growl notification
+ * again until the user makes further changes.
+ */
+function updateAiAgentSettings(value: SettingsFormData) {
+  aiAgentSettings.value = value;
+  apiError.value = '';
+
+  if (isAiAgentSettingsTouched.value === false) {
+    isAiAgentSettingsTouched.value = true;
+  }
+}
+
+/**
  * Merges the updated CRDs status to preserve reactivity and avoid losing status updates.
  */
 function mergeAiAgentConfigCRDsStatusUpdate(updatedCrds: AIAgentConfigCRD[]) {
@@ -221,6 +241,50 @@ function mergeAiAgentConfigCRDsStatusUpdate(updatedCrds: AIAgentConfigCRD[]) {
       crd.status = storeCrd.status;
     }
   });
+}
+
+/**
+ * Updates the available LLM models and resets the model for any AI agent
+ * that has a custom model no longer available.
+ *
+ * If any AI agent's model is reset, a growl notification is shown to inform the user.
+ */
+function updateAvailableModels(models: string[]) {
+  let modelAgentsReset = [];
+
+  for (const crd of aiAgentConfigCRDs.value || []) {
+    const initCrd = initAiAgentConfigCRDs.value.find((c) => c.metadata.name === crd.metadata.name);
+
+    if (crd.spec.llmModel && !models.includes(crd.spec.llmModel)) {
+      crd.spec.llmModelEnabled = false;
+      crd.spec.llmModel = undefined;
+    }
+
+    if (initCrd && initCrd.spec.llmModel && models.includes(initCrd.spec.llmModel)) {
+      crd.spec.llmModelEnabled = initCrd.spec.llmModelEnabled;
+      crd.spec.llmModel = initCrd.spec.llmModel;
+    }
+
+    if (initCrd && initCrd.spec.llmModelEnabled && !crd.spec.llmModelEnabled) {
+      modelAgentsReset.push(crd.spec.displayName || crd.metadata.name);
+    }
+  }
+
+  if (isAiAgentSettingsTouched.value && modelAgentsReset.length > 0) {
+    store.dispatch('growl/warning', {
+      title:   t('aiConfig.growl.modelsChanged.title', {}, true),
+      message: t('aiConfig.growl.modelsChanged.message', {
+        count:      modelAgentsReset.length,
+        agentNames: modelAgentsReset.join(', ')
+      }, true),
+      timeout: 0
+    }, { root: true });
+
+    // Set to null to avoid showing the growl notification again.
+    isAiAgentSettingsTouched.value = null;
+  }
+
+  availableModels.value = models;
 }
 
 /**
@@ -274,9 +338,16 @@ async function saveAiAgentConfigCRDs() {
 
     // Update existing CRD
     if (aiAgentConfigCRD) {
-      // Preserve builtIn agents and only update enabled field
+      /**
+       * Preserve builtIn agents and only update:
+       * - enabled
+       * - llmModelEnabled
+       * - llmModel
+       */
       if (aiAgentConfigCRD.spec.builtIn) {
         aiAgentConfigCRD.spec.enabled = crd.spec.enabled;
+        aiAgentConfigCRD.spec.llmModelEnabled = crd.spec.llmModelEnabled;
+        aiAgentConfigCRD.spec.llmModel = crd.spec.llmModel;
       } else {
         aiAgentConfigCRD.spec = crd.spec;
       }
@@ -518,6 +589,9 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
       await redeployAiAgent();
     }
 
+    // Reset the initial state of the AI agent config CRDs to reflect the saved state
+    initAiAgentConfigCRDs.value = cloneDeep(aiAgentConfigCRDs.value || []);
+
     apiError.value = '';
     btnCB(true);
   } catch (err) {
@@ -534,6 +608,9 @@ function applySettings() {
 
   if (!!applySettingsCb.value) {
     save(applySettingsCb.value);
+
+    // Reset the touched state after saving to show the growl notification again
+    isAiAgentSettingsTouched.value = false;
 
     isSaving.value = false;
   }
@@ -679,7 +756,8 @@ onMounted(async() => {
           <AIAgentSettings
             :value="aiAgentSettings"
             :read-only="!permissions?.create.canCreateSecrets"
-            @update:value="aiAgentSettings = $event; apiError = ''"
+            @update:value="updateAiAgentSettings"
+            @update:models="updateAvailableModels"
             @update:validation-error="hasAiAgentSettingsValidationErrors = $event"
           />
         </settings-row>
@@ -694,6 +772,7 @@ onMounted(async() => {
             v-if="aiAgentConfigCRDs"
             :value="aiAgentConfigCRDs"
             :init-value="initAiAgentConfigCRDs"
+            :models="availableModels"
             :read-only="!permissions?.create.canCreateSecrets || !permissions?.create.canCreateAiAgentCRDS"
             @update:value="aiAgentConfigCRDs = $event"
             @update:authentication-secrets="authenticationSecrets = $event"

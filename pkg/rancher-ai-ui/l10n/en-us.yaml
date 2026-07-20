@@ -327,6 +327,14 @@ ai:
         edit: Edit before sending
 aiConfig:
   label: AI Assistant
+  growl:
+    modelsChanged:
+      title: The available LLM models have changed
+      message: |-
+        {count, plural,
+          =1 { The following AI Agent is now using the default model because its custom model is no longer available: {agentNames}.   Please review its configuration and update the model if necessary. }
+          other { The following AI Agents are now using the default model because their custom model is no longer available: {agentNames}.   Please review their configuration and update the model if necessary. }
+        }
   form:
     header: AI Assistant Configuration
     description: Configure the AI model and provider for your assistant
@@ -378,6 +386,10 @@ aiConfig:
             requiredTooltip: '"Agent Profile" is required'
           mcp:
             title: MCP Configuration
+          llmModel:
+            title: Agent Model
+            tooltip: 'Provide the model name for running the AI agent. If not provided, the default model will be used.'
+            requiredTooltip: ''
           humanValidationTools:
             title: Human Validation Tools
             tooltip: 'Human validation tools allow the AI agent to delegate specific tasks to human operators for verification or approval. This is particularly useful for critical actions that require human judgment to ensure accuracy and prevent errors.'
@@ -445,6 +457,10 @@ aiConfig:
           mcpURL:
             label: MCP Endpoint
             placeholder: https://endpoint.mcp
+          llmModelEnabled:
+            label: Same as the AI provider
+          modelName:
+            label: Model
           humanValidationTools:
             addLabel: Add Validation Tool
             emptyLabel: No human validation tools have been defined for this agent

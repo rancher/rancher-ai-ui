@@ -841,6 +841,165 @@ describe('AIAgentConfigs.vue', () => {
     });
   });
 
+  describe('LLM Model Management', () => {
+    it('should toggle llmModelEnabled from false to true', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: ['gpt-4', 'gpt-3.5-turbo']
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModelEnabled).toBe(true);
+    });
+
+    it('should toggle llmModelEnabled from true to false', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: true,
+          llmModel:        'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: ['gpt-4', 'gpt-3.5-turbo']
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModelEnabled).toBe(false);
+    });
+
+    it('should preserve llmModel when it is in available models', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: ['gpt-4', 'gpt-3.5-turbo']
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModel).toBe('gpt-4');
+    });
+
+    it('should clear llmModel when it is not in available models', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        'old-model'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: ['gpt-4', 'gpt-3.5-turbo']
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModel).toBeUndefined();
+    });
+
+    it('should handle undefined llmModel gracefully', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        undefined
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: ['gpt-4', 'gpt-3.5-turbo']
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModel).toBeUndefined();
+    });
+
+    it('should handle empty models array', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: []
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      // When models array is empty, llmModel should be cleared since gpt-4 is not in empty array
+      expect(emitted[0].spec.llmModel).toBeUndefined();
+    });
+  });
+
   describe('Validation Tools Management', () => {
     it('should update human validation tools', () => {
       const agent = mockAgent({

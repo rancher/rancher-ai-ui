@@ -3,6 +3,7 @@ import { cloneDeep, debounce } from 'lodash';
 import {
   ref, computed,
   onMounted,
+  watch,
 } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
@@ -43,7 +44,11 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:value', 'update:validation-error']);
+const emit = defineEmits([
+  'update:value',
+  'update:models',
+  'update:validation-error'
+]);
 
 const { fetchLLMModels } = useAIAgentApiComposable();
 
@@ -442,6 +447,32 @@ const updateValue = (key: Settings, val: string) => {
 
   validateSettings(newValue);
 };
+
+/**
+ * Watches for changes in the active chatbot and available models.
+ * Updates the available models for the active chatbot and ensures the selected model is included.
+ *
+ * The model list are used by the AI agent settings form to populate the model selection.
+ */
+watch(() => [
+  formData.value[Settings.ACTIVE_CHATBOT],
+  models.value
+], (newValues) => {
+  const [activeChatbot, models] = newValues;
+
+  const availableModels = (models as Record<ChatBotEnum, string[]>)[activeChatbot as ChatBotEnum] || [];
+
+  const selectedModel = formData.value[getModelKey(activeChatbot as ChatBotEnum)];
+
+  if (selectedModel && !availableModels.includes(selectedModel)) {
+    availableModels.push(selectedModel);
+  }
+
+  emit('update:models', availableModels);
+}, {
+  immediate: true,
+  deep:      true
+});
 
 onMounted(() => {
   const activeChatbot = formData.value[Settings.ACTIVE_CHATBOT];
