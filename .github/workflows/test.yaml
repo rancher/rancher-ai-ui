@@ -4,17 +4,25 @@ on:
     branches:
       - main
       - 'release-*'
+      # TEMPORARY: run CI on this branch without a PR while validating the setup. Remove before PR.
+      - '250-e2e-clean'
   pull_request:
     branches:
       - main
       - 'release-*'
+  # TEMPORARY: allow manual runs while validating the setup. Remove before PR.
+  workflow_dispatch:
 
 env:
   RANCHER_VERSION: head
-  CATTLE_SERVER_URL: https://172.17.0.1
+  # Rancher is installed via Helm on k3s and serves its own (stock) dashboard through the
+  # Traefik ingress over TLS. The rancher-ai-ui extension is developer-loaded into it at test
+  # time from a local catalog server (serve-pkgs), same-origin - no yarn dev proxy.
+  CATTLE_SERVER_URL: https://127.0.0.1.sslip.io
+  TEST_BASE_URL: https://127.0.0.1.sslip.io/dashboard
+  EXTENSION_SERVER_PORT: '8080'
   CATTLE_BOOTSTRAP_PASSWORD: password
   KUBECONFIG_PATH: ${{ github.workspace }}/kubeconfig.yaml
-  DEV_UI_URL: https://localhost:8005
 
 jobs:
   e2e:
@@ -27,21 +35,49 @@ jobs:
       - name: Setup Node env
         uses: ./.github/actions/setup
 
+      - name: Build extension package
+        run: yarn build-pkg rancher-ai-ui
+
+      - name: Start extension catalog server (serve-pkgs)
+        run: |
+          PORT=${{ env.EXTENSION_SERVER_PORT }} nohup yarn serve-pkgs > serve-pkgs.log 2>&1 &
+          sleep 5
+          echo "Extension catalog:"
+          curl -s http://127.0.0.1:${{ env.EXTENSION_SERVER_PORT }}/ | head -40
+
       - name: Start Rancher
         run: .github/scripts/install-rancher.sh ${{ env.RANCHER_VERSION }} ${{ env.CATTLE_SERVER_URL }} ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
 
       - name: Deploy Rancher AI charts
         run: .github/scripts/deploy-rancher-ai.sh ${{ env.KUBECONFIG_PATH }}
 
-      - name: Start dev UI
+      - name: Register extension (developer-load UIPlugin)
         env:
-          API: ${{ env.CATTLE_SERVER_URL }}
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
-          nohup yarn dev > dev.log 2>&1 & echo $! > dev.pid
-
-      - name: Wait for dev UI to be ready
-        run: |
-          npx wait-on ${{ env.DEV_UI_URL }}
+          CATALOG=$(curl -s http://127.0.0.1:${{ env.EXTENSION_SERVER_PORT }}/)
+          NAME=$(echo "$CATALOG" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['name'])")
+          VERSION=$(echo "$CATALOG" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['version'])")
+          MAIN=$(echo "$CATALOG" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['main'])")
+          MODULE="${NAME}-${VERSION}"
+          ENDPOINT="http://127.0.0.1:${{ env.EXTENSION_SERVER_PORT }}/${MODULE}/${MAIN}"
+          echo "Registering ${MODULE} from ${ENDPOINT}"
+          kubectl apply -f - <<EOF
+          apiVersion: catalog.cattle.io/v1
+          kind: UIPlugin
+          metadata:
+            name: ${MODULE}
+            namespace: cattle-ui-plugin-system
+          spec:
+            plugin:
+              name: ${NAME}-developer-load
+              version: "${VERSION}"
+              endpoint: ${ENDPOINT}
+              noCache: true
+              metadata:
+                direct: "true"
+                catalog.cattle.io/ui-extensions-version: ">= 3"
+          EOF
 
       - name: Run Cypress tests
         id: cypress
@@ -49,9 +85,27 @@ jobs:
         env:
           TEST_USERNAME: admin
           CATTLE_BOOTSTRAP_PASSWORD: ${{ env.CATTLE_BOOTSTRAP_PASSWORD }}
+          TEST_BASE_URL: ${{ env.TEST_BASE_URL }}
           API: ${{ env.CATTLE_SERVER_URL }}
+          CYPRESS_extension_server_url: http://127.0.0.1:${{ env.EXTENSION_SERVER_PORT }}
+          # The dashboard is a slow cold-load on the single-node k3s runner; give commands headroom.
+          TEST_TIMEOUT: '60000'
         run: |
           yarn e2e --browser chrome
+
+      - name: Extension catalog server log on failure
+        if: steps.cypress.outcome != 'success'
+        run: cat serve-pkgs.log || true
+
+      - name: Collect Rancher logs on failure
+        if: steps.cypress.outcome != 'success'
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
+        run: |
+          kubectl get pods -A || true
+          kubectl get uiplugins.catalog.cattle.io -A -o yaml || true
+          kubectl -n cattle-ai-agent-system logs -l app=rancher-ai-agent --all-containers --tail=-1 --prefix || true
+          kubectl -n cattle-system logs -l app=rancher --all-containers --tail=-1 || true
 
       - name: Upload videos on failure
         if: steps.cypress.outcome != 'success'
@@ -61,10 +115,13 @@ jobs:
           path: cypress/videos
           retention-days: 7
 
-      - name: Tear down background processes
-        if: always()
-        run: |
-          if [ -f dev.pid ]; then kill $(cat dev.pid) || true; fi
+      - name: Upload screenshots on failure
+        if: steps.cypress.outcome != 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          retention-days: 7
 
       - name: Check failed tests
         if: steps.cypress.outcome != 'success'
