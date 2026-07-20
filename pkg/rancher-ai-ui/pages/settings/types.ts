@@ -79,3 +79,8 @@ export interface AiAgentConfigOAuth2SecretPayload {
   metadataEndpoint: string;
   scopes: string[];
 }
+
+export interface ModelOption {
+  value: string;
+  isSelected: boolean;
+}
