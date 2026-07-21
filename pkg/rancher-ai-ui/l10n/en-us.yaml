@@ -433,6 +433,13 @@ aiConfig:
                     =1 { {count} scope available (optional) }
                     other { {count} scopes to choose from (optional) }
                   }
+            helper:
+              title: App Configuration
+              tooltip: 'Copy and paste these URLs when setting up your OAuth2 application with the third-party provider.'
+            homepageUrl:
+              label: Homepage URL
+            callbackUrl:
+              label: Callback URL
           mcpURL:
             label: MCP Endpoint
             placeholder: https://endpoint.mcp

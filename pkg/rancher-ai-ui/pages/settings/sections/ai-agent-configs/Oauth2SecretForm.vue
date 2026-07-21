@@ -8,9 +8,10 @@ import { _EDIT, _VIEW } from '@shell/config/query-params';
 import Password from '@shell/components/form/Password.vue';
 import LabeledSelect from '@shell/components/form/LabeledSelect.vue';
 import LabeledInput from '@components/Form/LabeledInput/LabeledInput.vue';
+import CopyToClipboard from '@shell/components/CopyToClipboard.vue';
 import formRulesGenerator from '@shell/utils/validators/formRules';
 import { warn } from '../../../../utils/log';
-import { AGENT_NAMESPACE } from '../../../../product';
+import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../../../../product';
 import { AIAgentAPIEvent } from '../../../../types';
 import { AiAgentConfigOAuth2SecretPayload } from '../../types';
 import DiscoveryBanner from '../../../../components/DiscoveryBanner/DiscoveryBanner.vue';
@@ -20,6 +21,9 @@ interface DiscoveryStatus {
   result?: 'success' | 'warning' | 'info' | null;
   message?: string;
 }
+
+const HOME_PAGE_URL = window.location.origin;
+const CALLBACK_URL = `${ window.location.origin }/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_REST_API_PATH }/oauth2/callback`;
 
 const store = useStore();
 const { t } = useI18n(store);
@@ -302,9 +306,100 @@ onBeforeUnmount(() => {
       />
     </div>
   </div>
+
+  <div class="helper-box">
+    <h4>
+      {{ t('aiConfig.form.section.aiAgent.fields.oauth2.helper.title') }}
+      <i
+        v-clean-tooltip="t('aiConfig.form.section.aiAgent.fields.oauth2.helper.tooltip')"
+        class="icon icon-info tooltip-icon subrow-title-icon"
+      />
+    </h4>
+    <div class="row">
+      <div class="col span-6">
+        <div class="helper-field">
+          <label class="field-label">
+            {{ t('aiConfig.form.section.aiAgent.fields.oauth2.homepageUrl.label') }}
+          </label>
+          <div class="copy-field">
+            <input
+              class="field-value"
+              :value="HOME_PAGE_URL"
+              readonly
+            />
+            <CopyToClipboard
+              :text="HOME_PAGE_URL"
+              label-as="tooltip"
+              class="icon-btn"
+              action-color="bg-transparent"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="col span-6">
+        <div class="helper-field">
+          <label class="field-label">
+            {{ t('aiConfig.form.section.aiAgent.fields.oauth2.callbackUrl.label') }}
+          </label>
+          <div class="copy-field">
+            <input
+              class="field-value"
+              :value="CALLBACK_URL"
+              readonly
+            />
+            <CopyToClipboard
+              :text="CALLBACK_URL"
+              label-as="tooltip"
+              class="icon-btn"
+              action-color="bg-transparent"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped lang="scss">
+.helper-box {
+  padding: 10px;
+  background-color: var(--box-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+
+  .helper-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-label {
+    color: var(--input-label);
+  }
+
+  .copy-field {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    padding: 8px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--border-radius);
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  .field-value {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text);
+    border: none;
+    padding: 0;
+  }
+}
+
 .in-progress-badge {
   display: flex;
   align-items: center;
@@ -323,5 +418,15 @@ onBeforeUnmount(() => {
     border-color: var(--input-disabled-border);
     cursor: not-allowed;
   }
+}
+
+.tooltip-icon {
+  color: var(--input-label);
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.subrow-title-icon {
+  font-size: 12px;
 }
 </style>

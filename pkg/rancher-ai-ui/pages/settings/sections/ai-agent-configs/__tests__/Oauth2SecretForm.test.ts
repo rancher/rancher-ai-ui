@@ -54,6 +54,14 @@ jest.mock('@shell/components/form/LabeledSelect.vue', () => ({
   }
 }));
 
+jest.mock('@shell/components/CopyToClipboard.vue', () => ({
+  default: {
+    name:     'CopyToClipboard',
+    props:    ['text', 'labelAs', 'class', 'actionColor'],
+    template: '<div />'
+  }
+}));
+
 const mockApiComposable = {
   fetchMcpAuthenticationMetadata:       jest.fn().mockResolvedValue({ scopesSupported: ['openid', 'profile', 'email'] }),
   cancelFetchMcpAuthenticationMetadata: jest.fn(),
@@ -80,7 +88,9 @@ const requiredSetup = () => ({
       LabeledSelect:      true,
       LabeledInput:       true,
       DiscoveryBanner:    true,
-    }
+      CopyToClipboard:    true,
+    },
+    directives: { 'clean-tooltip': jest.fn() },
   }
 });
 

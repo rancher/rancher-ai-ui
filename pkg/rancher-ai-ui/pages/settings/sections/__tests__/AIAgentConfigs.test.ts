@@ -35,6 +35,15 @@ jest.mock('@shell/components/form/Password.vue', () => ({
   }
 }));
 
+// Mock CopyToClipboard component
+jest.mock('@shell/components/CopyToClipboard.vue', () => ({
+  default: {
+    name:     'CopyToClipboard',
+    props:    ['text', 'labelAs', 'class', 'actionColor'],
+    template: '<div />'
+  }
+}));
+
 const DEFAULT_AI_AGENT = 'rancher';
 
 const mockAgent = (overrides = {}): AIAgentConfigCRD => ({
