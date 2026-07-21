@@ -405,7 +405,7 @@ export function useChatMessageComposable(
       try {
         await processMessageData(ws, data);
       } catch (err) {
-        processMessageErrorData(err as Error);
+        processMessageErrorData(err as ChatError);
       }
     }
   }
