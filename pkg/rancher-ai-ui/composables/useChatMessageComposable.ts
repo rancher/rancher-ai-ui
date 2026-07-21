@@ -41,6 +41,7 @@ import {
   formatMcpRefreshTokenRequest,
   formatAuthenticationErrorMessage
 } from '../utils/format';
+import { validateUrl } from '../utils/url';
 import { downloadFile } from '@shell/utils/download';
 import { useContextComposable } from './useContextComposable';
 import { useAIAgentApiComposable } from './useAIAgentApiComposable';
@@ -551,9 +552,9 @@ export function useChatMessageComposable(
       if (data.startsWith(Tag.AuthenticationRequestStart) && data.endsWith(Tag.AuthenticationRequestEnd)) {
         const metadata = formatMcpAuthenticationRequest(data);
 
-        if (!metadata || !metadata.url) {
+        if (!metadata || !validateUrl(metadata.url)) {
           throw {
-            message: 'Invalid authentication request metadata',
+            message: t('ai.error.oauth2.invalidMetadata'),
             key:     'message'
           };
         }

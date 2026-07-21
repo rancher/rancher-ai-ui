@@ -206,6 +206,8 @@ ai:
       generic: 'An error occurred initializing the chat'
     message: 'Error processing message: '
     authentication: 'Authentication error: '
+    oauth2:
+      invalidMetadata: 'Invalid authentication request metadata'
     websocket:
       generic: WebSocket error occurred. Please check the status of the Rancher AI Agent and ensure you have the necessary permissions to establish a connection to it.
       connection: Failed to connect to Rancher AI Agent.

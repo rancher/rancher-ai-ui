@@ -10,6 +10,7 @@ let mockStore: any;
 let mockComponent: any;
 
 jest.mock('vuex', () => ({ useStore: () => mockStore }));
+jest.mock('../../utils/log', () => ({ warn: jest.fn() }));
 
 // Helper: Create a real Vue component that uses the composable
 function createTestComponent(setupData?: any) {
@@ -518,6 +519,36 @@ describe('useChatMessageComposable', () => {
       mockComponent = mount(createTestComponent({ agentName }));
 
       expect(mockComponent.vm).toBeDefined();
+    });
+
+    it('should handle invalid auth URL in metadata', async() => {
+      mockStore.getters['rancher-ai-ui/chat/metadata'] = {
+        chatId: 'chat-1',
+        agents: []
+      };
+      mockStore.getters['rancher-ai-ui/chat/message'] = jest.fn(() => ({
+        id:        'msg-1',
+        completed: false
+      }));
+
+      mockComponent = mount(createTestComponent());
+      mockStore.dispatch.mockClear();
+      mockStore.commit.mockClear();
+
+      await mockComponent.vm.onmessage({
+        target: {} as WebSocket,
+        data:   '<authentication>{"url":"invalid","agent":"test"}</authentication>'
+      } as any);
+
+      expect(mockStore.dispatch).toHaveBeenCalledWith(
+        'rancher-ai-ui/chat/addMessage',
+        expect.objectContaining({
+          message: expect.objectContaining({
+            source:         'error',
+            messageContent: '%ai.error.message% %ai.error.oauth2.invalidMetadata%'
+          })
+        })
+      );
     });
   });
 
