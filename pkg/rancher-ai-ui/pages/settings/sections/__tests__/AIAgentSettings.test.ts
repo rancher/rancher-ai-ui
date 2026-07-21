@@ -50,15 +50,19 @@ describe('AIAgentSettings.vue', () => {
       expect(wrapper.find('.form-values').exists()).toBe(true);
     });
 
-    it('should render toggle group with correct options', () => {
+    it('should render toggle group with correct disabled state', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
+        props: {
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local },
+          readOnly: false
+        } as any,
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
 
       expect(toggleGroup.exists()).toBe(true);
+      expect(toggleGroup.attributes('disabled')).toBe('false');
     });
   });
 
@@ -110,9 +114,9 @@ describe('AIAgentSettings.vue', () => {
       });
 
       const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const warningBanners = banners.filter((b) => b.props('color') === 'warning');
 
-      // For Local chatbot, only info banners should be present (no warning)
-      expect(banners.length).toBeGreaterThanOrEqual(0);
+      expect(warningBanners.length).toBe(0);
     });
   });
 
@@ -127,7 +131,7 @@ describe('AIAgentSettings.vue', () => {
 
       const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
 
-      expect(inputs.length).toBeGreaterThanOrEqual(0);
+      expect(inputs.length).toBeGreaterThan(0);
     });
 
     it('should update model when chatbot changes', async() => {
@@ -180,7 +184,7 @@ describe('AIAgentSettings.vue', () => {
 
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
 
-      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
+      expect(passwordInputs.length).toBeGreaterThan(0);
     });
 
     it('should use GOOGLE_API_KEY for Gemini chatbot', async() => {
@@ -196,7 +200,7 @@ describe('AIAgentSettings.vue', () => {
 
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
 
-      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
+      expect(passwordInputs.length).toBeGreaterThan(0);
     });
 
     it('should use AWS_BEARER_TOKEN_BEDROCK for Bedrock chatbot', async() => {
@@ -231,8 +235,8 @@ describe('AIAgentSettings.vue', () => {
       const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
 
-      expect(inputs.length).toBeGreaterThanOrEqual(1);
-      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
+      expect(inputs.length).toBeGreaterThan(0);
+      expect(passwordInputs.length).toBeGreaterThan(0);
     });
   });
 
@@ -376,7 +380,6 @@ describe('AIAgentSettings.vue', () => {
         },
       });
 
-      expect(wrapper.exists()).toBe(true);
       const advancedSection = wrapper.findComponent({ name: 'advanced-section' });
 
       expect(advancedSection.exists()).toBe(true);
@@ -407,32 +410,8 @@ describe('AIAgentSettings.vue', () => {
     });
   });
 
-  describe('RAG Configuration', () => {
-    it('should render advanced section', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
-      });
-
-      const advancedSection = wrapper.findComponent({ name: 'advanced-section' });
-
-      expect(advancedSection.exists()).toBe(true);
-    });
-  });
-
   describe('Langfuse Configuration', () => {
-    it('should render Langfuse section in advanced section', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
-      });
-
-      const advancedSection = wrapper.findComponent({ name: 'advanced-section' });
-
-      expect(advancedSection.exists()).toBe(true);
-    });
-
-    it('should render Langfuse fields', () => {
+    it('should render Langfuse fields in advanced section', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
@@ -482,8 +461,18 @@ describe('AIAgentSettings.vue', () => {
 
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
 
+      expect(passwordInputs.length).toBeGreaterThan(0);
+
+      await wrapper.setProps({
+        value: {
+          ...existingValue,
+          [Settings.OPENAI_API_KEY]: 'sk-new'
+        }
+      });
+      await wrapper.vm.$nextTick();
+
+      // Verify component updated without error
       expect(wrapper.exists()).toBe(true);
-      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -494,6 +483,8 @@ describe('AIAgentSettings.vue', () => {
         props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
+      const emissions = wrapper.emitted('update:models')?.length || 0;
+
       await (wrapper as any).setProps({
         value: {
           [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
@@ -502,7 +493,8 @@ describe('AIAgentSettings.vue', () => {
       });
 
       await wrapper.vm.$nextTick();
-      expect(wrapper.exists()).toBe(true);
+      // Should have emitted models for the new chatbot
+      expect((wrapper.emitted('update:models')?.length || 0)).toBeGreaterThan(emissions);
     });
 
     it('should handle deep prop changes', async() => {
@@ -511,20 +503,26 @@ describe('AIAgentSettings.vue', () => {
         props: {
           value: {
             [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
-            [Settings.AWS_REGION]:     'test-region',
+            [Settings.OLLAMA_URL]:     'http://localhost:11434',
           } as SettingsFormData,
         },
       });
 
+      const input = wrapper.findComponent({ name: 'LabeledInput' });
+      const initialValue = input.props('value');
+
       await (wrapper as any).setProps({
         value: {
           [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
-          [Settings.AWS_REGION]:     'test-region',
+          [Settings.OLLAMA_URL]:     'http://localhost:11435',
         } as SettingsFormData,
       });
 
       await wrapper.vm.$nextTick();
-      expect(wrapper.exists()).toBe(true);
+      const updatedValue = wrapper.findComponent({ name: 'LabeledInput' }).props('value');
+
+      // Verify the prop value actually changed
+      expect(updatedValue).not.toBe(initialValue);
     });
   });
 
@@ -699,7 +697,7 @@ describe('AIAgentSettings.vue', () => {
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
 
       // Component should have disabled prop set
-      expect(toggleGroup.exists()).toBe(true);
+      expect(toggleGroup.attributes('disabled')).toBe('true');
     });
 
     it('should allow value updates when readOnly is false', async() => {
@@ -718,7 +716,7 @@ describe('AIAgentSettings.vue', () => {
       expect(wrapper.emitted('update:value')).toBeTruthy();
     });
 
-    it('should accept both readOnly true and false without errors', async() => {
+    it('should toggle disabled state based on readOnly prop', async() => {
       const wrapperReadOnly = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
@@ -727,7 +725,9 @@ describe('AIAgentSettings.vue', () => {
         },
       });
 
-      expect(wrapperReadOnly.exists()).toBe(true);
+      let toggleGroup = wrapperReadOnly.findComponent({ name: 'ToggleGroup' });
+
+      expect(toggleGroup.attributes('disabled')).toBe('true');
 
       const wrapperEditable = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
@@ -737,7 +737,8 @@ describe('AIAgentSettings.vue', () => {
         },
       });
 
-      expect(wrapperEditable.exists()).toBe(true);
+      toggleGroup = wrapperEditable.findComponent({ name: 'ToggleGroup' });
+      expect(toggleGroup.attributes('disabled')).toBe('false');
     });
   });
 
@@ -1068,22 +1069,31 @@ describe('AIAgentSettings.vue', () => {
   });
 
   describe('UI Validation', () => {
-    it('should show error banner when model validation fails for Local chatbot', () => {
+    it('should show error state when model validation fails for Local chatbot', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
           value: {
             [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
             [Settings.OLLAMA_URL]:     'http://localhost:11434'
+            // Missing OLLAMA_MODEL - required field
           } as SettingsFormData
         },
       });
 
-      // Find the error banner component
-      const errorBanners = wrapper.findAllComponents({ name: 'banner' }).filter((b) => b.props('color') === 'error');
+      const vm = wrapper.vm as any;
 
-      // Error banner should exist or not exist based on validation state
-      expect(errorBanners.length).toBeGreaterThanOrEqual(0);
+      // Manually trigger validation to check validation state
+      vm.validateSettings({
+        [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+        [Settings.OLLAMA_URL]:     'http://localhost:11434'
+        // Missing model triggers validation error
+      });
+
+      const validationErrors = wrapper.emitted('update:validation-error');
+
+      expect(validationErrors).toBeTruthy();
+      expect(validationErrors?.[validationErrors.length - 1]?.[0]).toBe(true);
     });
 
     it('should display error under model field when refreshModels is clicked on Bedrock', async() => {
@@ -1199,11 +1209,18 @@ describe('AIAgentSettings.vue', () => {
         },
       });
 
-      // The component structure supports model selection
-      const components = wrapper.findAllComponents({ name: 'LabeledSelect' });
+      // Component renders without errors
+      expect(wrapper.exists()).toBe(true);
 
-      // We should have select components for model selection in OpenAI
-      expect(components.length).toBeGreaterThanOrEqual(0);
+      // Should have emitted models for selected model
+      const emittedModels = wrapper.emitted('update:models');
+
+      expect(emittedModels).toBeTruthy();
+
+      const models = emittedModels?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+      const selectedModel = models?.find((m) => m.value === 'gpt-3.5');
+
+      expect(selectedModel?.isSelected).toBe(true);
     });
 
     it('should emit validation error when required fields are missing', async() => {
@@ -1452,10 +1469,10 @@ describe('AIAgentSettings.vue', () => {
 
       await wrapper.vm.$nextTick();
 
-      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as string[];
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
 
       // The custom model should be included in the emitted models
-      expect(emittedModels).toContain('gpt-4-custom');
+      expect(emittedModels.some((m) => m.value === 'gpt-4-custom')).toBe(true);
     });
 
     it('should not duplicate selected model if already in availableModels', async() => {
@@ -1471,10 +1488,10 @@ describe('AIAgentSettings.vue', () => {
 
       await wrapper.vm.$nextTick();
 
-      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as string[];
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
 
       // Should not have duplicates of 'default-model'
-      const modelCount = emittedModels.filter((m) => m === 'default-model').length;
+      const modelCount = emittedModels.filter((m) => m.value === 'default-model').length;
 
       expect(modelCount).toBeLessThanOrEqual(1);
     });
@@ -1492,7 +1509,7 @@ describe('AIAgentSettings.vue', () => {
 
       await wrapper.vm.$nextTick();
 
-      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as string[];
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
 
       // Should be an empty array for Gemini with no selected model
       expect(Array.isArray(emittedModels)).toBe(true);
@@ -1511,7 +1528,10 @@ describe('AIAgentSettings.vue', () => {
       const emitted = wrapper.emitted('update:models');
 
       expect(emitted).toBeTruthy();
-      expect(Array.isArray(emitted?.[0]?.[0])).toBe(true);
+
+      const emittedModels = emitted?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      expect(Array.isArray(emittedModels)).toBe(true);
     });
 
     it('should update models when chatbot changes from Local to OpenAI', async() => {
@@ -1550,11 +1570,14 @@ describe('AIAgentSettings.vue', () => {
 
       await wrapper.vm.$nextTick();
 
-      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as string[];
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
 
       expect(Array.isArray(emittedModels)).toBe(true);
-      // Selected Bedrock model should be in the emitted array
-      expect(emittedModels).toContain('anthropic.claude-3-sonnet');
+      // Selected Bedrock model should be in the emitted array and marked as selected
+      const selectedModel = emittedModels.find((m) => m.value === 'anthropic.claude-3-sonnet');
+
+      expect(selectedModel).toBeDefined();
+      expect(selectedModel?.isSelected).toBe(true);
     });
 
     it('should handle selected model for GenericOpenAI chatbot', async() => {
@@ -1570,11 +1593,14 @@ describe('AIAgentSettings.vue', () => {
 
       await wrapper.vm.$nextTick();
 
-      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as string[];
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
 
       expect(Array.isArray(emittedModels)).toBe(true);
-      // Selected GenericOpenAI model should be in the emitted array
-      expect(emittedModels).toContain('custom-model');
+      // Selected GenericOpenAI model should be in the emitted array and marked as selected
+      const selectedModel = emittedModels.find((m) => m.value === 'custom-model');
+
+      expect(selectedModel).toBeDefined();
+      expect(selectedModel?.isSelected).toBe(true);
     });
 
     it('should emit update:models with correct data structure', async() => {
@@ -1592,9 +1618,11 @@ describe('AIAgentSettings.vue', () => {
 
       const emitted = wrapper.emitted('update:models');
 
-      expect(emitted).toBeTruthy();
       expect(emitted?.[0]).toBeDefined();
-      expect(Array.isArray(emitted?.[0]?.[0])).toBe(true);
+
+      const emittedModels = emitted?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      expect(Array.isArray(emittedModels)).toBe(true);
     });
 
     it('should emit update:models when active chatbot prop changes', async() => {
@@ -1654,10 +1682,90 @@ describe('AIAgentSettings.vue', () => {
 
       // The watcher should still function correctly
       expect(wrapper.emitted('update:models')).toBeTruthy();
-      const lastEmission = wrapper.emitted('update:models')?.[wrapper.emitted('update:models')!.length - 1]?.[0] as string[];
+      const lastEmission = wrapper.emitted('update:models')?.[wrapper.emitted('update:models')!.length - 1]?.[0] as Array<{ value: string; isSelected: boolean }>;
 
       // llama2 should be included in the final emission
-      expect(lastEmission).toContain('llama2');
+      const llama2Model = lastEmission.find((m) => m.value === 'llama2');
+
+      expect(llama2Model).toBeDefined();
+      expect(llama2Model?.isSelected).toBe(true);
+    });
+
+    it('should set isSelected flag correctly for matching selected model', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+            [Settings.OPENAI_MODEL]:   'gpt-4'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // Verify that the selected model has isSelected: true
+      const selectedModel = emittedModels.find((m) => m.value === 'gpt-4');
+
+      expect(selectedModel).toBeDefined();
+      expect(selectedModel?.isSelected).toBe(true);
+
+      // Other models should have isSelected: false
+      const nonSelectedModels = emittedModels.filter((m) => m.value !== 'gpt-4');
+
+      expect(nonSelectedModels.every((m) => m.isSelected === false)).toBe(true);
+    });
+
+    it('should mark custom model as selected when not in availableModels list', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock,
+            [Settings.BEDROCK_MODEL]:  'custom-anthropic-model'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // Custom model should be added and marked as selected
+      const customModel = emittedModels.find((m) => m.value === 'custom-anthropic-model');
+
+      expect(customModel).toBeDefined();
+      expect(customModel?.isSelected).toBe(true);
+
+      // Verify other models have isSelected: false
+      const otherModels = emittedModels.filter((m) => m.value !== 'custom-anthropic-model');
+
+      expect(otherModels.every((m) => m.isSelected === false)).toBe(true);
+    });
+
+    it('should verify each model has correct isSelected flag', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+            [Settings.OLLAMA_MODEL]:   'model-1'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // Each model should have the correct isSelected value based on whether it matches the selected model
+      emittedModels.forEach((model) => {
+        const expectedIsSelected = model.value === 'model-1';
+
+        expect(model.isSelected).toBe(expectedIsSelected);
+      });
     });
   });
 });

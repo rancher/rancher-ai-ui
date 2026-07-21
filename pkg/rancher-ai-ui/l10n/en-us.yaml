@@ -329,11 +329,15 @@ aiConfig:
   label: AI Assistant
   growl:
     modelsChanged:
-      title: The available LLM models have changed
+      title: |-
+        {count, plural,
+          =1 { {count} AI agent has been automatically updated }
+          other { {count} AI agents have been automatically updated }
+        }
       message: |-
         {count, plural,
-          =1 { The following AI Agent is now using the default model because its custom model is no longer available: {agentNames}.   Please review its configuration and update the model if necessary. }
-          other { The following AI Agents are now using the default model because their custom model is no longer available: {agentNames}.   Please review their configuration and update the model if necessary. }
+          =1 { Because the model(s) of the AI provider have changed, the following AI agent has been automatically updated to use the same model as the new AI provider configuration: { agentNames }. Please review it and update its configuration if necessary. }
+          other { Because the model(s) of the AI provider have changed, the following AI agents have been automatically updated to use the same model as the new AI provider configuration: { agentNames }. Please review them and update their configuration if necessary. }
         }
   form:
     header: AI Assistant Configuration

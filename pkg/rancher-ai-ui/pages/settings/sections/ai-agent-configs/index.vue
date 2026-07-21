@@ -17,7 +17,7 @@ import FileSelector from '@shell/components/form/FileSelector.vue';
 import formRulesGenerator from '@shell/utils/validators/formRules';
 import { AGENT_NAMESPACE } from '../../../../product';
 import { AIAgentConfigCRD } from '../../../../types';
-import { AIAgentConfigAuthType, AiAgentConfigBasicSecretPayload, AiAgentConfigOAuth2SecretPayload } from '../../types';
+import { AIAgentConfigAuthType, AiAgentConfigBasicSecretPayload, AiAgentConfigOAuth2SecretPayload, ModelOption } from '../../types';
 import { DEFAULT_AI_AGENT } from '../../../../composables/useAgentComposable';
 import Oauth2SecretForm from './Oauth2SecretForm.vue';
 import { useAIAgentApiComposable } from '../../../../composables/useAIAgentApiComposable';
@@ -46,7 +46,7 @@ const props = defineProps({
     default:  () => [],
   },
   models: {
-    type:     Array as PropType<string[]>,
+    type:     Array as PropType<ModelOption[]>,
     default:  () => [],
   },
   readOnly: {
@@ -118,6 +118,26 @@ const isAgentUnavailable = computed(() => {
   const errorMessage = getAgentErrorMessage(selectedAgent.value);
 
   return !!errorMessage;
+});
+
+const modelOptions = computed(() => props.models.map(({ value }) => value));
+
+/**
+ * When the selected agent has a model set, we use that model.
+ * If not, we use the selected model from the available models list (current model in AI agent settings).
+ */
+const llmModel = computed(() => {
+  const agentModel = selectedAgent.value?.spec.llmModel;
+
+  if (agentModel) {
+    return agentModel;
+  }
+
+  if (props.models.length) {
+    return props.models.find((model) => model.isSelected)?.value;
+  }
+
+  return null;
 });
 
 const agentSecrets = ref<Record<string, AiAgentConfigBasicSecretPayload | AiAgentConfigOAuth2SecretPayload | null>>({});
@@ -262,7 +282,7 @@ function updateLlmModelEnabled() {
   const llmModelEnabled = !selectedAgent.value.spec.llmModelEnabled;
 
   // When llmModelEnabled is reset, we clear the llmModel field to avoid having a model which is not in the available models list.
-  const llmModel = props.models.includes(selectedAgent.value.spec.llmModel || '') ? selectedAgent.value.spec.llmModel : undefined;
+  const llmModel = modelOptions.value.includes(selectedAgent.value.spec.llmModel || '') ? selectedAgent.value.spec.llmModel : undefined;
 
   updateAgent({
     spec: {
@@ -601,10 +621,10 @@ watch(validationErrors, (errors) => {
           >
             <div class="col span-6">
               <LabeledSelect
-                :value="selectedAgent.spec.llmModel"
+                :value="llmModel"
                 :disabled="props.readOnly || !selectedAgent.spec.llmModelEnabled"
                 :label="t('aiConfig.form.section.aiAgent.fields.modelName.label')"
-                :options="props.models"
+                :options="modelOptions"
                 :clearable="true"
                 @update:value="(value: string) => updateAgent({ spec: { ...selectedAgent.spec, llmModel: value } })"
               />

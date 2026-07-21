@@ -30,6 +30,7 @@ import {
   SettingsFormData, Settings, Workload, AiAgentConfigBasicSecretPayload, AIAgentConfigAuthType,
   SettingsPermissions,
   AiAgentConfigOAuth2SecretPayload,
+  ModelOption,
 } from './types';
 import { AgentSettings, AIAgentConfigCRD, UIToolsConfigs } from '../../types';
 import { AI_AGENT_LABELS } from '../../labels-annotations';
@@ -71,7 +72,7 @@ const aiAgentConfigCRDs = ref<AIAgentConfigCRD[] | null>(null);
 const initAiAgentConfigCRDs = ref<AIAgentConfigCRD[]>([]);
 const uiToolsSettings = ref<UIToolsConfigs | null>(null);
 
-const availableModels = ref<string[]>([]);
+const modelOptions = ref<ModelOption[]>([]);
 
 const authenticationSecrets = ref<Record<string, AiAgentConfigBasicSecretPayload | AiAgentConfigOAuth2SecretPayload | null>>({});
 
@@ -249,18 +250,18 @@ function mergeAiAgentConfigCRDsStatusUpdate(updatedCrds: AIAgentConfigCRD[]) {
  *
  * If any AI agent's model is reset, a growl notification is shown to inform the user.
  */
-function updateAvailableModels(models: string[]) {
+function updateModelOptions(models: ModelOption[]) {
   let modelAgentsReset = [];
 
   for (const crd of aiAgentConfigCRDs.value || []) {
     const initCrd = initAiAgentConfigCRDs.value.find((c) => c.metadata.name === crd.metadata.name);
 
-    if (crd.spec.llmModel && !models.includes(crd.spec.llmModel)) {
+    if (crd.spec.llmModel && !models.find((m) => m.value === crd.spec.llmModel)) {
       crd.spec.llmModelEnabled = false;
       crd.spec.llmModel = undefined;
     }
 
-    if (initCrd && initCrd.spec.llmModel && models.includes(initCrd.spec.llmModel)) {
+    if (initCrd && initCrd.spec.llmModel && !!models.find((m) => m.value === initCrd.spec.llmModel)) {
       crd.spec.llmModelEnabled = initCrd.spec.llmModelEnabled;
       crd.spec.llmModel = initCrd.spec.llmModel;
     }
@@ -272,7 +273,7 @@ function updateAvailableModels(models: string[]) {
 
   if (isAiAgentSettingsTouched.value && modelAgentsReset.length > 0) {
     store.dispatch('growl/warning', {
-      title:   t('aiConfig.growl.modelsChanged.title', {}, true),
+      title:   t('aiConfig.growl.modelsChanged.title', { count: modelAgentsReset.length }, true),
       message: t('aiConfig.growl.modelsChanged.message', {
         count:      modelAgentsReset.length,
         agentNames: modelAgentsReset.join(', ')
@@ -284,7 +285,7 @@ function updateAvailableModels(models: string[]) {
     isAiAgentSettingsTouched.value = null;
   }
 
-  availableModels.value = models;
+  modelOptions.value = models;
 }
 
 /**
@@ -757,7 +758,7 @@ onMounted(async() => {
             :value="aiAgentSettings"
             :read-only="!permissions?.create.canCreateSecrets"
             @update:value="updateAiAgentSettings"
-            @update:models="updateAvailableModels"
+            @update:models="updateModelOptions"
             @update:validation-error="hasAiAgentSettingsValidationErrors = $event"
           />
         </settings-row>
@@ -772,7 +773,7 @@ onMounted(async() => {
             v-if="aiAgentConfigCRDs"
             :value="aiAgentConfigCRDs"
             :init-value="initAiAgentConfigCRDs"
-            :models="availableModels"
+            :models="modelOptions"
             :read-only="!permissions?.create.canCreateSecrets || !permissions?.create.canCreateAiAgentCRDS"
             @update:value="aiAgentConfigCRDs = $event"
             @update:authentication-secrets="authenticationSecrets = $event"

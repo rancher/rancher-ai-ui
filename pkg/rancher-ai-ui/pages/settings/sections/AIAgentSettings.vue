@@ -468,7 +468,12 @@ watch(() => [
     availableModels.push(selectedModel);
   }
 
-  emit('update:models', availableModels);
+  const modelOptions = availableModels.map((model) => ({
+    value:      model,
+    isSelected: model === selectedModel
+  }));
+
+  emit('update:models', modelOptions);
 }, {
   immediate: true,
   deep:      true
