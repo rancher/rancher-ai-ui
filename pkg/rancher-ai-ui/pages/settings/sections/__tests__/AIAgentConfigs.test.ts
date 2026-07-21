@@ -35,11 +35,11 @@ jest.mock('@shell/components/form/Password.vue', () => ({
   }
 }));
 
-// Mock CopyToClipboard component
-jest.mock('@shell/components/CopyToClipboard.vue', () => ({
+// Mock DetailText component
+jest.mock('@shell/components/DetailText.vue', () => ({
   default: {
-    name:     'CopyToClipboard',
-    props:    ['text', 'labelAs', 'class', 'actionColor'],
+    name:     'DetailText',
+    props:    ['value', 'label-key', 'class'],
     template: '<div />'
   }
 }));

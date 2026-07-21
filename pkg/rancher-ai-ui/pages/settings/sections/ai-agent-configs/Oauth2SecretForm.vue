@@ -8,7 +8,7 @@ import { _EDIT, _VIEW } from '@shell/config/query-params';
 import Password from '@shell/components/form/Password.vue';
 import LabeledSelect from '@shell/components/form/LabeledSelect.vue';
 import LabeledInput from '@components/Form/LabeledInput/LabeledInput.vue';
-import CopyToClipboard from '@shell/components/CopyToClipboard.vue';
+import DetailText from '@shell/components/DetailText.vue';
 import formRulesGenerator from '@shell/utils/validators/formRules';
 import { warn } from '../../../../utils/log';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../../../../product';
@@ -308,53 +308,25 @@ onBeforeUnmount(() => {
   </div>
 
   <div class="helper-box">
-    <h4>
-      {{ t('aiConfig.form.section.aiAgent.fields.oauth2.helper.title') }}
-      <i
-        v-clean-tooltip="t('aiConfig.form.section.aiAgent.fields.oauth2.helper.tooltip')"
-        class="icon icon-info tooltip-icon subrow-title-icon"
-      />
-    </h4>
+    <div class="helper-title">
+      <h3 class="m-0">
+        {{ t('aiConfig.form.section.aiAgent.fields.oauth2.helper.title') }}
+      </h3>
+    </div>
     <div class="row">
       <div class="col span-6">
-        <div class="helper-field">
-          <label class="field-label">
-            {{ t('aiConfig.form.section.aiAgent.fields.oauth2.homepageUrl.label') }}
-          </label>
-          <div class="copy-field">
-            <input
-              class="field-value"
-              :value="HOME_PAGE_URL"
-              readonly
-            />
-            <CopyToClipboard
-              :text="HOME_PAGE_URL"
-              label-as="tooltip"
-              class="icon-btn"
-              action-color="bg-transparent"
-            />
-          </div>
-        </div>
+        <DetailText
+          class="helper-field"
+          :value="HOME_PAGE_URL"
+          label-key="aiConfig.form.section.aiAgent.fields.oauth2.homepageUrl.label"
+        />
       </div>
       <div class="col span-6">
-        <div class="helper-field">
-          <label class="field-label">
-            {{ t('aiConfig.form.section.aiAgent.fields.oauth2.callbackUrl.label') }}
-          </label>
-          <div class="copy-field">
-            <input
-              class="field-value"
-              :value="CALLBACK_URL"
-              readonly
-            />
-            <CopyToClipboard
-              :text="CALLBACK_URL"
-              label-as="tooltip"
-              class="icon-btn"
-              action-color="bg-transparent"
-            />
-          </div>
-        </div>
+        <DetailText
+          class="helper-field"
+          :value="CALLBACK_URL"
+          label-key="aiConfig.form.section.aiAgent.fields.oauth2.callbackUrl.label"
+        />
       </div>
     </div>
   </div>
@@ -362,41 +334,30 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .helper-box {
-  padding: 10px;
   background-color: var(--box-bg);
-  border: 1px solid var(--border);
   border-radius: var(--border-radius);
+  padding: 16px;
+
+  .helper-title {
+    padding: 4px 0 20px 0;
+  }
 
   .helper-field {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .field-label {
-    color: var(--input-label);
-  }
-
-  .copy-field {
-    display: flex;
-    align-items: center;
-    gap: var(--gap);
-    padding: 8px;
-    background-color: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: var(--border-radius);
-    font-family: monospace;
-    font-size: 12px;
-  }
-
-  .field-value {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--text);
-    border: none;
-    padding: 0;
+    :deep(h5) {
+      margin-bottom: 8px;
+    }
+    :deep(.monospace) {
+      display: block;
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    :deep(.btn) {
+      // btn-sm
+      padding: 0 12px;
+      min-height: 30px;
+      line-height: 28px;
+    }
   }
 }
 
@@ -418,15 +379,5 @@ onBeforeUnmount(() => {
     border-color: var(--input-disabled-border);
     cursor: not-allowed;
   }
-}
-
-.tooltip-icon {
-  color: var(--input-label);
-  margin-left: 8px;
-  cursor: pointer;
-}
-
-.subrow-title-icon {
-  font-size: 12px;
 }
 </style>

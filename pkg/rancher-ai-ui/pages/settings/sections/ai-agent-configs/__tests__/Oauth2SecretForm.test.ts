@@ -54,10 +54,10 @@ jest.mock('@shell/components/form/LabeledSelect.vue', () => ({
   }
 }));
 
-jest.mock('@shell/components/CopyToClipboard.vue', () => ({
+jest.mock('@shell/components/DetailText.vue', () => ({
   default: {
-    name:     'CopyToClipboard',
-    props:    ['text', 'labelAs', 'class', 'actionColor'],
+    name:     'DetailText',
+    props:    ['value', 'label-key', 'class'],
     template: '<div />'
   }
 }));
@@ -88,9 +88,8 @@ const requiredSetup = () => ({
       LabeledSelect:      true,
       LabeledInput:       true,
       DiscoveryBanner:    true,
-      CopyToClipboard:    true,
+      DetailText:         true,
     },
-    directives: { 'clean-tooltip': jest.fn() },
   }
 });
 
