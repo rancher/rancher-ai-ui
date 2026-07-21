@@ -37,7 +37,10 @@ describe('Messages', () => {
 
     const welcomeMessage = chat.getMessage(1);
 
-    welcomeMessage.containsText("I'm Liz, your personal AI assistant. How can I help you?");
+    // The greeting renders as two separate elements (greetings.line1 / greetings.line2) and can be
+    // scrolled out of the chat panel by the following content, so assert each line's presence.
+    welcomeMessage.containsTextValue("I'm Liz, your personal AI assistant.");
+    welcomeMessage.containsTextValue('How can I help you?');
 
     const suggestions = ['View resources', 'Analyze logs', 'Do action'];
 

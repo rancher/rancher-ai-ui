@@ -38,6 +38,10 @@ export KUBECONFIG="$KUBECONFIG_PATH"
 helm uninstall ai-agent -n cattle-ai-agent-system || true
 helm uninstall llm-mock -n cattle-ai-agent-system || true
 
+# Force a real teardown of the agent workload before reinstalling, so the disconnection e2e
+# tests get an observable "unavailable" window regardless of helm release bookkeeping.
+kubectl -n cattle-ai-agent-system delete deployment rancher-ai-agent llm-mock --ignore-not-found || true
+
 if [ "$FETCH_REPOS" = "true" ]; then
   rm -rf rancher-ai-agent
   rm -rf rancher-ai-llm-mock

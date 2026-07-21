@@ -5,6 +5,11 @@ import ChatPo from '@/cypress/e2e/po/chat.po';
 import { machineInventorySchema } from '@/cypress/e2e/blueprints/schema';
 import { gitRepo } from '@/cypress/e2e/blueprints/gitRepo';
 
+// Resource buttons fetch their schema lazily, when the button scrolls into view (intersection
+// observer). That request can take well over the 5s cy.wait default to fire on the loaded CI
+// runner, so wait longer for it - it still resolves immediately when the request is fast.
+const SCHEMA_FETCH_TIMEOUT = 20000;
+
 describe('Resource button', () => {
   const chat = new ChatPo();
 
@@ -39,7 +44,7 @@ describe('Resource button', () => {
 
       chat.sendMessage('User request');
 
-      cy.wait('@fetchSchema').its('response.statusCode').should('eq', 404);
+      cy.wait('@fetchSchema', { timeout: SCHEMA_FETCH_TIMEOUT }).its('response.statusCode').should('eq', 404);
 
       const resourceMessage = chat.getMessage(3);
 
@@ -82,7 +87,7 @@ describe('Resource button', () => {
       chat.sendMessage('User request');
 
       // First message is visible now, it should load the resource via cluster API
-      cy.wait('@fetchSchema').its('response.statusCode').should('eq', 404);
+      cy.wait('@fetchSchema', { timeout: SCHEMA_FETCH_TIMEOUT }).its('response.statusCode').should('eq', 404);
 
       resourceMessage = chat.getMessage(5);
 
@@ -138,7 +143,7 @@ describe('Resource button', () => {
       chat.sendMessage('User request');
 
       // First message is visible now, it should load the resource via cluster API
-      cy.wait('@fetchSchema').its('response.statusCode').should('eq', 404);
+      cy.wait('@fetchSchema', { timeout: SCHEMA_FETCH_TIMEOUT }).its('response.statusCode').should('eq', 404);
 
       resourceMessage = chat.getMessage(5);
 
@@ -159,10 +164,14 @@ describe('Resource button', () => {
         expect(requests).to.have.lengthOf(1);
       });
 
-      chat.messagesPanel().scrollTop();
+      // Scroll the (currently out-of-view) first button into view to trigger its lazy schema load.
+      // scrollIntoView on the button itself is deterministic: the panel's smooth scrollTo('top')
+      // can race the auto-scroll/layout after reopen and fail to produce a clean IntersectionObserver
+      // transition, so the fetch never fires. This still exercises "becomes visible -> loads".
+      chat.getMessage(3).resourceButton({ name: 'e-v8fhl' }).scrollIntoView();
 
       // First button becomes visible, it should load the resource via cluster API
-      cy.wait('@fetchSchema').its('response.statusCode').should('eq', 404);
+      cy.wait('@fetchSchema', { timeout: SCHEMA_FETCH_TIMEOUT }).its('response.statusCode').should('eq', 404);
     });
 
     it('It should keep and not load again resources when the message becomes visible again', () => {
@@ -214,7 +223,7 @@ describe('Resource button', () => {
       chat.open();
 
       // Last button is visible, it should load the resource via cluster API
-      cy.wait('@fetchMachineInventorySchema').its('response.statusCode').should('eq', 200);
+      cy.wait('@fetchMachineInventorySchema', { timeout: SCHEMA_FETCH_TIMEOUT }).its('response.statusCode').should('eq', 200);
 
       // First button is not visible, it should not load the resource via cluster API
       cy.get('@fetchVMSchema.all').then((requests) => {
