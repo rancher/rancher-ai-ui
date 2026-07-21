@@ -10,7 +10,7 @@ const OAUTH2_SUCCESS_MESSAGE = 'oauth_success';
 class OAuth2AuthenticationRequest {
   private window: Window | null;
   private broadcastChannel: BroadcastChannel | null = null;
-  private clearCloseInterval: any;
+  private clearCloseInterval: NodeJS.Timeout | null = null; // eslint-disable-line no-undef
 
   private isCompleted: boolean = false;
 
@@ -48,7 +48,11 @@ class OAuth2AuthenticationRequest {
 
     this.clearCloseInterval = setInterval(() => {
       if (!authWindow || authWindow.closed) {
-        clearInterval(this.clearCloseInterval);
+        if (this.clearCloseInterval) {
+          clearInterval(this.clearCloseInterval);
+
+          this.clearCloseInterval = null;
+        }
 
         if (!this.isCompleted) {
           this.cancelFn();
