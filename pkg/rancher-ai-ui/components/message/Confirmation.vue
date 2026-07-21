@@ -20,6 +20,17 @@ const props = defineProps({
 
 const emit = defineEmits(['confirm']);
 
+const CONFIRMATION_STATUS: Partial<Record<ConfirmationStatus, { icon: string; label: string }>> = {
+  [ConfirmationStatus.Confirmed]: {
+    icon:  'icon icon-checkmark',
+    label: t('ai.confirmation.confirmed'),
+  },
+  [ConfirmationStatus.Canceled]: {
+    icon:  'icon icon-close',
+    label: t('ai.confirmation.canceled'),
+  },
+};
+
 const confirmationText = computed(() => {
   const msg = t('ai.confirmation.message.question');
 
@@ -131,9 +142,9 @@ const confirmationText = computed(() => {
       :class="`status-${ props.message.confirmation.status }`"
       :data-testid="`rancher-ai-ui-chat-message-confirmation-status-${ props.message.confirmation.status }`"
     >
-      <i :class="['icon', `icon-${ props.message.confirmation.status === ConfirmationStatus.Confirmed ? 'checkmark' : 'close'}` ]" />
+      <i :class="CONFIRMATION_STATUS[props.message.confirmation.status]?.icon" />
       <p>
-        {{ t(`ai.confirmation.${ props.message.confirmation.status }`) }}
+        {{ CONFIRMATION_STATUS[props.message.confirmation.status]?.label }}
       </p>
     </div>
     <Tools
