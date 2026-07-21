@@ -8,6 +8,15 @@ interface DiscoveryStatus {
   message?: string;
 }
 
+type BannerAction = 'confirm' | 'cancel';
+
+interface BannerProps {
+  color: string;
+  key: string;
+  message: string;
+  action: BannerAction;
+}
+
 const props = defineProps({
   status: {
     type:    Object as () => DiscoveryStatus,
@@ -21,7 +30,7 @@ const props = defineProps({
 
 const emit = defineEmits(['confirm', 'cancel']);
 
-const banner = computed(() => {
+const banner = computed<BannerProps>(() => {
   const status = props.status;
 
   const color = status?.result || 'info';
@@ -36,6 +45,10 @@ const banner = computed(() => {
     action,
   };
 });
+
+function emitAction(value: BannerAction) {
+  emit(value);
+}
 </script>
 
 <template>
@@ -57,7 +70,7 @@ const banner = computed(() => {
           v-clean-html="content"
           class="clickable-label"
           :data-testid="`rancher-ai-ui-discovery-banner-button-${props.translationKey}`"
-          @click="emit(banner.action as any)"
+          @click="emitAction(banner.action)"
         />
       </template>
     </RichTranslation>
