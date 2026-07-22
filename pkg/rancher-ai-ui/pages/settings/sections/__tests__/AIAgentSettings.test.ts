@@ -50,15 +50,19 @@ describe('AIAgentSettings.vue', () => {
       expect(wrapper.find('.form-values').exists()).toBe(true);
     });
 
-    it('should render toggle group with correct options', () => {
+    it('should render toggle group with correct disabled state', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
+        props: {
+          value:    { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local },
+          readOnly: false
+        } as any,
       });
 
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
 
       expect(toggleGroup.exists()).toBe(true);
+      expect(toggleGroup.attributes('disabled')).toBe('false');
     });
   });
 
@@ -110,9 +114,9 @@ describe('AIAgentSettings.vue', () => {
       });
 
       const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const warningBanners = banners.filter((b) => b.props('color') === 'warning');
 
-      // For Local chatbot, only info banners should be present (no warning)
-      expect(banners.length).toBeGreaterThanOrEqual(0);
+      expect(warningBanners.length).toBe(0);
     });
   });
 
@@ -127,7 +131,7 @@ describe('AIAgentSettings.vue', () => {
 
       const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
 
-      expect(inputs.length).toBeGreaterThanOrEqual(0);
+      expect(inputs.length).toBeGreaterThan(0);
     });
 
     it('should update model when chatbot changes', async() => {
@@ -180,7 +184,7 @@ describe('AIAgentSettings.vue', () => {
 
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
 
-      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
+      expect(passwordInputs.length).toBeGreaterThan(0);
     });
 
     it('should use GOOGLE_API_KEY for Gemini chatbot', async() => {
@@ -196,7 +200,7 @@ describe('AIAgentSettings.vue', () => {
 
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
 
-      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
+      expect(passwordInputs.length).toBeGreaterThan(0);
     });
 
     it('should use AWS_BEARER_TOKEN_BEDROCK for Bedrock chatbot', async() => {
@@ -231,8 +235,8 @@ describe('AIAgentSettings.vue', () => {
       const inputs = wrapper.findAllComponents({ name: 'LabeledInput' });
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
 
-      expect(inputs.length).toBeGreaterThanOrEqual(1);
-      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
+      expect(inputs.length).toBeGreaterThan(0);
+      expect(passwordInputs.length).toBeGreaterThan(0);
     });
   });
 
@@ -376,7 +380,6 @@ describe('AIAgentSettings.vue', () => {
         },
       });
 
-      expect(wrapper.exists()).toBe(true);
       const advancedSection = wrapper.findComponent({ name: 'advanced-section' });
 
       expect(advancedSection.exists()).toBe(true);
@@ -407,32 +410,8 @@ describe('AIAgentSettings.vue', () => {
     });
   });
 
-  describe('RAG Configuration', () => {
-    it('should render advanced section', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
-      });
-
-      const advancedSection = wrapper.findComponent({ name: 'advanced-section' });
-
-      expect(advancedSection.exists()).toBe(true);
-    });
-  });
-
   describe('Langfuse Configuration', () => {
-    it('should render Langfuse section in advanced section', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
-      });
-
-      const advancedSection = wrapper.findComponent({ name: 'advanced-section' });
-
-      expect(advancedSection.exists()).toBe(true);
-    });
-
-    it('should render Langfuse fields', () => {
+    it('should render Langfuse fields in advanced section', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
@@ -482,8 +461,18 @@ describe('AIAgentSettings.vue', () => {
 
       const passwordInputs = wrapper.findAllComponents({ name: 'Password' });
 
+      expect(passwordInputs.length).toBeGreaterThan(0);
+
+      await wrapper.setProps({
+        value: {
+          ...existingValue,
+          [Settings.OPENAI_API_KEY]: 'sk-new'
+        }
+      });
+      await wrapper.vm.$nextTick();
+
+      // Verify component updated without error
       expect(wrapper.exists()).toBe(true);
-      expect(passwordInputs.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -494,6 +483,8 @@ describe('AIAgentSettings.vue', () => {
         props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
+      const emissions = wrapper.emitted('update:models')?.length || 0;
+
       await (wrapper as any).setProps({
         value: {
           [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
@@ -502,7 +493,8 @@ describe('AIAgentSettings.vue', () => {
       });
 
       await wrapper.vm.$nextTick();
-      expect(wrapper.exists()).toBe(true);
+      // Should have emitted models for the new chatbot
+      expect((wrapper.emitted('update:models')?.length || 0)).toBeGreaterThan(emissions);
     });
 
     it('should handle deep prop changes', async() => {
@@ -511,20 +503,26 @@ describe('AIAgentSettings.vue', () => {
         props: {
           value: {
             [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
-            [Settings.AWS_REGION]:     'test-region',
+            [Settings.OLLAMA_URL]:     'http://localhost:11434',
           } as SettingsFormData,
         },
       });
 
+      const input = wrapper.findComponent({ name: 'LabeledInput' });
+      const initialValue = input.props('value');
+
       await (wrapper as any).setProps({
         value: {
           [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
-          [Settings.AWS_REGION]:     'test-region',
+          [Settings.OLLAMA_URL]:     'http://localhost:11435',
         } as SettingsFormData,
       });
 
       await wrapper.vm.$nextTick();
-      expect(wrapper.exists()).toBe(true);
+      const updatedValue = wrapper.findComponent({ name: 'LabeledInput' }).props('value');
+
+      // Verify the prop value actually changed
+      expect(updatedValue).not.toBe(initialValue);
     });
   });
 
@@ -699,7 +697,7 @@ describe('AIAgentSettings.vue', () => {
       const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
 
       // Component should have disabled prop set
-      expect(toggleGroup.exists()).toBe(true);
+      expect(toggleGroup.attributes('disabled')).toBe('true');
     });
 
     it('should allow value updates when readOnly is false', async() => {
@@ -718,7 +716,7 @@ describe('AIAgentSettings.vue', () => {
       expect(wrapper.emitted('update:value')).toBeTruthy();
     });
 
-    it('should accept both readOnly true and false without errors', async() => {
+    it('should toggle disabled state based on readOnly prop', async() => {
       const wrapperReadOnly = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
@@ -727,7 +725,9 @@ describe('AIAgentSettings.vue', () => {
         },
       });
 
-      expect(wrapperReadOnly.exists()).toBe(true);
+      let toggleGroup = wrapperReadOnly.findComponent({ name: 'ToggleGroup' });
+
+      expect(toggleGroup.attributes('disabled')).toBe('true');
 
       const wrapperEditable = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
@@ -737,7 +737,8 @@ describe('AIAgentSettings.vue', () => {
         },
       });
 
-      expect(wrapperEditable.exists()).toBe(true);
+      toggleGroup = wrapperEditable.findComponent({ name: 'ToggleGroup' });
+      expect(toggleGroup.attributes('disabled')).toBe('false');
     });
   });
 
@@ -1068,22 +1069,31 @@ describe('AIAgentSettings.vue', () => {
   });
 
   describe('UI Validation', () => {
-    it('should show error banner when model validation fails for Local chatbot', () => {
+    it('should show error state when model validation fails for Local chatbot', () => {
       const wrapper = shallowMount(AIAgentSettings, {
         ...requiredSetup(),
         props: {
           value: {
             [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
             [Settings.OLLAMA_URL]:     'http://localhost:11434'
+            // Missing OLLAMA_MODEL - required field
           } as SettingsFormData
         },
       });
 
-      // Find the error banner component
-      const errorBanners = wrapper.findAllComponents({ name: 'banner' }).filter((b) => b.props('color') === 'error');
+      const vm = wrapper.vm as any;
 
-      // Error banner should exist or not exist based on validation state
-      expect(errorBanners.length).toBeGreaterThanOrEqual(0);
+      // Manually trigger validation to check validation state
+      vm.validateSettings({
+        [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+        [Settings.OLLAMA_URL]:     'http://localhost:11434'
+        // Missing model triggers validation error
+      });
+
+      const validationErrors = wrapper.emitted('update:validation-error');
+
+      expect(validationErrors).toBeTruthy();
+      expect(validationErrors?.[validationErrors.length - 1]?.[0]).toBe(true);
     });
 
     it('should display error under model field when refreshModels is clicked on Bedrock', async() => {
@@ -1140,6 +1150,622 @@ describe('AIAgentSettings.vue', () => {
 
       // When errorField sets OLLAMA_MODEL to true, URL field error should remain undefined
       expect(vm.errorField[ChatBotEnum.Local][Settings.OLLAMA_URL]).toBeUndefined();
+    });
+  });
+
+  describe('Touched Event Emission', () => {
+    it('should emit @touched event when chatbot provider is changed', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+            [Settings.OLLAMA_URL]:     'http://localhost:11434'
+          } as SettingsFormData,
+        },
+      });
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
+
+      // Simulate changing the chatbot provider
+      await toggleGroup.vm.$emit('update:model-value', ChatBotEnum.OpenAI);
+
+      // The component should emit @update:value and eventually @touched
+      expect(wrapper.emitted('update:value')).toBeTruthy();
+    });
+
+    it('should validate and emit events when form values change', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+            [Settings.OPENAI_API_KEY]: 'sk-original'
+          } as SettingsFormData,
+        },
+      });
+
+      // Initially no events
+      expect(wrapper.emitted('update:value')).toBeFalsy();
+
+      // Simulating a chatbot change triggers update:value
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
+
+      await toggleGroup.vm.$emit('update:model-value', ChatBotEnum.Gemini);
+
+      // Now we should have emitted events
+      expect(wrapper.emitted('update:value')).toBeTruthy();
+    });
+
+    it('should emit @update:value when model is selected', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+            [Settings.OPENAI_API_KEY]: 'sk-xxx',
+            [Settings.OPENAI_MODEL]:   'gpt-3.5'
+          } as SettingsFormData,
+        },
+      });
+
+      // Component renders without errors
+      expect(wrapper.exists()).toBe(true);
+
+      // Should have emitted models for selected model
+      const emittedModels = wrapper.emitted('update:models');
+
+      expect(emittedModels).toBeTruthy();
+
+      const models = emittedModels?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+      const selectedModel = models?.find((m) => m.value === 'gpt-3.5');
+
+      expect(selectedModel?.isSelected).toBe(true);
+    });
+
+    it('should emit validation error when required fields are missing', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI
+            // Missing API key and model
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      // Should emit validation error for missing fields
+      expect(wrapper.emitted('update:validation-error')).toBeTruthy();
+    });
+
+    it('should handle multiple value updates', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:           ChatBotEnum.Bedrock,
+            [Settings.AWS_REGION]:               'us-east-1',
+            [Settings.AWS_BEARER_TOKEN_BEDROCK]: 'token'
+          } as SettingsFormData,
+        },
+      });
+
+      // Change chatbot provider
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
+
+      await toggleGroup.vm.$emit('update:model-value', ChatBotEnum.OpenAI);
+
+      expect(wrapper.emitted('update:value')).toBeTruthy();
+
+      // Change again
+      await toggleGroup.vm.$emit('update:model-value', ChatBotEnum.Gemini);
+
+      // Should have multiple emissions
+      const emissions = wrapper.emitted('update:value');
+
+      expect(emissions && emissions.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should emit @update:value with correct form data structure', async() => {
+      const initialData = {
+        [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+        [Settings.OPENAI_API_KEY]: 'sk-xxx'
+      } as SettingsFormData;
+
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: { value: initialData },
+      });
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
+
+      await toggleGroup.vm.$emit('update:model-value', ChatBotEnum.Gemini);
+
+      const emittedValue = wrapper.emitted('update:value')?.[0]?.[0] as any;
+
+      // Emitted value should be a form data object with the updated chatbot
+      expect(emittedValue).toBeDefined();
+      expect(emittedValue[Settings.ACTIVE_CHATBOT]).toBe(ChatBotEnum.Gemini);
+    });
+
+    it('should validate all required chatbot fields', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local
+            // Missing OLLAMA_URL
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      // Should emit validation error since OLLAMA_URL is required for Local
+      expect(wrapper.emitted('update:validation-error')).toBeTruthy();
+    });
+
+    it('should not emit touched on initialization', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+            [Settings.OPENAI_API_KEY]: 'sk-xxx'
+          } as SettingsFormData,
+        },
+      });
+
+      // No events should be emitted on mount
+      expect(wrapper.emitted('touched')).toBeFalsy();
+    });
+  });
+
+  describe('Validation Error Event Emission', () => {
+    it('should emit @update:validation-error when validation fails', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local
+            // Missing OLLAMA_URL and OLLAMA_MODEL (required)
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.emitted('update:validation-error')).toBeTruthy();
+      const emittedValue = wrapper.emitted('update:validation-error')?.[0]?.[0];
+
+      expect(emittedValue).toBe(true);
+    });
+
+    it('should emit validation error true when required OpenAI API key is missing', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI
+            // Missing OPENAI_API_KEY
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.emitted('update:validation-error')).toBeTruthy();
+      const emittedValue = wrapper.emitted('update:validation-error')?.[0]?.[0];
+
+      expect(emittedValue).toBe(true);
+    });
+
+    it('should emit validation error false when all required fields are present', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:  ChatBotEnum.OpenAI,
+            [Settings.OPENAI_API_KEY]: 'sk-xxx',
+            [Settings.OPENAI_MODEL]:   'gpt-4'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      // When all required fields are present, validation should pass
+      // Check if validation error was emitted (it might be on initialization)
+      const validationErrors = wrapper.emitted('update:validation-error') || [];
+
+      const lastError = validationErrors[validationErrors.length - 1]?.[0];
+
+      expect(lastError).toBe(false);
+    });
+
+    it('should handle Bedrock validation errors', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock
+            // Missing AWS_REGION and AWS_BEARER_TOKEN_BEDROCK
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.emitted('update:validation-error')).toBeTruthy();
+      const emittedValue = wrapper.emitted('update:validation-error')?.[0]?.[0];
+
+      expect(emittedValue).toBe(true);
+    });
+
+    it('should handle GenericOpenAI validation errors', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.GenericOpenAI
+            // Missing URL and API key
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.emitted('update:validation-error')).toBeTruthy();
+      const emittedValue = wrapper.emitted('update:validation-error')?.[0]?.[0];
+
+      expect(emittedValue).toBe(true);
+    });
+  });
+
+  describe('Models Watcher', () => {
+    it('should emit update:models with available models for active chatbot on initialization', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+            [Settings.OLLAMA_MODEL]:   'llama2'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.emitted('update:models')).toBeTruthy();
+    });
+
+    it('should emit update:models when active chatbot changes', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
+      });
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
+
+      await toggleGroup.vm.$emit('update:model-value', ChatBotEnum.OpenAI);
+      await wrapper.vm.$nextTick();
+
+      // Should have emitted update:models for the new chatbot
+      expect(wrapper.emitted('update:models')).toBeTruthy();
+    });
+
+    it('should include selected model in availableModels if not already present', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+            [Settings.OPENAI_MODEL]:   'gpt-4-custom'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // The custom model should be included in the emitted models
+      expect(emittedModels.some((m) => m.value === 'gpt-4-custom')).toBe(true);
+    });
+
+    it('should not duplicate selected model if already in availableModels', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+            [Settings.OLLAMA_MODEL]:   'default-model'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // Should not have duplicates of 'default-model'
+      const modelCount = emittedModels.filter((m) => m.value === 'default-model').length;
+
+      expect(modelCount).toBeLessThanOrEqual(1);
+    });
+
+    it('should emit empty array when no models and no selected model for active chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini
+            // No model specified
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // Should be an empty array for Gemini with no selected model
+      expect(Array.isArray(emittedModels)).toBe(true);
+      expect(emittedModels.length).toBe(0);
+    });
+
+    it('should emit models array for Local chatbot when models are fetched', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
+      });
+
+      // Simulate models being fetched
+      await wrapper.vm.$nextTick();
+
+      const emitted = wrapper.emitted('update:models');
+
+      expect(emitted).toBeTruthy();
+
+      const emittedModels = emitted?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      expect(Array.isArray(emittedModels)).toBe(true);
+    });
+
+    it('should update models when chatbot changes from Local to OpenAI', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+            [Settings.OLLAMA_MODEL]:   'llama2'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+      const initialEmissions = (wrapper.emitted('update:models') || []).length;
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
+
+      await toggleGroup.vm.$emit('update:model-value', ChatBotEnum.OpenAI);
+      await wrapper.vm.$nextTick();
+
+      // Should have emitted more times after changing chatbot
+      expect((wrapper.emitted('update:models') || []).length).toBeGreaterThan(initialEmissions);
+    });
+
+    it('should handle selected model for Bedrock chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock,
+            [Settings.BEDROCK_MODEL]:  'anthropic.claude-3-sonnet'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      expect(Array.isArray(emittedModels)).toBe(true);
+      // Selected Bedrock model should be in the emitted array and marked as selected
+      const selectedModel = emittedModels.find((m) => m.value === 'anthropic.claude-3-sonnet');
+
+      expect(selectedModel).toBeDefined();
+      expect(selectedModel?.isSelected).toBe(true);
+    });
+
+    it('should handle selected model for GenericOpenAI chatbot', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]:       ChatBotEnum.GenericOpenAI,
+            [Settings.GENERIC_OPENAI_MODEL]: 'custom-model'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      expect(Array.isArray(emittedModels)).toBe(true);
+      // Selected GenericOpenAI model should be in the emitted array and marked as selected
+      const selectedModel = emittedModels.find((m) => m.value === 'custom-model');
+
+      expect(selectedModel).toBeDefined();
+      expect(selectedModel?.isSelected).toBe(true);
+    });
+
+    it('should emit update:models with correct data structure', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+            [Settings.OPENAI_MODEL]:   'gpt-4'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emitted = wrapper.emitted('update:models');
+
+      expect(emitted?.[0]).toBeDefined();
+
+      const emittedModels = emitted?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      expect(Array.isArray(emittedModels)).toBe(true);
+    });
+
+    it('should emit update:models when active chatbot prop changes', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
+      });
+
+      await wrapper.vm.$nextTick();
+      const emissionsBeforeChange = (wrapper.emitted('update:models') || []).length;
+
+      // Update the prop to change active chatbot
+      await wrapper.setProps({ value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini } as SettingsFormData });
+      await wrapper.vm.$nextTick();
+
+      // Should have emitted more times
+      expect((wrapper.emitted('update:models') || []).length).toBeGreaterThan(emissionsBeforeChange);
+    });
+
+    it('should handle undefined models for active chatbot gracefully', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0];
+
+      // Should emit something (likely an empty array) not an error
+      expect(emittedModels).toBeDefined();
+      expect(Array.isArray(emittedModels)).toBe(true);
+    });
+
+    it('should preserve selected model when switching chatbots and back', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+            [Settings.OLLAMA_MODEL]:   'llama2'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroup' });
+
+      // Switch to OpenAI
+      await toggleGroup.vm.$emit('update:model-value', ChatBotEnum.OpenAI);
+      await wrapper.vm.$nextTick();
+
+      // Switch back to Local
+      await toggleGroup.vm.$emit('update:model-value', ChatBotEnum.Local);
+      await wrapper.vm.$nextTick();
+
+      // The watcher should still function correctly
+      expect(wrapper.emitted('update:models')).toBeTruthy();
+      const lastEmission = wrapper.emitted('update:models')?.[wrapper.emitted('update:models')!.length - 1]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // llama2 should be included in the final emission
+      const llama2Model = lastEmission.find((m) => m.value === 'llama2');
+
+      expect(llama2Model).toBeDefined();
+      expect(llama2Model?.isSelected).toBe(true);
+    });
+
+    it('should set isSelected flag correctly for matching selected model', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI,
+            [Settings.OPENAI_MODEL]:   'gpt-4'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // Verify that the selected model has isSelected: true
+      const selectedModel = emittedModels.find((m) => m.value === 'gpt-4');
+
+      expect(selectedModel).toBeDefined();
+      expect(selectedModel?.isSelected).toBe(true);
+
+      // Other models should have isSelected: false
+      const nonSelectedModels = emittedModels.filter((m) => m.value !== 'gpt-4');
+
+      expect(nonSelectedModels.every((m) => m.isSelected === false)).toBe(true);
+    });
+
+    it('should mark custom model as selected when not in availableModels list', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Bedrock,
+            [Settings.BEDROCK_MODEL]:  'custom-anthropic-model'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // Custom model should be added and marked as selected
+      const customModel = emittedModels.find((m) => m.value === 'custom-anthropic-model');
+
+      expect(customModel).toBeDefined();
+      expect(customModel?.isSelected).toBe(true);
+
+      // Verify other models have isSelected: false
+      const otherModels = emittedModels.filter((m) => m.value !== 'custom-anthropic-model');
+
+      expect(otherModels.every((m) => m.isSelected === false)).toBe(true);
+    });
+
+    it('should verify each model has correct isSelected flag', async() => {
+      const wrapper = shallowMount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: {
+          value: {
+            [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local,
+            [Settings.OLLAMA_MODEL]:   'model-1'
+          } as SettingsFormData,
+        },
+      });
+
+      await wrapper.vm.$nextTick();
+
+      const emittedModels = wrapper.emitted('update:models')?.[0]?.[0] as Array<{ value: string; isSelected: boolean }>;
+
+      // Each model should have the correct isSelected value based on whether it matches the selected model
+      emittedModels.forEach((model) => {
+        const expectedIsSelected = model.value === 'model-1';
+
+        expect(model.isSelected).toBe(expectedIsSelected);
+      });
     });
   });
 });

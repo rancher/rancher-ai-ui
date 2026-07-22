@@ -123,3 +123,65 @@ Cypress.Commands.add('deleteRancherResource', (prefix, resourceType, resourceId,
     });
   });
 });
+
+/**
+ * Installs Elemental Operator to the local cluster.
+ */
+Cypress.Commands.add('installElementalOperator', () => {
+  return cy.getCookie('CSRF').then((token) => {
+    cy.request({
+      method:  'POST',
+      url:     '/v3/clusters/local?action=generateKubeconfig',
+      headers: {
+        'x-api-csrf': token?.value,
+        Accept:       'application/json'
+      },
+    }).then((resp) => {
+      expect(resp.status).to.eq(200);
+
+      const kubeconfig = `${ Cypress.config('downloadsFolder') }/local.yaml`;
+
+      cy.writeFile(kubeconfig, resp.body.config);
+
+      const cmd = `.github/scripts/deploy-elemental.sh ${ kubeconfig }`;
+
+      cy.log('Cmd to execute:', cmd);
+
+      cy.exec(cmd, {
+        failOnNonZeroExit: false,
+        timeout:           15000
+      });
+    });
+  });
+});
+
+/**
+ * Uninstalls Elemental Operator from the local cluster.
+ */
+Cypress.Commands.add('uninstallElementalOperator', () => {
+  return cy.getCookie('CSRF').then((token) => {
+    cy.request({
+      method:  'POST',
+      url:     '/v3/clusters/local?action=generateKubeconfig',
+      headers: {
+        'x-api-csrf': token?.value,
+        Accept:       'application/json'
+      },
+    }).then((resp) => {
+      expect(resp.status).to.eq(200);
+
+      const kubeconfig = `${ Cypress.config('downloadsFolder') }/local.yaml`;
+
+      cy.writeFile(kubeconfig, resp.body.config);
+
+      const cmd = `.github/scripts/uninstall-elemental.sh ${ kubeconfig }`;
+
+      cy.log('Cmd to execute:', cmd);
+
+      cy.exec(cmd, {
+        failOnNonZeroExit: false,
+        timeout:           10000
+      });
+    });
+  });
+});

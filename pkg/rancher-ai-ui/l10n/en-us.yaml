@@ -327,6 +327,18 @@ ai:
         edit: Edit before sending
 aiConfig:
   label: AI Assistant
+  growl:
+    modelsChanged:
+      title: |-
+        {count, plural,
+          =1 { {count} AI agent has been automatically updated }
+          other { {count} AI agents have been automatically updated }
+        }
+      message: |-
+        {count, plural,
+          =1 { Because the model(s) of the AI provider have changed, the following AI agent has been automatically updated to use the same model as the new AI provider configuration: { agentNames }. Please review it and update its configuration if necessary. }
+          other { Because the model(s) of the AI provider have changed, the following AI agents have been automatically updated to use the same model as the new AI provider configuration: { agentNames }. Please review them and update their configuration if necessary. }
+        }
   form:
     header: AI Assistant Configuration
     description: Configure the AI model and provider for your assistant
@@ -378,6 +390,10 @@ aiConfig:
             requiredTooltip: '"Agent Profile" is required'
           mcp:
             title: MCP Configuration
+          llmModel:
+            title: Agent Model
+            tooltip: 'Provide the model name for running the AI agent. If not provided, the default model will be used.'
+            requiredTooltip: ''
           humanValidationTools:
             title: Human Validation Tools
             tooltip: 'Human validation tools allow the AI agent to delegate specific tasks to human operators for verification or approval. This is particularly useful for critical actions that require human judgment to ensure accuracy and prevent errors.'
@@ -445,6 +461,10 @@ aiConfig:
           mcpURL:
             label: MCP Endpoint
             placeholder: https://endpoint.mcp
+          llmModelEnabled:
+            label: Same as the AI provider
+          modelName:
+            label: Model
           humanValidationTools:
             addLabel: Add Validation Tool
             emptyLabel: No human validation tools have been defined for this agent

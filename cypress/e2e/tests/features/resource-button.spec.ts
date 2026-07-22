@@ -2,8 +2,12 @@ import BurgerMenuPo from '@rancher/cypress/e2e/po/side-bars/burger-side-menu.po'
 import ProductNavPo from '@rancher/cypress/e2e/po/side-bars/product-side-nav.po';
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
-import { machineInventorySchema } from '@/cypress/e2e/blueprints/schema';
-import { gitRepo } from '@/cypress/e2e/blueprints/gitRepo';
+import {
+  gitRepoSchema, machineInventorySchema, virtualMachineSchema, clusterRepoSchema, appsSchema
+} from '@/cypress/e2e/blueprints/schema';
+import { gitRepo } from '@/cypress/e2e/blueprints/fleet';
+import { machineInventory } from '@/cypress/e2e/blueprints/elemental';
+import { elementalRepo, elementalExtension, EXTENSION_NAMESPACE } from '@/cypress/e2e/blueprints/extensions';
 
 describe('Resource button', () => {
   const chat = new ChatPo();
@@ -31,11 +35,11 @@ describe('Resource button', () => {
       cy.enqueueLLMResponse({
         text: [
           'test',
-          '<mcp-response>[{"namespace": "fleet-default", "kind": "MachineInventory", "cluster": "local", "name": "e-v8fhl", "type": "elemental.cattle.io.machineinventory"}]</mcp-response>'
+          `<mcp-response>[{"namespace": "fleet-default", "kind": "MachineInventory", "cluster": "local", "name": "e-v8fhl", "type": "${ machineInventorySchema.id }"}]</mcp-response>`
         ],
       });
 
-      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/elemental.cattle.io.machineinventory`).as('fetchSchema');
+      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/${ machineInventorySchema.id }`).as('fetchSchema');
 
       chat.sendMessage('User request');
 
@@ -58,11 +62,11 @@ describe('Resource button', () => {
       cy.enqueueLLMResponse({
         text:           [
           'test\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\n',
-          '<mcp-response>[{"namespace": "fleet-default", "kind": "MachineInventory", "cluster": "local", "name": "e-v8fhl", "type": "elemental.cattle.io.machineinventory"}]</mcp-response>'
+          `<mcp-response>[{"namespace": "fleet-default", "kind": "MachineInventory", "cluster": "local", "name": "e-v8fhl", "type": "${ machineInventorySchema.id }"}]</mcp-response>`
         ],
       });
 
-      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/elemental.cattle.io.machineinventory`).as('fetchSchema');
+      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/${ machineInventorySchema.id }`).as('fetchSchema');
 
       chat.sendMessage('User request');
 
@@ -114,11 +118,11 @@ describe('Resource button', () => {
       cy.enqueueLLMResponse({
         text:           [
           'test',
-          '<mcp-response>[{"namespace": "fleet-default", "kind": "MachineInventory", "cluster": "local", "name": "e-v8fhl", "type": "elemental.cattle.io.machineinventory"}]</mcp-response>'
+          `<mcp-response>[{"namespace": "fleet-default", "kind": "MachineInventory", "cluster": "local", "name": "e-v8fhl", "type": "${ machineInventorySchema.id }"}]</mcp-response>`
         ],
       });
 
-      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/elemental.cattle.io.machineinventory`).as('fetchSchema');
+      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/${ machineInventorySchema.id }`).as('fetchSchema');
 
       chat.sendMessage('User request');
 
@@ -175,7 +179,7 @@ describe('Resource button', () => {
       cy.enqueueLLMResponse({
         text:           [
           'test\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\n',
-          '<mcp-response>[{"namespace": "default", "kind": "VirtualMachine", "cluster": "local", "name": "vm-new", "type": "kubevirt.io.virtualmachine"}]</mcp-response>'
+          `<mcp-response>[{"namespace": "default", "kind": "VirtualMachine", "cluster": "local", "name": "vm-new", "type": "${ virtualMachineSchema.id }"}]</mcp-response>`
         ],
       });
 
@@ -190,7 +194,7 @@ describe('Resource button', () => {
       cy.enqueueLLMResponse({
         text:           [
           'test\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\n',
-          '<mcp-response>[{"namespace": "fleet-default", "kind": "MachineInventory", "cluster": "local", "name": "e-abcde", "type": "elemental.cattle.io.machineinventory"}]</mcp-response>'
+          `<mcp-response>[{"namespace": "fleet-default", "kind": "MachineInventory", "cluster": "local", "name": "e-abcde", "type": "${ machineInventorySchema.id }"}]</mcp-response>`
         ],
       });
 
@@ -204,9 +208,9 @@ describe('Resource button', () => {
 
       chat.close();
 
-      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/kubevirt.io.virtualmachine`).as('fetchVMSchema');
+      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/${ virtualMachineSchema.id }`).as('fetchVMSchema');
 
-      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/elemental.cattle.io.machineinventory`, {
+      cy.intercept('GET', `/k8s/clusters/local/v1/schemas/${ machineInventorySchema.id }`, {
         statusCode: 200,
         body:       machineInventorySchema,
       }).as('fetchMachineInventorySchema');
@@ -252,7 +256,18 @@ describe('Resource button', () => {
     before(() => {
       cy.login();
 
-      cy.createRancherResource('v1', 'fleet.cattle.io.gitrepo', JSON.stringify(gitRepo), false);
+      cy.installElementalOperator();
+
+      // Install Elemental repo
+      cy.createRancherResource('v1', clusterRepoSchema.id, JSON.stringify(elementalRepo), true);
+
+      cy.wait(10000); // TODO: we should check for extension availability by polling instead of using a fixed wait
+
+      // Install Elemental extension
+      cy.createRancherResource('v1', `${ clusterRepoSchema.id }/elemental-repo?action=install`, JSON.stringify(elementalExtension), true);
+
+      cy.createRancherResource('v1', machineInventorySchema.id, JSON.stringify(machineInventory), false);
+      cy.createRancherResource('v1', gitRepoSchema.id, JSON.stringify(gitRepo), false);
     });
 
     beforeEach(() => {
@@ -325,7 +340,7 @@ describe('Resource button', () => {
            *  namespace: fleet-default
            *  name: test
            */
-          '<mcp-response>[{"namespace": "fleet-default", "kind": "GitRepo", "cluster": "local", "name": "test-liz-fleet", "type": "fleet.cattle.io.gitrepo"}]</mcp-response>'
+          `<mcp-response>[{"namespace": "fleet-default", "kind": "GitRepo", "cluster": "local", "name": "test-liz-fleet", "type": "${ gitRepoSchema.id }"}]</mcp-response>`
         ],
       });
 
@@ -357,12 +372,105 @@ describe('Resource button', () => {
       cy.get('.resource-link').should('contain.text', 'App Bundle:');
     });
 
-    it.skip('It should correctly navigate to Explorer when resource is rancher-managed (management.cattle.io group)', () => {
-      // TODO
+    it('It should correctly navigate to Extension product (Elemental) when resource is Custom Resource Definition', () => {
+      cy.enqueueLLMResponse({
+        text: [
+          'test',
+          /**
+           * Resource
+           *
+           *  cluster: local
+           *  type: fleet.cattle.io.gitrepo
+           *  namespace: fleet-default
+           *  name: test
+           */
+          `<mcp-response>[{"namespace": "fleet-default", "kind": "MachineInventory", "cluster": "local", "name": "test-liz", "type": "${ machineInventorySchema.id }"}]</mcp-response>`
+        ],
+      });
+
+      chat.sendMessage('User request');
+
+      const resourceMessage = chat.getMessage(3);
+
+      resourceMessage.isCompleted();
+
+      const btn = resourceMessage.resourceButton({ name: 'test-liz' });
+
+      btn.should('be.visible');
+      btn.click();
+
+      // Verify navigation from Home to Elemental
+      cy.url().should('include', '/elemental/c/local/elemental.cattle.io.machineinventory/fleet-default/test-liz');
+      cy.get('.resource-link').should('contain.text', 'Inventory of Machines:');
+
+      // Verify navigation from Explorer to Elemental
+      burgerMenu.goToCluster('local');
+      sideNav.navToSideMenuGroupByLabel('Workloads');
+      sideNav.navToSideMenuEntryByLabel('Deployments');
+      cy.get('.with-subheader').should('contain.text', 'Deployments');
+
+      btn.scrollIntoView();
+      btn.click();
+
+      cy.url().should('include', '/elemental/c/local/elemental.cattle.io.machineinventory/fleet-default/test-liz');
+      cy.get('.resource-link').should('contain.text', 'Inventory of Machines:');
+
+      // Verify navigation from Fleet to Elemental
+      BurgerMenuPo.burgerMenuNavToMenubyLabel('Continuous Delivery');
+      cy.get('[data-testid="fleet-dashboard-workspace-card-fleet-default"]').should('be.visible');
+
+      btn.scrollIntoView();
+      btn.click();
+
+      cy.url().should('include', '/elemental/c/local/elemental.cattle.io.machineinventory/fleet-default/test-liz');
+      cy.get('.resource-link').should('contain.text', 'Inventory of Machines:');
     });
 
-    it.skip('It should correctly navigate to Extension product (Elemental) when resource is Custom Resource Definition', () => {
-      // TODO: This requires Elemental extension and server to be installed in Rancher.
+    it('It should correctly navigate to Explorer when resource is rancher-managed (management.cattle.io group)', () => {
+      cy.getRancherResource('v1', 'management.cattle.io.projects').then((resp: Cypress.Response<any>) => {
+        const defaultProject = resp.body.data.find((item: any) => item.spec.displayName === 'Default');
+
+        const projectName = defaultProject.metadata.name;
+
+        cy.enqueueLLMResponse({
+          text: [
+            'test',
+            /**
+             * Resource
+             *
+             *  cluster: local
+             *  type: project
+             *  namespace: local
+             *  name: "Default"
+             */
+            `<mcp-response>[{"namespace": "local", "kind": "Project", "cluster": "local", "name": "${ projectName }", "type": "project"}]</mcp-response>`
+          ],
+        });
+
+        chat.sendMessage('User request');
+
+        const resourceMessage = chat.getMessage(3);
+
+        resourceMessage.isCompleted();
+
+        const btn = resourceMessage.resourceButton({ name: projectName });
+
+        btn.should('be.visible');
+        btn.click();
+
+        // Verify navigation from Home to Explorer
+        cy.url().should('include', `/c/local/explorer/management.cattle.io.project/local/${ projectName }`);
+        cy.get('.resource-link').should('contain.text', 'Project:');
+
+        // Verify navigation from Fleet to Explorer
+        BurgerMenuPo.burgerMenuNavToMenubyLabel('Continuous Delivery');
+
+        btn.scrollIntoView();
+        btn.click();
+
+        cy.url().should('include', `/c/local/explorer/management.cattle.io.project/local/${ projectName }`);
+        cy.get('.resource-link').should('contain.text', 'Project:');
+      });
     });
 
     it.skip('It should correctly navigate to Explorer when resource is native type and cluster is downstream cluster', () => {
@@ -377,7 +485,16 @@ describe('Resource button', () => {
     after(() => {
       cy.login();
 
-      cy.deleteRancherResource('v1', 'fleet.cattle.io.gitrepo', `${ gitRepo.metadata.namespace }/${ gitRepo.metadata.name }`, false);
+      cy.deleteRancherResource('v1', machineInventorySchema.id, `${ machineInventory.metadata.namespace }/${ machineInventory.metadata.name }`, false);
+      cy.deleteRancherResource('v1', gitRepoSchema.id, `${ gitRepo.metadata.namespace }/${ gitRepo.metadata.name }`, false);
+
+      // Uninstall Elemental extension
+      cy.createRancherResource('v1', `${ appsSchema.id }/${ EXTENSION_NAMESPACE }/${ elementalExtension.charts[0].chartName }?action=uninstall`, '{}', false);
+
+      // Uninstall Elemental repo
+      cy.deleteRancherResource('v1', clusterRepoSchema.id, elementalRepo.metadata.name, false);
+
+      cy.uninstallElementalOperator();
     });
   });
 });
