@@ -20,6 +20,17 @@ const props = defineProps({
 
 const emit = defineEmits(['confirm']);
 
+const CONFIRMATION_STATUS: Partial<Record<ConfirmationStatus, { icon: string; label: string }>> = {
+  [ConfirmationStatus.Confirmed]: {
+    icon:  'icon icon-checkmark',
+    label: t('ai.confirmation.confirmed'),
+  },
+  [ConfirmationStatus.Canceled]: {
+    icon:  'icon icon-close',
+    label: t('ai.confirmation.canceled'),
+  },
+};
+
 const confirmationText = computed(() => {
   const msg = t('ai.confirmation.message.question');
 
@@ -126,31 +137,15 @@ const confirmationText = computed(() => {
       </div>
     </div>
     <div
-      v-else
+      v-else-if="props.message.confirmation"
       class="confirmation-status"
+      :class="`status-${ props.message.confirmation.status }`"
+      :data-testid="`rancher-ai-ui-chat-message-confirmation-status-${ props.message.confirmation.status }`"
     >
-      <template v-if="props.message.confirmation?.status === ConfirmationStatus.Confirmed">
-        <div
-          class="status-confirmed"
-          data-testid="rancher-ai-ui-chat-message-confirmation-confirmed"
-        >
-          <i class="icon icon-checkmark" />
-          <p>
-            {{ t('ai.confirmation.confirmed') }}
-          </p>
-        </div>
-      </template>
-      <template v-else-if="props.message.confirmation?.status === ConfirmationStatus.Canceled">
-        <div
-          class="status-canceled"
-          data-testid="rancher-ai-ui-chat-message-confirmation-canceled"
-        >
-          <i class="icon icon-close canceled" />
-          <p>
-            {{ t('ai.confirmation.canceled') }}
-          </p>
-        </div>
-      </template>
+      <i :class="CONFIRMATION_STATUS[props.message.confirmation.status]?.icon" />
+      <p>
+        {{ CONFIRMATION_STATUS[props.message.confirmation.status]?.label }}
+      </p>
     </div>
     <Tools
       :key="props.message.tools?.length"
@@ -213,20 +208,18 @@ const confirmationText = computed(() => {
 }
 
 .confirmation-status {
-  .status-confirmed , .status-canceled {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-    justify-content: flex-end;
-  }
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
 
-  .status-confirmed {
+  &.status-confirmed {
     .icon {
       color: var(--success);
     }
   }
-  .status-canceled {
+  &.status-canceled {
     .icon {
       color: var(--error);
     }

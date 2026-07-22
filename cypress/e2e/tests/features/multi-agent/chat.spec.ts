@@ -77,7 +77,7 @@ describe('Multi Agent Chat', () => {
 
       switchAgentMessage.confirmButton().click();
 
-      switchAgentMessage.isConfirmed();
+      switchAgentMessage.isConfirmed({ withLabel: 'Switched to Rancher Agent' });
 
       // Verify that the selection mode has been switched in the console
       const selectAgent = chat.console().selectAgent();
@@ -116,7 +116,7 @@ describe('Multi Agent Chat', () => {
 
       switchAgentMessage.cancelButton().click();
 
-      switchAgentMessage.isCanceled();
+      switchAgentMessage.isCanceled({ withLabel: 'Keeping adaptive selection' });
 
       // Verify that the selection mode is still adaptive in the console
       const selectAgent = chat.console().selectAgent();

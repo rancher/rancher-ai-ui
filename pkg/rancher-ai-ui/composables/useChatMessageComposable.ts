@@ -172,6 +172,7 @@ export function useChatMessageComposable(
   function confirmMessage({ message, result }: { message: Message; result: boolean }, ws: WebSocket) {
     wsSend(ws, formatWSInputMessage({
       prompt: result ? ConfirmationResponse.Yes : ConfirmationResponse.No,
+      agent:  message.agentMetadata?.agent?.name || undefined, // This is required when Agent selection is manual
       tags:   [MessageTag.Confirmation]
     }));
 
