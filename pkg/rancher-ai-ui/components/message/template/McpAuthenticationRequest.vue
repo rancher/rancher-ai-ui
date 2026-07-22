@@ -5,6 +5,16 @@ import { ConfirmationStatus, Message } from '../../../types';
 import { formatMessageContent } from '../../../utils/format';
 import SystemAvatar from '../avatar/SystemAvatar.vue';
 
+interface Agent {
+  displayName: string;
+  description: string;
+}
+
+interface Content {
+  message?: string;
+  agent?: Agent;
+}
+
 const props = defineProps({
   message: {
     type:    Object as PropType<Message>,
@@ -17,6 +27,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:message']);
+
+const content = computed<Content | undefined>(() => props.message.templateContent?.content);
 
 const actions = computed(() => {
   const all = props.message?.actions || [];
@@ -46,25 +58,25 @@ function doAction(type: 'confirm' | 'cancel') {
   >
     <SystemAvatar class="chat-msg-avatar" />
     <div
-      v-if="props.message?.templateContent?.content?.message"
+      v-if="content?.message"
       class="chat-system-mcp-request-request-msg-bubble"
     >
       <div class="chat-system-mcp-request-request-msg-text">
         <div
-          v-if="props.message?.templateContent?.content?.agent"
+          v-if="content?.agent"
           data-testid="rancher-ai-ui-chat-message-selected-agent-label"
           class="chat-system-mcp-request-request-msg-agent"
         >
           <span
-            v-clean-tooltip="props.message.templateContent.content.agent.description"
+            v-clean-tooltip="content.agent.description"
             class="chat-system-mcp-request-request-msg-agent-label"
           >
-            {{ t('ai.agents.selectedAgent.label', { agent: props.message.templateContent.content.agent.displayName }) }}
+            {{ t('ai.agents.selectedAgent.label', { agent: content.agent.displayName }) }}
           </span>
         </div>
 
         <span
-          v-clean-html="formatMessageContent(props.message.templateContent.content.message || '')"
+          v-clean-html="formatMessageContent(content.message || '')"
         />
       </div>
 
@@ -182,8 +194,10 @@ function doAction(type: 'confirm' | 'cancel') {
   }
 }
 
+@import '@shell/assets/styles/base/_color-classic.scss';
+
 .theme-dark .chat-system-mcp-request-request-msg-text :deep(code) {
-  color: #C0EFDE;
+  color: $green-40;
 }
 
 .chat-system-mcp-request-request-actions {
