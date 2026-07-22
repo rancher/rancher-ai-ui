@@ -7,13 +7,6 @@ export function validateUrl(value = ''): boolean {
     return false;
   }
 
-  // Block potentially dangerous protocols
-  if (value.includes('javascript:') || value.includes('data:')) {
-    warn('URL contains invalid protocol');
-
-    return false;
-  }
-
   try {
     const url = new URL(value);
 
