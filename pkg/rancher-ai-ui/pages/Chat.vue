@@ -148,7 +148,7 @@ const systemErrors = computed(() => {
 });
 
 const processingMessageState = computed(() => {
-  if (!hasPermissions) {
+  if (!hasPermissions.value) {
     return null;
   }
 
