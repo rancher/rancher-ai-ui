@@ -67,6 +67,8 @@ class OAuth2AuthenticationRequest {
     if (this.clearCloseInterval) {
       clearInterval(this.clearCloseInterval);
 
+      this.clearCloseInterval = null;
+
       if (args?.notify) {
         this.cancelFn();
       }

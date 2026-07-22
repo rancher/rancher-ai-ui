@@ -95,8 +95,8 @@ async function fetchAiAgentDeployment() {
         type:    WORKLOAD_TYPES.DEPLOYMENT,
         id:      `${ AGENT_NAMESPACE }/${ AGENT_NAME }`
       });
-    } catch (e) {
-      warn('Error fetching AI agent deployment:', e);
+    } catch (err) {
+      warn('Error fetching AI agent deployment:', err);
     }
   }
 }
@@ -107,8 +107,8 @@ async function fetchAiAgentDeployment() {
 async function fetchChatSettings() {
   try {
     chatSettings.value = await fetchSettings();
-  } catch (e) {
-    warn('Error fetching chat settings: ', e);
+  } catch (err) {
+    warn('Error fetching chat settings: ', err);
   }
 }
 
@@ -198,8 +198,8 @@ async function fetchUIToolsConfigSettings() {
 
     try {
       uiToolsConfigSettings = JSON.parse(configMap?.data?.config || '{}');
-    } catch (error) {
-      warn('Failed to parse UI Tools Config ConfigMap data:', { error });
+    } catch (err) {
+      warn('Failed to parse UI Tools Config ConfigMap data:', { err });
     }
   }
 
@@ -460,8 +460,8 @@ async function cleanupAiAgentConfigAuthenticationSecrets() {
         if (secret) {
           await secret.remove();
         }
-      } catch (error) {
-        warn(`Secret ${ secretName } not found or already deleted: `, { error });
+      } catch (err) {
+        warn(`Secret ${ secretName } not found or already deleted: `, { err });
       }
     }
   }
@@ -520,8 +520,8 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
 
     apiError.value = '';
     btnCB(true);
-  } catch (error) {
-    apiError.value = t('aiConfig.form.save.apiError', { error }, true);
+  } catch (err) {
+    apiError.value = t('aiConfig.form.save.apiError', { error: err }, true);
     btnCB(false);
   }
 
