@@ -76,7 +76,7 @@ import { LlmResponseArgs } from '@/cypress/globals';
  *            kind (string, required): The kind of the Kubernetes resource (e.g. 'Deployment', 'Service').
  *            cluster (string): The name of the Kubernetes cluster managed by Rancher.
  *            namespace (string, optional): The namespace of the resource. It must be empty for all namespaces or cluster-wide resources.
- *            resource (object, required): The Kubernetes resource manifest to be created in the cluster.
+ *            manifest (string, required): The Kubernetes resource manifest (YAML or JSON) to be created in the cluster.
  *
  *        Enqueueing a response with tool usage in Cypress test:
  *
@@ -88,20 +88,20 @@ import { LlmResponseArgs } from '@/cypress/globals';
  *                kind: "Deployment",
  *                cluster: "my-cluster",
  *                namespace: "default",
- *                resource: {
+ *                manifest: `{
  *                  apiVersion: "apps/v1",
  *                  metadata: { ... },
- *                }
+ *                }`
  *              },
 *               {
  *                name: "my-deployment-2",
  *                kind: "Deployment",
  *                cluster: "my-cluster",
  *                namespace: "default",
- *                resource: {
+ *                manifest: `{
  *                  apiVersion: "apps/v1",
  *                  metadata: { ... },
- *                }
+ *                }`
  *              },
  *            ]
  *          }

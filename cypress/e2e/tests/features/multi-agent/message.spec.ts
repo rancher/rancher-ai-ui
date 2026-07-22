@@ -88,7 +88,7 @@ describe('Multi Agent Messages', () => {
           args: {
             kind:      'Pod',
             name:      'my-pod-2',
-            resource:  {
+            manifest:  `{
               apiVersion: 'v1',
               kind:       'Pod',
               metadata:   {
@@ -101,7 +101,7 @@ describe('Multi Agent Messages', () => {
                   image: 'nginx'
                 }]
               }
-            },
+            }`,
             cluster:   'local',
             namespace: 'default'
           }
@@ -324,7 +324,7 @@ describe('Multi Agent Messages', () => {
           args: {
             kind:      'Pod',
             name:      'my-pod',
-            resource:  {
+            manifest:  `{
               apiVersion: 'v1',
               kind:       'Pod',
               metadata:   {
@@ -337,7 +337,7 @@ describe('Multi Agent Messages', () => {
                   image: 'nginx'
                 }]
               }
-            },
+            }`,
             cluster:   'local',
             namespace: 'default'
           }
