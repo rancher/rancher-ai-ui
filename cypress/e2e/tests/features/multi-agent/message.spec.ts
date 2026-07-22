@@ -419,6 +419,11 @@ describe('Multi Agent Messages', () => {
   });
 
   after(() => {
+    cy.login();
+
+    cy.deleteRancherResource('v1', 'pods', 'default/my-pod', false);
+    cy.deleteRancherResource('v1', 'pods', 'default/my-pod-2', false);
+
     cy.deleteAgentConfig(harvesterAgentConfig);
     cy.cleanChatHistory();
     cy.clearLLMResponses();

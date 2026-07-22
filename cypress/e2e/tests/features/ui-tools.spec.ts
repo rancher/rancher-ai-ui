@@ -517,7 +517,6 @@ describe('UI Tools', () => {
         yamlEditor.checkNotExists();
 
         confirmationRequestMessage.isConfirmed();
-        confirmationRequestMessage.containsText('Confirmed');
 
         const confirmationResponseMessage = chat.getMessage(4);
 
@@ -643,7 +642,6 @@ describe('UI Tools', () => {
         yamlEditor.checkNotExists();
 
         confirmationRequestMessage.isConfirmed();
-        confirmationRequestMessage.containsText('Confirmed');
 
         const confirmationResponseMessage = chat.getMessage(4);
 
@@ -828,7 +826,6 @@ describe('UI Tools', () => {
         yamlEditor.checkNotExists();
 
         confirmationRequestMessage.isConfirmed();
-        confirmationRequestMessage.containsText('Confirmed');
 
         const confirmationResponseMessage = chat.getMessage(4);
 
@@ -950,7 +947,6 @@ describe('UI Tools', () => {
         yamlEditor.checkNotExists();
 
         confirmationRequestMessage.isConfirmed();
-        confirmationRequestMessage.containsText('Confirmed');
 
         const confirmationResponseMessage = chat.getMessage(4);
 

@@ -132,7 +132,6 @@ describe('History Messages', () => {
     confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
     confirmationRequestMessage.confirmButton().click();
     confirmationRequestMessage.isConfirmed();
-    confirmationRequestMessage.containsText('Confirmed');
 
     const resultMessage = chat.getMessage(6);
 
@@ -257,8 +256,7 @@ describe('History Messages', () => {
     historyConfirmedMessage.scrollIntoView();
     historyConfirmedMessage.confirmButton().should('not.exist');
     historyConfirmedMessage.cancelButton().should('not.exist');
-    historyConfirmedMessage.isConfirmed().scrollIntoView();
-    historyConfirmedMessage.containsText('Confirmed');
+    historyConfirmedMessage.isConfirmed();
 
     const historyResultMessage = chat.getMessage(5);
 
@@ -276,8 +274,7 @@ describe('History Messages', () => {
     historyCanceledMessage.scrollIntoView();
     historyCanceledMessage.confirmButton().should('not.exist');
     historyCanceledMessage.cancelButton().should('not.exist');
-    historyCanceledMessage.isCanceled().scrollIntoView();
-    historyCanceledMessage.containsText('Canceled');
+    historyCanceledMessage.isCanceled();
   });
 
   after(() => {

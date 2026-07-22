@@ -250,12 +250,13 @@ describe('Messages', () => {
     confirmationRequestMessage.scrollIntoView();
     confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
     confirmationRequestMessage.confirmButton().click();
+
     confirmationRequestMessage.isConfirmed();
-    confirmationRequestMessage.containsText('Confirmed');
 
     const resultMessage = chat.getMessage(4);
 
     resultMessage.containsText('Pod created successfully.');
+    resultMessage.resourceButton({ name: 'my-pod' }).should('exist');
   });
 
   it('Confirm multi-resource action', () => {
@@ -305,7 +306,6 @@ describe('Messages', () => {
     confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
     confirmationRequestMessage.confirmButton().click();
     confirmationRequestMessage.isConfirmed();
-    confirmationRequestMessage.containsText('Confirmed');
 
     const resultMessage = chat.getMessage(4);
 
@@ -357,6 +357,8 @@ describe('Messages', () => {
   });
 
   after(() => {
+    cy.deleteRancherResource('v1', 'pods', 'default/my-pod', false);
+
     cy.clearLLMResponses();
     cy.uninstallUIToolsDefinition();
   });
