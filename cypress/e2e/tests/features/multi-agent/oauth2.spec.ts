@@ -158,7 +158,7 @@ describe('Multi Agent OAuth2 Authentication', () => {
 
     authRequestMessage.confirmButton().click();
 
-    authRequestMessage.isConfirmed();
+    authRequestMessage.isConfirmed({ withLabel: 'Authentication window opened' });
 
     // Verify that the popup was opened
     cy.get('@popupStub').should('be.calledOnce');
@@ -194,7 +194,7 @@ describe('Multi Agent OAuth2 Authentication', () => {
 
     authRequestMessage.confirmButton().click();
 
-    authRequestMessage.isConfirmed();
+    authRequestMessage.isConfirmed({ withLabel: 'Authentication window opened' });
 
     // Verify that the popup was opened
     cy.get('@popupStub').should('be.calledOnce');
@@ -260,7 +260,7 @@ describe('Multi Agent OAuth2 Authentication', () => {
 
     authRequestMessage.confirmButton().click();
 
-    authRequestMessage.isConfirmed();
+    authRequestMessage.isConfirmed({ withLabel: 'Authentication window opened' });
 
     // Verify that the popup was opened
     cy.get('@popupStub').should('be.calledOnce');
@@ -291,7 +291,7 @@ describe('Multi Agent OAuth2 Authentication', () => {
 
     authRequestMessage.confirmButton().click();
 
-    authRequestMessage.isConfirmed();
+    authRequestMessage.isConfirmed({ withLabel: 'Authentication window opened' });
 
     // Verify that the popup was opened
     cy.get('@popupStub').should('be.calledOnce');
@@ -357,7 +357,7 @@ describe('Multi Agent OAuth2 Authentication', () => {
 
     authRequestMessage.confirmButton().click();
 
-    authRequestMessage.isConfirmed();
+    authRequestMessage.isConfirmed({ withLabel: 'Authentication window opened' });
 
     // Simulate connection loss by closing the WebSocket
     cy.window().then((win) => {
@@ -410,7 +410,7 @@ describe('Multi Agent OAuth2 Authentication', () => {
 
     authRequestMessage.confirmButton().click();
 
-    authRequestMessage.isConfirmed();
+    authRequestMessage.isConfirmed({ withLabel: 'Authentication window opened' });
 
     chat.close();
 
