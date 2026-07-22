@@ -93,6 +93,13 @@ function requiredSetup() {
   };
 }
 
+function mockModelOption(value: string, isSelected = false) {
+  return {
+    value,
+    isSelected
+  };
+}
+
 describe('AIAgentConfigs.vue', () => {
   describe('Component Initialization', () => {
     it('should render the component with default values', () => {
@@ -101,7 +108,11 @@ describe('AIAgentConfigs.vue', () => {
         props: { value: [mockBuiltInAgent()] }
       });
 
-      expect(wrapper.exists()).toBe(true);
+      const vm = wrapper.vm as any;
+
+      expect(vm.agents.length).toBe(1);
+      expect(vm.agents[0].metadata.name).toBe('rancher');
+      expect(vm.selectedAgent.metadata.name).toBe('rancher');
     });
 
     it('should render with empty agent list', () => {
@@ -110,7 +121,9 @@ describe('AIAgentConfigs.vue', () => {
         props: { value: [] }
       });
 
-      expect(wrapper.exists()).toBe(true);
+      const vm = wrapper.vm as any;
+
+      expect(vm.agents.length).toBe(0);
     });
   });
 
@@ -821,8 +834,8 @@ describe('AIAgentConfigs.vue', () => {
 
       const emitted = wrapper.emitted('update:authentication-secrets');
 
-      expect(emitted).toBeTruthy();
       expect(emitted![0][0]).toEqual(vm.agentSecrets);
+      expect(vm.agentSecrets['test-agent']).toBeUndefined();
     });
 
     it('should clear agentSecrets when existing secret selected', () => {
@@ -838,6 +851,304 @@ describe('AIAgentConfigs.vue', () => {
       vm.updateBasicAuthSecret({ selected: 'secret-name' });
 
       expect(vm.agentSecrets['test-agent']).toBeUndefined();
+    });
+  });
+
+  describe('LLM Model Management', () => {
+    it('should toggle llmModelEnabled from false to true', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: [
+            mockModelOption('gpt-4'),
+            mockModelOption('gpt-3.5-turbo')
+          ]
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModelEnabled).toBe(true);
+    });
+
+    it('should toggle llmModelEnabled from true to false', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: true,
+          llmModel:        'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: [
+            mockModelOption('gpt-4'),
+            mockModelOption('gpt-3.5-turbo')
+          ]
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModelEnabled).toBe(false);
+    });
+
+    it('should preserve llmModel when it is in available models', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: [
+            mockModelOption('gpt-4'),
+            mockModelOption('gpt-3.5-turbo')
+          ]
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModel).toBe('gpt-4');
+    });
+
+    it('should clear llmModel when it is not in available models', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        'old-model'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: [
+            mockModelOption('gpt-4'),
+            mockModelOption('gpt-3.5-turbo')
+          ]
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModel).toBeUndefined();
+    });
+
+    it('should handle undefined llmModel gracefully', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        undefined
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: [
+            mockModelOption('gpt-4'),
+            mockModelOption('gpt-3.5-turbo')
+          ]
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.llmModel).toBeUndefined();
+    });
+
+    it('should handle empty models array', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModelEnabled: false,
+          llmModel:        'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: []
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      vm.updateLlmModelEnabled();
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      // When models array is empty, llmModel should be cleared since gpt-4 is not in empty array
+      expect(emitted[0].spec.llmModel).toBeUndefined();
+    });
+  });
+
+  describe('llmModel computed property', () => {
+    it('should return agent llmModel when it is set', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModel: 'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: [
+            mockModelOption('gpt-4', true),
+            mockModelOption('gpt-3.5-turbo')
+          ]
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      // Agent's llmModel should take precedence
+      expect(vm.llmModel).toBe('gpt-4');
+    });
+
+    it('should return selected model when agent llmModel is not set', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModel: undefined
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: [
+            mockModelOption('gpt-4'),
+            mockModelOption('gpt-3.5-turbo', true)
+          ]
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      // Should return the model with isSelected: true
+      expect(vm.llmModel).toBe('gpt-3.5-turbo');
+    });
+
+    it('should return null when agent llmModel and selected model are not set', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModel: undefined
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: [
+            mockModelOption('gpt-4'),
+            mockModelOption('gpt-3.5-turbo')
+          ]
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      // Should return undefined when no model is selected
+      expect(vm.llmModel).toBeUndefined();
+    });
+
+    it('should return null when models array is empty', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModel: undefined
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: []
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      // Should return null when models array is empty
+      expect(vm.llmModel).toBeNull();
+    });
+
+    it('should prioritize agent llmModel over selected model', () => {
+      const agent = mockAgent({
+        spec: {
+          ...mockAgent().spec,
+          llmModel: 'gpt-4'
+        }
+      });
+
+      const wrapper = shallowMount(AIAgentConfigs, {
+        ...requiredSetup(),
+        props: {
+          value:  [agent],
+          models: [
+            mockModelOption('gpt-4'),
+            mockModelOption('gpt-3.5-turbo', true)
+          ]
+        }
+      });
+
+      const vm = wrapper.vm as any;
+
+      // Agent's llmModel should take precedence over selected model
+      expect(vm.llmModel).toBe('gpt-4');
     });
   });
 
@@ -1398,20 +1709,24 @@ describe('AIAgentConfigs.vue', () => {
   });
 
   describe('Tab Integration', () => {
-    it('should emit addTab event when adding agent', () => {
+    it('should emit update:value event when adding agent', () => {
       const wrapper = shallowMount(AIAgentConfigs, {
         ...requiredSetup(),
         props: { value: [mockBuiltInAgent()] }
       });
 
       const vm = wrapper.vm as any;
+      const initialCount = wrapper.emitted('update:value')?.length || 0;
 
       vm.addAgent();
 
-      expect(wrapper.emitted('update:value')).toBeTruthy();
+      const emitted = wrapper.emitted('update:value')?.[initialCount][0] as AIAgentConfigCRD[];
+
+      expect(emitted.length).toBe(2);
+      expect(emitted[0].spec.displayName).toBe('New Agent');
     });
 
-    it('should emit removeTab event when removing agent', () => {
+    it('should emit update:value event when removing agent', () => {
       const agent = mockAgent();
       const builtIn = mockBuiltInAgent();
 
@@ -1424,7 +1739,10 @@ describe('AIAgentConfigs.vue', () => {
 
       vm.removeAgent();
 
-      expect(wrapper.emitted('update:value')).toBeTruthy();
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted.length).toBe(1);
+      expect(emitted[0].metadata.name).toBe(DEFAULT_AI_AGENT);
     });
 
     it('should handle tab changed event', () => {
@@ -1470,7 +1788,17 @@ describe('AIAgentConfigs.vue', () => {
 
       const vm = wrapper.vm as any;
 
-      expect(Array.isArray(vm.selectedAgent.spec.humanValidationTools) || vm.selectedAgent.spec.humanValidationTools === undefined).toBe(true);
+      vm.updateAgent({
+        spec: {
+          ...vm.selectedAgent.spec,
+          humanValidationTools: ['new-tool']
+        }
+      });
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(Array.isArray(emitted[0].spec.humanValidationTools)).toBe(true);
+      expect(emitted[0].spec.humanValidationTools).toContain('new-tool');
     });
 
     it('should handle agent with empty string systemPrompt', () => {
@@ -1488,7 +1816,18 @@ describe('AIAgentConfigs.vue', () => {
 
       const vm = wrapper.vm as any;
 
-      expect(vm.selectedAgent.spec.systemPrompt).toBe('');
+      expect(vm.validationErrors['test-agent']).toBe(true);
+
+      vm.updateAgent({
+        spec: {
+          ...vm.selectedAgent.spec,
+          systemPrompt: 'Valid prompt'
+        }
+      });
+
+      const emitted = wrapper.emitted('update:value')?.[0][0] as AIAgentConfigCRD[];
+
+      expect(emitted[0].spec.systemPrompt).toBe('Valid prompt');
     });
 
     it('should handle rapid agent switching', () => {
@@ -1777,7 +2116,10 @@ describe('AIAgentConfigs.vue', () => {
         },
       });
 
-      expect(wrapper.exists()).toBe(true);
+      const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const readOnlyBanner = banners.find((b) => b.attributes('color') === 'warning');
+
+      expect(readOnlyBanner).toBeTruthy();
     });
 
     it('should accept readOnly false without errors', () => {
@@ -1790,6 +2132,10 @@ describe('AIAgentConfigs.vue', () => {
       });
 
       expect(wrapper.exists()).toBe(true);
+      const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const readOnlyBanner = banners.find((b) => b.attributes('color') === 'warning');
+
+      expect(readOnlyBanner).toBeFalsy();
     });
 
     it('should update readOnlyBanner when readOnly prop changes', async() => {

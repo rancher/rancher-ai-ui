@@ -83,7 +83,7 @@ function doAction(type: 'confirm' | 'cancel') {
       <div class="chat-system-mcp-request-request-actions">
         <div
           v-if="props.message.confirmation"
-          :data-testid="`rancher-ai-ui-chat-message-confirmation-${ props.message.confirmation?.status === ConfirmationStatus.Confirmed ? 'confirmed' : 'canceled'}`"
+          :data-testid="`rancher-ai-ui-chat-message-confirmation-status-${ props.message.confirmation?.status === ConfirmationStatus.Confirmed ? 'confirmed' : 'canceled'}`"
           :class="['chat-system-mcp-request-request-actions-result', `status-${props.message.confirmation.status}` ]"
         >
           <i
