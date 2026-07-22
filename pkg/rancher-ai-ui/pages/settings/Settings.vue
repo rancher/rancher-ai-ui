@@ -129,7 +129,7 @@ async function fetchAiAgentSettings() {
         opt:  { watch: true }
       });
     } catch (err) {
-      warn(`Unable to fetch the ${ AGENT_CONFIG_SECRET_NAME } secret: `, { err });
+      warn(`Unable to fetch the ${ AGENT_CONFIG_SECRET_NAME } secret: `, err);
     }
 
     for (const entry in (secret?.data || {})) {
@@ -145,7 +145,7 @@ async function fetchAiAgentSettings() {
         opt:  { watch: true }
       });
     } catch (err) {
-      warn(`Unable to fetch the ${ AGENT_CONFIG_CONFIG_MAP_NAME } configMap: `, { err });
+      warn(`Unable to fetch the ${ AGENT_CONFIG_CONFIG_MAP_NAME } configMap: `, err);
     }
 
     for (const entry in (configMap?.data || {})) {
@@ -169,7 +169,7 @@ async function fetchAiAgentConfigCRDs() {
         opt:  { watch: true }
       });
     } catch (err) {
-      warn('Unable to fetch AI Agent Config CRDs: ', { err });
+      warn('Unable to fetch AI Agent Config CRDs: ', err);
     }
   }
 
@@ -193,13 +193,13 @@ async function fetchUIToolsConfigSettings() {
         opt:  { watch: true }
       });
     } catch (err) {
-      warn('Unable to fetch UI Tools Config ConfigMap: ', { err });
+      warn('Unable to fetch UI Tools Config ConfigMap: ', err);
     }
 
     try {
       uiToolsConfigSettings = JSON.parse(configMap?.data?.config || '{}');
     } catch (err) {
-      warn('Failed to parse UI Tools Config ConfigMap data:', { err });
+      warn('Failed to parse UI Tools Config ConfigMap data:', err);
     }
   }
 
@@ -251,7 +251,7 @@ async function saveAiAgentConfigCRDs() {
       opt:  { watch: true }
     });
   } catch (err) {
-    warn('Unable to fetch AI Agent Config CRDs: ', { err });
+    warn('Unable to fetch AI Agent Config CRDs: ', err);
   }
 
   const crdsToSave = aiAgentConfigCRDs.value || [];
@@ -264,7 +264,7 @@ async function saveAiAgentConfigCRDs() {
       try {
         await crd.remove();
       } catch (err) {
-        warn(`Unable to delete AI Agent Config CRD ${ crd.metadata.name }: `, { err });
+        warn(`Unable to delete AI Agent Config CRD ${ crd.metadata.name }: `, err);
       }
     }
   }
@@ -303,7 +303,7 @@ async function saveAiAgentConfigCRDs() {
     try {
       await aiAgentConfigCRD.save();
     } catch (err) {
-      warn(`Unable to create AI Agent Config CRD ${ crd.metadata.name }: `, { err });
+      warn(`Unable to create AI Agent Config CRD ${ crd.metadata.name }: `, err);
     }
   }
 
@@ -322,7 +322,7 @@ async function saveUIToolsConfig() {
       id:   `${ AGENT_NAMESPACE }/${ TOOLS_CONFIG_NAME }`,
     });
   } catch (err) {
-    warn('Unable to fetch UI Tools Config ConfigMap: ', { err });
+    warn('Unable to fetch UI Tools Config ConfigMap: ', err);
   }
 
   if (configMap) {
@@ -331,7 +331,7 @@ async function saveUIToolsConfig() {
     try {
       await configMap.save();
     } catch (err) {
-      warn('Unable to save UI Tools Config ConfigMap: ', { err });
+      warn('Unable to save UI Tools Config ConfigMap: ', err);
     }
   } else {
     warn('UI Tools Config ConfigMap not found, cannot save settings');
@@ -394,7 +394,7 @@ async function saveAiAgentConfigAuthenticationSecrets() {
             opt:  { watch: true }
           });
         } catch (err) {
-          warn(`Secret ${ aiAgentConfigCRD?.spec.authenticationSecret } for agent ${ agent } not found, creating a new one: `, { err });
+          warn(`Secret ${ aiAgentConfigCRD?.spec.authenticationSecret } for agent ${ agent } not found, creating a new one: `, err);
         }
 
         if (secret) {
@@ -432,7 +432,7 @@ async function saveAiAgentConfigAuthenticationSecrets() {
       // Update reference to the new secret in the corresponding AI Agent
       aiAgentConfigCRD.spec.authenticationSecret = savedSecret.metadata.name;
     } catch (err) {
-      warn(`Unable to save secret ${ secret.metadata.name } for agent ${ agent }: `, { err });
+      warn(`Unable to save secret ${ secret.metadata.name } for agent ${ agent }: `, err);
     }
   }
 }
@@ -461,7 +461,7 @@ async function cleanupAiAgentConfigAuthenticationSecrets() {
           await secret.remove();
         }
       } catch (err) {
-        warn(`Secret ${ secretName } not found or already deleted: `, { err });
+        warn(`Secret ${ secretName } not found or already deleted: `, err);
       }
     }
   }
@@ -484,7 +484,7 @@ async function redeployAiAgent() {
 
     await deployment.save();
   } catch (err) {
-    warn('Unable to fetch rancher-ai-agent deployment: ', { err });
+    warn('Unable to fetch rancher-ai-agent deployment: ', err);
   }
 }
 

@@ -25,9 +25,9 @@ export function validateUrl(value = ''): boolean {
     }
 
     return true;
-  } catch (error) {
-    warn('Invalid URL format:', error);
-
-    return false;
+  } catch (err) {
+    warn('Invalid URL format:', err);
   }
+
+  return false;
 }
