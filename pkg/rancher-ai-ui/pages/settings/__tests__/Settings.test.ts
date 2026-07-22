@@ -6,6 +6,11 @@ import { AGENT_NAMESPACE, AGENT_CONFIG_SECRET_NAME, AGENT_NAME } from '../../../
 import { Settings as SettingsEnum, AIAgentConfigAuthType } from '../types';
 import { AIAgentConfigCRD } from '../../../types';
 
+const SECRET_TYPES = {
+  OPAQUE:            'Opaque',
+  BASIC:             'kubernetes.io/basic-auth',
+};
+
 // Mock components with external dependencies
 jest.mock('../../../composables/useAIAgentApiComposable', () => ({
   useAIAgentApiComposable: jest.fn(() => ({
@@ -14,6 +19,7 @@ jest.mock('../../../composables/useAIAgentApiComposable', () => ({
   }))
 }));
 jest.mock('../sections/AIAgentSettings.vue', () => ({}));
+jest.mock('../sections/ai-agent-configs/index.vue', () => ({}));
 jest.mock('../../../dialog/ApplySettingsCard.vue', () => ({}));
 jest.mock('@components/RcButton/RcButton.vue', () => ({
   default: {
@@ -1331,6 +1337,645 @@ describe('Settings.vue', () => {
 
       // Null resourceMethods should not crash and default to no create permission
       expect(vm.permissions?.create.canCreateSecrets).toBe(false);
+    });
+  });
+
+  describe('Authentication Secrets Management', () => {
+    describe('saveAiAgentConfigAuthenticationSecrets', () => {
+      it('should save BASIC auth secret successfully', async() => {
+        const mockSecret = {
+          metadata: {
+            namespace:    AGENT_NAMESPACE,
+            generateName: 'ai-agent-auth-',
+            name:         'ai-agent-auth-abc123'
+          },
+          _type: SECRET_TYPES.BASIC,
+          save:  jest.fn().mockResolvedValue({ metadata: { name: 'ai-agent-auth-abc123' } })
+        };
+
+        const dispatch = jest.fn((action: string) => {
+          if (action === 'management/create') {
+            return Promise.resolve(mockSecret);
+          }
+          if (action === 'management/find') {
+            return Promise.resolve(mockSecret);
+          }
+          if (action === 'management/findAll') {
+            return Promise.resolve([]);
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const basicCRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'test-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType: AIAgentConfigAuthType.BASIC
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.aiAgentConfigCRDs = [basicCRD];
+        vm.authenticationSecrets = {
+          'test-agent': {
+            selected:   '_basic',
+            privateKey: 'test-password',
+            publicKey:  'test-username'
+          }
+        };
+
+        await vm.saveAiAgentConfigAuthenticationSecrets();
+
+        expect(dispatch).toHaveBeenCalledWith('management/create', expect.objectContaining({ type: SECRET }));
+        expect(mockSecret.save).toHaveBeenCalled();
+      });
+
+      it('should save OAUTH2 auth secret (new secret)', async() => {
+        const mockSecret = {
+          metadata: {
+            namespace:    AGENT_NAMESPACE,
+            generateName: 'ai-agent-auth-',
+            name:         'ai-agent-auth-oauth-123'
+          },
+          _type: SECRET_TYPES.OPAQUE,
+          save:  jest.fn().mockResolvedValue({ metadata: { name: 'ai-agent-auth-oauth-123' } })
+        };
+
+        const dispatch = jest.fn((action: string) => {
+          if (action === 'management/create') {
+            return Promise.resolve(mockSecret);
+          }
+          if (action === 'management/find') {
+            return Promise.reject(new Error('Secret not found'));
+          }
+          if (action === 'management/findAll') {
+            return Promise.resolve([]);
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const oauth2CRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'oauth-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType: AIAgentConfigAuthType.OAUTH2
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.aiAgentConfigCRDs = [oauth2CRD];
+        vm.authenticationSecrets = {
+          'oauth-agent': {
+            metadataEndpoint: 'https://oauth.example.com/.well-known/openid-configuration',
+            clientID:         'test-client-id',
+            clientSecret:     'test-client-secret',
+            scopes:           ['openid', 'profile']
+          }
+        };
+
+        await vm.saveAiAgentConfigAuthenticationSecrets();
+
+        expect(dispatch).toHaveBeenCalledWith('management/create', expect.objectContaining({ type: SECRET }));
+        expect(mockSecret.save).toHaveBeenCalled();
+      });
+
+      it('should update existing OAUTH2 auth secret', async() => {
+        const existingSecret = {
+          metadata: {
+            name:      'existing-oauth-secret',
+            namespace: AGENT_NAMESPACE
+          },
+          data:     { metadataEndpoint: 'old-endpoint' },
+          _type:    SECRET_TYPES.OPAQUE,
+          save:     jest.fn().mockResolvedValue({ metadata: { name: 'existing-oauth-secret' } })
+        };
+
+        const dispatch = jest.fn((action: string) => {
+          if (action === 'management/find') {
+            return Promise.resolve(existingSecret);
+          }
+          if (action === 'management/findAll') {
+            return Promise.resolve([]);
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const oauth2CRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'oauth-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType:   AIAgentConfigAuthType.OAUTH2,
+            authenticationSecret: 'existing-oauth-secret'
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.aiAgentConfigCRDs = [oauth2CRD];
+        vm.authenticationSecrets = {
+          'oauth-agent': {
+            metadataEndpoint: 'https://oauth.example.com/.well-known/openid-configuration',
+            clientID:         'new-client-id',
+            clientSecret:     'new-client-secret',
+            scopes:           ['openid']
+          }
+        };
+
+        await vm.saveAiAgentConfigAuthenticationSecrets();
+
+        expect(existingSecret.save).toHaveBeenCalled();
+      });
+
+      it('should skip saving when CRD is not found', async() => {
+        const dispatch = jest.fn((action: string) => {
+          if (action === 'management/find') {
+            return Promise.resolve(mockSecret());
+          }
+          if (action === 'management/findAll') {
+            return Promise.resolve([]);
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.aiAgentConfigCRDs = []; // Empty CRDs
+        vm.authenticationSecrets = {
+          'non-existent-agent': {
+            privateKey: 'test-password',
+            publicKey:  'test-username'
+          }
+        };
+
+        await vm.saveAiAgentConfigAuthenticationSecrets();
+
+        // Should not call create dispatch since CRD doesn't exist
+        expect(dispatch).not.toHaveBeenCalledWith('management/create', expect.objectContaining({ type: SECRET }));
+      });
+
+      it('should skip saving when payload is null', async() => {
+        const dispatch = jest.fn((action: string) => {
+          if (action === 'management/find') {
+            return Promise.resolve(mockSecret());
+          }
+          if (action === 'management/findAll') {
+            return Promise.resolve([]);
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const basicCRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'test-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType: AIAgentConfigAuthType.BASIC
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.aiAgentConfigCRDs = [basicCRD];
+        vm.authenticationSecrets = { 'test-agent': null };
+
+        await vm.saveAiAgentConfigAuthenticationSecrets();
+
+        expect(dispatch).not.toHaveBeenCalledWith('management/create', expect.objectContaining({ type: SECRET }));
+      });
+
+      it('should skip BASIC auth when privateKey or publicKey is missing', async() => {
+        const dispatch = jest.fn();
+
+        const basicCRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'test-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType: AIAgentConfigAuthType.BASIC
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.aiAgentConfigCRDs = [basicCRD];
+        vm.authenticationSecrets = {
+          'test-agent': {
+            selected:   '_basic',
+            privateKey: '', // Missing privateKey
+            publicKey:  'test-username'
+          }
+        };
+
+        await vm.saveAiAgentConfigAuthenticationSecrets();
+
+        expect(dispatch).not.toHaveBeenCalledWith('management/create', expect.objectContaining({ type: SECRET }));
+      });
+
+      it('should skip OAUTH2 auth when any required field is missing', async() => {
+        const dispatch = jest.fn();
+
+        const oauth2CRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'oauth-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType: AIAgentConfigAuthType.OAUTH2
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.aiAgentConfigCRDs = [oauth2CRD];
+        vm.authenticationSecrets = {
+          'oauth-agent': {
+            metadataEndpoint: 'https://oauth.example.com/.well-known/openid-configuration',
+            clientID:         '', // Missing clientID
+            clientSecret:     'test-client-secret',
+            scopes:           ['openid']
+          }
+        };
+
+        await vm.saveAiAgentConfigAuthenticationSecrets();
+
+        expect(dispatch).not.toHaveBeenCalledWith('management/create', expect.objectContaining({ type: SECRET }));
+      });
+
+      it('should handle error during secret save gracefully', async() => {
+        const mockSecret = {
+          metadata: { name: 'ai-agent-auth-error' },
+          _type:    SECRET_TYPES.BASIC,
+          save:     jest.fn().mockRejectedValue(new Error('Save failed'))
+        };
+
+        const dispatch = jest.fn((action: string) => {
+          if (action === 'management/create') {
+            return Promise.resolve(mockSecret);
+          }
+          if (action === 'management/find') {
+            return Promise.resolve(mockSecret);
+          }
+          if (action === 'management/findAll') {
+            return Promise.resolve([]);
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const basicCRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'test-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType: AIAgentConfigAuthType.BASIC
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.aiAgentConfigCRDs = [basicCRD];
+        vm.authenticationSecrets = {
+          'test-agent': {
+            privateKey: 'test-password',
+            publicKey:  'test-username'
+          }
+        };
+
+        // Should not throw, but warn should be called
+        await expect(vm.saveAiAgentConfigAuthenticationSecrets()).resolves.not.toThrow();
+      });
+
+      it('should update CRD authenticationSecret reference after save', async() => {
+        const mockSecret = {
+          metadata: { name: 'saved-secret-name' },
+          _type:    SECRET_TYPES.BASIC,
+          save:     jest.fn().mockResolvedValue({ metadata: { name: 'saved-secret-name' } })
+        };
+
+        const dispatch = jest.fn((action: string) => {
+          if (action === 'management/create') {
+            return Promise.resolve(mockSecret);
+          }
+          if (action === 'management/find') {
+            return Promise.resolve(mockSecret);
+          }
+          if (action === 'management/findAll') {
+            return Promise.resolve([]);
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const basicCRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'test-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType: AIAgentConfigAuthType.BASIC
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.aiAgentConfigCRDs = [basicCRD];
+        vm.authenticationSecrets = {
+          'test-agent': {
+            privateKey: 'test-password',
+            publicKey:  'test-username'
+          }
+        };
+
+        await vm.saveAiAgentConfigAuthenticationSecrets();
+
+        expect(basicCRD.spec.authenticationSecret).toBe('saved-secret-name');
+      });
+    });
+
+    describe('cleanupAiAgentConfigAuthenticationSecrets', () => {
+      it('should remove unused OAUTH2 secrets', async() => {
+        const mockSecret = {
+          metadata: {
+            name:      'unused-oauth-secret',
+            namespace: AGENT_NAMESPACE
+          },
+          remove: jest.fn().mockResolvedValue({})
+        };
+
+        const dispatch = jest.fn((action: string, params?: any) => {
+          if (action === 'management/find' && params?.id?.includes(AGENT_NAME)) {
+            return Promise.resolve({
+              type: 'apps.deployment',
+              spec: { template: { metadata: { annotations: {} } } },
+              save: jest.fn().mockResolvedValue({})
+            });
+          }
+          if (action === 'management/find' && params?.id?.includes('unused-oauth-secret')) {
+            return Promise.resolve(mockSecret);
+          }
+          if (action === 'management/find') {
+            return Promise.resolve(mockSecret);
+          }
+          if (action === 'management/findAll') {
+            return Promise.resolve([]);
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const oauth2CRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'oauth-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType:   AIAgentConfigAuthType.OAUTH2,
+            authenticationSecret: 'unused-oauth-secret'
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        await flushPromises();
+
+        // Set initial CRDs with the oauth secret
+        vm.initAiAgentConfigCRDs = [oauth2CRD];
+        // Current CRDs no longer have this agent (secret is unused)
+        vm.aiAgentConfigCRDs = [];
+
+        await vm.cleanupAiAgentConfigAuthenticationSecrets();
+
+        expect(dispatch).toHaveBeenCalledWith(
+          'management/find',
+          expect.objectContaining({
+            type: SECRET,
+            id:   `${ AGENT_NAMESPACE }/unused-oauth-secret`
+          })
+        );
+        expect(mockSecret.remove).toHaveBeenCalled();
+      });
+
+      it('should not remove OAUTH2 secrets that are still in use', async() => {
+        const dispatch = jest.fn();
+
+        const oauth2CRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'oauth-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType:   AIAgentConfigAuthType.OAUTH2,
+            authenticationSecret: 'in-use-oauth-secret'
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.initAiAgentConfigCRDs = [oauth2CRD];
+        // Same secret is still in current CRDs
+        vm.aiAgentConfigCRDs = [oauth2CRD];
+
+        await vm.cleanupAiAgentConfigAuthenticationSecrets();
+
+        // Should not try to remove the secret
+        expect(dispatch).not.toHaveBeenCalledWith(
+          'management/find',
+          expect.objectContaining({ type: SECRET })
+        );
+      });
+
+      it('should handle error when secret not found gracefully', async() => {
+        const dispatch = jest.fn((action: string) => {
+          if (action === 'management/find') {
+            return Promise.reject(new Error('Secret not found'));
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const oauth2CRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'oauth-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType:   AIAgentConfigAuthType.OAUTH2,
+            authenticationSecret: 'missing-oauth-secret'
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.initAiAgentConfigCRDs = [oauth2CRD];
+        vm.aiAgentConfigCRDs = [];
+
+        // Should not throw, but warn should be called
+        await expect(vm.cleanupAiAgentConfigAuthenticationSecrets()).resolves.not.toThrow();
+      });
+
+      it('should not clean up BASIC auth secrets (only OAUTH2)', async() => {
+        const dispatch = jest.fn();
+
+        const basicCRD = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'basic-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType:   AIAgentConfigAuthType.BASIC,
+            authenticationSecret: 'basic-secret'
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.initAiAgentConfigCRDs = [basicCRD];
+        vm.aiAgentConfigCRDs = [];
+
+        await vm.cleanupAiAgentConfigAuthenticationSecrets();
+
+        // Should not try to remove BASIC auth secrets
+        expect(dispatch).not.toHaveBeenCalledWith(
+          'management/find',
+          expect.objectContaining({ type: SECRET })
+        );
+      });
+
+      it('should not clean up secrets without authenticationSecret field', async() => {
+        const dispatch = jest.fn();
+
+        const crdWithoutSecret = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'no-secret-agent',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType:   AIAgentConfigAuthType.OAUTH2,
+            authenticationSecret: '' // Empty secret
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.initAiAgentConfigCRDs = [crdWithoutSecret];
+        vm.aiAgentConfigCRDs = [];
+
+        await vm.cleanupAiAgentConfigAuthenticationSecrets();
+
+        // Should not try to remove since authenticationSecret is empty
+        expect(dispatch).not.toHaveBeenCalledWith(
+          'management/find',
+          expect.objectContaining({ type: SECRET })
+        );
+      });
+
+      it('should handle multiple OAUTH2 secrets cleanup', async() => {
+        const mockSecret1 = {
+          metadata: {
+            name:      'unused-oauth-secret-1',
+            namespace: AGENT_NAMESPACE
+          },
+          remove: jest.fn().mockResolvedValue({})
+        };
+
+        const mockSecret2 = {
+          metadata: {
+            name:      'unused-oauth-secret-2',
+            namespace: AGENT_NAMESPACE
+          },
+          remove: jest.fn().mockResolvedValue({})
+        };
+
+        const dispatch = jest.fn((action: string, params?: any) => {
+          if (action === 'management/find') {
+            if (params?.id?.includes('unused-oauth-secret-1')) {
+              return Promise.resolve(mockSecret1);
+            } else if (params?.id?.includes('unused-oauth-secret-2')) {
+              return Promise.resolve(mockSecret2);
+            }
+          }
+
+          return Promise.resolve(null);
+        });
+
+        const oauth2CRD1 = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'oauth-agent-1',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType:   AIAgentConfigAuthType.OAUTH2,
+            authenticationSecret: 'unused-oauth-secret-1'
+          }
+        });
+
+        const oauth2CRD2 = mockAiAgentConfigCRD({
+          metadata: {
+            name:      'oauth-agent-2',
+            namespace: AGENT_NAMESPACE
+          },
+          spec:     {
+            ...mockAiAgentConfigCRD().spec,
+            authenticationType:   AIAgentConfigAuthType.OAUTH2,
+            authenticationSecret: 'unused-oauth-secret-2'
+          }
+        });
+
+        const wrapper = shallowMount(Settings, initSettings({ dispatch }));
+        const vm = wrapper.vm as any;
+
+        vm.initAiAgentConfigCRDs = [oauth2CRD1, oauth2CRD2];
+        vm.aiAgentConfigCRDs = [];
+
+        await vm.cleanupAiAgentConfigAuthenticationSecrets();
+
+        expect(mockSecret1.remove).toHaveBeenCalled();
+        expect(mockSecret2.remove).toHaveBeenCalled();
+      });
     });
   });
 });

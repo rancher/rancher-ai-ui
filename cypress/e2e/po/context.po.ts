@@ -60,4 +60,8 @@ export default class ContextPo extends ComponentPo {
   isDisabled() {
     return this.self().should('have.class', 'disabled-panel');
   }
+
+  isNotDisabled() {
+    return this.self().should('not.have.class', 'disabled-panel');
+  }
 }

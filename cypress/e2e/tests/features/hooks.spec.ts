@@ -84,6 +84,7 @@ describe('Hooks', () => {
 
       const message = chat.getMessage(2);
 
+      message.scrollIntoView();
       message.containsText('Please analyse the Pod "error-pod" and troubleshoot any problems.');
       message.containsText('See More');
 
@@ -122,6 +123,7 @@ describe('Hooks', () => {
 
       const message = chat.getMessage(2);
 
+      message.scrollIntoView();
       message.containsText('Hey Liz, please analyse the "containers with unready status: [container-0]" message and troubleshoot any problems.');
       message.containsText('See More');
 
@@ -160,6 +162,7 @@ describe('Hooks', () => {
 
       const message = chat.getMessage(1);
 
+      message.scrollIntoView();
       message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
       message.containsText('See More');
 
@@ -202,6 +205,7 @@ describe('Hooks', () => {
 
       const message = chat.getMessage(1);
 
+      message.scrollIntoView();
       message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
       message.containsText('See More');
 
@@ -233,6 +237,7 @@ describe('Hooks', () => {
 
       const message = chat.getMessage(2);
 
+      message.scrollIntoView();
       message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
       message.containsText('See More');
 

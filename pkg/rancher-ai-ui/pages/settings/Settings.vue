@@ -26,15 +26,16 @@ import Loading from '@shell/components/Loading.vue';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import AppModal from '@shell/components/AppModal.vue';
 import {
-  SettingsFormData, Settings, Workload, AiAgentConfigSecretPayload, AIAgentConfigAuthType,
+  SettingsFormData, Settings, Workload, AiAgentConfigBasicSecretPayload, AIAgentConfigAuthType,
   SettingsPermissions,
+  AiAgentConfigOAuth2SecretPayload,
 } from './types';
 import { AgentSettings, AIAgentConfigCRD, UIToolsConfigs } from '../../types';
 import { AI_AGENT_LABELS } from '../../labels-annotations';
 import SettingsRow from './SettingsRow.vue';
-import AIAgentConfigs from './sections/AIAgentConfigs.vue';
-import UIToolsConfig from './sections/ui-tools-config/index.vue';
 import AIAgentSettings from './sections/AIAgentSettings.vue';
+import AIAgentConfigs from './sections/ai-agent-configs/index.vue';
+import UIToolsConfig from './sections/ui-tools-config/index.vue';
 import ApplySettings from '../../dialog/ApplySettingsCard.vue';
 import { useAIAgentApiComposable } from '../../composables/useAIAgentApiComposable';
 import { useToolsComposable } from '../../composables/useToolsComposable';
@@ -69,7 +70,7 @@ const aiAgentConfigCRDs = ref<AIAgentConfigCRD[] | null>(null);
 const initAiAgentConfigCRDs = ref<AIAgentConfigCRD[]>([]);
 const uiToolsSettings = ref<UIToolsConfigs | null>(null);
 
-const authenticationSecrets = ref<Record<string, AiAgentConfigSecretPayload | null>>({});
+const authenticationSecrets = ref<Record<string, AiAgentConfigBasicSecretPayload | AiAgentConfigOAuth2SecretPayload | null>>({});
 
 const permissions = ref<SettingsPermissions | null>(null);
 
@@ -94,8 +95,8 @@ async function fetchAiAgentDeployment() {
         type:    WORKLOAD_TYPES.DEPLOYMENT,
         id:      `${ AGENT_NAMESPACE }/${ AGENT_NAME }`
       });
-    } catch (e) {
-      warn('Error fetching AI agent deployment:', e);
+    } catch (err) {
+      warn('Error fetching AI agent deployment:', err);
     }
   }
 }
@@ -106,8 +107,8 @@ async function fetchAiAgentDeployment() {
 async function fetchChatSettings() {
   try {
     chatSettings.value = await fetchSettings();
-  } catch (e) {
-    warn('Error fetching chat settings: ', e);
+  } catch (err) {
+    warn('Error fetching chat settings: ', err);
   }
 }
 
@@ -128,7 +129,7 @@ async function fetchAiAgentSettings() {
         opt:  { watch: true }
       });
     } catch (err) {
-      warn(`Unable to fetch the ${ AGENT_CONFIG_SECRET_NAME } secret: `, { err });
+      warn(`Unable to fetch the ${ AGENT_CONFIG_SECRET_NAME } secret: `, err);
     }
 
     for (const entry in (secret?.data || {})) {
@@ -144,7 +145,7 @@ async function fetchAiAgentSettings() {
         opt:  { watch: true }
       });
     } catch (err) {
-      warn(`Unable to fetch the ${ AGENT_CONFIG_CONFIG_MAP_NAME } configMap: `, { err });
+      warn(`Unable to fetch the ${ AGENT_CONFIG_CONFIG_MAP_NAME } configMap: `, err);
     }
 
     for (const entry in (configMap?.data || {})) {
@@ -168,7 +169,7 @@ async function fetchAiAgentConfigCRDs() {
         opt:  { watch: true }
       });
     } catch (err) {
-      warn('Unable to fetch AI Agent Config CRDs: ', { err });
+      warn('Unable to fetch AI Agent Config CRDs: ', err);
     }
   }
 
@@ -192,13 +193,13 @@ async function fetchUIToolsConfigSettings() {
         opt:  { watch: true }
       });
     } catch (err) {
-      warn('Unable to fetch UI Tools Config ConfigMap: ', { err });
+      warn('Unable to fetch UI Tools Config ConfigMap: ', err);
     }
 
     try {
       uiToolsConfigSettings = JSON.parse(configMap?.data?.config || '{}');
-    } catch (error) {
-      warn('Failed to parse UI Tools Config ConfigMap data:', { error });
+    } catch (err) {
+      warn('Failed to parse UI Tools Config ConfigMap data:', err);
     }
   }
 
@@ -250,7 +251,7 @@ async function saveAiAgentConfigCRDs() {
       opt:  { watch: true }
     });
   } catch (err) {
-    warn('Unable to fetch AI Agent Config CRDs: ', { err });
+    warn('Unable to fetch AI Agent Config CRDs: ', err);
   }
 
   const crdsToSave = aiAgentConfigCRDs.value || [];
@@ -263,7 +264,7 @@ async function saveAiAgentConfigCRDs() {
       try {
         await crd.remove();
       } catch (err) {
-        warn(`Unable to delete AI Agent Config CRD ${ crd.metadata.name }: `, { err });
+        warn(`Unable to delete AI Agent Config CRD ${ crd.metadata.name }: `, err);
       }
     }
   }
@@ -289,7 +290,11 @@ async function saveAiAgentConfigCRDs() {
     }
 
     // Normalize authenticationSecret
-    if (aiAgentConfigCRD.spec.authenticationType === AIAgentConfigAuthType.BASIC || aiAgentConfigCRD.spec.authenticationType === AIAgentConfigAuthType.HEADER) {
+    if (
+      aiAgentConfigCRD.spec.authenticationType === AIAgentConfigAuthType.BASIC ||
+      aiAgentConfigCRD.spec.authenticationType === AIAgentConfigAuthType.OAUTH2 ||
+      aiAgentConfigCRD.spec.authenticationType === AIAgentConfigAuthType.HEADER
+    ) {
       aiAgentConfigCRD.spec.authenticationSecret = aiAgentConfigCRD.spec.authenticationSecret?.replaceAll(`${ AGENT_NAMESPACE }/`, '');
     } else {
       delete aiAgentConfigCRD.spec.authenticationSecret;
@@ -298,7 +303,7 @@ async function saveAiAgentConfigCRDs() {
     try {
       await aiAgentConfigCRD.save();
     } catch (err) {
-      warn(`Unable to create AI Agent Config CRD ${ crd.metadata.name }: `, { err });
+      warn(`Unable to create AI Agent Config CRD ${ crd.metadata.name }: `, err);
     }
   }
 
@@ -317,7 +322,7 @@ async function saveUIToolsConfig() {
       id:   `${ AGENT_NAMESPACE }/${ TOOLS_CONFIG_NAME }`,
     });
   } catch (err) {
-    warn('Unable to fetch UI Tools Config ConfigMap: ', { err });
+    warn('Unable to fetch UI Tools Config ConfigMap: ', err);
   }
 
   if (configMap) {
@@ -326,7 +331,7 @@ async function saveUIToolsConfig() {
     try {
       await configMap.save();
     } catch (err) {
-      warn('Unable to save UI Tools Config ConfigMap: ', { err });
+      warn('Unable to save UI Tools Config ConfigMap: ', err);
     }
   } else {
     warn('UI Tools Config ConfigMap not found, cannot save settings');
@@ -341,36 +346,123 @@ async function saveAiAgentConfigAuthenticationSecrets() {
     const aiAgentConfigCRD = aiAgentConfigCRDs.value?.find((c) => c.metadata.name === agent);
     const secretPayload = authenticationSecrets.value[agent];
 
-    if (!aiAgentConfigCRD || !secretPayload || (!secretPayload.privateKey && !secretPayload.publicKey)) {
-      // No secret data to save
+    if (!aiAgentConfigCRD || !secretPayload) {
       continue;
     }
 
-    const data = {
-      password: base64Encode(secretPayload.privateKey || ''),
-      username: base64Encode(secretPayload.publicKey || ''),
-    };
+    let secret;
 
-    const secret = await store.dispatch('management/create', {
-      type:     SECRET,
-      metadata: {
-        namespace:    AGENT_NAMESPACE,
-        generateName: 'ai-agent-auth-',
-        labels:       { [AI_AGENT_LABELS.MANAGED]: 'true' }
-      },
-      data,
-    });
+    switch (aiAgentConfigCRD.spec.authenticationType) {
+    case AIAgentConfigAuthType.BASIC:
+      const payload = secretPayload as AiAgentConfigBasicSecretPayload;
 
-    secret._type = SECRET_TYPES.BASIC;
+      if (payload.privateKey && payload.publicKey) {
+        const data = {
+          password: base64Encode(payload.privateKey || ''),
+          username: base64Encode(payload.publicKey || ''),
+        };
+
+        secret = await store.dispatch('management/create', {
+          type:     SECRET,
+          metadata: {
+            namespace:    AGENT_NAMESPACE,
+            generateName: 'ai-agent-auth-',
+            labels:       { [AI_AGENT_LABELS.MANAGED]: 'true' }
+          },
+          data,
+        });
+
+        secret._type = SECRET_TYPES.BASIC;
+      }
+
+      break;
+    case AIAgentConfigAuthType.OAUTH2:
+      const oauthPayload = secretPayload as AiAgentConfigOAuth2SecretPayload;
+
+      const data = {
+        metadataEndpoint: base64Encode(oauthPayload.metadataEndpoint || ''),
+        clientID:         base64Encode(oauthPayload.clientID || ''),
+        clientSecret:     base64Encode(oauthPayload.clientSecret || ''),
+        scope:            base64Encode((oauthPayload.scopes || []).join(' ')),
+      };
+
+      if (data.metadataEndpoint && data.clientID && data.clientSecret) {
+        try {
+          secret = await store.dispatch(`management/find`, {
+            type: SECRET,
+            id:   `${ AGENT_NAMESPACE }/${ aiAgentConfigCRD?.spec.authenticationSecret }`,
+            opt:  { watch: true }
+          });
+        } catch (err) {
+          warn(`Secret ${ aiAgentConfigCRD?.spec.authenticationSecret } for agent ${ agent } not found, creating a new one: `, err);
+        }
+
+        if (secret) {
+          secret.data = {
+            ...(secret.data || {}),
+            ...data,
+          };
+        } else {
+          secret = await store.dispatch('management/create', {
+            type:     SECRET,
+            metadata: {
+              namespace:    AGENT_NAMESPACE,
+              generateName: 'ai-agent-auth-',
+              labels:       { [AI_AGENT_LABELS.MANAGED]: 'true' }
+            },
+            data,
+          });
+        }
+
+        secret._type = SECRET_TYPES.OPAQUE;
+      }
+
+      break;
+    default:
+      break;
+    }
+
+    if (!secret) {
+      continue;
+    }
 
     try {
       const savedSecret = await secret.save();
 
-      // Update reference to the new secret in the corresponding AI Agent Config CRD
-      aiAgentConfigCRD.spec.authenticationType = AIAgentConfigAuthType.BASIC;
+      // Update reference to the new secret in the corresponding AI Agent
       aiAgentConfigCRD.spec.authenticationSecret = savedSecret.metadata.name;
     } catch (err) {
-      warn(`Unable to save secret ${ secret.metadata.name } for agent ${ agent }: `, { err });
+      warn(`Unable to save secret ${ secret.metadata.name } for agent ${ agent }: `, err);
+    }
+  }
+}
+
+/**
+ * Cleans up the AI agent config authentication secrets that are no longer used.
+ */
+async function cleanupAiAgentConfigAuthenticationSecrets() {
+  // As of now, we only clean up OAUTH2 secrets
+  const existingOauth2Secrets = initAiAgentConfigCRDs.value
+    .filter((crd) => !!crd.spec.authenticationSecret && crd.spec.authenticationType === AIAgentConfigAuthType.OAUTH2)
+    .map((crd) => crd.spec.authenticationSecret);
+
+  for (const secretName of existingOauth2Secrets) {
+    const existsInForm = aiAgentConfigCRDs.value?.find((c) => c.spec.authenticationSecret === secretName);
+
+    if (!existsInForm) {
+      try {
+        const secret = await store.dispatch(`management/find`, {
+          type: SECRET,
+          id:   `${ AGENT_NAMESPACE }/${ secretName }`,
+          opt:  { watch: true }
+        });
+
+        if (secret) {
+          await secret.remove();
+        }
+      } catch (err) {
+        warn(`Secret ${ secretName } not found or already deleted: `, err);
+      }
     }
   }
 }
@@ -392,7 +484,7 @@ async function redeployAiAgent() {
 
     await deployment.save();
   } catch (err) {
-    warn('Unable to fetch rancher-ai-agent deployment: ', { err });
+    warn('Unable to fetch rancher-ai-agent deployment: ', err);
   }
 }
 
@@ -411,6 +503,9 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
         // Save AI Agent Config authentication secrets created for the agents
         await saveAiAgentConfigAuthenticationSecrets();
 
+        // Clean up authentication secrets for agents that have been removed from the form or have changed their authentication type
+        await cleanupAiAgentConfigAuthenticationSecrets();
+
         // Save AI Agent Config CRDs
         await saveAiAgentConfigCRDs();
       }
@@ -425,8 +520,8 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
 
     apiError.value = '';
     btnCB(true);
-  } catch (error) {
-    apiError.value = t('aiConfig.form.save.apiError', { error }, true);
+  } catch (err) {
+    apiError.value = t('aiConfig.form.save.apiError', { error: err }, true);
     btnCB(false);
   }
 

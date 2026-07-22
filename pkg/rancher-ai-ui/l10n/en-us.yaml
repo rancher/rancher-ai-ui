@@ -40,6 +40,14 @@ ai:
         results:
           confirm: Switched to <code>{agent}</code> Agent
           dismiss: Keeping adaptive selection
+      agentTokenRefresh:
+        info: '<b>The tool you have selected requires authentication</b>. This is normal, especially for short-lived tokens.<br><br>Before you continue, <b>make sure your browser allows popups</b> - the authentication will open in a new browser window.<br><br>Once you log in, I’ll resume my response automatically...'
+        actions:
+          confirm: 'Continue'
+          dismiss: 'Cancel'
+        results:
+          confirm: Authentication window opened
+          dismiss: Canceled
       noPermission:
         info: 'You do not have permission to access the Rancher AI Assistant. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>'
     assistant:
@@ -172,6 +180,7 @@ ai:
   processing:
     phase:
       idle: ''
+      setup: 'Preparing chat'
       initializing: 'Initializing'
       thinking: 'Thinking'
       working: 'Working'
@@ -179,6 +188,8 @@ ai:
       awaitingConfirmation: 'Awaiting confirmation'
       generatingResponse: 'Generating response'
       processingSubagent: 'Processing Agent'
+      resumingAgent: 'Resuming Agent'
+      refreshingMcpToken: 'Refreshing authentication token'
       processingTools: 'Processing UI tools'
       confirming: 'Confirming'
       finalizing: 'Finalizing results'
@@ -189,11 +200,14 @@ ai:
       connectionClosed: 'Connection closed'
     label:
       default: processing request
+      authenticationRequired: 'Awaiting authentication'
   error:
     chat:
       generic: 'An error occurred initializing the chat'
-    message:
-      processing: 'Error processing messages: '
+    message: 'Error processing message: '
+    authentication: 'Authentication error: '
+    oauth2:
+      invalidMetadata: 'Invalid authentication request metadata'
     websocket:
       generic: WebSocket error occurred. Please check the status of the Rancher AI Agent and ensure you have the necessary permissions to establish a connection to it.
       connection: Failed to connect to Rancher AI Agent.
@@ -382,15 +396,54 @@ aiConfig:
           authentication:
             title: Authentication
           authenticationType:
-            label: Type
+            label: Authentication Type
           authenticationSecret:
             label: Secret
           caBundleRef:
             title: CA Bundle
             label: TLS Secret
             tooltip: 'If your MCP server uses a self-signed certificate, please provide the TLS secret name containing the CA certificate to allow the AI agent to trust the MCP server. The secret must be in the same namespace as the AI agent and contain the `tls.crt` key with a valid CA certificate. If your MCP server uses a certificate signed by a well-known CA, you can leave this field empty.'
+          oauth2:
+            metadata:
+              label: Metadata endpoint
+              placeholder: Enter a valid URL
+              discoverInfo:
+                info: 'Try to <action>automatically discover the metadata endpoint and scope details</action> below based on the <b>MCP endpoint</b> URL.'
+                inProgress: 'Metadata endpoint and scope details discovery is now in progress... <action>Cancel</action>'
+                success: 'The metadata endpoint and scope details were successfully retrieved and filled it automatically. <action>Run it again</action>.'
+                warning: 'Based on the current <b>MCP endpoint</b> URL, the metadata endpoint and scope details could not be retrieved automatically.<message></message><br>Please review it and <action>Try again.</action>'
+                message: '<br>{message}<br>'
+            client:
+              discoverInfo:
+                info: 'Try to <action>automatically discover the client registration details</action> below based on the <b>metadata endpoint</b> URL.'
+                inProgress: 'Client registration details discovery is now in progress... <action>Cancel</action>'
+                success: 'The client registration details were successfully retrieved and filled it automatically. <action>Run it again</action>.'
+                warning: 'Based on the current <b>metadata endpoint</b> URL, the client registration details could not be retrieved automatically.<message></message><br>Please review it and <action>Try again.</action>'
+                message: '<br>{message}<br>'
+            clientId:
+              label: Client ID
+              placeholder: 'Enter the client ID'
+            clientSecret:
+              label: Client Secret
+              placeholder: 'Enter the client secret'
+            scopes:
+              label: Scopes
+              placeholder:
+                input: 'No scopes discovered, enter them manually separated by whitespace (optional)'
+                select: |-
+                  {count, plural,
+                    =1 { {count} scope available (optional) }
+                    other { {count} scopes to choose from (optional) }
+                  }
+            helper:
+              title: App Configuration
+              tooltip: 'Copy and paste these URLs when setting up your OAuth2 application with the third-party provider.'
+            homepageUrl:
+              label: Homepage URL
+            callbackUrl:
+              label: Callback URL
           mcpURL:
-            label: Endpoint
+            label: MCP Endpoint
             placeholder: https://endpoint.mcp
           humanValidationTools:
             addLabel: Add Validation Tool
@@ -417,6 +470,7 @@ aiConfig:
               basic: Basic authentication
               rancher: Rancher authentication
               header: Custom Headers authentication
+              oauth2: OAuth2 authentication
       tools:
         header: UI Tools
         description: Configure the UI tools
@@ -522,7 +576,7 @@ aiConfig:
       description: The URL where your Ollama instance is hosted
     OPENAI_URL:
       label: OpenAI Third-Party URL
-      description: (Deprecated) The URL of a third-party OpenAI-compatible service, e.g., Azure or Evroc - Try to use the "Custom" option instead, which supports any OpenAI-compatible provider.
+      description: '(Deprecated) The URL of a third-party OpenAI-compatible service, e.g., Azure or Evroc - Try to use the "Custom" option instead, which supports any OpenAI-compatible provider.'
     OPENAI_API_KEY:
       label: OpenAI Key
       description: The key to authenticate requests to OpenAI’s services

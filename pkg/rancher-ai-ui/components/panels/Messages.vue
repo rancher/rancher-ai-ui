@@ -14,6 +14,7 @@ import MessageComponent from '../message/index.vue';
 import Welcome from '../message/template/Welcome.vue';
 import NoPermission from '../message/template/NoPermissions.vue';
 import SystemRequest from '../message/template/SystemRequest.vue';
+import McpAuthenticationRequest from '../message/template/McpAuthenticationRequest.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
 import { useScrollComposable } from '../../composables/useScrollComposable';
@@ -143,6 +144,8 @@ function getMessageTemplate(component: MessageTemplateComponent) {
     return NoPermission;
   case MessageTemplateComponent.SystemRequest:
     return SystemRequest;
+  case MessageTemplateComponent.McpAuthenticationRequest:
+    return McpAuthenticationRequest;
   default:
     return null;
   }
@@ -226,11 +229,12 @@ onBeforeUnmount(() => {
       :disabled="false"
     />
     <Processing
-      v-if="!props.disabled"
+      v-if="!props.activeChatId || !props.disabled"
+      data-test-prefix="message"
       class="chat-message-processing-label text-label"
       :class="{
         /* It avoids pushing the System messages up (Welcome template) */
-        'sticky-bottom': formattedMessages.filter((m: Message) => m.role === Role.User).length > 0
+        'sticky-bottom': !props.activeChatId || formattedMessages.filter((m: Message) => m.role === Role.User).length > 0
       }"
       :phase="props.processingState?.phase"
       :label="props.processingState?.label"

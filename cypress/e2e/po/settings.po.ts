@@ -4,6 +4,7 @@ import { ToggleGroupPo } from './components/toggle-group.po';
 import TabbedPo from './components/tabbed.po';
 import CheckboxInputPo from '@rancher/cypress/e2e/po/components/checkbox-input.po';
 import LabeledInputPo from '@rancher/cypress/e2e/po/components/labeled-input.po';
+import LabeledSelectPo from '@rancher/cypress/e2e/po/components/labeled-select.po';
 
 export class SettingsPagePo extends PagePo {
   private static createPath() {
@@ -78,6 +79,43 @@ export class AiAgentConfigs extends ComponentPo {
 
   guidelinesInput() {
     return cy.get('textarea[data-testid="rancher-ai-ui-settings-ai-agent-configs-system-prompt"]').first();
+  }
+
+  // Oauth2 form fields
+  authenticationTypeSelector() {
+    return LabeledSelectPo.byLabel(this.self(), 'Type');
+  }
+
+  metadataEndpointInput() {
+    return LabeledInputPo.byLabel(this.self(), 'Metadata endpoint');
+  }
+
+  scopesSelector() {
+    return LabeledSelectPo.byLabel(this.self(), 'Scopes');
+  }
+
+  scopesInput() {
+    return LabeledInputPo.byLabel(this.self(), 'Scopes');
+  }
+
+  clientIdInput() {
+    return LabeledInputPo.byLabel(this.self(), 'Client ID');
+  }
+
+  clientSecretInput() {
+    return LabeledInputPo.byLabel(this.self(), 'Client Secret');
+  }
+
+  metadataDiscoveryButton() {
+    const key = 'aiConfig.form.section.aiAgent.fields.oauth2.metadata.discoverInfo';
+
+    return this.self().get(`[data-testid="rancher-ai-ui-discovery-banner-button-${ key }"]`);
+  }
+
+  clientInfoDiscoveryButton() {
+    const key = 'aiConfig.form.section.aiAgent.fields.oauth2.client.discoverInfo';
+
+    return this.self().get(`[data-testid="rancher-ai-ui-discovery-banner-button-${ key }"]`);
   }
 }
 

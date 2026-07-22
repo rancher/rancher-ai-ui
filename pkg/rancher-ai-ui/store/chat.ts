@@ -48,6 +48,10 @@ const getters = {
     return state.chats[chatId]?.messages[messageId] || null;
   },
   processingState: (state: State) => (chatId: string) => {
+    if (!state.metadata?.chatId) {
+      return { phase: MessagePhase.Setup };
+    }
+
     const messages = Object.values(state.chats[chatId]?.messages || {});
 
     if (

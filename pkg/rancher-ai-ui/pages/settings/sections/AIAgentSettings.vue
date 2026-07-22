@@ -216,6 +216,12 @@ const chatbotConfigKey = computed<ChatBotConfigKey>(() => {
   }
 });
 
+const showBasicConfigKey = computed(() => {
+  return formData.value[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local &&
+    formData.value[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Bedrock &&
+    formData.value[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.GenericOpenAI;
+});
+
 /**
  * Validates the AI agent settings
  */
@@ -515,14 +521,13 @@ onMounted(() => {
     </div>
 
     <div
-      v-if="!props.readOnly && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Bedrock && formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.GenericOpenAI"
+      v-if="!props.readOnly && showBasicConfigKey"
       class="form-field"
     >
       <Password
         :value="formData[chatbotConfigKey]"
         :label="t(`aiConfig.form.${ chatbotConfigKey }.label`)"
-        :disabled="readOnly"
-        :mode="_EDIT"
+        :mode="readOnly ? _VIEW : _EDIT"
         :required="true"
         data-testid="rancher-ai-ui-settings-llm-api-key-input"
         @update:value="(val: string) => updateValue(chatbotConfigKey, val)"
@@ -667,7 +672,7 @@ onMounted(() => {
           @update:value="(val: string) => updateValue(Settings.OPENAI_THIRD_PARTY_URL, val)"
         />
         <label class="text-label">
-          {{ t(`aiConfig.form.${ Settings.OPENAI_THIRD_PARTY_URL }.description`) }}
+          {{ t(`aiConfig.form.${ Settings.OPENAI_THIRD_PARTY_URL }.description`, {}, true) }}
         </label>
       </div>
 

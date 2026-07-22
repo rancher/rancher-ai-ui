@@ -340,7 +340,7 @@ describe('Multi Agent Messages', () => {
     confirmationRequestMessage.isCompleted();
     confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
 
-    chat.processingState('Awaiting confirmation').should('be.visible');
+    chat.messagesPanel().processingState('Awaiting confirmation').should('be.visible');
 
     confirmationRequestMessage.confirmButton().click();
 

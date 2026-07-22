@@ -1,4 +1,6 @@
-import { ref, computed, onMounted, ComputedRef } from 'vue';
+import {
+  ref, computed, onMounted, ComputedRef, onBeforeUnmount
+} from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { NORMAN } from '@shell/config/types';
@@ -11,6 +13,9 @@ import {
   ChatMetadata,
   ConfirmationResponse,
   ConfirmationStatus,
+  McpAuthenticationRequest,
+  McpAuthenticationResponse,
+  McpTokenRefreshResponse,
   Message,
   MessageAction,
   MessageInternalSource,
@@ -32,11 +37,16 @@ import {
   formatTools,
   formatSubAgentProcessingMetadata,
   formatAgentMetadata,
+  formatMcpAuthenticationRequest,
+  formatMcpRefreshTokenRequest,
+  formatAuthenticationErrorMessage
 } from '../utils/format';
+import { validateUrl } from '../utils/url';
 import { downloadFile } from '@shell/utils/download';
 import { useContextComposable } from './useContextComposable';
 import { useAIAgentApiComposable } from './useAIAgentApiComposable';
 import { useToolsComposable } from './useToolsComposable';
+import AuthenticationHandler from '../handlers/authentication';
 
 const EXPAND_THINKING = false;
 
@@ -65,19 +75,21 @@ export function useChatMessageComposable(
 
   const { selectContext, selectedContext } = useContextComposable();
   const { toolsSelector } = useToolsComposable();
-  const { fetchUIToolsCalls } = useAIAgentApiComposable();
+  const { refreshMcpAuthenticationToken, fetchUIToolsCalls } = useAIAgentApiComposable();
 
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};
 
-  const messageBox = computed(() => store.getters['rancher-ai-ui/chat/messageBox'](chatId));
-  const messages = computed(() => Object.values(store.getters['rancher-ai-ui/chat/messages'](chatId)) as Message[]);
   const currentMsg = ref<Message>({} as Message);
-  const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
   const chatMetadata = computed<ChatMetadata>(() => store.getters['rancher-ai-ui/chat/metadata'] || {});
   const isChatInitialized = computed(() => !!chatMetadata.value.chatId);
 
-  const processingState = computed(() => store.getters['rancher-ai-ui/chat/processingState'](chatId) || { phase: MessagePhase.Initializing });
+  const messageBox = computed(() => store.getters['rancher-ai-ui/chat/messageBox'](chatId));
+  const messages = computed(() => Object.values(store.getters['rancher-ai-ui/chat/messages'](chatId)) as Message[]);
+
+  const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
+
+  const processingState = computed(() => store.getters['rancher-ai-ui/chat/processingState'](chatId));
 
   const setProcessingState = (processingState: MessageProcessingState) => {
     store.commit('rancher-ai-ui/chat/setProcessingState', {
@@ -87,7 +99,7 @@ export function useChatMessageComposable(
   };
 
   function wsSend(ws: WebSocket, value: string) {
-    if (!ws) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
       return;
     }
 
@@ -296,6 +308,63 @@ export function useChatMessageComposable(
     }
   }
 
+  async function ensureAgentMcpAuthenticationRequest(ws: WebSocket, agents: Agent[], metadata: McpAuthenticationRequest) {
+    const agent = agents.find((a) => a.name === metadata?.agent);
+
+    if (agent) {
+      const content = {
+        agent,
+        message: t('ai.message.system.agentTokenRefresh.info', {}, true)
+      };
+      const actions = [
+        {
+          label:  t('ai.message.system.agentTokenRefresh.actions.confirm'),
+          type:   ActionType.Button,
+          action: () => {
+            AuthenticationHandler.createOauth2AuthenticationRequest(
+              metadata,
+              () => resolveOauth2Authentication(ws, McpAuthenticationResponse.Continue, MessagePhase.ResumingAgent),
+              () => resolveOauth2Authentication(ws, McpAuthenticationResponse.Cancel, MessagePhase.Idle)
+            );
+
+            return {
+              label:  t('ai.message.system.agentTokenRefresh.results.confirm', {}, true),
+              status: ConfirmationStatus.Confirmed,
+              icon:   'icon-checkmark'
+            };
+          },
+        },
+        {
+          label:  t('ai.message.system.agentTokenRefresh.actions.dismiss'),
+          type:   ActionType.Button,
+          action: () => {
+            resolveOauth2Authentication(ws, McpAuthenticationResponse.Cancel, MessagePhase.Idle);
+
+            return {
+              label:   t('ai.message.system.agentTokenRefresh.results.dismiss', {}, true),
+              status:  ConfirmationStatus.Canceled,
+              icon:    'icon-close'
+            };
+          },
+        }
+      ];
+
+      const message = buildSystemRequestMessage({
+        component: MessageTemplateComponent.McpAuthenticationRequest,
+        content,
+        actions
+      });
+
+      await addMessage(message);
+    }
+  }
+
+  function resolveOauth2Authentication(ws: WebSocket, response: McpAuthenticationResponse, nextPhase: MessagePhase) {
+    wsSend(ws, response);
+
+    setProcessingState({ phase: nextPhase });
+  }
+
   function onopen(event: { target: WebSocket }) {
     const ws = event.target;
 
@@ -310,6 +379,7 @@ export function useChatMessageComposable(
   }
 
   async function onmessage(event: MessageEvent) {
+    const ws = event.target as WebSocket;
     const data = event.data;
 
     if (!isChatInitialized.value) {
@@ -335,9 +405,9 @@ export function useChatMessageComposable(
       }
     } else {
       try {
-        await processMessageData(data);
+        await processMessageData(ws, data);
       } catch (err) {
-        processMessageErrorData(err as Error);
+        processMessageErrorData(err as ChatError);
       }
     }
   }
@@ -346,6 +416,8 @@ export function useChatMessageComposable(
     if (currentMsg.value) {
       currentMsg.value.completed = true;
     }
+
+    AuthenticationHandler.abortPendingRequests();
 
     clearMessageBox();
 
@@ -419,7 +491,7 @@ export function useChatMessageComposable(
     }
   }
 
-  async function processMessageData(data: string) {
+  async function processMessageData(ws: WebSocket, data: string) {
     switch (data) {
     case Tag.MessageStart:
       setProcessingState({ phase: MessagePhase.Working });
@@ -451,12 +523,16 @@ export function useChatMessageComposable(
       setProcessingState({ phase: MessagePhase.GeneratingResponse });
 
       if (data.startsWith(Tag.ProcessingSubagentInitStart) && data.endsWith(Tag.ProcessingSubagentInitEnd)) {
-        const metadata = formatSubAgentProcessingMetadata(data, agents.value);
+        const metadata = formatSubAgentProcessingMetadata(data);
 
-        if (metadata) {
+        const agent = agents.value.find((a) => a.name === metadata?.name);
+
+        const agentName = agent?.displayName || metadata?.name;
+
+        if (metadata && agentName) {
           setProcessingState({
             phase: MessagePhase.ProcessingSubagent,
-            label: `${ metadata.agent }: ${ metadata.query?.slice(0, 100) || t('ai.processing.label.default') }`
+            label: `${ agentName }: ${ metadata.query?.slice(0, 100) || t('ai.processing.label.default') }`
           });
         }
         break;
@@ -472,6 +548,40 @@ export function useChatMessageComposable(
         if (metadata && currentMsg.value.agentMetadata) {
           currentMsg.value.agentMetadata.recommended = metadata.recommended;
         }
+        break;
+      }
+
+      if (data.startsWith(Tag.AuthenticationRequestStart) && data.endsWith(Tag.AuthenticationRequestEnd)) {
+        const metadata = formatMcpAuthenticationRequest(data);
+
+        if (!metadata || !validateUrl(metadata.url)) {
+          throw {
+            message: t('ai.error.oauth2.invalidMetadata'),
+            key:     'message'
+          };
+        }
+
+        await ensureAgentMcpAuthenticationRequest(ws, agents.value, metadata);
+
+        setProcessingState({
+          phase: MessagePhase.AwaitingConfirmation,
+          label: t('ai.processing.label.authenticationRequired')
+        });
+
+        break;
+      }
+
+      if (data.startsWith(Tag.TokenRefreshRequestStart) && data.endsWith(Tag.TokenRefreshRequestEnd)) {
+        const agentName = formatMcpRefreshTokenRequest(data);
+
+        if (agentName) {
+          await refreshMcpAuthenticationToken(agentName);
+
+          wsSend(ws, McpTokenRefreshResponse.Confirm);
+
+          setProcessingState({ phase: MessagePhase.RefreshingMcpToken });
+        }
+
         break;
       }
 
@@ -522,9 +632,21 @@ export function useChatMessageComposable(
         }
 
         if (data.startsWith(Tag.ErrorStart) && data.endsWith(Tag.ErrorEnd)) {
-          const errorMessage = formatErrorMessage(data);
+          const err = formatErrorMessage(data);
 
-          throw errorMessage;
+          throw {
+            message: err.message,
+            key:     'message'
+          };
+        }
+
+        if (data.startsWith(Tag.AuthenticationErrorStart) && data.endsWith(Tag.AuthenticationErrorEnd)) {
+          const err = formatAuthenticationErrorMessage(data);
+
+          throw {
+            message: err.message,
+            key:     'authentication'
+          };
         }
 
         if (data === Tag.ProcessingTools) {
@@ -550,12 +672,14 @@ export function useChatMessageComposable(
     }
   }
 
-  function processMessageErrorData(error: Error) {
+  function processMessageErrorData(error: ChatError) {
     setProcessingState({ phase: MessagePhase.Idle });
+
+    const prefix = t(`ai.error.${ error.key || 'message' }`, {}, true);
 
     addMessage({
       role:           Role.System,
-      messageContent: `${ t('ai.error.message.processing') } ${ error.message || '' }`,
+      messageContent: `${ prefix } ${ error.message || '' }`,
       timestamp:      new Date(),
       completed:      true,
       source:         MessageInternalSource.Error,
@@ -604,6 +728,10 @@ export function useChatMessageComposable(
       chatId,
       messages: hasPermissions.value ? [] : [buildNoPermissionMessage()]
     });
+  });
+
+  onBeforeUnmount(() => {
+    AuthenticationHandler.abortPendingRequests();
   });
 
   return {

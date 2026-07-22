@@ -17,6 +17,7 @@ import {
   ToolCall,
   SubAgentProcessingMetadata,
   AgentSelectionMode,
+  McpAuthenticationRequest,
 } from '../types';
 import { error } from '../utils/log';
 import { validateActionResource } from './validator';
@@ -82,8 +83,8 @@ export function formatChatErrorMessage(data: string): ChatError {
       const parsed = JSON.parse(cleaned);
 
       return parsed;
-    } catch (e) {
-      error('Failed to parse chat error message:', e);
+    } catch (err) {
+      error('Failed to parse chat error message:', err);
     }
   }
 
@@ -131,24 +132,43 @@ export function formatAgentMetadata(data: string): Partial<AgentMetadata> | null
   return null;
 }
 
-export function formatSubAgentProcessingMetadata(data: string, agents: Agent[]): SubAgentProcessingMetadata | null {
+export function formatSubAgentProcessingMetadata(data: string): SubAgentProcessingMetadata | null {
   const cleaned = data.replaceAll(Tag.ProcessingSubagentInitStart, '').replaceAll(Tag.ProcessingSubagentInitEnd, '').trim();
 
   try {
     const parsed = JSON.parse(cleaned);
 
-    const agent = agents.find((a) => a.name === parsed.name);
-
-    const agentName = agent?.displayName || parsed.name;
-
-    if (agentName) {
-      return {
-        agent: agentName,
-        query: parsed.query
-      };
-    }
+    return parsed;
   } catch (err) {
     error('Failed to parse sub-agent processing metadata:', err);
+  }
+
+  return null;
+}
+
+export function formatMcpAuthenticationRequest(data: string): McpAuthenticationRequest | null {
+  const cleaned = data.replaceAll(Tag.AuthenticationRequestStart, '').replaceAll(Tag.AuthenticationRequestEnd, '').trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+
+    return parsed;
+  } catch (err) {
+    error('Failed to parse MCP authentication request:', err);
+  }
+
+  return null;
+}
+
+export function formatMcpRefreshTokenRequest(data: string): string | null {
+  const cleaned = data.replaceAll(Tag.TokenRefreshRequestStart, '').replaceAll(Tag.TokenRefreshRequestEnd, '').trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+
+    return parsed?.agent || null;
+  } catch (err) {
+    error('Failed to parse MCP token refresh request:', err);
   }
 
   return null;
@@ -284,6 +304,22 @@ export function formatErrorMessage(value: string): ChatError {
       return parsed;
     } catch (err) {
       error('Failed to parse error message:', err);
+    }
+  }
+
+  return { message: 'An error occurred.' };
+}
+
+export function formatAuthenticationErrorMessage(value: string): ChatError {
+  value = value.replaceAll(Tag.AuthenticationErrorStart, '').replaceAll(Tag.AuthenticationErrorEnd, '').trim();
+
+  if (value) {
+    try {
+      const parsed = JSON.parse(value);
+
+      return parsed;
+    } catch (err) {
+      error('Failed to parse authentication error message:', err);
     }
   }
 
