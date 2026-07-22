@@ -83,8 +83,8 @@ export function formatChatErrorMessage(data: string): ChatError {
       const parsed = JSON.parse(cleaned);
 
       return parsed;
-    } catch (e) {
-      error('Failed to parse chat error message:', e);
+    } catch (err) {
+      error('Failed to parse chat error message:', err);
     }
   }
 
@@ -153,8 +153,8 @@ export function formatMcpAuthenticationRequest(data: string): McpAuthenticationR
     const parsed = JSON.parse(cleaned);
 
     return parsed;
-  } catch (error) {
-    console.error('Failed to parse MCP authentication request:', error); /* eslint-disable-line no-console */
+  } catch (err) {
+    error('Failed to parse MCP authentication request:', err);
   }
 
   return null;
@@ -167,8 +167,8 @@ export function formatMcpRefreshTokenRequest(data: string): string | null {
     const parsed = JSON.parse(cleaned);
 
     return parsed?.agent || null;
-  } catch (error) {
-    console.error('Failed to parse MCP token refresh request:', error); /* eslint-disable-line no-console */
+  } catch (err) {
+    error('Failed to parse MCP token refresh request:', err);
   }
 
   return null;
