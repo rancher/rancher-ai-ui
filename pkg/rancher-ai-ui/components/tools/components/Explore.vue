@@ -21,7 +21,7 @@ const enum ROUTE_ID {
   Events = 'events', // eslint-disable-line no-unused-vars
   Charts = 'charts', // eslint-disable-line no-unused-vars
   Clusters = 'clusters', // eslint-disable-line no-unused-vars
-  Fleet = 'fleet', // eslint-disable-line no-unused-vars
+  ContinuousDelivery = 'continuous-delivery', // eslint-disable-line no-unused-vars
   Users = 'users', // eslint-disable-line no-unused-vars
   Settings = 'settings', // eslint-disable-line no-unused-vars
   Deployments = 'deployments', // eslint-disable-line no-unused-vars
@@ -49,7 +49,7 @@ const ROUTES: Record<string, RouteConfig> = {
     schema:  'provisioning.cattle.io.cluster',
     resolve: () => '/c/_/manager/provisioning.cattle.io.cluster',
   },
-  [ROUTE_ID.Fleet]: {
+  [ROUTE_ID.ContinuousDelivery]: {
     schema:  FLEET.GIT_REPO,
     resolve: () => '/c/_/fleet',
   },
