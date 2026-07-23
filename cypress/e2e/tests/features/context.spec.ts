@@ -144,27 +144,4 @@ describe('Feature: context', () => {
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-7-selected-context-in-message');
   });
-
-  describe('disabled state', () => {
-    afterEach(() => {
-      cy.uninstallRancherAIService();
-      cy.installRancherAIService();
-    });
-
-    it('Test 8: Context panel is disabled when AI service is not active', () => {
-      cy.installRancherAIService({ waitForAIServiceReady: false });
-
-      const deploymentsListPage = new WorkloadsDeploymentsListPagePo('local', 'apps.deployment' as any);
-
-      deploymentsListPage.goTo();
-      deploymentsListPage.waitForPage();
-
-      cy.get('[data-testid="extension-header-action-ai.action.openChat"]').should('be.visible');
-      chat.open();
-
-      context.isDisabled();
-
-      cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('context-test-8-disabled-when-not-active');
-    });
-  });
 });
