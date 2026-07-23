@@ -182,8 +182,8 @@
             "clusters": {
               "description": "SCOPE: list or collection, this route shows the list of clusters in Rancher. Use this route when the context is about listing clusters or cluster management."
             },
-            "fleet": {
-              "description": "This route shows the Fleet dashboard. Use this route when the context is about managing or listing Fleet resources."
+            "continuous-delivery": {
+              "description": "This route shows the Continuous Delivery dashboard. Use this route when the context is about managing or listing Fleet resources."
             },
             "users": {
               "description": "This route shows the Users management page. Use this route when the context is about managing users, roles, or permissions."
