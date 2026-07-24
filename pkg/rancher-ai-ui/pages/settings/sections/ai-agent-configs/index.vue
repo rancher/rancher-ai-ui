@@ -605,10 +605,6 @@ watch(validationErrors, (errors) => {
         <div class="form-values-row">
           <h3 class="m-0">
             {{ t('aiConfig.form.section.aiAgent.sections.llmModel.title') }}
-            <span
-              class="required"
-              aria-hidden="true"
-            >*</span>
             <i
               v-clean-tooltip="t('aiConfig.form.section.aiAgent.sections.llmModel.tooltip')"
               class="icon icon-info tooltip-icon"
