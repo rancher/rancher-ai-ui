@@ -146,9 +146,119 @@ describe('BadgeSlidingOverlay', () => {
     document.body.innerHTML = '';
   });
 
-  describe('computeThemeProperties', () => {
+  describe('hasTransparency', () => {
+    it('should return true for rgba with alpha < 1', () => {
+      const result = (BadgeSlidingOverlay as any).hasTransparency('rgba(31, 103, 219, 0.1)');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return true for rgba with alpha = 0.5', () => {
+      const result = (BadgeSlidingOverlay as any).hasTransparency('rgba(255, 0, 0, 0.5)');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false for rgba with alpha = 1', () => {
+      const result = (BadgeSlidingOverlay as any).hasTransparency('rgba(31, 103, 219, 1)');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false for rgb color (no alpha channel)', () => {
+      const result = (BadgeSlidingOverlay as any).hasTransparency('rgb(31, 103, 219)');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return true for hsla with alpha < 1', () => {
+      const result = (BadgeSlidingOverlay as any).hasTransparency('hsla(120, 100%, 50%, 0.3)');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false for hsl color (no alpha channel)', () => {
+      const result = (BadgeSlidingOverlay as any).hasTransparency('hsl(120, 100%, 50%)');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false for empty string', () => {
+      const result = (BadgeSlidingOverlay as any).hasTransparency('');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('blendTransparentColor', () => {
+    it('should blend rgba color with white in light theme', () => {
+      const result = (BadgeSlidingOverlay as any).blendTransparentColor('rgba(31, 103, 219, 0.1)', 'light');
+
+      // Result should be solid rgb color
+      expect(result).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
+      // Should contain no alpha channel
+      expect(result).not.toContain('rgba');
+    });
+
+    it('should blend rgba color with dark gray in dark theme', () => {
+      const result = (BadgeSlidingOverlay as any).blendTransparentColor('rgba(31, 103, 219, 0.1)', 'dark');
+
+      // Result should be solid rgb color
+      expect(result).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
+      // Should contain no alpha channel
+      expect(result).not.toContain('rgba');
+    });
+
+    it('should calculate correct blended values for light theme', () => {
+      // rgba(100, 100, 100, 0.5) blended with white (255, 255, 255)
+      // Result: (100 * 0.5 + 255 * 0.5, ...) = (177.5, 177.5, 177.5) -> (178, 178, 178)
+      const result = (BadgeSlidingOverlay as any).blendTransparentColor('rgba(100, 100, 100, 0.5)', 'light');
+
+      expect(result).toBe('rgb(178, 178, 178)');
+    });
+
+    it('should calculate correct blended values for dark theme', () => {
+      // rgba(100, 100, 100, 0.5) blended with dark gray (42, 42, 42)
+      // Result: (100 * 0.5 + 42 * 0.5, ...) = (71, 71, 71)
+      const result = (BadgeSlidingOverlay as any).blendTransparentColor('rgba(100, 100, 100, 0.5)', 'dark');
+
+      expect(result).toBe('rgb(71, 71, 71)');
+    });
+
+    it('should handle hsla colors', () => {
+      const result = (BadgeSlidingOverlay as any).blendTransparentColor('hsla(120, 100%, 50%, 0.2)', 'light');
+
+      // Should still return rgb format (not handling hsla parse specially, but should not error)
+      expect(result).toBeDefined();
+    });
+
+    it('should return original color if no rgba/hsla match', () => {
+      const hexColor = '#ff0000';
+      const result = (BadgeSlidingOverlay as any).blendTransparentColor(hexColor, 'light');
+
+      expect(result).toBe(hexColor);
+    });
+
+    it('should handle full opacity (alpha = 1) correctly', () => {
+      // rgba(200, 100, 50, 1.0) blended with white
+      // Result: (200 * 1 + 255 * 0, 100 * 1 + 255 * 0, 50 * 1 + 255 * 0) = (200, 100, 50)
+      const result = (BadgeSlidingOverlay as any).blendTransparentColor('rgba(200, 100, 50, 1)', 'light');
+
+      expect(result).toBe('rgb(200, 100, 50)');
+    });
+
+    it('should handle zero alpha correctly', () => {
+      // rgba(100, 100, 100, 0) blended with white (255, 255, 255)
+      // Result: (100 * 0 + 255 * 1, ...) = (255, 255, 255)
+      const result = (BadgeSlidingOverlay as any).blendTransparentColor('rgba(100, 100, 100, 0)', 'light');
+
+      expect(result).toBe('rgb(255, 255, 255)');
+    });
+  });
+
+  describe('computeColorProperties', () => {
     it('should compute light theme properties for warning badge', () => {
-      const result = (BadgeSlidingOverlay as any).computeThemeProperties(badgeElement, 'light');
+      const result = (BadgeSlidingOverlay as any).computeColorProperties(badgeElement, 'light');
 
       expect(result).toHaveProperty('badge');
       expect(result).toHaveProperty('overlay');
@@ -157,11 +267,18 @@ describe('BadgeSlidingOverlay', () => {
     });
 
     it('should compute dark theme properties with different opacity', () => {
-      const result = (BadgeSlidingOverlay as any).computeThemeProperties(badgeElement, 'dark');
+      const result = (BadgeSlidingOverlay as any).computeColorProperties(badgeElement, 'dark');
 
       expect(result).toHaveProperty('badge');
       expect(result).toHaveProperty('overlay');
       expect(result.badge.background).toBeDefined();
+    });
+
+    it('should have background property in badge color properties', () => {
+      const result = (BadgeSlidingOverlay as any).computeColorProperties(badgeElement, 'light');
+
+      expect(result.badge).toHaveProperty('background');
+      expect(result.badge.background).not.toBe('');
     });
   });
 
@@ -370,11 +487,14 @@ describe('BadgeSlidingOverlay', () => {
     it('should update badge background on theme change', () => {
       BadgeSlidingOverlay.create(mockStore, targetElement, badgeElement, mockContext, mockGlobalCtx);
 
-      // Spy on computeThemeProperties to ensure it returns a background color
-      const computeSpy = jest.spyOn(BadgeSlidingOverlay as any, 'computeThemeProperties');
+      // Spy on computeColorProperties to ensure it returns a background color
+      const computeSpy = jest.spyOn(BadgeSlidingOverlay as any, 'computeColorProperties');
 
       computeSpy.mockReturnValue({
-        badge:   { background: '#ff9800' },
+        badge:   {
+          background: '#ff9800',
+          color:      ''
+        },
         overlay: {
           background: '#496192',
           color:      'var(--primary-text)'

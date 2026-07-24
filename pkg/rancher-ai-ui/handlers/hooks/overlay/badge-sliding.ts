@@ -13,6 +13,11 @@ const enum Theme {
   Dark = 'dark', // eslint-disable-line no-unused-vars
 }
 
+interface ColorProperties {
+  background: string;
+  color: string;
+}
+
 /**
  * Overlay that adds a sliding badge to status badges allowing
  * users to quickly create an AI chat message about the badged state.
@@ -26,48 +31,111 @@ class BadgeSlidingOverlay extends HooksOverlay {
   private hookContextTag: HookContextTag | null = null;
 
   /**
-   * Compute the theme properties for the badge and overlay.
+   * Check if a color string has transparency (alpha < 1).
    *
-   * - The badges in the main UI depend on the current theme and badge classes. The background colors use opacity
-   *   - When the overlay is applied, the badge background must be converted to a solid color
-   *     to avoid the overlay showing behind it.
-   *   - When the overlay is shown, it uses a fixed background color and text color.
-   *   - When the theme changes, both badge and overlay colors must be updated.
-   *   - When the overlay is destroyed, the badge background must be restored to the computed color.
+   * @param color The color string to check (e.g., "rgba(31, 103, 219, 0.1)").
+   * @returns True if the color has transparency (alpha < 1), false otherwise.
+   */
+  private hasTransparency(color = ''): boolean {
+    const hasOpacity = color.includes('rgba') || color.includes('hsla');
+
+    if (hasOpacity) {
+      const alphaMatch = color.match(/[\d.]+\s*\)$/);
+
+      if (alphaMatch) {
+        const alpha = parseFloat(alphaMatch[0]);
+
+        return alpha < 1;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Blend a transparent color with the background color based on the theme.
+   *
+   * @param rgba The RGBA color string to blend (e.g., "rgba(31, 103, 219, 0.1)").
+   * @param theme The theme to apply (light or dark).
+   * @returns The blended color as a solid RGB string (e.g., "rgb(255, 255, 255)").
+   */
+  private blendTransparentColor(rgba: string, theme: Theme): string {
+    // Extract RGBA components from strings like "rgba(31, 103, 219, 0.1)"
+    const match = rgba.match(/rgba?\(([^)]+)\)/);
+
+    if (!match) {
+      return rgba;
+    }
+
+    const parts = match[1].split(',').map((s) => s.trim());
+    const r = parseInt(parts[0]);
+    const g = parseInt(parts[1]);
+    const b = parseInt(parts[2]);
+    const a = parts[3] ? parseFloat(parts[3]) : 1;
+
+    // Blend with white (light theme) or dark gray (dark theme)
+    const blendBg = theme === Theme.Dark ? {
+      r: 42,
+      g: 42,
+      b: 42
+    } : {
+      r: 255,
+      g: 255,
+      b: 255
+    };
+
+    const blendedR = Math.round(r * a + blendBg.r * (1 - a));
+    const blendedG = Math.round(g * a + blendBg.g * (1 - a));
+    const blendedB = Math.round(b * a + blendBg.b * (1 - a));
+
+    return `rgb(${ blendedR }, ${ blendedG }, ${ blendedB })`;
+  }
+
+  /**
+   * Compute the color properties for the badge and overlay,
+   * taking into account the theme and any transparency in the badge's background color.
+   *
+   * In order to avoid overlay overlapping issues, we need to ensure that the badge's background color is solid and not transparent.
    *
    * @param badge The badge element to compute properties for.
    * @param theme The theme to apply (light or dark).
    * @returns An object containing the computed properties for the badge and overlay.
    */
-  private computeThemeProperties(badge: HTMLElement, theme: Theme): { badge: any, overlay: any } {
+  private computeColorProperties(badge: HTMLElement, theme: Theme): { badge: ColorProperties, overlay: ColorProperties } {
     const out = {
-      badge:   { background: '' },
+      badge:   {
+        background: '',
+        color:      ''
+      },
       overlay: {
         background: '#496192',
         color:      'var(--primary-text)',
       },
     };
 
-    const bgColor = getComputedStyle(document.body).getPropertyValue('--body-bg');
-    const opacity = theme === Theme.Dark ? '30%' : '10%';
+    // Temporarily clear the inline background style to get the real computed color from the class
+    const originalBackground = badge.style.background;
+    const originalBackgroundColor = badge.style.backgroundColor;
 
-    (badge?.classList || []).forEach((c) => {
-      if (c.startsWith('bg-')) {
-        const classId = c.replaceAll('bg-', '');
-        const classBgColor = getComputedStyle(document.body).getPropertyValue(`--${ classId }`);
+    badge.style.background = '';
+    badge.style.backgroundColor = '';
 
-        switch (classId) {
-        case 'error':
-          if (theme === Theme.Light) {
-            out.badge.background = classBgColor;
-          }
-          break;
-        default:
-          out.badge.background = `color-mix(in srgb, ${ classBgColor } ${ opacity }, ${ bgColor })`;
-          break;
-        }
-      }
-    });
+    const classBgColor = getComputedStyle(badge).backgroundColor;
+
+    // Restore the original inline styles
+    if (originalBackground) {
+      badge.style.background = originalBackground;
+    }
+    if (originalBackgroundColor) {
+      badge.style.backgroundColor = originalBackgroundColor;
+    }
+
+    if (this.hasTransparency(classBgColor)) {
+      // Convert transparent color to solid by blending with background
+      out.badge.background = this.blendTransparentColor(classBgColor, theme);
+    } else {
+      out.badge.background = classBgColor;
+    }
 
     return out;
   }
@@ -169,7 +237,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
     const {
       badge: badgeProps,
       overlay: overlayProps
-    } = this.computeThemeProperties(badge, theme);
+    } = this.computeColorProperties(badge, theme);
 
     const overlay = badge.cloneNode(true) as HTMLElement;
 
@@ -330,7 +398,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
 
   setTheme(badge: HTMLElement, theme: Theme) {
     nextTick(() => {
-      const { badge: badgeProps } = this.computeThemeProperties(badge, theme);
+      const { badge: badgeProps } = this.computeColorProperties(badge, theme);
 
       if (badge) {
         badge.style.background = badgeProps.background;
