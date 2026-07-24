@@ -135,7 +135,7 @@ class HooksHandler {
       if (show) {
         overlay.create(store, target, el, ctx, store.getters['rancher-ai-ui/context/all']);
       } else if (!(el.matches(':hover') || (el.querySelector(':hover') !== null))) {
-        overlay.destroy(target);
+        overlay.destroy(target, el);
       }
     });
   }

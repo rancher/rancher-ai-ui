@@ -1,6 +1,7 @@
 import { nextTick } from 'vue';
 import { Store } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import { randomStr } from '@shell/utils/string';
 import { warn } from '../../../utils/log';
 import { Context, HookContextTag } from '../../../types';
 import { HooksOverlay } from './index';
@@ -75,9 +76,10 @@ class BadgeSlidingOverlay extends HooksOverlay {
    * Handle changes in the container's position (e.g. due to scrolling or table resizing).
    * @param target The target element.
    * @param container The container element.
+   * @param badge The badge element.
    * @param overlay The overlay element.
    */
-  private handleContainerPositionChange(target: HTMLElement, container: HTMLElement, overlay: HTMLElement) {
+  private handleContainerPositionChange(target: HTMLElement, container: HTMLElement, badge: HTMLElement, overlay: HTMLElement) {
     // Destroy overlay if the container moves (position changes)
     let lastContainerRect = container.getBoundingClientRect();
     let rafId: number | null = null;
@@ -93,7 +95,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
 
           if (r.top !== lastContainerRect.top || r.left !== lastContainerRect.left) {
             // The container moved -> remove overlays for this target, immediately
-            this.destroy(target, true);
+            this.destroy(target, badge, true);
           } else {
             lastContainerRect = r;
           }
@@ -118,7 +120,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
 
     window.addEventListener('scroll', scrollHandler, true);
 
-    // attach cleanup so destroy() can call it (avoid leaks if overlay removed directly)
+    // Store cleanup function to be called when the overlay is destroyed
     (overlay as any).__containerPositionCleanup = () => {
       try {
         if (rafId !== null) {
@@ -174,9 +176,11 @@ class BadgeSlidingOverlay extends HooksOverlay {
     const badgeRect = badge.getBoundingClientRect();
     const badgeStyle = getComputedStyle(badge);
 
-    overlay.setAttribute('data-testid', 'rancher-ai-ui-hook-overlay');
+    const id = randomStr(8);
 
-    overlay.classList.add(`${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`);
+    overlay.setAttribute('data-testid', 'rancher-ai-ui-hook-overlay');
+    overlay.setAttribute(`${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`, id);
+
     overlay.style.zIndex = '10';
     overlay.style.backgroundColor = overlayProps.background;
     overlay.style.color = 'transparent';
@@ -199,6 +203,17 @@ class BadgeSlidingOverlay extends HooksOverlay {
 
     badge.style.zIndex = Math.max(parseInt(badge.style.zIndex || '0'), 12).toString();
     badge.style.background = badgeProps.background;
+
+    (badge as any).__cleanupStyle = () => {
+      // Clear badge styles if no related overlays exist for this badge
+      const container = this.getContainer(target);
+
+      if (!container.querySelector(`[${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }="${ id }"]`)) {
+        badge.style.background = '';
+        badge.style.backgroundColor = '';
+        badge.style.zIndex = '';
+      }
+    };
 
     const icon = document.createElement('i');
 
@@ -226,20 +241,22 @@ class BadgeSlidingOverlay extends HooksOverlay {
       overlay.style.width = `${ parseInt(overlay.style.width) + 30 }px`;
     }, 10);
 
-    this.handleContainerPositionChange(target, container, overlay);
+    this.handleContainerPositionChange(target, container, badge, overlay);
 
     overlay.addEventListener('click', (e) => {
       this.action(store, e, overlay, ctx, globalCtx);
+      this.removeOverlayAndRestoreBadge(overlay, badge);
     });
 
     overlay.addEventListener('mouseenter', () => {
+      badge.style.background = badgeProps.background;
       overlay.style.width = `${ parseInt(overlay.style.width) + (20 + (overlay.textContent?.length || 0) + parseInt(badgeStyle.fontSize) * 1.4 + parseFloat(badgeStyle.marginRight) + parseFloat(badgeStyle.marginLeft)) }px`;
       overlay.style.color = overlayProps.color;
     });
 
     overlay.addEventListener('mouseleave', () => {
       if (!HooksOverlay.allHooksKeyPressed) {
-        this.destroy(target);
+        this.destroy(target, badge);
       } else {
         overlay.style.width = `${ parseInt(overlay.style.width) - (20 + (overlay.textContent?.length || 0) + parseInt(badgeStyle.fontSize) * 1.4 + parseFloat(badgeStyle.marginRight) + parseFloat(badgeStyle.marginLeft)) }px`;
       }
@@ -257,16 +274,17 @@ class BadgeSlidingOverlay extends HooksOverlay {
     });
 
     Chat.open(store);
-
-    overlay.remove();
   }
 
-  destroy(target: HTMLElement, immediate = false) {
-    this.getContainer(target).querySelectorAll(`.${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`).forEach((overlay: any) => {
+  destroy(target: HTMLElement, badge: HTMLElement, immediate = false) {
+    const container = this.getContainer(target);
+    const selector = `[${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }]`;
+
+    container.querySelectorAll(selector).forEach((overlay: any) => {
       if (overlay) {
         if (immediate) {
           this.cleanupContainerPosition(overlay);
-          overlay.remove();
+          this.removeOverlayAndRestoreBadge(overlay, badge);
         } else if (!(overlay.matches(':hover') || (overlay.querySelector(':hover') !== null))) {
           this.cleanupContainerPosition(overlay);
 
@@ -276,8 +294,8 @@ class BadgeSlidingOverlay extends HooksOverlay {
           overlay.style.opacity = '0';
 
           setTimeout(() => {
-            overlay.remove();
-          }, 500);
+            this.removeOverlayAndRestoreBadge(overlay, badge);
+          }, 150);
         }
       }
     });
@@ -296,6 +314,18 @@ class BadgeSlidingOverlay extends HooksOverlay {
     }
 
     return (container || target) as HTMLElement;
+  }
+
+  removeOverlayAndRestoreBadge(overlay: HTMLElement, badge: HTMLElement) {
+    if (overlay) {
+      overlay.remove();
+    }
+
+    const cleanup = (badge as any)?.__cleanupStyle;
+
+    if (cleanup) {
+      cleanup();
+    }
   }
 
   setTheme(badge: HTMLElement, theme: Theme) {

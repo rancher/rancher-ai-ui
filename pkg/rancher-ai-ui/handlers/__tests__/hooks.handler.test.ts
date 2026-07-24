@@ -274,7 +274,7 @@ describe('HooksHandler', () => {
     it('should call overlay.destroy when show is false and element is not hovered', () => {
       (HooksHandler as any).toggleOverlays(mockStore, mockTarget, mockContext, false);
 
-      expect(mockOverlay.destroy).toHaveBeenCalledWith(mockTarget);
+      expect(mockOverlay.destroy).toHaveBeenCalledWith(mockTarget, mockTarget);
     });
 
     it('should not call overlay.destroy when element is hovered', () => {
