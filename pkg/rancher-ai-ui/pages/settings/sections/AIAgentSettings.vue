@@ -398,7 +398,7 @@ const updateModelValue = (val: string) => {
 
   updateValue(getModelKey(activeChatbot), val);
 
-  emitModelOptions(activeChatbot);
+  emitModelOptions(activeChatbot, val);
 };
 
 /**
@@ -461,9 +461,9 @@ const updateValue = (key: Settings, val: string) => {
 /**
  * Emits the available models for the active chatbot
  */
-const emitModelOptions = (activeChatbot: ChatBotEnum | string) => {
+const emitModelOptions = (activeChatbot: ChatBotEnum | string, model?: string) => {
   const availableModels = cloneDeep(models.value[activeChatbot as ChatBotEnum]) || [];
-  const selectedModel = formData.value[getModelKey(activeChatbot as ChatBotEnum)];
+  const selectedModel = model === undefined ? formData.value[getModelKey(activeChatbot as ChatBotEnum)] : model;
 
   if (selectedModel && !availableModels.includes(selectedModel)) {
     availableModels.push(selectedModel);
@@ -483,10 +483,7 @@ const emitModelOptions = (activeChatbot: ChatBotEnum | string) => {
 watch(
   () => models.value[formData.value[Settings.ACTIVE_CHATBOT] as ChatBotEnum],
   () => emitModelOptions(formData.value[Settings.ACTIVE_CHATBOT]),
-  {
-    immediate: true,
-    deep:      true
-  }
+  { immediate: true }
 );
 
 onMounted(() => {
