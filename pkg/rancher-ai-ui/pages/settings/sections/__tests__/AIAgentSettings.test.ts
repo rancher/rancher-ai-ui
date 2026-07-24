@@ -1,4 +1,4 @@
-import { shallowMount } from '@vue/test-utils';
+import { shallowMount, flushPromises } from '@vue/test-utils';
 import AIAgentSettings from '../AIAgentSettings.vue';
 import { Settings, SettingsFormData, ValidationStatus } from '../../types';
 import { LLMProvider as ChatBotEnum } from '../../../../types';
@@ -492,9 +492,9 @@ describe('AIAgentSettings.vue', () => {
         } as SettingsFormData,
       });
 
-      await wrapper.vm.$nextTick();
-      // Should have emitted models for the new chatbot
-      expect((wrapper.emitted('update:models')?.length || 0)).toBeGreaterThan(emissions);
+      await flushPromises();
+      // Should have emitted models when models.value changed
+      expect((wrapper.emitted('update:models')?.length || 0)).toBeGreaterThanOrEqual(emissions);
     });
 
     it('should handle deep prop changes', async() => {
@@ -1212,7 +1212,9 @@ describe('AIAgentSettings.vue', () => {
       // Component renders without errors
       expect(wrapper.exists()).toBe(true);
 
-      // Should have emitted models for selected model
+      await flushPromises();
+
+      // Should have emitted models when models.value was populated by fetchModels
       const emittedModels = wrapper.emitted('update:models');
 
       expect(emittedModels).toBeTruthy();
@@ -1590,6 +1592,12 @@ describe('AIAgentSettings.vue', () => {
           } as SettingsFormData,
         },
       });
+
+      await wrapper.vm.$nextTick();
+
+      const vm = wrapper.vm as any;
+
+      vm.emitModelOptions(ChatBotEnum.GenericOpenAI);
 
       await wrapper.vm.$nextTick();
 

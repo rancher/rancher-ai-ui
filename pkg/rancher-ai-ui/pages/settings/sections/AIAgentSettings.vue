@@ -389,6 +389,16 @@ const updateChatbotValue = async(val: ChatBotEnum) => {
   if (models.value[val] === undefined && val !== ChatBotEnum.GenericOpenAI) {
     fetchModels(val);
   }
+
+  emitModelOptions(val);
+};
+
+const updateModelValue = (val: string) => {
+  const activeChatbot = formData.value[Settings.ACTIVE_CHATBOT] as ChatBotEnum;
+
+  updateValue(getModelKey(activeChatbot), val);
+
+  emitModelOptions(activeChatbot);
 };
 
 /**
@@ -449,19 +459,10 @@ const updateValue = (key: Settings, val: string) => {
 };
 
 /**
- * Watches for changes in the active chatbot and available models.
- * Updates the available models for the active chatbot and ensures the selected model is included.
- *
- * The model list are used by the AI agent settings form to populate the model selection.
+ * Emits the available models for the active chatbot
  */
-watch(() => [
-  formData.value[Settings.ACTIVE_CHATBOT],
-  models.value
-], (newValues) => {
-  const [activeChatbot, models] = newValues;
-
-  const availableModels = cloneDeep(models as Record<ChatBotEnum, string[]>)[activeChatbot as ChatBotEnum] || [];
-
+const emitModelOptions = (activeChatbot: ChatBotEnum | string) => {
+  const availableModels = cloneDeep(models.value[activeChatbot as ChatBotEnum]) || [];
   const selectedModel = formData.value[getModelKey(activeChatbot as ChatBotEnum)];
 
   if (selectedModel && !availableModels.includes(selectedModel)) {
@@ -474,10 +475,19 @@ watch(() => [
   }));
 
   emit('update:models', modelOptions);
-}, {
-  immediate: true,
-  deep:      true
-});
+};
+
+/**
+ * Watches for changes in the models for the active chatbot.
+ */
+watch(
+  () => models.value[formData.value[Settings.ACTIVE_CHATBOT] as ChatBotEnum],
+  () => emitModelOptions(formData.value[Settings.ACTIVE_CHATBOT]),
+  {
+    immediate: true,
+    deep:      true
+  }
+);
 
 onMounted(() => {
   const activeChatbot = formData.value[Settings.ACTIVE_CHATBOT];
@@ -661,7 +671,7 @@ onMounted(() => {
         :taggable="true"
         :searchable="true"
         :required="true"
-        @update:value="(val: string) => updateValue(getModelKey(formData[Settings.ACTIVE_CHATBOT]), val)"
+        @update:value="updateModelValue"
       />
       <Banner
         v-if="errorField[ChatBotEnum.Bedrock][getModelKey(ChatBotEnum.Bedrock)] && formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.Bedrock && modelValidation[ChatBotEnum.Bedrock].status === ValidationStatus.ERROR"
