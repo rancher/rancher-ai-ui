@@ -313,7 +313,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
       container = target.parentElement;
     }
 
-    return (container || target) as HTMLElement;
+    return (container || target.parentElement || target) as HTMLElement;
   }
 
   removeOverlayAndRestoreBadge(overlay: HTMLElement, badge: HTMLElement) {
