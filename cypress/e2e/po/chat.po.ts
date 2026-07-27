@@ -6,11 +6,8 @@ import ContextPo from '@/cypress/e2e/po/context.po';
 import MessagesPo from '@/cypress/e2e/po/messages.po';
 
 export default class ChatPo extends ComponentPo {
-  rancherHeader: RancherHeaderPo;
-
   constructor() {
     super('[data-testid="rancher-ai-ui-chat-container"]');
-    this.rancherHeader = new RancherHeaderPo();
   }
 
   processingState(label?: string) {
@@ -54,7 +51,7 @@ export default class ChatPo extends ComponentPo {
   }
 
   open() {
-    this.rancherHeader.askLizButton().click();
+    RancherHeaderPo.askLizButton().click();
     this.isOpen();
   }
 

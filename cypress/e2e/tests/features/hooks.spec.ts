@@ -1,19 +1,157 @@
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
+import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import { WorkLoadsPodDetailsPagePo } from '@rancher/cypress/e2e/po/pages/explorer/workloads-pods.po';
-
+import { FleetApplicationListPagePo } from '@rancher/cypress/e2e/po/pages/fleet/fleet.cattle.io.application.po';
 import { SlidingBadgePo } from '@/cypress/e2e/po/hook.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { HistoryPo } from '../../po/history.po';
 import { errorPod } from '@/cypress/e2e/blueprints/pod';
+import { gitRepo } from '@/cypress/e2e/blueprints/fleet';
+
+const enum Theme {
+  Dark = 'ui-dark',
+  Light = 'ui-light'
+}
+
+const enum Status {
+  Active = 'active',
+  Modified = 'modified',
+  Error = 'error',
+  Paused = 'paused',
+  Off = 'off'
+}
+
+const enum ColorState {
+  Success = 'success',
+  Warning = 'warning',
+  Error = 'error',
+  Info = 'info',
+  Darker = 'darker'
+}
+
+type StatusColors = {
+  color: ColorState;
+  default: string;
+  sliding: string;
+};
+
+const statusByTheme: Record<Theme, Record<Status, StatusColors>> = {
+  [Theme.Dark]: {
+    [Status.Active]: {
+      color:   ColorState.Success,
+      default: 'rgba(0, 143, 64, 0.1)',
+      sliding: '#26342C'
+    },
+    [Status.Modified]: {
+      color:   ColorState.Warning,
+      default: '#FFCC00',
+      sliding: '#FFCC00'
+    },
+    [Status.Error]: {
+      color:   ColorState.Error,
+      default: '#C63434',
+      sliding: '#C63434'
+    },
+    [Status.Paused]: {
+      color:   ColorState.Info,
+      default: 'rgba(31, 103, 219, 0.3)',
+      sliding: '#273C5F'
+    },
+    [Status.Off]: {
+      color:   ColorState.Darker,
+      default: '#6C6C76',
+      sliding: '#6C6C76'
+    }
+  },
+  [Theme.Light]: {
+    [Status.Active]: {
+      color:   ColorState.Success,
+      default: 'rgba(0, 112, 50, 0.1)',
+      sliding: '#E6F1EB'
+    },
+    [Status.Modified]: {
+      color:   ColorState.Warning,
+      default: '#FFE47A',
+      sliding: '#FFE47A'
+    },
+    [Status.Error]: {
+      color:   ColorState.Error,
+      default: '#B13333',
+      sliding: '#B13333'
+    },
+    [Status.Paused]: {
+      color:   ColorState.Info,
+      default: 'rgba(31, 103, 219, 0.1)',
+      sliding: '#E9F0FB'
+    },
+    [Status.Off]: {
+      color:   ColorState.Darker,
+      default: '#6C6C76',
+      sliding: '#6C6C76'
+    }
+  }
+};
+
+function formatColor(rgb: JQuery.PlainObject<string>): string { // eslint-disable-line no-undef
+  const color = rgb as unknown as string;
+
+  // If already in hex format, return it
+  if (color.startsWith('#')) {
+    return color.toUpperCase();
+  }
+
+  // Try to convert RGB to hex
+  const match = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+
+  if (match) {
+    const r = parseInt(match[1]).toString(16).padStart(2, '0');
+    const g = parseInt(match[2]).toString(16).padStart(2, '0');
+    const b = parseInt(match[3]).toString(16).padStart(2, '0');
+
+    return `#${ r }${ g }${ b }`.toUpperCase();
+  }
+
+  // Keep current format
+  return color;
+}
+
+/**
+ * Ensure that the badge's style is correct at each stage of the sliding badge's lifecycle:
+ *  - Before the sliding badge is shown
+ *  - While the sliding badge is shown
+ *  - After the sliding badge is destroyed
+ *
+ * @param stateColumn the column containing the badge whose colors are to be verified
+ * @param badgeBgColor the default background color of the badge
+ * @param factoryBgColor the background color applied to the badge when the sliding badge is shown
+ */
+// eslint-disable-next-line no-undef
+function verifyBadgeStyle(stateColumn: Cypress.Chainable<JQuery<HTMLElement>>, badgeBgColor: string, factoryBgColor: string) {
+  stateColumn.get('.badge-state').invoke('css', 'background-color').then((bgColorBeforeSlidingBadge) => {
+    // Verify the original background color
+    expect(formatColor(bgColorBeforeSlidingBadge)).to.eq(badgeBgColor);
+
+    const slidingBadge = new SlidingBadgePo(stateColumn);
+
+    slidingBadge.showSecondStage();
+
+    stateColumn.get('.badge-state').invoke('css', 'background-color').then((bgColorAfterSlidingBadge) => {
+      // Verify the background color after the sliding badge is shown
+      expect(formatColor(bgColorAfterSlidingBadge)).to.eq(factoryBgColor);
+
+      slidingBadge.dismiss();
+
+      // Verify that the background color is restored
+      stateColumn.get('.badge-state').invoke('css', 'background-color').then((bgColorDismissedSlidingBadge) => {
+        expect(formatColor(bgColorDismissedSlidingBadge)).to.eq(badgeBgColor);
+      });
+    });
+  });
+}
 
 describe('Hooks', () => {
   const chat = new ChatPo();
   const history = new HistoryPo();
-
-  beforeEach(() => {
-    cy.login();
-    cy.cleanChatHistory();
-  });
 
   describe('Sliding badge hook', () => {
     before(() => {
@@ -21,263 +159,379 @@ describe('Hooks', () => {
       cy.createRancherResource('v1', 'pods', JSON.stringify(errorPod), false);
     });
 
-    it('It should activate the sliding badge from: Sortable Table row', () => {
-      const homePage = new HomePagePo();
+    describe('Easter egg', () => {
+      it('It should show all sliding badges in a page', () => {
+        const podDetails = new WorkLoadsPodDetailsPagePo(errorPod.metadata.name);
 
-      HomePagePo.goTo();
+        podDetails.goTo();
+        podDetails.waitForPage();
 
-      chat.open();
+        /**
+         * Wait for the hooks to be all bound
+         *
+         * - 1 in the status in the Header
+         * - 1 in the Details State banner
+         * - 1 in the visible containers table
+         * - 2 in the related resources table (hidden by active containers tab)
+         */
+        SlidingBadgePo.hooks().should('have.length', 5);
 
-      const welcomeMessage = chat.getMessage(1);
+        // No sliding badges should be shown initially
+        SlidingBadgePo.overlays().should('have.length', 0);
 
-      welcomeMessage.isCompleted();
+        RancherHeaderPo.askLizButton().trigger('mouseenter', { force: true });
 
-      const homeClusterList = homePage.list();
+        // Wait for all the sliding badges to be shown (5 - 2 hidden)
+        SlidingBadgePo.overlays().should('have.length', 3);
 
-      // Get the status column of the first row in the cluster list (local cluster)
-      const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+        RancherHeaderPo.askLizButton().trigger('mouseleave', { force: true });
 
-      const slidingBadge = new SlidingBadgePo(statusColumn);
-
-      slidingBadge.click();
-
-      const message = chat.getMessage(2);
-
-      message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
-      message.containsText('See More');
-
-      const response = chat.getMessage(3);
-
-      response.isCompleted();
-
-      history.open();
-
-      const chatItem = history.chatItem(0);
-
-      chatItem.self().contains('Please analyse the Cluster "local" and troubleshoot any problems.');
-
-      chatItem.showTooltip();
-
-      chatItem.tooltip().containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
-      chatItem.tooltip().notContainsText('Explain what the "active" state means');
-      chatItem.tooltip().containsText('Started on');
+        // Wait for all the sliding badges to be dismissed
+        SlidingBadgePo.overlays().should('have.length', 0);
+      });
     });
 
-    it('It should activate the sliding badge from: Details State banner', () => {
-      const podDetails = new WorkLoadsPodDetailsPagePo(errorPod.metadata.name);
+    describe('Badge colors', () => {
+      [
+        Theme.Dark,
+        Theme.Light
+      ].forEach((themId) => {
+        const theme = themId as Theme;
+        const statuses = Object.keys(statusByTheme[theme]) as Status[];
 
-      podDetails.goTo();
-      podDetails.waitForPage();
+        describe(`Theme: ${ theme }`, () => {
+          before(() => {
+            cy.login();
 
-      // Remove title from pod details page to make sure the sliding badge is visible
-      podDetails.self().get('.resource-name.masthead-resource-title').invoke('remove');
+            cy.setUserPreference({ theme: `\"${ theme }\"` });
+          });
 
-      chat.open();
+          it('It should show the sliding badge with the correct colors', () => {
+            cy.login();
 
-      const welcomeMessage = chat.getMessage(1);
+            HomePagePo.goTo();
 
-      welcomeMessage.isCompleted();
+            // Push a mock GitRepo for each status/color
+            const mockGitRepos = statuses.map((status) => ({
+              ...gitRepo,
+              metadata: {
+                ...gitRepo.metadata,
+                name:  `e2e-git-repo-${ status }`,
+                state: {
+                  name:          status,
+                  error:         false,
+                  transitioning: false,
+                  message:       `${ status } status`,
+                },
+              },
+            }));
 
-      const slidingBadge = new SlidingBadgePo('.title > .badge-state.bg-info');
+            cy.intercept('GET', '/v1/fleet.cattle.io.gitrepos?*', (req) => {
+              req.continue((res) => {
+                res.body.data.push(...mockGitRepos);
+                res.send(res.body);
+              });
+            }).as('fleetGitRepos');
 
-      slidingBadge.click();
+            const fleetAppBundlesListPage = new FleetApplicationListPagePo();
 
-      const message = chat.getMessage(2);
+            fleetAppBundlesListPage.navTo();
+            fleetAppBundlesListPage.waitForPage();
 
-      message.scrollIntoView();
-      message.containsText('Please analyse the Pod "error-pod" and troubleshoot any problems.');
-      message.containsText('See More');
+            cy.wait('@fleetGitRepos');
 
-      const response = chat.getMessage(3);
+            statuses.forEach((status) => {
+              fleetAppBundlesListPage.list().resourceTable().sortableTable().filter(status);
 
-      response.isCompleted();
+              SlidingBadgePo.hooks().should('have.length', 1);
 
-      history.open();
+              const stateColumn = fleetAppBundlesListPage.list().resourceTable().sortableTable().row(0)
+                .column(1);
 
-      const chatItem = history.chatItem(0);
+              const colors = statusByTheme[theme][status];
 
-      chatItem.self().contains('Please analyse the Pod "error-pod" and troubleshoot any problems.');
+              verifyBadgeStyle(stateColumn, colors.default, colors.sliding);
 
-      chatItem.showTooltip();
+              fleetAppBundlesListPage.list().resourceTable().sortableTable().filterComponent()
+                .clear();
 
-      chatItem.tooltip().containsText('Please analyse the Pod "error-pod" and troubleshoot any problems.');
-      chatItem.tooltip().notContainsText('Explain what');
-      chatItem.tooltip().containsText('Started on');
+              SlidingBadgePo.hooks().should('have.length', 5);
+            });
+          });
+        });
+      });
+
+      after(() => {
+        cy.login();
+
+        cy.setUserPreference({ theme: `\"${ Theme.Light }\"` });
+      });
     });
 
-    it('It should activate the sliding badge from: Status banner', () => {
-      const podDetails = new WorkLoadsPodDetailsPagePo(errorPod.metadata.name);
+    describe('Click action', () => {
+      beforeEach(() => {
+        cy.login();
+        cy.cleanChatHistory();
+      });
 
-      podDetails.goTo();
-      podDetails.waitForPage();
+      it('It should activate the sliding badge from: Sortable Table row', () => {
+        const homePage = new HomePagePo();
 
-      chat.open();
+        HomePagePo.goTo();
 
-      const welcomeMessage = chat.getMessage(1);
+        chat.open();
 
-      welcomeMessage.isCompleted();
+        const welcomeMessage = chat.getMessage(1);
 
-      const slidingBadge = new SlidingBadgePo('[data-testid="banner-content"]');
+        welcomeMessage.isCompleted();
 
-      slidingBadge.click();
+        const homeClusterList = homePage.list();
 
-      const message = chat.getMessage(2);
+        // Get the status column of the first row in the cluster list (local cluster)
+        const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
 
-      message.scrollIntoView();
-      message.containsText('Hey Liz, please analyse the "containers with unready status: [container-0]" message and troubleshoot any problems.');
-      message.containsText('See More');
+        const slidingBadge = new SlidingBadgePo(statusColumn);
 
-      const response = chat.getMessage(3);
+        slidingBadge.click();
 
-      response.isCompleted();
+        const message = chat.getMessage(2);
 
-      history.open();
+        message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
+        message.containsText('See More');
 
-      const chatItem = history.chatItem(0);
+        const response = chat.getMessage(3);
 
-      chatItem.self().contains('Hey Liz, please analyse the "containers with unready status: [container-0]" message and troubleshoot any problems.');
+        response.isCompleted();
 
-      chatItem.showTooltip();
+        history.open();
 
-      chatItem.tooltip().containsText('Hey Liz, please analyse the "containers with unready status: [container-0]" message and troubleshoot any problems.');
-      chatItem.tooltip().notContainsText('Explain what');
-      chatItem.tooltip().containsText('Started on');
-    });
+        const chatItem = history.chatItem(0);
 
-    it('It should send a message from the sliding badge when the chat is closed and ready', () => {
-      const homePage = new HomePagePo();
+        chatItem.self().contains('Please analyse the Cluster "local" and troubleshoot any problems.');
 
-      HomePagePo.goTo();
+        chatItem.showTooltip();
 
-      const homeClusterList = homePage.list();
+        chatItem.tooltip().containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
+        chatItem.tooltip().notContainsText('Explain what the "active" state means');
+        chatItem.tooltip().containsText('Started on');
+      });
 
-      // Get the status column of the first row in the cluster list (local cluster)
-      const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+      it('It should activate the sliding badge from: Details State banner', () => {
+        const podDetails = new WorkLoadsPodDetailsPagePo(errorPod.metadata.name);
 
-      const slidingBadge = new SlidingBadgePo(statusColumn);
+        podDetails.goTo();
+        podDetails.waitForPage();
 
-      slidingBadge.click();
+        // Remove title from pod details page to make sure the sliding badge is visible
+        podDetails.self().get('.resource-name.masthead-resource-title').invoke('remove');
 
-      chat.isOpen();
+        chat.open();
 
-      const message = chat.getMessage(1);
+        const welcomeMessage = chat.getMessage(1);
 
-      message.scrollIntoView();
-      message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
-      message.containsText('See More');
+        welcomeMessage.isCompleted();
 
-      const response = chat.getMessage(2);
+        const slidingBadge = new SlidingBadgePo('.title > .badge-state.bg-info');
 
-      response.isCompleted();
+        slidingBadge.click();
 
-      history.open();
+        const message = chat.getMessage(2);
 
-      const chatItem = history.chatItem(0);
+        message.scrollIntoView();
+        message.containsText('Please analyse the Pod "error-pod" and troubleshoot any problems.');
+        message.containsText('See More');
 
-      chatItem.self().contains('Please analyse the Cluster "local" and troubleshoot any problems.');
+        const response = chat.getMessage(3);
 
-      chatItem.showTooltip();
+        response.isCompleted();
 
-      chatItem.tooltip().containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
-      chatItem.tooltip().notContainsText('Explain what the "active" state means');
-      chatItem.tooltip().containsText('Started on');
-    });
+        history.open();
 
-    it('It should send a message from the sliding badge when the chat is closed and not ready', () => {
-      const homePage = new HomePagePo();
+        const chatItem = history.chatItem(0);
 
-      HomePagePo.goTo();
+        chatItem.self().contains('Please analyse the Pod "error-pod" and troubleshoot any problems.');
 
-      cy.installRancherAIService({ waitForAIServiceReady: false });
+        chatItem.showTooltip();
 
-      const homeClusterList = homePage.list();
+        chatItem.tooltip().containsText('Please analyse the Pod "error-pod" and troubleshoot any problems.');
+        chatItem.tooltip().notContainsText('Explain what');
+        chatItem.tooltip().containsText('Started on');
+      });
 
-      const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+      it('It should activate the sliding badge from: Status banner', () => {
+        const podDetails = new WorkLoadsPodDetailsPagePo(errorPod.metadata.name);
 
-      const slidingBadge = new SlidingBadgePo(statusColumn);
+        podDetails.goTo();
+        podDetails.waitForPage();
 
-      slidingBadge.click();
+        chat.open();
 
-      chat.isOpen();
+        const welcomeMessage = chat.getMessage(1);
 
-      chat.isNotReady();
-      chat.isReady(20000);
+        welcomeMessage.isCompleted();
 
-      const message = chat.getMessage(1);
+        const slidingBadge = new SlidingBadgePo('[data-testid="banner-content"]');
 
-      message.scrollIntoView();
-      message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
-      message.containsText('See More');
+        slidingBadge.click();
 
-      const response = chat.getMessage(2);
+        const message = chat.getMessage(2);
 
-      response.isCompleted();
-    });
+        message.scrollIntoView();
+        message.containsText('Hey Liz, please analyse the "containers with unready status: [container-0]" message and troubleshoot any problems.');
+        message.containsText('See More');
 
-    it('It should send a message from the sliding badge when the chat is open and ready', () => {
-      const homePage = new HomePagePo();
-      const chat = new ChatPo();
+        const response = chat.getMessage(3);
 
-      HomePagePo.goTo();
+        response.isCompleted();
 
-      chat.open();
+        history.open();
 
-      const welcomeMessage = chat.getMessage(1);
+        const chatItem = history.chatItem(0);
 
-      welcomeMessage.isCompleted();
+        chatItem.self().contains('Hey Liz, please analyse the "containers with unready status: [container-0]" message and troubleshoot any problems.');
 
-      const homeClusterList = homePage.list();
+        chatItem.showTooltip();
 
-      // Get the status column of the first row in the cluster list (local cluster)
-      const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+        chatItem.tooltip().containsText('Hey Liz, please analyse the "containers with unready status: [container-0]" message and troubleshoot any problems.');
+        chatItem.tooltip().notContainsText('Explain what');
+        chatItem.tooltip().containsText('Started on');
+      });
 
-      const slidingBadge = new SlidingBadgePo(statusColumn);
+      it('It should send a message from the sliding badge when the chat is closed and ready', () => {
+        const homePage = new HomePagePo();
 
-      slidingBadge.click();
+        HomePagePo.goTo();
 
-      const message = chat.getMessage(2);
+        const homeClusterList = homePage.list();
 
-      message.scrollIntoView();
-      message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
-      message.containsText('See More');
+        // Get the status column of the first row in the cluster list (local cluster)
+        const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
 
-      const response = chat.getMessage(3);
+        const slidingBadge = new SlidingBadgePo(statusColumn);
 
-      response.isCompleted();
-    });
+        slidingBadge.click();
 
-    it('It should not send a message from the sliding badge when the chat is already open but not ready', () => {
-      const homePage = new HomePagePo();
+        chat.isOpen();
 
-      HomePagePo.goTo();
+        const message = chat.getMessage(1);
 
-      chat.open();
+        message.scrollIntoView();
+        message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
+        message.containsText('See More');
 
-      const welcomeMessage = chat.getMessage(1);
+        const response = chat.getMessage(2);
 
-      welcomeMessage.isCompleted();
+        response.isCompleted();
 
-      cy.installRancherAIService({ waitForAIServiceReady: false });
+        history.open();
 
-      const homeClusterList = homePage.list();
+        const chatItem = history.chatItem(0);
 
-      const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+        chatItem.self().contains('Please analyse the Cluster "local" and troubleshoot any problems.');
 
-      const slidingBadge = new SlidingBadgePo(statusColumn);
+        chatItem.showTooltip();
 
-      slidingBadge.click();
+        chatItem.tooltip().containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
+        chatItem.tooltip().notContainsText('Explain what the "active" state means');
+        chatItem.tooltip().containsText('Started on');
+      });
 
-      chat.isReady(20000);
+      it('It should send a message from the sliding badge when the chat is closed and not ready', () => {
+        const homePage = new HomePagePo();
 
-      chat.getMessage(2).checkNotExists();
+        HomePagePo.goTo();
+
+        cy.installRancherAIService({ waitForAIServiceReady: false });
+
+        const homeClusterList = homePage.list();
+
+        const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+
+        const slidingBadge = new SlidingBadgePo(statusColumn);
+
+        slidingBadge.click();
+
+        chat.isOpen();
+
+        chat.isNotReady();
+        chat.isReady(20000);
+
+        const message = chat.getMessage(1);
+
+        message.scrollIntoView();
+        message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
+        message.containsText('See More');
+
+        const response = chat.getMessage(2);
+
+        response.isCompleted();
+      });
+
+      it('It should send a message from the sliding badge when the chat is open and ready', () => {
+        const homePage = new HomePagePo();
+        const chat = new ChatPo();
+
+        HomePagePo.goTo();
+
+        chat.open();
+
+        const welcomeMessage = chat.getMessage(1);
+
+        welcomeMessage.isCompleted();
+
+        const homeClusterList = homePage.list();
+
+        // Get the status column of the first row in the cluster list (local cluster)
+        const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+
+        const slidingBadge = new SlidingBadgePo(statusColumn);
+
+        slidingBadge.click();
+
+        const message = chat.getMessage(2);
+
+        message.scrollIntoView();
+        message.containsText('Please analyse the Cluster "local" and troubleshoot any problems.');
+        message.containsText('See More');
+
+        const response = chat.getMessage(3);
+
+        response.isCompleted();
+      });
+
+      it('It should not send a message from the sliding badge when the chat is already open but not ready', () => {
+        const homePage = new HomePagePo();
+
+        HomePagePo.goTo();
+
+        chat.open();
+
+        const welcomeMessage = chat.getMessage(1);
+
+        welcomeMessage.isCompleted();
+
+        cy.installRancherAIService({ waitForAIServiceReady: false });
+
+        const homeClusterList = homePage.list();
+
+        const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+
+        const slidingBadge = new SlidingBadgePo(statusColumn);
+
+        slidingBadge.click();
+
+        chat.isReady(20000);
+
+        chat.getMessage(2).checkNotExists();
+      });
+
+      afterEach(() => {
+        cy.cleanChatHistory();
+      });
     });
 
     after(() => {
       cy.deleteRancherResource('v1', 'pods', `${ errorPod.metadata.namespace }/${ errorPod.metadata.name }`, false);
     });
-  });
-
-  after(() => {
-    cy.cleanChatHistory();
   });
 });

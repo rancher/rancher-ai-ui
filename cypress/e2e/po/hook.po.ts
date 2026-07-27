@@ -18,17 +18,52 @@ class HookPo {
 }
 
 export class SlidingBadgePo extends HookPo {
-  click() {
+  static hooks() {
+    return cy.get('[ux-context-hook-status="bound"]');
+  }
+
+  static overlays() {
+    return cy.get('[data-testid="rancher-ai-ui-hook-overlay"]');
+  }
+
+  overlay() {
+    return this.target.self().get('[data-testid="rancher-ai-ui-hook-overlay"]');
+  }
+
+  showFirstStage() {
     this.target.isReady();
 
     // Trigger mouse enter on the target element to reveal the sliding badge's first stage
     this.target.self().trigger('mouseenter', { force: true });
 
+    this.overlay().should('exist');
+  }
+
+  showSecondStage() {
+    this.showFirstStage();
+
     // Trigger mouse enter on the sliding badge to reveal its second stage
-    const slidingBadge = this.target.self().get('[data-testid="rancher-ai-ui-hook-overlay"]');
+    this.overlay().trigger('mouseenter', { force: true });
 
-    slidingBadge.trigger('mouseenter', { force: true });
+    // Wait for the overlay to expand
+    this.overlay().invoke('width').should('be.greaterThan', 70);
+  }
 
-    slidingBadge.click({ force: true });
+  dismiss() {
+    this.overlay().trigger('mouseleave', { force: true });
+
+    // Wait for the sliding badge to be dismissed (> 150ms)
+    cy.wait(300);
+
+    this.overlay().should('not.exist');
+  }
+
+  click() {
+    this.showSecondStage();
+
+    this.overlay().click({
+      force:    true,
+      multiple: true
+    });
   }
 }
