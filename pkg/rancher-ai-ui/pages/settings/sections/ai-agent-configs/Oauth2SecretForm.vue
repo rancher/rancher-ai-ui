@@ -261,10 +261,10 @@ onBeforeUnmount(() => {
         :disabled="metadataDiscoveryStatus?.result === null"
         @update:value="(val: string) => updateSecretValues({ scopes: val?.split(' ').filter((f: string) => !!f) })"
       />
-      <i
+      <!-- <i
         v-if="metadataDiscoveryStatus?.result === null"
         class="icon icon-spinner icon-spin icon-lg"
-      />
+      /> -->
     </div>
   </div>
 
@@ -300,10 +300,10 @@ onBeforeUnmount(() => {
         :mode="clientInfoDiscoveryStatus?.result === null ? _VIEW : _EDIT"
         @update:value="(val: string) => updateSecretValues({ clientSecret: val })"
       />
-      <i
+      <!-- <i
         v-if="clientInfoDiscoveryStatus?.result === null"
         class="icon icon-spinner icon-spin icon-lg"
-      />
+      /> -->
     </div>
   </div>
 
