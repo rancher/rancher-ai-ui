@@ -21,75 +21,89 @@ const enum Status {
   Off = 'off'
 }
 
-const enum ColorState {
-  Success = 'success',
-  Warning = 'warning',
-  Error = 'error',
-  Info = 'info',
-  Darker = 'darker'
-}
-
 type StatusColors = {
-  color: ColorState;
-  default: string;
-  sliding: string;
+  status: Status;
+  colors: {
+    default: string;
+    sliding: string;
+  };
 };
 
-const statusByTheme: Record<Theme, Record<Status, StatusColors>> = {
-  [Theme.Dark]: {
-    [Status.Active]: {
-      color:   ColorState.Success,
-      default: 'rgba(0, 143, 64, 0.1)',
-      sliding: '#26342C'
+const statusByTheme: Record<Theme, StatusColors[]> = {
+  [Theme.Dark]: [
+    {
+      status:  Status.Active,
+      colors:   {
+        default: 'rgba(0, 143, 64, 0.1)',
+        sliding: '#26342C'
+      },
     },
-    [Status.Modified]: {
-      color:   ColorState.Warning,
-      default: '#FFCC00',
-      sliding: '#FFCC00'
+    {
+      status:  Status.Modified,
+      colors:  {
+        default: '#FFCC00',
+        sliding: '#FFCC00'
+      },
     },
-    [Status.Error]: {
-      color:   ColorState.Error,
-      default: '#C63434',
-      sliding: '#C63434'
+    {
+      status:  Status.Error,
+      colors:  {
+        default: '#C63434',
+        sliding: '#C63434'
+      }
     },
-    [Status.Paused]: {
-      color:   ColorState.Info,
-      default: 'rgba(31, 103, 219, 0.3)',
-      sliding: '#273C5F'
+    {
+      status:  Status.Paused,
+      colors:  {
+        default: 'rgba(31, 103, 219, 0.3)',
+        sliding: '#273C5F'
+      }
     },
-    [Status.Off]: {
-      color:   ColorState.Darker,
-      default: '#6C6C76',
-      sliding: '#6C6C76'
+    {
+      status:  Status.Off,
+      colors:  {
+        default: '#6C6C76',
+        sliding: '#6C6C76'
+      }
     }
-  },
-  [Theme.Light]: {
-    [Status.Active]: {
-      color:   ColorState.Success,
-      default: 'rgba(0, 112, 50, 0.1)',
-      sliding: '#E6F1EB'
+  ],
+  [Theme.Light]: [
+    {
+      status:  Status.Active,
+      colors:  {
+        default: 'rgba(0, 112, 50, 0.1)',
+        sliding: '#E6F1EB'
+      }
     },
-    [Status.Modified]: {
-      color:   ColorState.Warning,
-      default: '#FFE47A',
-      sliding: '#FFE47A'
+    {
+      status:  Status.Modified,
+      colors:  {
+        default: '#FFE47A',
+        sliding: '#FFE47A'
+      }
     },
-    [Status.Error]: {
-      color:   ColorState.Error,
-      default: '#B13333',
-      sliding: '#B13333'
+    {
+      status:  Status.Error,
+      colors:  {
+        default: '#B13333',
+        sliding: '#B13333'
+      }
     },
-    [Status.Paused]: {
-      color:   ColorState.Info,
-      default: 'rgba(31, 103, 219, 0.1)',
-      sliding: '#E9F0FB'
+    {
+      status:  Status.Paused,
+      colors:  {
+        default: 'rgba(31, 103, 219, 0.1)',
+        sliding: '#E9F0FB'
+      }
     },
-    [Status.Off]: {
-      color:   ColorState.Darker,
-      default: '#6C6C76',
-      sliding: '#6C6C76'
+    {
+      status:  Status.Off,
+      colors:  {
+        default: '#6C6C76',
+        sliding: '#6C6C76'
+      }
     }
-  }
+  ]
 };
 
 function formatColor(rgb: JQuery.PlainObject<string>): string { // eslint-disable-line no-undef
@@ -195,10 +209,7 @@ describe('Hooks', () => {
       [
         Theme.Dark,
         Theme.Light
-      ].forEach((themId) => {
-        const theme = themId as Theme;
-        const statuses = Object.keys(statusByTheme[theme]) as Status[];
-
+      ].forEach((theme) => {
         describe(`Theme: ${ theme }`, () => {
           before(() => {
             cy.login();
@@ -212,7 +223,7 @@ describe('Hooks', () => {
             HomePagePo.goTo();
 
             // Push a mock GitRepo for each status/color
-            const mockGitRepos = statuses.map((status) => ({
+            const mockGitRepos = statusByTheme[theme].map(({ status }) => ({
               ...gitRepo,
               metadata: {
                 ...gitRepo.metadata,
@@ -240,15 +251,13 @@ describe('Hooks', () => {
 
             cy.wait('@fleetGitRepos');
 
-            statuses.forEach((status) => {
+            statusByTheme[theme].forEach(({ status, colors }) => {
               fleetAppBundlesListPage.list().resourceTable().sortableTable().filter(status);
 
               SlidingBadgePo.hooks().should('have.length', 1);
 
               const stateColumn = fleetAppBundlesListPage.list().resourceTable().sortableTable().row(0)
                 .column(1);
-
-              const colors = statusByTheme[theme][status];
 
               verifyBadgeStyle(stateColumn, colors.default, colors.sliding);
 
