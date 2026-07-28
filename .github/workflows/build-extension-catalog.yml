@@ -15,7 +15,7 @@ jobs:
     name: Build Test
     uses: ./.github/workflows/build-test.yaml
   build-extension-catalog:
-    uses: rancher/dashboard/.github/workflows/build-extension-catalog.yml@9eb70a732e9be146722e1dbab431338366c2afc6 # creators-pkg-v3.0.10
+    uses: rancher/dashboard/.github/workflows/build-extension-catalog.yml@04e9b18ed96b496b9d80c3a7d7c6b1788330dc85
     permissions:
       actions: write
       contents: read
