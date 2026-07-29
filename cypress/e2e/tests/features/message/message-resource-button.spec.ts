@@ -4,6 +4,7 @@ import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { machineInventorySchema } from '@/cypress/e2e/blueprints/schema';
 import { gitRepo } from '@/cypress/e2e/blueprints/fleet';
+import { provisioningCluster } from '@/cypress/e2e/blueprints/cluster';
 
 // Resource buttons fetch their schema lazily, when the button scrolls into view (intersection
 // observer). That request can take well over the 5s cy.wait default to fire on the loaded CI
@@ -262,6 +263,7 @@ describe('Resource button', () => {
       cy.login();
 
       cy.createRancherResource('v1', 'fleet.cattle.io.gitrepo', JSON.stringify(gitRepo), false);
+      cy.createRancherResource('v1', 'provisioning.cattle.io.clusters', JSON.stringify(provisioningCluster), false);
     });
 
     beforeEach(() => {
@@ -320,6 +322,52 @@ describe('Resource button', () => {
 
       cy.url().should('include', '/c/local/explorer/apps.deployment/cattle-ai-agent-system/llm-mock');
       cy.get('[data-testid="resource-detail-status-card"]').should('contain.text', 'Pods');
+    });
+
+    it('It should correctly navigate to built-in product (Cluster Management) when resource is provisioning cluster', () => {
+      cy.getRancherResource('v1', 'provisioning.cattle.io.clusters', `fleet-default/${ provisioningCluster.metadata.name }`).then((resp) => {
+        cy.enqueueLLMResponse({
+          text: [
+            'test',
+            /**
+             * Resource
+             *
+             *   cluster: local
+             *   type: management.cattle.io.cluster
+             *   namespace: ""
+             *   name: "${ resp.body.status.clusterName }"
+             */
+            `<mcp-response>[{"namespace": "", "kind": "Cluster", "cluster": "local", "name": "${ resp.body.status.clusterName }", "type": "management.cattle.io.cluster"}]</mcp-response>`,
+          ],
+        });
+
+        chat.sendMessage('User request');
+
+        const resourceMessage = chat.getMessage(3);
+
+        resourceMessage.isCompleted();
+
+        const btn = resourceMessage.resourceButton({ name: resp.body.status.clusterName });
+
+        // Verify navigation from Home to Cluster Management
+        btn.should('be.visible');
+        btn.click();
+
+        cy.url().should('include', '/c/_/manager/provisioning.cattle.io.cluster/fleet-default/e2e-provisioning-cluster#registration');
+        cy.get('.resource-link').should('contain.text', 'Cluster:');
+
+        // Verify navigation Explorer to Cluster Management
+        burgerMenu.goToCluster('local');
+        sideNav.navToSideMenuGroupByLabel('Workloads');
+        sideNav.navToSideMenuEntryByLabel('Deployments');
+        cy.get('.with-subheader').should('contain.text', 'Deployments');
+
+        btn.scrollIntoView();
+        btn.click();
+
+        cy.url().should('include', '/c/_/manager/provisioning.cattle.io.cluster/fleet-default/e2e-provisioning-cluster#registration');
+        cy.get('.resource-link').should('contain.text', 'Cluster:');
+      });
     });
 
     it('It should correctly navigate to built-in product (Fleet) when resource is fleet resource', () => {
@@ -387,6 +435,7 @@ describe('Resource button', () => {
       cy.login();
 
       cy.deleteRancherResource('v1', 'fleet.cattle.io.gitrepo', `${ gitRepo.metadata.namespace }/${ gitRepo.metadata.name }`, false);
+      cy.deleteRancherResource('v1', 'provisioning.cattle.io.clusters', `${ provisioningCluster.metadata.namespace }/${ provisioningCluster.metadata.name }`, false);
     });
   });
 });

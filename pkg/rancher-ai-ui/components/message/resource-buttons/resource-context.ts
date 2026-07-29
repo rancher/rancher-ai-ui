@@ -18,6 +18,11 @@ interface Product {
   inStore?: string;
 }
 
+interface RancherResource {
+  type?: string;
+  nameDisplay?: string;
+}
+
 interface DetailLocation {
   name: string;
   params?: Record<string, string>;
@@ -25,14 +30,23 @@ interface DetailLocation {
 }
 
 const PRODUCT = {
+  MANAGER:  'manager',
   EXPLORER: 'explorer',
   FLEET:    'fleet',
 };
 
 const RANCHER_STORES = [STORE.MANAGEMENT, STORE.CLUSTER, STORE.RANCHER];
 
+const NAMESPACE = {
+  FLEET_LOCAL:   'fleet-local',
+  FLEET_DEFAULT: 'fleet-default',
+};
+
 const MANAGEMENT_GROUP = 'management.cattle.io';
 const FLEET_GROUP = 'fleet.cattle.io';
+
+const MANAGEMENT_CLUSTER = 'management.cattle.io.cluster';
+const PROVISIONING_CLUSTER = 'provisioning.cattle.io.cluster';
 
 const NODE_METRICS = 'nodemetrics';
 const POD_METRICS = 'podmetrics';
@@ -220,6 +234,62 @@ export function getProduct(store: Store, schema: Schema | null, resourceType = '
 }
 
 /**
+ * Get the detail location for a given resource, handling built-in product's routes.
+ *
+ * @param store - The Vuex store instance
+ * @param productName - The name of the product that owns the resource
+ * @param schema - The schema object for the resource type (can be null)
+ * @param inStore - The store context (e.g., 'management', 'cluster')
+ * @param actionResource - The resource object returned from the message action
+ * @param rancherResource - The Rancher-specific resource object
+ * @returns The detail location object if available, otherwise null
+ */
+export function getDetailLocation(
+  store: Store,
+  productName: string,
+  schema: Schema | null,
+  inStore: string,
+  actionResource: ActionResource = {},
+  rancherResource: RancherResource = {},
+) {
+  if (rancherResource) {
+    const route = getKnownRoute(actionResource, rancherResource);
+
+    if (route) {
+      return route;
+    }
+  }
+
+  return buildDetailLocation(store, productName, schema, inStore, actionResource);
+}
+
+/**
+ * Get the route for built-in products, for a given action resource and rancher resource.
+ * @param actionResource the resource returned from the message action
+ * @param rancherResource the resource returned from the rancher API
+ * @returns an object containing the route name and parameters for the resource
+ */
+export function getKnownRoute(actionResource: ActionResource, rancherResource: RancherResource) {
+  switch (rancherResource.type) {
+  case MANAGEMENT_CLUSTER:
+    if (actionResource.name && rancherResource.nameDisplay) {
+      return {
+        name:   'c-cluster-product-resource-namespace-id',
+        params: {
+          product:   PRODUCT.MANAGER,
+          cluster:   '_',
+          resource:  PROVISIONING_CLUSTER,
+          namespace: actionResource.name === 'local' ? NAMESPACE.FLEET_LOCAL : NAMESPACE.FLEET_DEFAULT,
+          id:        rancherResource.nameDisplay
+        }
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
  * Get the detail location for a given resource by instantiating its model and accessing the detailLocation getter.
  * This function handles the necessary context for the model to work correctly, including getters and rootGetters.
  *
@@ -229,7 +299,7 @@ export function getProduct(store: Store, schema: Schema | null, resourceType = '
  * @param resource - The resource object containing cluster, type, namespace, and name
  * @returns The detail location object if available, otherwise null
  */
-export function getDetailLocation(
+function buildDetailLocation(
   store: Store,
   productName: string,
   schema: Schema | null,

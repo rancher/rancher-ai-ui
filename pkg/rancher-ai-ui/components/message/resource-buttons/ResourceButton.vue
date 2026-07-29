@@ -152,7 +152,8 @@ function goTo() {
     product.value.name,
     schema.value,
     inStore.value,
-    props.value.resource
+    props.value.resource,
+    resource.value
   );
 
   if (!detailLocation) {

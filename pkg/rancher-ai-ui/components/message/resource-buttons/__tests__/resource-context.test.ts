@@ -12,7 +12,8 @@ import {
   normalizeId,
   normalizeNamespace,
   getProduct,
-  getDetailLocation
+  getDetailLocation,
+  getKnownRoute
 } from '../resource-context';
 import type { Store as VuexStore } from 'vuex';
 
@@ -949,6 +950,83 @@ describe('resource-context', () => {
     });
   });
 
+  describe('getKnownRoute', () => {
+    it('should return known route for MANAGEMENT_CLUSTER with local cluster', () => {
+      const actionResource = { name: 'local' };
+      const rancherResource = {
+        type:        'management.cattle.io.cluster',
+        nameDisplay: 'local'
+      };
+
+      const result = getKnownRoute(actionResource, rancherResource);
+
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe('c-cluster-product-resource-namespace-id');
+      expect(result?.params?.product).toBe('manager');
+      expect(result?.params?.cluster).toBe('_');
+      expect(result?.params?.resource).toBe('provisioning.cattle.io.cluster');
+      expect(result?.params?.namespace).toBe('fleet-local');
+      expect(result?.params?.id).toBe('local');
+    });
+
+    it('should return known route for MANAGEMENT_CLUSTER with non-local cluster', () => {
+      const actionResource = { name: 'custom-cluster' };
+      const rancherResource = {
+        type:        'management.cattle.io.cluster',
+        nameDisplay: 'my-cluster'
+      };
+
+      const result = getKnownRoute(actionResource, rancherResource);
+
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe('c-cluster-product-resource-namespace-id');
+      expect(result?.params?.namespace).toBe('fleet-default');
+      expect(result?.params?.id).toBe('my-cluster');
+    });
+
+    it('should return null for MANAGEMENT_CLUSTER without actionResource.name', () => {
+      const actionResource = {};
+      const rancherResource = {
+        type:        'management.cattle.io.cluster',
+        nameDisplay: 'local'
+      };
+
+      const result = getKnownRoute(actionResource, rancherResource);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null for MANAGEMENT_CLUSTER without rancherResource.nameDisplay', () => {
+      const actionResource = { name: 'local' };
+      const rancherResource = { type: 'management.cattle.io.cluster' };
+
+      const result = getKnownRoute(actionResource, rancherResource);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null for unknown resource type', () => {
+      const actionResource = { name: 'local' };
+      const rancherResource = {
+        type:        'management.cattle.io.project',
+        nameDisplay: 'Project Name'
+      };
+
+      const result = getKnownRoute(actionResource, rancherResource);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when rancherResource.type is undefined', () => {
+      const actionResource = { name: 'local' };
+      const rancherResource = { nameDisplay: 'Display Name' };
+
+      const result = getKnownRoute(actionResource, rancherResource);
+
+      expect(result).toBeNull();
+    });
+  });
+
   describe('getDetailLocation', () => {
     beforeEach(() => {
       mockStore.getters[`${ STORE.MANAGEMENT }/classify`] = jest.fn(() => {
@@ -1221,6 +1299,91 @@ describe('resource-context', () => {
           getDetailLocation(mockStore, productName, schema, inStore, resource);
         }).not.toThrow();
       });
+    });
+
+    it('should return known route for MANAGEMENT_CLUSTER resource with local cluster', () => {
+      const rancherResource = {
+        type:        'management.cattle.io.cluster',
+        nameDisplay: 'local'
+      };
+
+      const result = getDetailLocation(
+        mockStore,
+        'manager',
+        null,
+        STORE.MANAGEMENT,
+        { name: 'local' },
+        rancherResource
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe('c-cluster-product-resource-namespace-id');
+      expect(result?.params?.namespace).toBe('fleet-local');
+      expect(result?.params?.id).toBe('local');
+    });
+
+    it('should return known route for MANAGEMENT_CLUSTER resource with non-local cluster', () => {
+      const rancherResource = {
+        type:        'management.cattle.io.cluster',
+        nameDisplay: 'my-cluster'
+      };
+
+      const result = getDetailLocation(
+        mockStore,
+        'manager',
+        null,
+        STORE.MANAGEMENT,
+        { name: 'custom-cluster' },
+        rancherResource
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe('c-cluster-product-resource-namespace-id');
+      expect(result?.params?.namespace).toBe('fleet-default');
+      expect(result?.params?.id).toBe('my-cluster');
+    });
+
+    it('should skip getKnownRoute and build detail location when rancherResource is empty', () => {
+      const result = getDetailLocation(
+        mockStore,
+        'explorer',
+        null,
+        STORE.MANAGEMENT,
+        {
+          cluster:   'local',
+          type:      'deployment',
+          namespace: 'default',
+          name:      'my-deployment'
+        },
+        {}
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe('c-cluster-resource-details');
+    });
+
+    it('should fall back to buildDetailLocation when getKnownRoute returns null', () => {
+      const rancherResource = {
+        type: 'management.cattle.io.cluster'
+        // Missing nameDisplay, so getKnownRoute will return null
+      };
+
+      const result = getDetailLocation(
+        mockStore,
+        'explorer',
+        null,
+        STORE.MANAGEMENT,
+        {
+          cluster:   'local',
+          type:      'deployment',
+          namespace: 'default',
+          name:      'my-deployment'
+        },
+        rancherResource
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe('c-cluster-resource-details');
     });
   });
 });
