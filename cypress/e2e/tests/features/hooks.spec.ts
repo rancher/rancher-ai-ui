@@ -222,18 +222,13 @@ describe('Hooks', () => {
 
             HomePagePo.goTo();
 
-            // Push a mock GitRepo for each status/color
-            const mockGitRepos = statusByTheme[theme].map(({ status }) => ({
+            // Push a mock GitRepo for each status
+            const mockGitRepos = statusByTheme[theme].map(({ status: name }) => ({
               ...gitRepo,
               metadata: {
                 ...gitRepo.metadata,
-                name:  `e2e-git-repo-${ status }`,
-                state: {
-                  name:          status,
-                  error:         false,
-                  transitioning: false,
-                  message:       `${ status } status`,
-                },
+                name,
+                state: { name },
               },
             }));
 
