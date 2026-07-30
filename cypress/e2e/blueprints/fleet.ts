@@ -5,8 +5,7 @@ export const gitRepo = {
     finalizers: [
       'fleet.cattle.io/gitrepo-finalizer',
     ],
-    labels:    { 'fleet.cattle.io/created-by-user-id': 'user-r57qg' },
-    name:      'test-liz-fleet',
+    name:      'e2e-git-repo',
     namespace: 'fleet-default',
   },
   spec:      {

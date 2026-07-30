@@ -3,7 +3,7 @@ import ProductNavPo from '@rancher/cypress/e2e/po/side-bars/product-side-nav.po'
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import { machineInventorySchema } from '@/cypress/e2e/blueprints/schema';
-import { gitRepo } from '@/cypress/e2e/blueprints/gitRepo';
+import { gitRepo } from '@/cypress/e2e/blueprints/fleet';
 
 describe('Resource button', () => {
   const chat = new ChatPo();
@@ -325,7 +325,7 @@ describe('Resource button', () => {
            *  namespace: fleet-default
            *  name: test
            */
-          '<mcp-response>[{"namespace": "fleet-default", "kind": "GitRepo", "cluster": "local", "name": "test-liz-fleet", "type": "fleet.cattle.io.gitrepo"}]</mcp-response>'
+          '<mcp-response>[{"namespace": "fleet-default", "kind": "GitRepo", "cluster": "local", "name": "e2e-git-repo", "type": "fleet.cattle.io.gitrepo"}]</mcp-response>'
         ],
       });
 
@@ -335,13 +335,13 @@ describe('Resource button', () => {
 
       resourceMessage.isCompleted();
 
-      const btn = resourceMessage.resourceButton({ name: 'test-liz-fleet' });
+      const btn = resourceMessage.resourceButton({ name: 'e2e-git-repo' });
 
       btn.should('be.visible');
       btn.click();
 
       // Verify navigation from Home to Fleet
-      cy.url().should('include', '/c/local/fleet/fleet.cattle.io.gitrepo/fleet-default/test-liz-fleet');
+      cy.url().should('include', '/c/local/fleet/fleet.cattle.io.gitrepo/fleet-default/e2e-git-repo');
       cy.get('.resource-link').should('contain.text', 'App Bundle:');
 
       // Verify navigation from Explorer to Fleet
@@ -353,7 +353,7 @@ describe('Resource button', () => {
       btn.scrollIntoView();
       btn.click();
 
-      cy.url().should('include', '/c/local/fleet/fleet.cattle.io.gitrepo/fleet-default/test-liz-fleet');
+      cy.url().should('include', '/c/local/fleet/fleet.cattle.io.gitrepo/fleet-default/e2e-git-repo');
       cy.get('.resource-link').should('contain.text', 'App Bundle:');
     });
 

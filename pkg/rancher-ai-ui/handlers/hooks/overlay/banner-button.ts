@@ -127,12 +127,12 @@ class BannerButtonOverlay extends HooksOverlay {
     overlay.remove();
   }
 
-  destroy(target: HTMLElement, immediate = false) {
+  destroy(target: HTMLElement) {
     (target.parentElement as HTMLElement).querySelectorAll(`.${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`).forEach((overlay: any) => {
       if (overlay && !(overlay.matches(':hover') || (overlay.querySelector(':hover') !== null))) {
         setTimeout(() => {
           overlay.remove();
-        }, immediate ? 0 : 100);
+        }, 100);
       }
     });
   }

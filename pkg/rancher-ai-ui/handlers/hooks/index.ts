@@ -133,9 +133,14 @@ class HooksHandler {
       }
 
       if (show) {
-        overlay.create(store, target, el, ctx, store.getters['rancher-ai-ui/context/all']);
+        // Only create the overlay if the element is visible (not hidden or collapsed)
+        const isVisible = el.offsetParent !== null && el.offsetHeight > 0 && el.offsetWidth > 0;
+
+        if (isVisible) {
+          overlay.create(store, target, el, ctx, store.getters['rancher-ai-ui/context/all']);
+        }
       } else if (!(el.matches(':hover') || (el.querySelector(':hover') !== null))) {
-        overlay.destroy(target);
+        overlay.destroy(target, el);
       }
     });
   }

@@ -1,7 +1,9 @@
 import { nextTick } from 'vue';
 import { Store } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import { randomStr } from '@shell/utils/string';
 import { warn } from '../../../utils/log';
+import { hexToRgb, hasTransparency } from '../../../utils/colors';
 import { Context, HookContextTag } from '../../../types';
 import { HooksOverlay } from './index';
 import TemplateMessage from '../template-message';
@@ -10,6 +12,11 @@ import Chat from '../../chat';
 const enum Theme {
   Light = 'light', // eslint-disable-line no-unused-vars
   Dark = 'dark', // eslint-disable-line no-unused-vars
+}
+
+interface ColorProperties {
+  background: string;
+  color: string;
 }
 
 /**
@@ -25,48 +32,122 @@ class BadgeSlidingOverlay extends HooksOverlay {
   private hookContextTag: HookContextTag | null = null;
 
   /**
-   * Compute the theme properties for the badge and overlay.
+   * Get the theme's background color from CSS variables.
    *
-   * - The badges in the main UI depend on the current theme and badge classes. The background colors use opacity
-   *   - When the overlay is applied, the badge background must be converted to a solid color
-   *     to avoid the overlay showing behind it.
-   *   - When the overlay is shown, it uses a fixed background color and text color.
-   *   - When the theme changes, both badge and overlay colors must be updated.
-   *   - When the overlay is destroyed, the badge background must be restored to the computed color.
+   * @returns Object with r, g, b properties representing the theme's background color.
+   */
+  private getBlendColor(theme: Theme): { r: number; g: number; b: number } {
+    let bodyBg = getComputedStyle(document.documentElement)
+      .getPropertyValue('--body-bg')
+      .trim();
+
+    if (!bodyBg) {
+      bodyBg = getComputedStyle(document.body)
+        .getPropertyValue('--body-bg')
+        .trim();
+    }
+
+    const parsed = hexToRgb(bodyBg);
+
+    if (parsed) {
+      return parsed;
+    }
+
+    // Fallback to hadcoded colors
+    if (theme === Theme.Dark) {
+      return {
+        r: 37,
+        g: 40,
+        b: 47
+      };
+    }
+
+    return {
+      r: 255,
+      g: 255,
+      b: 255
+    };
+  }
+
+  /**
+   * Blend a transparent color with the background color based on the theme.
+   *
+   * @param rgba The RGBA color string to blend (e.g., "rgba(31, 103, 219, 0.1)").
+   * @param theme The theme to apply (light or dark).
+   * @returns The blended color as a solid RGB string (e.g., "rgb(255, 255, 255)").
+   */
+  private blendTransparentColor(rgba: string, theme: Theme): string {
+    // Extract RGBA components from strings like "rgba(31, 103, 219, 0.1)"
+    const match = rgba.match(/rgba?\(([^)]+)\)/);
+
+    if (!match) {
+      return rgba;
+    }
+
+    const parts = match[1].split(',').map((s) => s.trim());
+    const r = parseInt(parts[0]);
+    const g = parseInt(parts[1]);
+    const b = parseInt(parts[2]);
+    const a = parts[3] ? parseFloat(parts[3]) : 1;
+
+    const blendBg = this.getBlendColor(theme);
+
+    const blendedR = Math.round(r * a + blendBg.r * (1 - a));
+    const blendedG = Math.round(g * a + blendBg.g * (1 - a));
+    const blendedB = Math.round(b * a + blendBg.b * (1 - a));
+
+    return `rgb(${ blendedR }, ${ blendedG }, ${ blendedB })`;
+  }
+
+  /**
+   * Compute the color properties for the badge and overlay,
+   * taking into account the theme and any transparency in the badge's background color.
+   *
+   * In order to avoid overlay overlapping issues, we need to ensure that the badge's background color is solid and not transparent.
    *
    * @param badge The badge element to compute properties for.
    * @param theme The theme to apply (light or dark).
    * @returns An object containing the computed properties for the badge and overlay.
    */
-  private computeThemeProperties(badge: HTMLElement, theme: Theme): { badge: any, overlay: any } {
+  private computeColorProperties(badge: HTMLElement, theme: Theme): { badge: ColorProperties, overlay: ColorProperties } {
     const out = {
-      badge:   { background: '' },
+      badge:   {
+        background: '',
+        color:      ''
+      },
       overlay: {
         background: '#496192',
         color:      'var(--primary-text)',
       },
     };
 
-    const bgColor = getComputedStyle(document.body).getPropertyValue('--body-bg');
-    const opacity = theme === Theme.Dark ? '30%' : '10%';
+    if (!badge) {
+      return out;
+    }
 
-    (badge?.classList || []).forEach((c) => {
-      if (c.startsWith('bg-')) {
-        const classId = c.replaceAll('bg-', '');
-        const classBgColor = getComputedStyle(document.body).getPropertyValue(`--${ classId }`);
+    // Temporarily clear the inline background style to get the real computed color from the class
+    const originalBackground = badge.style.background;
+    const originalBackgroundColor = badge.style.backgroundColor;
 
-        switch (classId) {
-        case 'error':
-          if (theme === Theme.Light) {
-            out.badge.background = classBgColor;
-          }
-          break;
-        default:
-          out.badge.background = `color-mix(in srgb, ${ classBgColor } ${ opacity }, ${ bgColor })`;
-          break;
-        }
-      }
-    });
+    badge.style.background = '';
+    badge.style.backgroundColor = '';
+
+    const classBgColor = getComputedStyle(badge).backgroundColor;
+
+    // Restore the original inline styles
+    if (originalBackground) {
+      badge.style.background = originalBackground;
+    }
+    if (originalBackgroundColor) {
+      badge.style.backgroundColor = originalBackgroundColor;
+    }
+
+    if (hasTransparency(classBgColor)) {
+      // Convert transparent color to solid by blending with theme background
+      out.badge.background = this.blendTransparentColor(classBgColor, theme);
+    } else {
+      out.badge.background = classBgColor;
+    }
 
     return out;
   }
@@ -75,9 +156,10 @@ class BadgeSlidingOverlay extends HooksOverlay {
    * Handle changes in the container's position (e.g. due to scrolling or table resizing).
    * @param target The target element.
    * @param container The container element.
+   * @param badge The badge element.
    * @param overlay The overlay element.
    */
-  private handleContainerPositionChange(target: HTMLElement, container: HTMLElement, overlay: HTMLElement) {
+  private handleContainerPositionChange(target: HTMLElement, container: HTMLElement, badge: HTMLElement, overlay: HTMLElement) {
     // Destroy overlay if the container moves (position changes)
     let lastContainerRect = container.getBoundingClientRect();
     let rafId: number | null = null;
@@ -93,7 +175,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
 
           if (r.top !== lastContainerRect.top || r.left !== lastContainerRect.left) {
             // The container moved -> remove overlays for this target, immediately
-            this.destroy(target, true);
+            this.destroy(target, badge, true);
           } else {
             lastContainerRect = r;
           }
@@ -118,7 +200,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
 
     window.addEventListener('scroll', scrollHandler, true);
 
-    // attach cleanup so destroy() can call it (avoid leaks if overlay removed directly)
+    // Store cleanup function to be called when the overlay is destroyed
     (overlay as any).__containerPositionCleanup = () => {
       try {
         if (rafId !== null) {
@@ -167,16 +249,18 @@ class BadgeSlidingOverlay extends HooksOverlay {
     const {
       badge: badgeProps,
       overlay: overlayProps
-    } = this.computeThemeProperties(badge, theme);
+    } = this.computeColorProperties(badge, theme);
 
     const overlay = badge.cloneNode(true) as HTMLElement;
 
     const badgeRect = badge.getBoundingClientRect();
     const badgeStyle = getComputedStyle(badge);
 
-    overlay.setAttribute('data-testid', 'rancher-ai-ui-hook-overlay');
+    const id = randomStr(8);
 
-    overlay.classList.add(`${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`);
+    overlay.setAttribute('data-testid', 'rancher-ai-ui-hook-overlay');
+    overlay.setAttribute(`${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`, id);
+
     overlay.style.zIndex = '10';
     overlay.style.backgroundColor = overlayProps.background;
     overlay.style.color = 'transparent';
@@ -199,6 +283,17 @@ class BadgeSlidingOverlay extends HooksOverlay {
 
     badge.style.zIndex = Math.max(parseInt(badge.style.zIndex || '0'), 12).toString();
     badge.style.background = badgeProps.background;
+
+    (badge as any).__cleanupStyle = () => {
+      // Clear badge styles if no related overlays exist for this badge
+      const container = this.getContainer(target);
+
+      if (!container.querySelector(`[${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }="${ id }"]`)) {
+        badge.style.background = '';
+        badge.style.backgroundColor = '';
+        badge.style.zIndex = '';
+      }
+    };
 
     const icon = document.createElement('i');
 
@@ -226,20 +321,22 @@ class BadgeSlidingOverlay extends HooksOverlay {
       overlay.style.width = `${ parseInt(overlay.style.width) + 30 }px`;
     }, 10);
 
-    this.handleContainerPositionChange(target, container, overlay);
+    this.handleContainerPositionChange(target, container, badge, overlay);
 
     overlay.addEventListener('click', (e) => {
       this.action(store, e, overlay, ctx, globalCtx);
+      this.removeOverlayAndRestoreBadge(overlay, badge);
     });
 
     overlay.addEventListener('mouseenter', () => {
+      badge.style.background = badgeProps.background;
       overlay.style.width = `${ parseInt(overlay.style.width) + (20 + (overlay.textContent?.length || 0) + parseInt(badgeStyle.fontSize) * 1.4 + parseFloat(badgeStyle.marginRight) + parseFloat(badgeStyle.marginLeft)) }px`;
       overlay.style.color = overlayProps.color;
     });
 
     overlay.addEventListener('mouseleave', () => {
       if (!HooksOverlay.allHooksKeyPressed) {
-        this.destroy(target);
+        this.destroy(target, badge);
       } else {
         overlay.style.width = `${ parseInt(overlay.style.width) - (20 + (overlay.textContent?.length || 0) + parseInt(badgeStyle.fontSize) * 1.4 + parseFloat(badgeStyle.marginRight) + parseFloat(badgeStyle.marginLeft)) }px`;
       }
@@ -257,16 +354,17 @@ class BadgeSlidingOverlay extends HooksOverlay {
     });
 
     Chat.open(store);
-
-    overlay.remove();
   }
 
-  destroy(target: HTMLElement, immediate = false) {
-    this.getContainer(target).querySelectorAll(`.${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }`).forEach((overlay: any) => {
+  destroy(target: HTMLElement, badge: HTMLElement, immediate = false) {
+    const container = this.getContainer(target);
+    const selector = `[${ HooksOverlay.defaultClassPrefix }-${ this.getSelector() }]`;
+
+    container.querySelectorAll(selector).forEach((overlay: any) => {
       if (overlay) {
         if (immediate) {
           this.cleanupContainerPosition(overlay);
-          overlay.remove();
+          this.removeOverlayAndRestoreBadge(overlay, badge);
         } else if (!(overlay.matches(':hover') || (overlay.querySelector(':hover') !== null))) {
           this.cleanupContainerPosition(overlay);
 
@@ -276,8 +374,8 @@ class BadgeSlidingOverlay extends HooksOverlay {
           overlay.style.opacity = '0';
 
           setTimeout(() => {
-            overlay.remove();
-          }, 500);
+            this.removeOverlayAndRestoreBadge(overlay, badge);
+          }, 150);
         }
       }
     });
@@ -295,12 +393,24 @@ class BadgeSlidingOverlay extends HooksOverlay {
       container = target.parentElement;
     }
 
-    return (container || target) as HTMLElement;
+    return (container || target.parentElement || target) as HTMLElement;
+  }
+
+  removeOverlayAndRestoreBadge(overlay: HTMLElement, badge: HTMLElement) {
+    if (overlay) {
+      overlay.remove();
+    }
+
+    const cleanup = (badge as any)?.__cleanupStyle;
+
+    if (cleanup) {
+      cleanup();
+    }
   }
 
   setTheme(badge: HTMLElement, theme: Theme) {
     nextTick(() => {
-      const { badge: badgeProps } = this.computeThemeProperties(badge, theme);
+      const { badge: badgeProps } = this.computeColorProperties(badge, theme);
 
       if (badge) {
         badge.style.background = badgeProps.background;

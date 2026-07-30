@@ -257,6 +257,23 @@ describe('HooksHandler', () => {
     beforeEach(() => {
       mockTarget.classList.add('test-overlay');
       (HooksHandler as any).overlays = [mockOverlay];
+
+      // Mock element visibility properties
+      Object.defineProperty(mockTarget, 'offsetParent', {
+        value:        document.body,
+        writable:     true,
+        configurable: true
+      });
+      Object.defineProperty(mockTarget, 'offsetHeight', {
+        value:        100,
+        writable:     true,
+        configurable: true
+      });
+      Object.defineProperty(mockTarget, 'offsetWidth', {
+        value:        100,
+        writable:     true,
+        configurable: true
+      });
     });
 
     it('should call overlay.create when show is true', () => {
@@ -274,7 +291,7 @@ describe('HooksHandler', () => {
     it('should call overlay.destroy when show is false and element is not hovered', () => {
       (HooksHandler as any).toggleOverlays(mockStore, mockTarget, mockContext, false);
 
-      expect(mockOverlay.destroy).toHaveBeenCalledWith(mockTarget);
+      expect(mockOverlay.destroy).toHaveBeenCalledWith(mockTarget, mockTarget);
     });
 
     it('should not call overlay.destroy when element is hovered', () => {
@@ -287,6 +304,75 @@ describe('HooksHandler', () => {
 
     it('should skip overlay if overlay element not found', () => {
       mockTarget.classList.remove('test-overlay');
+
+      (HooksHandler as any).toggleOverlays(mockStore, mockTarget, mockContext, true);
+
+      expect(mockOverlay.create).not.toHaveBeenCalled();
+    });
+
+    it('should not create overlay when element is not visible', () => {
+      // Mock offsetParent to return null (element is hidden)
+      Object.defineProperty(mockTarget, 'offsetParent', {
+        value:        null,
+        writable:     true,
+        configurable: true
+      });
+      Object.defineProperty(mockTarget, 'offsetHeight', {
+        value:        100,
+        writable:     true,
+        configurable: true
+      });
+      Object.defineProperty(mockTarget, 'offsetWidth', {
+        value:        100,
+        writable:     true,
+        configurable: true
+      });
+
+      (HooksHandler as any).toggleOverlays(mockStore, mockTarget, mockContext, true);
+
+      expect(mockOverlay.create).not.toHaveBeenCalled();
+    });
+
+    it('should not create overlay when element has zero height', () => {
+      // Mock offsetHeight to return 0 (element is collapsed)
+      Object.defineProperty(mockTarget, 'offsetParent', {
+        value:        document.body,
+        writable:     true,
+        configurable: true
+      });
+      Object.defineProperty(mockTarget, 'offsetHeight', {
+        value:        0,
+        writable:     true,
+        configurable: true
+      });
+      Object.defineProperty(mockTarget, 'offsetWidth', {
+        value:        100,
+        writable:     true,
+        configurable: true
+      });
+
+      (HooksHandler as any).toggleOverlays(mockStore, mockTarget, mockContext, true);
+
+      expect(mockOverlay.create).not.toHaveBeenCalled();
+    });
+
+    it('should not create overlay when element has zero width', () => {
+      // Mock offsetWidth to return 0 (element is hidden)
+      Object.defineProperty(mockTarget, 'offsetParent', {
+        value:        document.body,
+        writable:     true,
+        configurable: true
+      });
+      Object.defineProperty(mockTarget, 'offsetHeight', {
+        value:        100,
+        writable:     true,
+        configurable: true
+      });
+      Object.defineProperty(mockTarget, 'offsetWidth', {
+        value:        0,
+        writable:     true,
+        configurable: true
+      });
 
       (HooksHandler as any).toggleOverlays(mockStore, mockTarget, mockContext, true);
 
