@@ -108,19 +108,39 @@ git checkout "$BRANCH"
 
 ## Step 3 - Read the Test Plan
 
-Read the test plan document from the PR branch:
+Find and read the test plan document from the PR branch:
 
 ```bash
-PLAN_FILE=$(find cypress/e2e -name "test-plan-${{ github.event.inputs.feature_area }}*" -type f)
+PLAN_FILE=$(find cypress/e2e/tests/features -name "test-plan-${{ github.event.inputs.feature_area }}*" -type f | head -1)
+if [ -z "$PLAN_FILE" ]; then
+  echo "ERROR: Test plan not found for feature_area=${{ github.event.inputs.feature_area }}"
+  exit 1
+fi
 cat "$PLAN_FILE"
 ```
 
-If the test plan does not exist, create an issue and stop.
+**Extract the folder structure** from the test plan:
+- Read the "Spec File Location" section which specifies the exact path
+- Example: `cypress/e2e/tests/features/settings/ui-tools.spec.ts`
+- Extract the folder: `settings/ui-tools`
+- This folder MUST match the test plan's folder location
+
+If the test plan does not exist or folder structure is missing, create an issue and stop.
 
 ## Step 4 - Check for Existing Spec
 
+Using the folder structure from Step 3 (extracted from the test plan):
+
 ```bash
-find cypress/e2e/tests/features -name "*${{ github.event.inputs.feature_area }}*" -type f
+# Construct the spec file path from test plan folder
+TEST_PLAN_DIR=$(dirname "$PLAN_FILE")
+SPEC_FILE="${TEST_PLAN_DIR}/${{ github.event.inputs.feature_area }}.spec.ts"
+
+# Check if spec already exists
+if [ -f "$SPEC_FILE" ] && [ "${{ github.event.inputs.force_recreate }}" != "true" ]; then
+  echo "Spec already exists at $SPEC_FILE"
+  exit 0
+fi
 ```
 
 If a spec already exists and `force_recreate` is not true:
@@ -159,13 +179,24 @@ Based on the test plan, read the source components to verify:
 
 ## Step 7 - Create the Spec File
 
-Create the spec at: `cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts`
+**IMPORTANT**: Create the spec in the SAME folder as the test plan, not in the root features folder.
+
+Using the folder path from Step 4:
+```bash
+# Ensure the parent folder exists
+mkdir -p "$(dirname "$SPEC_FILE")"
+```
+
+Create the spec file at: `${TEST_PLAN_DIR}/${{ github.event.inputs.feature_area }}.spec.ts`
+
+This ensures **test plan and spec are co-located in the same folder hierarchy**.
 
 The spec MUST follow the test plan exactly:
 - Same number of test cases
 - Same test names
 - Same assertions
 - Same screenshot names
+- Same folder structure as the test plan
 
 Structure:
 ```typescript
@@ -199,8 +230,22 @@ describe('Feature: ${{ github.event.inputs.feature_area }}', () => {
 
 ## Step 8 - Create any needed Page Objects
 
-If the test plan specifies new page objects, create them in:
-`cypress/e2e/po/<name>.po.ts`
+**IMPORTANT**: Create Page Objects in the SAME folder hierarchy as the test files.
+
+If the test plan specifies new page objects, extract the PO paths from the test plan's "Page Objects Needed" section.
+
+Page Object folder structure MUST match test folder structure:
+- Test at `cypress/e2e/tests/features/settings/ui-tools.spec.ts`
+- → POs at `cypress/e2e/po/settings/ui-tools/UiToolsConfig.ts`
+- → Parent POs at `cypress/e2e/po/settings/SettingsPage.ts`
+
+Creation steps:
+```bash
+# Extract PO folder from test plan
+# Test plan should specify: e.g., "cypress/e2e/po/settings/ui-tools/UiToolsConfig.ts"
+# Create parent folders
+mkdir -p "cypress/e2e/po/settings/ui-tools/"
+```
 
 Page Object best practices:
 - Extend `ComponentPo` from `@rancher/cypress/e2e/po/components/component.po`
@@ -247,10 +292,13 @@ Post a comment on the PR using add-comment:
 Commit all new files and generate a patch:
 
 ```bash
-git add cypress/e2e/tests/features/${{ github.event.inputs.feature_area }}.spec.ts
-# Also add any new PO files
+# Add the spec file from its hierarchical location
+git add "$SPEC_FILE"
+# Add any new PO files created in Step 8
 git add cypress/e2e/po/ 2>/dev/null || true
-git commit -m "test(e2e): add ${{ github.event.inputs.feature_area }} spec"
+# Commit with message that includes the folder path
+git commit -m "test(e2e): add spec for ${{ github.event.inputs.feature_area }} at $(dirname $SPEC_FILE | sed 's/cypress\/e2e\/tests\/features\///')"
+# Generate the patch
 git diff HEAD~1 > /tmp/gh-aw/repo-memory/default/e2e-spec-pr-$PR_NUMBER.patch
 ```
 
@@ -273,6 +321,17 @@ Use the dispatch-workflow safe output:
 
 ## Rules
 
+### Spec and PO Organization (CRITICAL)
+- **Test plan and spec MUST be in the SAME folder**
+  - Test plan: `cypress/e2e/tests/features/settings/test-plan-ui-tools.md`
+  - Spec: `cypress/e2e/tests/features/settings/ui-tools.spec.ts`
+  - Use the folder path from the test plan's "Spec File Location" section
+- **Page Objects MUST follow the same folder hierarchy as specs**
+  - If spec is in `cypress/e2e/tests/features/settings/ui-tools.spec.ts`
+  - Then POs go in `cypress/e2e/po/settings/ui-tools/`
+  - Create parent folders as needed before creating child PO files
+
+### Spec Writing
 - Follow the test plan EXACTLY
 - Use only selectors that actually exist in the source components
 - Every test MUST have a screenshot at the end
@@ -285,10 +344,14 @@ Use the dispatch-workflow safe output:
 - Place `cy.login()` in `beforeEach` — never inside individual `it()` blocks
 - Place `cy.cleanChatHistory()` in `afterEach`
 - Tests that install/uninstall the AI service or otherwise alter cluster state MUST be in a nested `describe` with teardown in `afterEach`
+
+### Page Object Rules
 - Page Object methods MUST scope selectors with `this.self().find(...)` not global `cy.get(...)` (exception: teleported elements like popper dropdowns)
 - Encapsulate fragile selectors (third-party library classes) inside Page Object methods with documenting comments
 - Encapsulate internal DOM traversal (e.g. `.vs__selected .vs__deselect`) in named PO methods — specs should never contain raw multi-step DOM chains
 - Specs must NEVER call `.self().find(...)` on a Page Object directly — always expose a PO method
 - Never use conditional `afterEach` (e.g. `if (!this.currentTest?.title.includes(...))`) — use nested `describe` blocks instead
+
+### Workflow Constraints
 - Do NOT create a new PR - save patch to repo-memory instead
 - Do NOT use git push - the apply-patch workflow handles that
