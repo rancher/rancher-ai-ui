@@ -285,6 +285,7 @@ Post a comment on the PR using add-comment:
   - Summary of spec created
   - Number of test cases
   - Files created
+  - Linting status (from Step 10.5): whether automatic fixes were applied
   - Note that the spec will be pushed and then the runner triggered
 
 ## Step 10 - Commit and Save Patch
@@ -311,6 +312,45 @@ head -3 /tmp/gh-aw/repo-memory/default/e2e-spec-pr-$PR_NUMBER.patch
 `/tmp/gh-aw/repo-memory/default/e2e-spec-pr-<PR_NUMBER>.patch`
 
 Do NOT create subdirectories. After saving, call push_repo_memory.
+
+## Step 10.5 - Lint Generated Code
+
+Run ESLint on the generated spec and PO files to ensure code quality:
+
+```bash
+# Install dependencies if needed
+npm ci --prefer-offline --no-audit 2>/dev/null || true
+
+# Lint the generated spec file
+echo "Linting generated spec file: $SPEC_FILE"
+npx eslint "$SPEC_FILE" --fix --format=json > /tmp/gh-aw/agent/lint-result.json 2>&1 || LINT_EXIT=$?
+
+# Lint any new PO files
+echo "Linting generated PO files..."
+npx eslint cypress/e2e/po/ --fix --format=json > /tmp/gh-aw/agent/po-lint-result.json 2>&1 || PO_LINT_EXIT=$?
+
+# Check if there were any changes from linting fixes
+if git diff --quiet; then
+  LINTING_MESSAGE="Code linting: No issues found"
+else
+  # Update patch with linting changes
+  echo "Linting applied automatic fixes. Updating patch..."
+  git add "$SPEC_FILE" cypress/e2e/po/ 2>/dev/null || true
+  git commit --amend --no-edit
+  git diff HEAD~1 > /tmp/gh-aw/repo-memory/default/e2e-spec-pr-$PR_NUMBER.patch
+  LINTING_MESSAGE="Code linting: Applied automatic fixes"
+fi
+
+# Report linting status
+if [ ! -z "$LINT_EXIT" ] || [ ! -z "$PO_LINT_EXIT" ]; then
+  echo "Linting warnings detected (see details below)"
+else
+  echo "$LINTING_MESSAGE"
+fi
+
+# Save linting results for PR comment
+echo "$LINTING_MESSAGE" > /tmp/gh-aw/agent/linting-status.txt
+```
 
 ## Step 11 - Dispatch apply-spec-writer-patch
 
@@ -355,3 +395,6 @@ Use the dispatch-workflow safe output:
 ### Workflow Constraints
 - Do NOT create a new PR - save patch to repo-memory instead
 - Do NOT use git push - the apply-patch workflow handles that
+- **Linting is mandatory** after spec generation - ESLint must pass or automatic fixes applied
+- If linting produces changes, the patch is automatically updated before dispatch
+- Linting failures beyond auto-fix capability should be documented in the PR comment
