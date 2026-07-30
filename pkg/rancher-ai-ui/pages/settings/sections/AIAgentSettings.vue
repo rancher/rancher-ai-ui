@@ -519,14 +519,14 @@ onMounted(() => {
       @update:model-value="(val: string | undefined) => updateChatbotValue(val as ChatBotEnum)"
     />
     <banner
-      v-if="formData[Settings.ACTIVE_CHATBOT] !== ChatBotEnum.Local && !readOnly"
+      v-if="!readOnly"
       color="warning"
       class="mt-0 mb-0"
     >
       <span>
         <b>{{ t('aiConfig.form.section.provider.banner.privacy.header', {}, true) }}</b>
         <br>
-        <span v-clean-html="t('aiConfig.form.section.provider.banner.privacy.description', {}, true)" />
+        <span v-clean-html="t(`aiConfig.form.section.provider.banner.privacy.description.${ formData[Settings.ACTIVE_CHATBOT] === ChatBotEnum.Local ? 'local' : 'thirdParty' }`, {}, true)" />
       </span>
     </banner>
 
@@ -535,7 +535,7 @@ onMounted(() => {
       color="info"
       class="mt-0 mb-0"
     >
-      <span v-clean-html="t('aiConfig.form.section.provider.banner.thirdParty.description', {}, true)" />
+      <span v-clean-html="t('aiConfig.form.section.provider.banner.genericOpenAI.description', {}, true)" />
     </banner>
 
     <div

@@ -1,4 +1,4 @@
-import { shallowMount, flushPromises } from '@vue/test-utils';
+import { shallowMount, mount, flushPromises } from '@vue/test-utils';
 import AIAgentSettings from '../AIAgentSettings.vue';
 import { Settings, SettingsFormData, ValidationStatus } from '../../types';
 import { LLMProvider as ChatBotEnum } from '../../../../types';
@@ -34,8 +34,17 @@ jest.mock('vuex', () => {
   };
 });
 
+// Mock useI18n composable
+jest.mock('@shell/composables/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
+
 const requiredSetup = () => {
-  return { directives: { 'clean-html': jest.fn() } };
+  return {
+    directives: {
+      'clean-html': (el: any, binding: any) => {
+        el.innerHTML = binding.value;
+      }
+    }
+  };
 };
 
 describe('AIAgentSettings.vue', () => {
@@ -84,39 +93,56 @@ describe('AIAgentSettings.vue', () => {
     });
   });
 
-  describe('Warning Banner', () => {
-    it('should show warning banner for OpenAI', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
+  describe('Banners', () => {
+    it('should show privacy banner for third-party providers', () => {
+      const wrapper = mount(AIAgentSettings, {
         ...requiredSetup(),
         props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.OpenAI } as SettingsFormData },
       });
 
-      const banners = wrapper.findAllComponents({ name: 'Banner' });
+      const banner = wrapper.findComponent({ name: 'Banner' });
 
-      expect(banners.length).toBeGreaterThan(0);
+      expect(banner.props('color')).toBe('warning');
+
+      const bannerHtml = banner.html();
+
+      expect(bannerHtml).toContain('aiConfig.form.section.provider.banner.privacy.description.thirdParty');
     });
 
-    it('should show warning banner for Gemini', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
-        ...requiredSetup(),
-        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Gemini } as SettingsFormData },
-      });
-
-      const banners = wrapper.findAllComponents({ name: 'Banner' });
-
-      expect(banners.length).toBeGreaterThan(0);
-    });
-
-    it('should not show warning banner for Local chatbot', () => {
-      const wrapper = shallowMount(AIAgentSettings, {
+    it('should show privacy banner for Local provider', () => {
+      const wrapper = mount(AIAgentSettings, {
         ...requiredSetup(),
         props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.Local } as SettingsFormData },
       });
 
-      const banners = wrapper.findAllComponents({ name: 'Banner' });
-      const warningBanners = banners.filter((b) => b.props('color') === 'warning');
+      const banner = wrapper.findComponent({ name: 'Banner' });
 
-      expect(warningBanners.length).toBe(0);
+      expect(banner.props('color')).toBe('warning');
+
+      const bannerHtml = banner.html();
+
+      expect(bannerHtml).toContain('aiConfig.form.section.provider.banner.privacy.description.local');
+    });
+
+    it('should show privacy and info banner for GenericOpenAI provider', () => {
+      const wrapper = mount(AIAgentSettings, {
+        ...requiredSetup(),
+        props: { value: { [Settings.ACTIVE_CHATBOT]: ChatBotEnum.GenericOpenAI } as SettingsFormData },
+      });
+
+      const banner = wrapper.findAllComponents({ name: 'Banner' });
+
+      expect(banner[0].props('color')).toBe('warning');
+
+      const bannerHtml = banner[0].html();
+
+      expect(bannerHtml).toContain('aiConfig.form.section.provider.banner.privacy.description.thirdParty');
+
+      expect(banner[1].props('color')).toBe('info');
+
+      const bannerHtml1 = banner[1].html();
+
+      expect(bannerHtml1).toContain('aiConfig.form.section.provider.banner.genericOpenAI.description');
     });
   });
 

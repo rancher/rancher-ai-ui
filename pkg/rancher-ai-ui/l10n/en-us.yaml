@@ -358,8 +358,10 @@ aiConfig:
         banner:
           privacy:
             header: "Privacy Notice:"
-            description: 'When using external, third-party providers, please be aware that SUSE does not own or control this LLM and is not responsible for its output. Your prompts and data will be sent to the provider’s servers (e.g., Google’s servers for Gemini). These providers may use your data according to their own privacy policies. The additional risk with public LLMs is the much wider dataset they use for training. Your input data could potentially be incorporated into that dataset, making it accessible to other users or used for future model training.<br><br>For highly sensitive or confidential information, we strongly recommend using a local provider instead.'
-          thirdParty:
+            description:
+              local: 'Please be aware that SUSE does not own or control this LLM and is not responsible for its output.<br><br>Your prompts and data will be sent to the provider’s servers. These providers may use your data according to their own privacy policies.'
+              thirdParty: 'Please be aware that SUSE does not own or control this LLM and is not responsible for its output.<br><br>Your prompts and data will be sent to the provider’s servers (e.g., Google’s servers for Gemini). These providers may use your data according to their own privacy policies. The additional risk with public LLMs is the much wider dataset they use for training. Your input data could potentially be incorporated into that dataset, making it accessible to other users or used for future model training.<br><br>For highly sensitive or confidential information, we strongly recommend using a local provider instead.'
+          genericOpenAI:
             description: 'Use this option if you want to configure another AI provider using OpenAI API standards (e.g. same protocol, same structure, ...)'
         noPermission:
           list: You do not have permission to view or edit the AI Provider settings. Please contact your administrator or refer to our <docsUrl>documentation</docsUrl>.
