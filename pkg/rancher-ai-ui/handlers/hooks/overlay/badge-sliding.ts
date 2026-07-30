@@ -3,6 +3,7 @@ import { Store } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { randomStr } from '@shell/utils/string';
 import { warn } from '../../../utils/log';
+import { hexToRgb, hasTransparency } from '../../../utils/colors';
 import { Context, HookContextTag } from '../../../types';
 import { HooksOverlay } from './index';
 import TemplateMessage from '../template-message';
@@ -31,25 +32,41 @@ class BadgeSlidingOverlay extends HooksOverlay {
   private hookContextTag: HookContextTag | null = null;
 
   /**
-   * Check if a color string has transparency (alpha < 1).
+   * Get the theme's background color from CSS variables.
    *
-   * @param color The color string to check (e.g., "rgba(31, 103, 219, 0.1)").
-   * @returns True if the color has transparency (alpha < 1), false otherwise.
+   * @returns Object with r, g, b properties representing the theme's background color.
    */
-  private hasTransparency(color = ''): boolean {
-    const hasOpacity = color.includes('rgba') || color.includes('hsla');
+  private getBlendColor(theme: Theme): { r: number; g: number; b: number } {
+    let bodyBg = getComputedStyle(document.documentElement)
+      .getPropertyValue('--body-bg')
+      .trim();
 
-    if (hasOpacity) {
-      const alphaMatch = color.match(/[\d.]+\s*\)$/);
-
-      if (alphaMatch) {
-        const alpha = parseFloat(alphaMatch[0]);
-
-        return alpha < 1;
-      }
+    if (!bodyBg) {
+      bodyBg = getComputedStyle(document.body)
+        .getPropertyValue('--body-bg')
+        .trim();
     }
 
-    return false;
+    const parsed = hexToRgb(bodyBg);
+
+    if (parsed) {
+      return parsed;
+    }
+
+    // Fallback to hadcoded colors
+    if (theme === Theme.Dark) {
+      return {
+        r: 37,
+        g: 40,
+        b: 47
+      };
+    }
+
+    return {
+      r: 255,
+      g: 255,
+      b: 255
+    };
   }
 
   /**
@@ -73,16 +90,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
     const b = parseInt(parts[2]);
     const a = parts[3] ? parseFloat(parts[3]) : 1;
 
-    // Blend with white (light theme) or dark gray (dark theme)
-    const blendBg = theme === Theme.Dark ? {
-      r: 42,
-      g: 42,
-      b: 42
-    } : {
-      r: 255,
-      g: 255,
-      b: 255
-    };
+    const blendBg = this.getBlendColor(theme);
 
     const blendedR = Math.round(r * a + blendBg.r * (1 - a));
     const blendedG = Math.round(g * a + blendBg.g * (1 - a));
@@ -113,6 +121,10 @@ class BadgeSlidingOverlay extends HooksOverlay {
       },
     };
 
+    if (!badge) {
+      return out;
+    }
+
     // Temporarily clear the inline background style to get the real computed color from the class
     const originalBackground = badge.style.background;
     const originalBackgroundColor = badge.style.backgroundColor;
@@ -130,8 +142,8 @@ class BadgeSlidingOverlay extends HooksOverlay {
       badge.style.backgroundColor = originalBackgroundColor;
     }
 
-    if (this.hasTransparency(classBgColor)) {
-      // Convert transparent color to solid by blending with background
+    if (hasTransparency(classBgColor)) {
+      // Convert transparent color to solid by blending with theme background
       out.badge.background = this.blendTransparentColor(classBgColor, theme);
     } else {
       out.badge.background = classBgColor;

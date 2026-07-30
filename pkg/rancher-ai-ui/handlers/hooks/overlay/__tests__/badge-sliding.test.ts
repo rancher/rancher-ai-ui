@@ -108,7 +108,7 @@ describe('BadgeSlidingOverlay', () => {
         return cssVars[prop];
       }
 
-      return '#cccccc';
+      return '';
     });
 
     window.getComputedStyle = jest.fn(() => ({
@@ -146,50 +146,6 @@ describe('BadgeSlidingOverlay', () => {
     document.body.innerHTML = '';
   });
 
-  describe('hasTransparency', () => {
-    it('should return true for rgba with alpha < 1', () => {
-      const result = (BadgeSlidingOverlay as any).hasTransparency('rgba(31, 103, 219, 0.1)');
-
-      expect(result).toBe(true);
-    });
-
-    it('should return true for rgba with alpha = 0.5', () => {
-      const result = (BadgeSlidingOverlay as any).hasTransparency('rgba(255, 0, 0, 0.5)');
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false for rgba with alpha = 1', () => {
-      const result = (BadgeSlidingOverlay as any).hasTransparency('rgba(31, 103, 219, 1)');
-
-      expect(result).toBe(false);
-    });
-
-    it('should return false for rgb color (no alpha channel)', () => {
-      const result = (BadgeSlidingOverlay as any).hasTransparency('rgb(31, 103, 219)');
-
-      expect(result).toBe(false);
-    });
-
-    it('should return true for hsla with alpha < 1', () => {
-      const result = (BadgeSlidingOverlay as any).hasTransparency('hsla(120, 100%, 50%, 0.3)');
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false for hsl color (no alpha channel)', () => {
-      const result = (BadgeSlidingOverlay as any).hasTransparency('hsl(120, 100%, 50%)');
-
-      expect(result).toBe(false);
-    });
-
-    it('should return false for empty string', () => {
-      const result = (BadgeSlidingOverlay as any).hasTransparency('');
-
-      expect(result).toBe(false);
-    });
-  });
-
   describe('blendTransparentColor', () => {
     it('should blend rgba color with white in light theme', () => {
       const result = (BadgeSlidingOverlay as any).blendTransparentColor('rgba(31, 103, 219, 0.1)', 'light');
@@ -218,11 +174,23 @@ describe('BadgeSlidingOverlay', () => {
     });
 
     it('should calculate correct blended values for dark theme', () => {
-      // rgba(100, 100, 100, 0.5) blended with dark gray (42, 42, 42)
-      // Result: (100 * 0.5 + 42 * 0.5, ...) = (71, 71, 71)
+      // rgba(100, 100, 100, 0.5) blended with dark gray (37, 40, 47)
+      // Result: (100 * 0.5 + 37 * 0.5, ...) = (68.5→69, 70, 73.5→74)
+      const mockGetPropertyValue = jest.fn(() => ''); // Empty to trigger fallback
+
+      (window.getComputedStyle as jest.Mock).mockReturnValueOnce({
+        fontSize:         '12px',
+        marginRight:      '0px',
+        marginLeft:       '0px',
+        zIndex:           '0',
+        backgroundColor:  'rgba(100, 100, 100, 0.5)',
+        getPropertyValue: mockGetPropertyValue
+      });
+      (window.getComputedStyle as jest.Mock).mockReturnValueOnce({ getPropertyValue: jest.fn(() => '') });
+
       const result = (BadgeSlidingOverlay as any).blendTransparentColor('rgba(100, 100, 100, 0.5)', 'dark');
 
-      expect(result).toBe('rgb(71, 71, 71)');
+      expect(result).toBe('rgb(69, 70, 74)');
     });
 
     it('should handle hsla colors', () => {
@@ -279,6 +247,50 @@ describe('BadgeSlidingOverlay', () => {
 
       expect(result.badge).toHaveProperty('background');
       expect(result.badge.background).not.toBe('');
+    });
+
+    it('should use CSS variable --body-bg for blending when available', () => {
+      // Blended with white (255, 255, 255) should give: rgb(178, 178, 178)
+      (window.getComputedStyle as jest.Mock).mockReturnValueOnce({
+        fontSize:         '12px',
+        marginRight:      '0px',
+        marginLeft:       '0px',
+        zIndex:           '0',
+        backgroundColor:  'rgba(100, 100, 100, 0.5)',
+        getPropertyValue: jest.fn((prop: string) => {
+          if (prop === '--body-bg') {
+            return '#ffffff';
+          }
+
+          return '';
+        })
+      });
+
+      const result = (BadgeSlidingOverlay as any).computeColorProperties(badgeElement, 'light');
+
+      expect(result.badge.background).toBe('rgb(178, 178, 178)');
+    });
+
+    it('should fallback to hardcoded colors when CSS variable not available', () => {
+      // Blended with dark fallback (37, 40, 47) should give: rgb(69, 70, 74)
+      const mockEmptyGetPropertyValue = jest.fn(() => '');
+
+      (window.getComputedStyle as jest.Mock).mockReturnValueOnce({
+        fontSize:         '12px',
+        marginRight:      '0px',
+        marginLeft:       '0px',
+        zIndex:           '0',
+        backgroundColor:  'rgba(100, 100, 100, 0.5)',
+        getPropertyValue: mockEmptyGetPropertyValue
+      });
+
+      (window.getComputedStyle as jest.Mock).mockReturnValueOnce({ getPropertyValue: jest.fn(() => '') });
+
+      (window.getComputedStyle as jest.Mock).mockReturnValueOnce({ getPropertyValue: jest.fn(() => '') });
+
+      const result = (BadgeSlidingOverlay as any).computeColorProperties(badgeElement, 'dark');
+
+      expect(result.badge.background).toBe('rgb(69, 70, 74)');
     });
   });
 

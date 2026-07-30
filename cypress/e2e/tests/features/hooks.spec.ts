@@ -35,7 +35,7 @@ const statusByTheme: Record<Theme, StatusColors[]> = {
       status:  Status.Active,
       colors:   {
         default: 'rgba(0, 143, 64, 0.1)',
-        sliding: '#26342C'
+        sliding: '#213231'
       },
     },
     {
@@ -56,7 +56,7 @@ const statusByTheme: Record<Theme, StatusColors[]> = {
       status:  Status.Paused,
       colors:  {
         default: 'rgba(31, 103, 219, 0.3)',
-        sliding: '#273C5F'
+        sliding: '#233B63'
       }
     },
     {
