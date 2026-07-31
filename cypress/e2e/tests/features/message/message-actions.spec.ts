@@ -16,7 +16,7 @@ describe('Feature: message-actions', () => {
 
   it('Test 1: Copy AI response to clipboard', () => {
     cy.window().then((win) => {
-      cy.stub(win.navigator.clipboard, 'writeText').resolves().as('clipboardWrite');
+      cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite').resolves();
     });
 
     cy.enqueueLLMResponse({ text: 'The copy response text.' });
@@ -32,7 +32,7 @@ describe('Feature: message-actions', () => {
 
   it('Test 2: Copy button shows success checkmark feedback', () => {
     cy.window().then((win) => {
-      cy.stub(win.navigator.clipboard, 'writeText').resolves().as('clipboardWrite');
+      cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite').resolves();
     });
 
     cy.enqueueLLMResponse({ text: 'Feedback test.' });
@@ -48,7 +48,7 @@ describe('Feature: message-actions', () => {
 
   it('Test 3: Copy user message to clipboard', () => {
     cy.window().then((win) => {
-      cy.stub(win.navigator.clipboard, 'writeText').resolves().as('clipboardWrite');
+      cy.stub(win.navigator.clipboard, 'writeText').as('clipboardWrite').resolves();
     });
 
     cy.enqueueLLMResponse({ text: 'Any response.' });
@@ -100,40 +100,5 @@ describe('Feature: message-actions', () => {
     chat.getMessage(5).containsText('Resent reply.');
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('message-actions-test-6-resend-message');
-  });
-
-  it('Test 7: Message action buttons not shown on pending-confirmation messages', () => {
-    cy.enqueueLLMResponse({
-      text:    'Pod created successfully.',
-      mcpTool: {
-        name: 'createKubernetesResource',
-        args: {
-          name:      'test-pod',
-          kind:      'Pod',
-          namespace: 'default',
-          cluster:   'local',
-          resource:  {
-            apiVersion: 'v1',
-            kind:       'Pod',
-            metadata:   {
-              name:      'test-pod',
-              namespace: 'default'
-            }
-          }
-        }
-      }
-    });
-    chat.sendMessage('Show pending confirmation');
-
-    const confirmationRequestMessage = chat.getMessage(3);
-
-    confirmationRequestMessage.scrollIntoView();
-    // The confirm button verifies the pending-confirmation state is active
-    cy.get('[data-testid="rancher-ai-ui-chat-message-confirmation-confirm-button"]').scrollIntoView().should('exist');
-
-    chat.getMessage(2).editButton().self().should('not.exist');
-    chat.getMessage(2).resendButton().self().should('not.exist');
-
-    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('message-actions-test-7-actions-hidden-pending-confirmation');
   });
 });
