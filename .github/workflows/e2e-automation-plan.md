@@ -87,21 +87,28 @@ If `${{ github.event.inputs.feature_area }}` is provided, use that.
 
 Otherwise, analyze the codebase to find features lacking tests:
 
-1. List existing E2E specs:
+1. List existing E2E specs and their folder structure:
    ```bash
    find cypress/e2e/tests/features -name "*.spec.ts" -type f | sort
+   find cypress/e2e/tests/features -type d | sort
    ```
 
-2. List feature-related Vue components and composables:
+2. Map component folder hierarchy:
    ```bash
-   ls pkg/rancher-ai-ui/components/
-   ls pkg/rancher-ai-ui/composables/
-   ls pkg/rancher-ai-ui/pages/
+   tree -L 3 -d pkg/rancher-ai-ui/components/ 2>/dev/null || find pkg/rancher-ai-ui/components/ -type d | sort
+   ```
+   Note: Look for parent/child relationships (e.g., `components/Settings/UITools/` or `components/Chat/History/`)
+
+3. List feature-related Vue components, composables, and pages:
+   ```bash
+   ls -la pkg/rancher-ai-ui/components/
+   ls -la pkg/rancher-ai-ui/composables/
+   ls -la pkg/rancher-ai-ui/pages/
    ```
 
-3. Compare: which component directories do NOT have corresponding spec files?
+4. Compare: which component directories do NOT have corresponding spec files or test plans?
 
-4. Choose the highest-priority untested feature area.
+5. Choose the highest-priority untested feature area, considering hierarchy.
 
 Priority order:
 1. Features with user-facing UI components but no spec at all
@@ -110,6 +117,7 @@ Priority order:
    recently-added sub-features)
 3. Features with complex interactions (multiple composables)
 4. Features with settings/configuration pages
+5. Sub-features within already-tested parent features (if gaps exist)
 
 ## Step 2 - Check for Existing Coverage and Open PRs
 
@@ -154,15 +162,32 @@ area, **do NOT skip it automatically**. Instead:
 
 If `force` is `true`, always proceed regardless of existing coverage.
 
-## Step 3 - Analyze the Feature
+## Step 3 - Analyze the Feature and Detect Hierarchy
 
 Read the relevant source files to understand the feature deeply:
 
 1. **Components**: Read Vue components in `pkg/rancher-ai-ui/components/<feature>/`
+   - **Identify hierarchy**: Is this a top-level feature or a sub-feature of another?
+   - Example: `components/Settings/UITools/` → parent is Settings, child is UITools
+   - Note the folder nesting depth to determine test file placement
+
 2. **Composables**: Read related composables in `pkg/rancher-ai-ui/composables/`
+   - Check for naming patterns that indicate parent/child relationships
+
 3. **Store**: Read related store modules in `pkg/rancher-ai-ui/store/`
+   - Identify store module hierarchy (e.g., `settings/ui-tools`)
+
 4. **Pages**: Read any related pages in `pkg/rancher-ai-ui/pages/`
-5. **Existing page objects**: Check `cypress/e2e/po/` for any relevant POs
+   - Note if a page is parent (e.g., SettingsPage) or child-specific
+
+5. **Existing page objects and tests**:
+   ```bash
+   find cypress/e2e/po -type d | sort
+   find cypress/e2e/tests/features -type d | sort
+   ```
+   - Check for existing PO and spec hierarchies
+   - Study folder nesting patterns used by working features
+
 6. **Existing tests**: Read similar specs in `cypress/e2e/tests/features/` for patterns
 
 Focus on:
@@ -171,13 +196,39 @@ Focus on:
 - What state changes happen (store mutations, API calls)
 - What visual elements should be verified
 - What custom Cypress commands exist (in `cypress/support/commands/`)
+- **Hierarchy detection**: Is this a parent feature, sub-feature, or nested component?
+- **PO dependencies**: Which POs does this feature depend on? (indicates hierarchy)
 
 ## Step 4 - Create the Test Plan
 
-Create the test plan document. Choose the file path based on whether
-this is an initial or incremental plan:
-- **Initial**: `cypress/e2e/tests/features/test-plan-<FEATURE_AREA>.md`
-- **Incremental**: `cypress/e2e/tests/features/test-plan-<FEATURE_AREA>-<N>.md`
+### 4.1 - Determine Folder Structure
+
+Based on the component hierarchy analysis, determine the appropriate folder structure:
+
+**Rules for folder placement:**
+1. **Top-level features** (no parent): Use root `cypress/e2e/tests/features/`
+   - Example: `chat`, `hooks`, `settings` (if standalone)
+   - Test plan: `cypress/e2e/tests/features/test-plan-chat.md`
+   - Spec: `cypress/e2e/tests/features/chat.spec.ts`
+   - POs: `cypress/e2e/po/chat/`
+
+2. **Sub-features** (hierarchical): Create subfolder matching component structure
+   - Example: `components/Settings/UITools/` → place in `settings/` folder
+   - Test plan: `cypress/e2e/tests/features/settings/test-plan-ui-tools.md`
+   - Spec: `cypress/e2e/tests/features/settings/ui-tools.spec.ts`
+   - POs: `cypress/e2e/po/settings/ui-tools/`
+
+3. **Deeply nested features**: Mirror the component nesting depth
+   - Example: `components/Settings/UITools/Editor/` → 3 levels
+   - Test plan: `cypress/e2e/tests/features/settings/ui-tools/test-plan-editor.md`
+   - Spec: `cypress/e2e/tests/features/settings/ui-tools/editor.spec.ts`
+   - POs: `cypress/e2e/po/settings/ui-tools/editor/`
+
+### 4.2 - Create the Test Plan Document
+
+Choose the file path based on hierarchy (from 4.1) and plan type:
+- **Initial**: `cypress/e2e/tests/features/<path>/test-plan-<FEATURE_AREA>.md`
+- **Incremental**: `cypress/e2e/tests/features/<path>/test-plan-<FEATURE_AREA>-<N>.md`
   where `<N>` is the next sequential number (2, 3, …)
 
 The plan MUST include:
@@ -186,6 +237,9 @@ The plan MUST include:
 - Feature area name
 - Date created
 - Source components analyzed
+- **Component hierarchy**: Describe parent/child relationships
+  - Example: "Sub-feature of Settings > UITools configuration"
+  - Or: "Top-level feature for chat interactions"
 - **Plan type**: Initial or Incremental
 - **Existing coverage** (incremental only): list existing test plan(s)
   and/or spec(s) for this feature, with a brief summary of what they cover
@@ -201,8 +255,12 @@ For each test case, specify:
 - **Screenshot**: Name for the verification screenshot
 
 ### Page Objects Needed
-- List any new PO files that should be created
+- List any new PO files that should be created, including folder hierarchy
+  - Example: `cypress/e2e/po/settings/ui-tools/UiToolsConfig.ts` (child of settings)
+  - Clearly indicate parent POs this depends on
 - List existing POs that can be reused
+- **Document PO hierarchy**: If a PO extends or depends on another PO, note it
+  - Example: "UiToolsConfig extends SettingsPage (parent)"
 
 ### Custom Commands
 - List any existing custom commands to use
@@ -214,9 +272,18 @@ For each test case, specify:
 
 ### Spec File Location
 - The exact path where the spec file should be created
-  (always `cypress/e2e/tests/features/<feature_area>.spec.ts`)
+  - **Respecting hierarchy**: `cypress/e2e/tests/features/<path>/<feature_area>.spec.ts`
+  - Use the folder structure determined in Section 4.1
 
 ## Step 5 - Create the Pull Request
+
+**Before creating the PR**, verify the folder structure:
+```bash
+# Ensure parent folders exist for the test plan
+TEST_PLAN_FILE="cypress/e2e/tests/features/<path>/test-plan-<FEATURE_AREA>.md"
+TEST_PLAN_DIR=$(dirname "$TEST_PLAN_FILE")
+mkdir -p "$TEST_PLAN_DIR"
+```
 
 Use the `create-pull-request` safe output:
 - **title**: `plan ${{ github.event.inputs.feature_area }} E2E test coverage`
@@ -226,10 +293,12 @@ Use the `create-pull-request` safe output:
   - Number of test cases planned
   - Whether this is an initial or incremental plan
   - For incremental plans: what existing coverage exists and what gaps this fills
+  - **Test plan location**: Path to the test plan file (e.g., `cypress/e2e/tests/features/settings/test-plan-ui-tools.md`)
+  - **Spec file location**: Path where spec will be created (e.g., `cypress/e2e/tests/features/settings/ui-tools.spec.ts`)
   - Note that this is a test plan awaiting verification
 
 Include these files in the PR:
-- The test plan document
+- The test plan document (in its hierarchical folder)
 
 ## Step 6 - Dispatch the Planner Verifier
 
@@ -243,6 +312,7 @@ Do NOT include `pr_number` - the verifier will auto-detect it.
 
 ## Rules
 
+### Test Planning
 - Be thorough in analysis - the test plan is the foundation for test creation
 - Use only `data-testid` selectors that actually exist in the components
 - Reference existing patterns from `chat.spec.ts` and other working specs
@@ -253,3 +323,29 @@ Do NOT include `pr_number` - the verifier will auto-detect it.
 - Include screenshot names following the pattern: `<feature>-test-N-<description>`
   (for incremental plans, continue numbering from where the last plan left off)
 - The feature area name should be lowercase and hyphenated (e.g., `chat-history`)
+
+### Hierarchy and Organization (NEW)
+- **Test files and test plans MUST be in the SAME folder structure**
+  - Test plan and spec for a feature go in the same folder
+  - Example: `cypress/e2e/tests/features/settings/test-plan-ui-tools.md` → `cypress/e2e/tests/features/settings/ui-tools.spec.ts`
+  - Both test plans and specs mirror component folder hierarchy
+  - Flat components → flat test folders
+  - Nested components → nested test folders
+
+- **Page Objects MUST follow component hierarchy and mirror test locations**
+  - Create PO subfolder structure matching feature nesting
+  - POs go in subfolders matching the test file location
+  - Parent POs at parent level: `cypress/e2e/po/settings/SettingsPage.ts`
+  - Child POs in child subfolder: `cypress/e2e/po/settings/ui-tools/UiToolsConfig.ts`
+  - Document PO dependencies: child POs should note their parent
+  - **Example consistency**: If spec is `cypress/e2e/tests/features/settings/ui-tools.spec.ts`, then POs go in `cypress/e2e/po/settings/ui-tools/`
+
+- **Create parent folders as needed**
+  - Before creating test plan in `cypress/e2e/tests/features/parent/child/test-plan-xyz.md`,
+    ensure parent folders exist: `cypress/e2e/tests/features/parent/` and `cypress/e2e/tests/features/parent/child/`
+  - Same rule for Page Objects and spec files: respect the folder hierarchy
+
+- **Validate hierarchy against source code**
+  - Component folder structure is the source of truth
+  - If hierarchy changes (components are reorganized), update test structure accordingly
+  - Document the component-to-test-folder mapping in test plan header
