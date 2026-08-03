@@ -14,7 +14,7 @@ env:
   # The Rancher Helm repo URL and k3s version are fetched dynamically from the Rancher dashboard
   # branches-metadata.json for the master branch to ensure consistency.
   RANCHER_BRANCHES_METADATA_URL: https://raw.githubusercontent.com/rancher/dashboard/master/branches-metadata.json
-  RANCHER_DEFAULT_BRANCH: master
+  RANCHER_DEFAULT_BRANCH: release-2.15
   # Rancher is installed via Helm on k3s and serves its own (stock) dashboard through the
   # Traefik ingress over TLS. the rancher-ai-ui extension is developer-loaded into it at test
   # time from a local catalog server (serve-pkgs), same-origin - no yarn dev proxy.
