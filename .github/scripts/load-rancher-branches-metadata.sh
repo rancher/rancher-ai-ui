@@ -25,7 +25,7 @@ if ! METADATA=$(curl -s -f "$BRANCHES_METADATA_URL"); then
 fi
 
 # Verify the helm section exists
-if ! echo "$METADATA" | jq -e ".branches.$BRANCH_NAME.e2e.helm" > /dev/null 2>&1; then
+if ! echo "$METADATA" | jq -e --arg branch "$BRANCH_NAME" '.branches[$branch].e2e.helm' > /dev/null 2>&1; then
   echo "Error: Missing 'helm' section for branch '$BRANCH_NAME'"
   echo "Expected path: .branches.$BRANCH_NAME.e2e.helm"
   echo "Available branches: $(echo "$METADATA" | jq -r '.branches | keys | join(", ")')"
@@ -33,14 +33,14 @@ if ! echo "$METADATA" | jq -e ".branches.$BRANCH_NAME.e2e.helm" > /dev/null 2>&1
 fi
 
 # Verify the kube section exists
-if ! echo "$METADATA" | jq -e ".branches.$BRANCH_NAME.e2e.kube" > /dev/null 2>&1; then
+if ! echo "$METADATA" | jq -e --arg branch "$BRANCH_NAME" '.branches[$branch].e2e.kube' > /dev/null 2>&1; then
   echo "Error: Missing 'kube' section for branch '$BRANCH_NAME'"
   echo "Expected path: .branches.$BRANCH_NAME.e2e.kube"
   exit 1
 fi
 
 # Extract kube version
-K3S_VERSION=$(echo "$METADATA" | jq -r ".branches.$BRANCH_NAME.e2e.kube.version")
+K3S_VERSION=$(echo "$METADATA" | jq -r --arg branch "$BRANCH_NAME" '.branches[$branch].e2e.kube.version')
 
 # Validate K3S_VERSION
 if [[ -z "$K3S_VERSION" ]] || [[ "$K3S_VERSION" == "null" ]]; then
@@ -50,7 +50,7 @@ if [[ -z "$K3S_VERSION" ]] || [[ "$K3S_VERSION" == "null" ]]; then
 fi
 
 # Extract helm repo URL
-RANCHER_HELM_REPO_URL=$(echo "$METADATA" | jq -r ".branches.$BRANCH_NAME.e2e.helm[\"repo-url\"]")
+RANCHER_HELM_REPO_URL=$(echo "$METADATA" | jq -r --arg branch "$BRANCH_NAME" '.branches[$branch].e2e.helm["repo-url"]')
 
 # Validate RANCHER_HELM_REPO_URL
 if [[ -z "$RANCHER_HELM_REPO_URL" ]] || [[ "$RANCHER_HELM_REPO_URL" == "null" ]]; then
