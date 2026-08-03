@@ -64,6 +64,6 @@ echo "Successfully extracted metadata for branch: $BRANCH_NAME"
 echo "  K3S_VERSION: $K3S_VERSION"
 echo "  RANCHER_HELM_REPO_URL: $RANCHER_HELM_REPO_URL"
 
-# Set outputs for other jobs
-echo "K3S_VERSION=$K3S_VERSION" >> "$GITHUB_OUTPUT"
-echo "RANCHER_HELM_REPO_URL=$RANCHER_HELM_REPO_URL" >> "$GITHUB_OUTPUT"
+# Set environment variables for subsequent job steps
+echo "K3S_VERSION=$K3S_VERSION" >> "$GITHUB_ENV"
+echo "RANCHER_HELM_REPO_URL=$RANCHER_HELM_REPO_URL" >> "$GITHUB_ENV"

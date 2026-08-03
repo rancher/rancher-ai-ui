@@ -25,29 +25,15 @@ env:
   KUBECONFIG_PATH: ${{ github.workspace }}/kubeconfig.yaml
 
 jobs:
-  load-rancher-branches-metadata:
+  e2e:
     runs-on: ubuntu-latest
-    outputs:
-      RANCHER_HELM_REPO_URL: ${{ steps.extract-metadata.outputs.RANCHER_HELM_REPO_URL }}
-      K3S_VERSION: ${{ steps.extract-metadata.outputs.K3S_VERSION }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 1
 
       - name: Load Rancher branches metadata
-        id: extract-metadata
         run: ./.github/scripts/load-rancher-branches-metadata.sh ${{ env.RANCHER_BRANCHES_METADATA_URL }} ${{ env.RANCHER_DEFAULT_BRANCH }}
-  e2e:
-    needs: load-rancher-branches-metadata
-    runs-on: ubuntu-latest
-    env:
-      RANCHER_HELM_REPO_URL: ${{ needs.load-rancher-branches-metadata.outputs.RANCHER_HELM_REPO_URL }}
-      K3S_VERSION: ${{ needs.load-rancher-branches-metadata.outputs.K3S_VERSION }}
-    steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-        with:
-          fetch-depth: 1
 
       - name: Setup Node env
         uses: ./.github/actions/setup
