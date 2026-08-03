@@ -25,7 +25,7 @@ if ! METADATA=$(curl -s -f "$BRANCHES_METADATA_URL"); then
 fi
 
 # Verify the helm section exists
-if ! echo "$METADATA" | jq -e ".branches.$BRANCH_NAME.e2e.helm" > /dev/null 2>&1; then
+if ! echo "$METADATA" | jq -e ".branches.$BRANCH_NAME.e2e22.helm" > /dev/null 2>&1; then
   echo "Error: Missing 'helm' section for branch '$BRANCH_NAME'"
   echo "Expected path: .branches.$BRANCH_NAME.e2e.helm"
   echo "Available branches: $(echo "$METADATA" | jq -r '.branches | keys | join(", ")')"
