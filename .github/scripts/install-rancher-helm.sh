@@ -8,10 +8,10 @@
 # external extension server), mirroring rancher/dashboard's Extension Compatibility test.
 #
 # Usage: install-rancher-helm.sh [VERSION] [CATTLE_SERVER_URL] [CATTLE_BOOTSTRAP_PASSWORD] \
-#                                [RANCHER_CHART_CHANNEL] [K3S_VERSION]
+#                                [RANCHER_HELM_REPO_URL] [K3S_VERSION]
 #
 #   VERSION               Rancher image tag, default `head`.
-#   RANCHER_CHART_CHANNEL Chart channel served by the Rancher chart repo, default `latest`.
+#   RANCHER_HELM_REPO_URL Rancher Helm repo URL, default `https://charts.optimus.rancher.io/server-charts/<RANCHER_CHART_CHANNEL>`.
 #                         Also accepts a release branch, e.g. `release-2.15`.
 #   K3S_VERSION           k3s version to install, default `latest` (the k3s stable channel).
 #                         Also accepts a pinned version, e.g. `v1.36.1+k3s1`.
@@ -23,20 +23,19 @@ set -e
 VERSION="head"
 CATTLE_SERVER_URL="https://127.0.0.1.sslip.io"
 CATTLE_BOOTSTRAP_PASSWORD="password"
-RANCHER_CHART_CHANNEL="${RANCHER_CHART_CHANNEL:-latest}"
+RANCHER_HELM_REPO_URL="${RANCHER_HELM_REPO_URL:-https://charts.optimus.rancher.io/server-charts/latest}"
 K3S_VERSION="${K3S_VERSION:-latest}"
 
 if [ -n "$1" ]; then VERSION=$1; fi
 if [ -n "$2" ]; then CATTLE_SERVER_URL="$2"; fi
 if [ -n "$3" ]; then CATTLE_BOOTSTRAP_PASSWORD="$3"; fi
-if [ -n "$4" ]; then RANCHER_CHART_CHANNEL="$4"; fi
+if [ -n "$4" ]; then RANCHER_HELM_REPO_URL="$4"; fi
 if [ -n "$5" ]; then K3S_VERSION="$5"; fi
 
 # ---------------------------------
 # ----------------------- Config
 # ---------------------------------
 
-RANCHER_HELM_REPO_URL=${RANCHER_HELM_REPO_URL:-https://charts.optimus.rancher.io/server-charts/${RANCHER_CHART_CHANNEL}}
 RANCHER_HELM_REPO_NAME=rancher-helm
 RANCHER_NAMESPACE=cattle-system
 

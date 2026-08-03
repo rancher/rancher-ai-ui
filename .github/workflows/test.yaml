@@ -10,13 +10,13 @@ on:
       - 'release-*'
 
 env:
-  RANCHER_VERSION: head
-  # The chart channel and k3s version this suite is validated against. The install script
-  # defaults both to `latest`; they are pinned here so CI stays on a known-good combination.
-  RANCHER_CHART_CHANNEL: release-2.15
-  K3S_VERSION: v1.36.1+k3s1
+  RANCHER_DEFAULT_VERSION: head
+  # The Rancher Helm repo URL and k3s version are fetched dynamically from the Rancher dashboard
+  # branches-metadata.json for the master branch to ensure consistency.
+  RANCHER_BRANCHES_METADATA_URL: https://raw.githubusercontent.com/rancher/dashboard/master/branches-metadata.json
+  RANCHER_DEFAULT_BRANCH: master
   # Rancher is installed via Helm on k3s and serves its own (stock) dashboard through the
-  # Traefik ingress over TLS. The rancher-ai-ui extension is developer-loaded into it at test
+  # Traefik ingress over TLS. the rancher-ai-ui extension is developer-loaded into it at test
   # time from a local catalog server (serve-pkgs), same-origin - no yarn dev proxy.
   CATTLE_SERVER_URL: https://127.0.0.1.sslip.io
   TEST_BASE_URL: https://127.0.0.1.sslip.io/dashboard
@@ -25,8 +25,25 @@ env:
   KUBECONFIG_PATH: ${{ github.workspace }}/kubeconfig.yaml
 
 jobs:
-  e2e:
+  load-rancher-branches-metadata:
     runs-on: ubuntu-latest
+    outputs:
+      RANCHER_HELM_REPO_URL: ${{ steps.extract-metadata.outputs.RANCHER_HELM_REPO_URL }}
+      K3S_VERSION: ${{ steps.extract-metadata.outputs.K3S_VERSION }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 1
+
+      - name: Load Rancher branches metadata
+        id: extract-metadata
+        run: ./.github/scripts/load-rancher-branches-metadata.sh ${{ env.RANCHER_BRANCHES_METADATA_URL }} ${{ env.RANCHER_DEFAULT_BRANCH }}
+  e2e:
+    needs: load-rancher-branches-metadata
+    runs-on: ubuntu-latest
+    env:
+      RANCHER_HELM_REPO_URL: ${{ needs.load-rancher-branches-metadata.outputs.RANCHER_HELM_REPO_URL }}
+      K3S_VERSION: ${{ needs.load-rancher-branches-metadata.outputs.K3S_VERSION }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
@@ -42,7 +59,7 @@ jobs:
         run: .github/scripts/start-extension-server.sh ${{ env.EXTENSION_SERVER_PORT }}
 
       - name: Start Rancher
-        run: .github/scripts/install-rancher-helm.sh ${{ env.RANCHER_VERSION }} ${{ env.CATTLE_SERVER_URL }} ${{ env.CATTLE_BOOTSTRAP_PASSWORD }} ${{ env.RANCHER_CHART_CHANNEL }} ${{ env.K3S_VERSION }}
+        run: .github/scripts/install-rancher-helm.sh ${{ env.RANCHER_DEFAULT_VERSION }} ${{ env.CATTLE_SERVER_URL }} ${{ env.CATTLE_BOOTSTRAP_PASSWORD }} ${{ env.RANCHER_HELM_REPO_URL }} ${{ env.K3S_VERSION }}
 
       - name: Deploy Rancher AI charts
         run: .github/scripts/deploy-rancher-ai.sh ${{ env.KUBECONFIG_PATH }}
