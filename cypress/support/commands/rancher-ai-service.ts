@@ -59,7 +59,7 @@ Cypress.Commands.add('installRancherAIService', ( args: InstallRancherAIServiceA
         cy.log(`Script output: ${ result.stdout || 'None' }`);
         cy.log(`Script error: ${ result.stderr || 'None' }`);
 
-        expect(result.code).to.eq(0);
+        expect(result.exitCode).to.eq(0);
       }
     });
   });
@@ -79,7 +79,7 @@ Cypress.Commands.add('uninstallRancherAIService', () => {
       cy.log(`Script output: ${ result.stdout || 'None' }`);
       cy.log(`Script error: ${ result.stderr || 'None' }`);
 
-      expect(result.code).to.eq(0);
+      expect(result.exitCode).to.eq(0);
     });
 
     // Wait some time for the uninstalled schemas to be removed from Rancher
