@@ -252,12 +252,10 @@ export function getDetailLocation(
   actionResource: ActionResource = {},
   rancherResource: RancherResource = {},
 ) {
-  if (rancherResource) {
-    const route = getKnownRoute(actionResource, rancherResource);
+  const route = getKnownRoute(actionResource, rancherResource);
 
-    if (route) {
-      return route;
-    }
+  if (route) {
+    return route;
   }
 
   return buildDetailLocation(store, productName, schema, inStore, actionResource);
@@ -271,6 +269,7 @@ export function getDetailLocation(
  */
 export function getKnownRoute(actionResource: ActionResource, rancherResource: RancherResource) {
   switch (rancherResource.type) {
+  // Add any known routes for built-in products here
   case MANAGEMENT_CLUSTER:
     if (actionResource.name && rancherResource.nameDisplay) {
       return {
