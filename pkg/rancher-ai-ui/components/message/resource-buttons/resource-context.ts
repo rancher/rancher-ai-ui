@@ -283,9 +283,9 @@ export function getKnownRoute(actionResource: ActionResource, rancherResource: R
         }
       };
     }
+  default:
+    return null;
   }
-
-  return null;
 }
 
 /**
