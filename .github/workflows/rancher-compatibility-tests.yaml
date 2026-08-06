@@ -15,7 +15,10 @@ on:
 jobs:
   compatibility:
     name: "Rancher: branch ${{ matrix.rancher_config.branch }}, tag ${{ matrix.rancher_config.tag }}"
+    if: github.repository_owner == 'rancher'
     strategy:
+      fail-fast: false
+      max-parallel: 5
       matrix:
         rancher_config:
           # Change this list to add/remove Rancher supported versions
