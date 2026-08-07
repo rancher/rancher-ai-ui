@@ -12,6 +12,7 @@ This guide explains how to define tools for the Rancher AI UI in `ui-tools.json`
 6. [Validation Rules](#validation-rules)
 7. [Complete Example](#complete-example)
 8. [Best Practices](#best-practices)
+9. [Generating UI Tools Screenshots](#generating-ui-tools-screenshots)
 
 ---
 
@@ -367,6 +368,57 @@ Different categories enforce different rules. The `selector` category requires t
 8. **Documentation**: Include TOOL SCOPE and USE/NEVER USE keywords in prompts
 9. **Versioning**: Only increment `revision` when you intentionally want to reset user settings. Each increment will overwrite all user-configured values (enabled state, tool parameters, etc.). This is useful for major breaking changes but should be used sparingly.
 10. **Testing**: Validate that LLM correctly interprets your prompts and selects the right parameters
+
+---
+
+## Generating UI Tools Screenshots
+
+UI tool previews are generated from recorded Cypress tests. This section explains how to create screenshot previews for your tools.
+
+### Overview
+
+```bash
+TEST_PASSWORD={password} yarn screenshots:ui-tools
+```
+
+The `screenshots:ui-tools` npm script:
+1. Runs Cypress tests in `cypress/e2e/tests/global-ui/screenshots/ui-tools/`
+2. Captures screenshots of the tool in action
+3. Saves screenshots to `assets/ui-tools/screenshots/`
+
+### Creating a New UI Tool Recording Test
+
+1. **Create a test spec file** in `cypress/e2e/tests/global-ui/screenshots/ui-tools/`:
+
+      ```typescript
+      import ChatPo from '@/cypress/e2e/po/chat.po';
+      import { getSpecName, Screenshot } from '@/cypress/e2e/utils';
+
+      describe(`UI tool: ${ getSpecName() }`, () => {
+        const chat = new ChatPo();
+
+        const screenshot = new Screenshot();
+
+        before(() => {
+          cy.login();
+          cy.installUIToolsDefinition();
+          cy.cleanChatHistory();
+          cy.clearLLMResponses();
+        });
+
+        it('screenshots', () => {
+          chat.sendMessage('Show me the details of the pod named test-pod');
+
+          // Wait for the tool to be rendered
+          cy.getByTestId('tool-display-json').should('be.visible');
+
+          // Capture screenshot of the tool
+          screenshot.take();
+        });
+      });
+      ```
+
+2. **Run the screenshot generation script**
 
 ---
 
