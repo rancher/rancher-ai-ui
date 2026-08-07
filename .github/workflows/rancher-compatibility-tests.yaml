@@ -1,0 +1,36 @@
+name: Compatibility
+
+on:
+  schedule:
+    # Run daily at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      run_all_versions:
+        description: 'Run tests for all Rancher versions'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  compatibility:
+    name: "Rancher: branch ${{ matrix.rancher_config.branch }}, tag ${{ matrix.rancher_config.tag }}"
+    if: github.repository_owner == 'rancher'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        rancher_config:
+          # Change this list to add/remove Rancher supported versions
+          - { branch: 'master', tag: 'head' }
+          - { branch: 'release-2.15', tag: 'v2.15-head' }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/e2e-tests
+        with:
+          rancher_tag: ${{ matrix.rancher_config.tag }}
+          rancher_branch: ${{ matrix.rancher_config.branch }}

@@ -1,0 +1,93 @@
+name: 'Run E2E Tests'
+description: 'Run E2E tests with specified Rancher configs'
+
+inputs:
+  rancher_tag:
+    description: 'Rancher tag to test against (e.g., head, v2.15-head)'
+    required: false
+    default: 'head'
+  rancher_branch:
+    description: 'Rancher branch to use (e.g., master, release-2.15)'
+    required: false
+    default: 'master'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Load Rancher branches metadata
+      run: ./.github/scripts/load-rancher-branches-metadata.sh https://raw.githubusercontent.com/rancher/dashboard/master/branches-metadata.json ${{ inputs.rancher_branch }}
+      shell: bash
+
+    - name: Setup Node env
+      uses: ./.github/actions/setup
+
+    - name: Build extension package
+      run: yarn build-pkg rancher-ai-ui
+      shell: bash
+
+    - name: Start extension catalog server (serve-pkgs)
+      run: .github/scripts/start-extension-server.sh 8080
+      shell: bash
+
+    - name: Start Rancher
+      run: .github/scripts/install-rancher-helm.sh ${{ inputs.rancher_tag }} https://127.0.0.1.sslip.io password ${{ env.RANCHER_HELM_REPO_URL }} ${{ env.K3S_VERSION }}
+      shell: bash
+
+    - name: Deploy Rancher AI charts
+      run: .github/scripts/deploy-rancher-ai.sh ${{ github.workspace }}/kubeconfig.yaml
+      shell: bash
+
+    - name: Register extension (developer-load UIPlugin)
+      run: .github/scripts/register-extension.sh 8080 ${{ github.workspace }}/kubeconfig.yaml
+      shell: bash
+
+    - name: Run Cypress tests
+      id: cypress
+      continue-on-error: true
+      run: yarn e2e --browser chrome
+      shell: bash
+      env:
+        TEST_USERNAME: admin
+        CATTLE_BOOTSTRAP_PASSWORD: password
+        TEST_BASE_URL: https://127.0.0.1.sslip.io/dashboard
+        API: https://127.0.0.1.sslip.io
+        TEST_TIMEOUT: '60000'
+
+    - name: Extension catalog server log on failure
+      if: steps.cypress.outcome != 'success'
+      run: cat serve-pkgs.log || true
+      shell: bash
+
+    - name: Collect Rancher logs on failure
+      if: steps.cypress.outcome != 'success'
+      run: |
+        kubectl get pods -A || true
+        kubectl get uiplugins.catalog.cattle.io -A -o yaml || true
+        kubectl -n cattle-ai-agent-system logs -l app=rancher-ai-agent --all-containers --tail=-1 --prefix || true
+        kubectl -n cattle-system logs -l app=rancher --all-containers --tail=-1 || true
+      shell: bash
+      env:
+        KUBECONFIG: ${{ github.workspace }}/kubeconfig.yaml
+
+    - name: Upload videos on failure
+      if: steps.cypress.outcome != 'success'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      with:
+        name: cypress-videos
+        path: cypress/videos
+        retention-days: 7
+
+    - name: Upload screenshots on failure
+      if: steps.cypress.outcome != 'success'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      with:
+        name: cypress-screenshots
+        path: cypress/screenshots
+        retention-days: 7
+
+    - name: Check failed tests
+      if: steps.cypress.outcome != 'success'
+      run: |
+        echo "Cypress tests failed"
+        exit 1
+      shell: bash
