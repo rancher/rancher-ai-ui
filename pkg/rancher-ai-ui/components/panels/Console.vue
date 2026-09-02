@@ -111,7 +111,7 @@ function handleTextareaKeydown(event: KeyboardEvent) {
   }
 
   // Fix a bug that makes the close chat not work on inputs
-  // Same as the one done with IPlugin
+  // Same as the one done with IExtension
   if ((event.key?.toLowerCase() === 'k' && event.metaKey && event.shiftKey && isMac) || (event.key.toLowerCase() === 'k' && event.altKey && !isMac)) {
     event.preventDefault();
     event.stopPropagation();
