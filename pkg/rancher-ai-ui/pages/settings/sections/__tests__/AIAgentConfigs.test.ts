@@ -26,6 +26,15 @@ jest.mock('@shell/components/form/FileSelector.vue', () => ({
   }
 }));
 
+// Mock LabeledSelect component to avoid TypeScript import issues in shell components
+jest.mock('@shell/components/form/LabeledSelect.vue', () => ({
+  default: {
+    name:     'LabeledSelect',
+    template: '<select class="labeled-select" />',
+    emits:    ['update:value']
+  }
+}));
+
 // Mock Password component to avoid clipboard-polyfill dependency
 jest.mock('@shell/components/form/Password.vue', () => ({
   default: {

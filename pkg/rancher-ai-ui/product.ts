@@ -1,4 +1,4 @@
-import { IPlugin } from '@shell/core/types';
+import { IExtension } from '@shell/core/types';
 import { RIGHT } from '@shell/utils/position';
 
 export const PRODUCT_NAME = 'rancher-ai-ui';
@@ -21,18 +21,18 @@ export const PANEL_POSITION = RIGHT;
 
 export const PERMISSIONS_DOCS_URL = 'https://rancher.github.io/rancher-ai-product-docs/rancher-ai/latest/en/how-tos/how-to-admin.html#rbac';
 
-export function init($plugin: IPlugin, store: any) {
+export function init($extension: IExtension, store: any) {
   // Configure Settings page to include AI Assistant settings
   const {
     basicType,
     mapGroup,
     virtualType,
-  } = $plugin.DSL(store, 'settings');
+  } = $extension.DSL(store, 'settings');
 
   basicType([PRODUCT_NAME]);
 
   virtualType({
-    label:      'AI Assistant',
+    labelKey:   'aiConfig.label',
     name:       PRODUCT_NAME,
     namespaced: false,
     route:      { name: `c-cluster-settings-${ PRODUCT_NAME }` }

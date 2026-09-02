@@ -1,6 +1,6 @@
 import { defineAsyncComponent } from 'vue';
 import { importTypes } from '@rancher/auto-import';
-import { ActionLocation, IPlugin } from '@shell/core/types';
+import { ActionLocation, IExtension } from '@shell/core/types';
 import { warn } from './utils/log';
 import extensionRouting from './routing/extension-routing';
 import connectionStore from './store/connection';
@@ -15,14 +15,14 @@ import BannerButtonOverlay from  './handlers/hooks/overlay/banner-button';
 import { NotificationLevel } from '@shell/types/notifications';
 
 // Init the package
-export default function(plugin: IPlugin, { store }: any): void {
-  const isDev = (plugin as any).builtin; // Running in development mode
-  const isPrime = plugin.environment.isPrime;
+export default function(extension: IExtension, { store }: any): void {
+  const isDev = (extension as any).builtin; // Running in development mode
+  const isPrime = extension.environment.isPrime;
 
   if (!isDev && !isPrime) {
     warn('Rancher Prime subscription required');
 
-    plugin.addNavHooks({
+    extension.addNavHooks({
       onLogin: async(store: any) => {
         store.dispatch('notifications/add', {
           id:      'rancher-ai-requires-prime',
@@ -38,22 +38,22 @@ export default function(plugin: IPlugin, { store }: any): void {
   }
 
   // Auto-import model, detail, edit from the folders
-  importTypes(plugin);
+  importTypes(extension);
 
   // Provide extension metadata from package.json
-  plugin.metadata = require('./package.json');
+  extension.metadata = require('./package.json');
 
   // Load a product
-  plugin.addProduct(require('./product'));
+  extension.addProduct(require('./product'));
 
   // Add Vue Routes
-  plugin.addRoutes(extensionRouting);
+  extension.addRoutes(extensionRouting);
 
   // Register the Chat component
-  plugin.register('component', 'ChatComponent', defineAsyncComponent(() => import('./pages/Chat.vue')) as Function);
+  extension.register('component', 'ChatComponent', defineAsyncComponent(() => import('./pages/Chat.vue')) as Function);
 
   // Open chat window action
-  plugin.addAction(
+  extension.addAction(
     ActionLocation.HEADER,
     {},
     {
@@ -73,11 +73,11 @@ export default function(plugin: IPlugin, { store }: any): void {
   );
 
   // Add stores
-  plugin.addDashboardStore(connectionStore.config.namespace, connectionStore.specifics, connectionStore.config);
-  plugin.addDashboardStore(chatStore.config.namespace, chatStore.specifics, chatStore.config);
-  plugin.addDashboardStore(inputStore.config.namespace, inputStore.specifics, inputStore.config);
-  plugin.addDashboardStore(contextStore.config.namespace, contextStore.specifics, contextStore.config);
-  plugin.addDashboardStore(stagingStore.config.namespace, stagingStore.specifics, stagingStore.config);
+  extension.addDashboardStore(connectionStore.config.namespace, connectionStore.specifics, connectionStore.config);
+  extension.addDashboardStore(chatStore.config.namespace, chatStore.specifics, chatStore.config);
+  extension.addDashboardStore(inputStore.config.namespace, inputStore.specifics, inputStore.config);
+  extension.addDashboardStore(contextStore.config.namespace, contextStore.specifics, contextStore.config);
+  extension.addDashboardStore(stagingStore.config.namespace, stagingStore.specifics, stagingStore.config);
 
   // Inject hooks in the main window
   Hooks.inject(BadgeSlidingOverlay, store);
