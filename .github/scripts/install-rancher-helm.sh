@@ -105,7 +105,7 @@ helm install cert-manager jetstack/cert-manager \
 
 echo ""
 echo "Installing Rancher ..."
-helm repo add $RANCHER_HELM_REPO_NAME $RANCHER_HELM_REPO_URL
+helm repo add $RANCHER_HELM_REPO_NAME $RANCHER_HELM_REPO_URL --force-update
 helm repo update
 kubectl create namespace $RANCHER_NAMESPACE
 helm install rancher $RANCHER_HELM_REPO_NAME/rancher \
