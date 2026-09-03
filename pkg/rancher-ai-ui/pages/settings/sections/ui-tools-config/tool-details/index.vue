@@ -7,6 +7,7 @@ import Preview from './Preview.vue';
 const store = useStore();
 const { t } = useI18n(store);
 
+// TODO replace with upstream URL for screenshots
 const BASE_PATH = 'https://raw.githubusercontent.com/torchiaf/rancher-ai-ui/feature-ui-tools-preview/assets/ui-tools/screenshots';
 
 const props = defineProps({
