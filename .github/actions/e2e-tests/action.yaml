@@ -30,9 +30,7 @@ runs:
       shell: bash
 
     - name: Start Rancher
-      # TODO restore rancher_tag param
-      # run: .github/scripts/install-rancher-helm.sh ${{ inputs.rancher_tag }} https://127.0.0.1.sslip.io password ${{ env.RANCHER_HELM_REPO_URL }} ${{ env.K3S_VERSION }}
-      run: .github/scripts/install-rancher-helm.sh v2.16-4cd8c7dc70df3224ce27171ab1efe8194207f6aa-head https://127.0.0.1.sslip.io password ${{ env.RANCHER_HELM_REPO_URL }} ${{ env.K3S_VERSION }}
+      run: .github/scripts/install-rancher-helm.sh ${{ inputs.rancher_tag }} https://127.0.0.1.sslip.io password ${{ env.RANCHER_HELM_REPO_URL }} ${{ env.K3S_VERSION }}
       shell: bash
 
     - name: Deploy Rancher AI charts
