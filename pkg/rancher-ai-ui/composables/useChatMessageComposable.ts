@@ -21,6 +21,7 @@ import {
   MessageInternalSource,
   MessageLabelKey,
   MessagePhase,
+  MessagePlanning,
   MessageProcessingState,
   MessageStopType,
   MessageTag,
@@ -41,7 +42,8 @@ import {
   formatMcpAuthenticationRequest,
   formatMcpRefreshTokenRequest,
   formatAuthenticationErrorMessage,
-  formatStopMessage
+  formatStopMessage,
+  formatPlanning
 } from '../utils/format';
 import { validateUrl } from '../utils/url';
 import { downloadFile } from '@shell/utils/download';
@@ -92,11 +94,19 @@ export function useChatMessageComposable(
   const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
   const processingState = computed(() => store.getters['rancher-ai-ui/chat/processingState'](chatId));
+  const planningState = computed(() => store.getters['rancher-ai-ui/chat/planningState'](chatId));
 
   const setProcessingState = (processingState: MessageProcessingState) => {
     store.commit('rancher-ai-ui/chat/setProcessingState', {
       chatId,
       processingState
+    });
+  };
+
+  const setPlanningState = (planningState: MessagePlanning | null) => {
+    store.commit('rancher-ai-ui/chat/setPlanningState', {
+      chatId,
+      planningState
     });
   };
 
@@ -198,6 +208,17 @@ export function useChatMessageComposable(
     }));
   }
 
+  function confirmPlanning({ result }: { result: boolean }, ws: WebSocket) {
+    wsSend(ws, formatWSInputMessage({
+      prompt: result ? ConfirmationResponse.Yes : ConfirmationResponse.No,
+      tags:   [MessageTag.Confirmation]
+    }));
+  }
+
+  function stopPlanning(ws: WebSocket) {
+    stopMessage(ws);
+  }
+
   function getMessage(messageId: string) {
     return store.getters['rancher-ai-ui/chat/message']({
       chatId,
@@ -251,9 +272,9 @@ export function useChatMessageComposable(
     };
   }
 
-  function buildSystemRequestMessage(args: { content: any; component?: MessageTemplateComponent; actions?: MessageAction[] }): Message {
+  function buildSystemMessage(args: { content: any; component?: MessageTemplateComponent; actions?: MessageAction[] }): Message {
     const {
-      component = MessageTemplateComponent.SystemRequest,
+      component = MessageTemplateComponent.SystemMessage,
       content,
       actions
     } = args;
@@ -309,7 +330,7 @@ export function useChatMessageComposable(
         }
       ];
 
-      const message = buildSystemRequestMessage({
+      const message = buildSystemMessage({
         content,
         actions
       });
@@ -359,7 +380,7 @@ export function useChatMessageComposable(
         }
       ];
 
-      const message = buildSystemRequestMessage({
+      const message = buildSystemMessage({
         component: MessageTemplateComponent.McpAuthenticationRequest,
         content,
         actions
@@ -378,7 +399,7 @@ export function useChatMessageComposable(
   async function notifyPreferencesUpdate({ key, value }: { key: string, value: any }) {
     const content = { message: t(`ai.message.system.updatePreferences.info.${ key }.${ value }`, {}, true) };
 
-    const message = buildSystemRequestMessage({ content });
+    const message = buildSystemMessage({ content });
 
     await addMessage(message);
   }
@@ -386,7 +407,7 @@ export function useChatMessageComposable(
   async function notifyManualStopMessage() {
     const content = { message: t('ai.message.system.manualStopMessage.info', {}, true) };
 
-    const message = buildSystemRequestMessage({ content });
+    const message = buildSystemMessage({ content });
 
     await addMessage(message);
   }
@@ -536,8 +557,13 @@ export function useChatMessageComposable(
       currentMsg.value.thinking = false;
       break;
     }
+    case Tag.ProcessingTools:
+      setProcessingState({ phase: MessagePhase.ProcessingTools });
+
+      break;
     case Tag.MessageEnd:
       setProcessingState({ phase: MessagePhase.Idle });
+
       currentMsg.value.messageContent = currentMsg.value.messageContent?.replace(/[\r\n]+$/, '');
       currentMsg.value.thinking = false;
       currentMsg.value.completed = true;
@@ -663,6 +689,38 @@ export function useChatMessageComposable(
           break;
         }
 
+        if (data.startsWith(Tag.PlanningStart) && data.endsWith(Tag.PlanningEnd)) {
+          const planning = formatPlanning(data);
+          const messageId = currentMsg.value.id || '';
+
+          if (planning) {
+            setPlanningState({
+              ...planning,
+              messageId
+            });
+
+            if (planningState.value.messageId === messageId) {
+              // New planning state - bound to the current message
+              currentMsg.value.templateContent = {
+                component: MessageTemplateComponent.Planning,
+                content:   {
+                  principal,
+                  message: 'empty'
+                }
+              };
+              currentMsg.value.planningContent = planning;
+            } else {
+              // Update the planning state - bound to a previous message
+              updateMessage({
+                id:              planningState.value.messageId,
+                planningContent: planningState.value,
+              });
+            }
+          }
+
+          break;
+        }
+
         if (data.startsWith(Tag.ErrorStart) && data.endsWith(Tag.ErrorEnd)) {
           const err = formatErrorMessage(data);
 
@@ -763,6 +821,10 @@ export function useChatMessageComposable(
     store.commit('rancher-ai-ui/chat/clearMessageBox', chatId);
   }
 
+  function clearPendingConfirmations() {
+    store.commit('rancher-ai-ui/chat/clearPendingConfirmations', chatId);
+  }
+
   onMounted(() => {
     store.dispatch('rancher-ai-ui/chat/init', {
       chatId,
@@ -785,11 +847,14 @@ export function useChatMessageComposable(
     updateMessage,
     confirmMessage,
     stopMessage,
+    confirmPlanning,
+    stopPlanning,
     selectContext,
     downloadMessages,
     loadMessages,
     resetMessages,
     clearMessageBox,
+    clearPendingConfirmations,
     notifyPreferencesUpdate,
     chatMetadata,
     isChatInitialized,

@@ -37,6 +37,7 @@ import { AI_AGENT_LABELS } from '../../labels-annotations';
 import SettingsRow from './SettingsRow.vue';
 import AIAgentSettings from './sections/AIAgentSettings.vue';
 import AIAgentConfigs from './sections/ai-agent-configs/index.vue';
+import ChatSettings from './sections/ChatSettings.vue';
 import UIToolsConfig from './sections/ui-tools-config/index.vue';
 import ApplySettings from '../../dialog/ApplySettingsCard.vue';
 import { useAIAgentApiComposable } from '../../composables/useAIAgentApiComposable';
@@ -774,6 +775,19 @@ onMounted(async() => {
             @update:value="aiAgentConfigCRDs = $event"
             @update:authentication-secrets="authenticationSecrets = $event"
             @update:validation-error="hasAiAgentConfigsValidationErrors = $event"
+          />
+        </settings-row>
+
+        <settings-row
+          :section-id="'chat-settings'"
+          :title="t('aiConfig.form.section.chat.header')"
+          :description="t('aiConfig.form.section.chat.description')"
+          data-testid="rancher-ai-ui-settings-chat-settings"
+        >
+          <ChatSettings
+            :value="aiAgentSettings"
+            :read-only="!permissions?.create.canCreateConfigMaps"
+            @update:value="updateAiAgentSettings"
           />
         </settings-row>
 

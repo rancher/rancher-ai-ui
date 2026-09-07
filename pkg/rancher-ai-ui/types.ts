@@ -29,6 +29,8 @@ export const enum Tag {
   AuthenticationRequestEnd = '</authentication>',
   TokenRefreshRequestStart = '<token-refresh>',
   TokenRefreshRequestEnd = '</token-refresh>',
+  PlanningStart = '<plan>',
+  PlanningEnd = '</plan>',
   ChatErrorStart = '<chat-error>',
   ChatErrorEnd = '</chat-error>',
   AuthenticationErrorStart = '<auth-error>',
@@ -207,8 +209,9 @@ export interface MessageConfirmationAction {
 export const enum MessageTemplateComponent {
   Welcome = 'welcome',
   NoPermission = 'no-permission',
-  SystemRequest = 'system-request',
+  SystemMessage = 'system-message',
   McpAuthenticationRequest = 'mcp-authentication-request',
+  Planning = 'planning',
 }
 
 export interface MessageTemplate {
@@ -218,6 +221,29 @@ export interface MessageTemplate {
     principal?: any;
     [key: string]: unknown;
   };
+}
+
+export const enum MessagePlanningStatus {
+  Pending = 'pending',
+  InProgress = 'in_progress',
+  Completed = 'completed',
+  Canceling = 'canceling',
+  Canceled = 'cancelled',
+  Failed = 'failed',
+  NotApplicable = 'not_applicable',
+}
+
+export interface MessagePlanningTask {
+  task: string;
+  status?: MessagePlanningStatus;
+  agent?: string;
+}
+
+export interface MessagePlanning {
+  messageId: number | string;
+  tasks: MessagePlanningTask[];
+  status?: MessagePlanningStatus;
+  approval?: boolean;
 }
 
 export const enum MessageLabelKey {
@@ -232,7 +258,11 @@ export const enum MessageInternalSource {
 
 export const enum MessageStopType {
   Preempted = 'new-request',
-  Manual = 'user-stop',
+  Manual = 'message-manual-stop',
+}
+
+export const enum PlanningStopType {
+  Manual = 'planning-manual-stop',
 }
 
 export type SourceLinkItem = { key?: string; label?: string; value: string; } | string;
@@ -246,7 +276,8 @@ export interface Message {
   summaryContent?: string;
   contextContent?: Context[];
   templateContent?: MessageTemplate;
-  stopType?: MessageStopType | null;
+  planningContent?: MessagePlanning;
+  stopType?: MessageStopType | PlanningStopType | null;
   thinking?: boolean;
   completed?: boolean;
   showThinking?: boolean;
@@ -433,7 +464,7 @@ export interface HistoryChatMessage {
   labels?: Record<MessageLabelKey, string>;
   tags?: string[];
   confirmation?: boolean;
-  stopped?: MessageStopType | null;
+  stopped?: MessageStopType | PlanningStopType | null;
   tools?: ToolCall[];
   createdAt: string;
 }
