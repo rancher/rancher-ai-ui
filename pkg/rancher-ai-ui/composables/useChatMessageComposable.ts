@@ -511,6 +511,10 @@ export function useChatMessageComposable(
       currentMsg.value.thinking = false;
       break;
     }
+    case Tag.ProcessingTools:
+      setProcessingState({ phase: MessagePhase.ProcessingTools });
+
+      break;
     case Tag.MessageEnd:
       setProcessingState({ phase: MessagePhase.Idle });
       currentMsg.value.messageContent = currentMsg.value.messageContent?.replace(/[\r\n]+$/, '');
@@ -648,12 +652,6 @@ export function useChatMessageComposable(
             message: err.message,
             key:     'authentication'
           };
-        }
-
-        if (data === Tag.ProcessingTools) {
-          setProcessingState({ phase: MessagePhase.ProcessingTools });
-
-          break;
         }
 
         currentMsg.value.messageContent += data;
