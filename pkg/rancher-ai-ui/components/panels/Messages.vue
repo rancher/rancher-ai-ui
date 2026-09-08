@@ -7,7 +7,8 @@ import { useI18n } from '@shell/composables/useI18n';
 import {
   Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase,
   MessageInternalSource,
-  MessageProcessingState
+  MessageProcessingState,
+  MessagePlanningItem
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
@@ -17,6 +18,7 @@ import SystemRequest from '../message/template/SystemRequest.vue';
 import McpAuthenticationRequest from '../message/template/McpAuthenticationRequest.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
+import Planning from '../message/Planning.vue';
 import { useScrollComposable } from '../../composables/useScrollComposable';
 
 /**
@@ -44,6 +46,10 @@ const props = defineProps({
   processingState: {
     type:    Object as PropType<MessageProcessingState | null>,
     default: null,
+  },
+  planningState: {
+    type:    Array as PropType<MessagePlanningItem[]>,
+    default: () => [],
   },
   layout: {
     type:    String,
@@ -227,6 +233,10 @@ onBeforeUnmount(() => {
       :data-testid="`rancher-ai-ui-chat-system-error-message-box-${ i + 1 }`"
       :message="error"
       :disabled="false"
+    />
+    <Planning
+      v-if="props.planningState.length"
+      :items="props.planningState"
     />
     <Processing
       v-if="!props.activeChatId || !props.disabled"
