@@ -3,7 +3,8 @@ import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
 import {
   ChatError,
   ChatMetadata,
-  ConfirmationStatus, Message, MessageInternalSource, MessagePhase, MessageProcessingState, MessagePlanningItem, Role
+  ConfirmationStatus, Message, MessageInternalSource, MessagePhase, MessageProcessingState, Role,
+  MessagePlanningState
 } from '../types';
 
 /**
@@ -19,7 +20,7 @@ interface Chat {
   agentName?: string;
   messages: Record<string, Message>;
   processingState?: MessageProcessingState;
-  planningState?: MessagePlanningItem[];
+  planningState?: MessagePlanningState;
   error?: ChatError | null;
 }
 
@@ -80,7 +81,7 @@ const getters = {
     return { phase: MessagePhase.Idle };
   },
   planningState: (state: State) => (chatId: string) => {
-    return state.chats[chatId]?.planningState || [];
+    return state.chats[chatId]?.planningState;
   },
   error: (state: State) => (chatId: string) => {
     return state.chats[chatId]?.error || null;
@@ -208,14 +209,22 @@ const mutations = {
     state.chats[chatId].processingState = processingState;
   },
 
-  setPlanningState(state: State, args: { chatId: string; planningState: MessagePlanningItem[] }) {
+  setPlanningState(state: State, args: { chatId: string; planningState: MessagePlanningState | null }) {
     const { chatId, planningState } = args;
 
     if (!chatId || !state.chats[chatId]) {
       return;
     }
 
-    state.chats[chatId].planningState = planningState;
+    // No existing planning state with an ID, set a new planning state
+    if (!state.chats[chatId].planningState?.messageId) {
+      state.chats[chatId].planningState = planningState as MessagePlanningState;
+
+      return;
+    }
+
+    // Update the items of the existing planning state
+    state.chats[chatId].planningState.tasks = planningState?.tasks || [];
   },
 
   setError(state: State, args: { chatId: string; error: ChatError | null }) {

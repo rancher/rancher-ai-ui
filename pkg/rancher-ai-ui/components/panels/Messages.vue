@@ -9,7 +9,8 @@ import {
   MessageInternalSource,
   MessageProcessingState,
   StorageKey,
-  MessagePlanningItem
+  MessagePlanningTask,
+  MessagePlanningState
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
@@ -53,8 +54,8 @@ const props = defineProps({
     default: null,
   },
   planningState: {
-    type:    Array as PropType<MessagePlanningItem[]>,
-    default: () => [],
+    type:    Object as PropType<MessagePlanningState | null>,
+    default: null,
   },
   layout: {
     type:    String,
@@ -265,6 +266,11 @@ onBeforeUnmount(() => {
       v-for="(message, i) in formattedMessages"
       :key="i"
     >
+      <Planning
+        v-if="props.planningState && message.id === props.planningState.messageId"
+        class="chat-message-planning"
+        :value="props.planningState"
+      />
       <component
         :is="getMessageTemplate(message.templateContent?.component)"
         v-if="!!message.templateContent"
@@ -301,10 +307,6 @@ onBeforeUnmount(() => {
       :message="error"
       :disabled="false"
     />
-    <Planning
-      v-if="props.planningState.length"
-      :items="props.planningState"
-    />
     <Processing
       v-if="!props.activeChatId || !props.disabled"
       data-test-prefix="message"
@@ -335,8 +337,15 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
+.chat-message-planning,
 .chat-message-template {
   margin-bottom: 16px;
+}
+
+.chat-message-planning {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .chat-message-fast-scroll {
