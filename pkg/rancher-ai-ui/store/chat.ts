@@ -3,7 +3,7 @@ import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
 import {
   ChatError,
   ChatMetadata,
-  ConfirmationStatus, Message, MessageInternalSource, MessagePhase, MessageProcessingState, Role
+  ConfirmationStatus, Message, MessageInternalSource, MessagePhase, MessageProcessingState, MessagePlanningItem, Role
 } from '../types';
 
 /**
@@ -19,6 +19,7 @@ interface Chat {
   agentName?: string;
   messages: Record<string, Message>;
   processingState?: MessageProcessingState;
+  planningState?: MessagePlanningItem[];
   error?: ChatError | null;
 }
 
@@ -77,6 +78,9 @@ const getters = {
     }
 
     return { phase: MessagePhase.Idle };
+  },
+  planningState: (state: State) => (chatId: string) => {
+    return state.chats[chatId]?.planningState || [];
   },
   error: (state: State) => (chatId: string) => {
     return state.chats[chatId]?.error || null;
@@ -202,6 +206,16 @@ const mutations = {
     }
 
     state.chats[chatId].processingState = processingState;
+  },
+
+  setPlanningState(state: State, args: { chatId: string; planningState: MessagePlanningItem[] }) {
+    const { chatId, planningState } = args;
+
+    if (!chatId || !state.chats[chatId]) {
+      return;
+    }
+
+    state.chats[chatId].planningState = planningState;
   },
 
   setError(state: State, args: { chatId: string; error: ChatError | null }) {

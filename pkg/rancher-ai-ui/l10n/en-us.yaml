@@ -206,6 +206,8 @@ ai:
     label:
       default: processing request
       authenticationRequired: 'Awaiting authentication'
+  planning:
+    header: 'Planning'
   error:
     chat:
       generic: 'An error occurred initializing the chat'

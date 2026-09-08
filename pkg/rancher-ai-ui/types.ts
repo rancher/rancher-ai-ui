@@ -27,6 +27,10 @@ export const enum Tag {
   AuthenticationRequestEnd = '</authentication>',
   TokenRefreshRequestStart = '<token-refresh>',
   TokenRefreshRequestEnd = '</token-refresh>',
+  PlanningStart = '<planning>',
+  PlanningEnd = '</planning>',
+  PlanningApprovalStart = '<planning-approval>',
+  PlanningApprovalEnd = '</planning-approval>',
   ChatErrorStart = '<chat-error>',
   ChatErrorEnd = '</chat-error>',
   AuthenticationErrorStart = '<auth-error>',
@@ -215,6 +219,18 @@ export interface MessageTemplate {
     principal?: any;
     [key: string]: unknown;
   };
+}
+
+export const enum MessagePlanningItemStatus {
+  Pending = 'pending',
+  InProgress = 'in_progress',
+  Completed = 'completed',
+  Error = 'error',
+}
+
+export interface MessagePlanningItem {
+  status?: MessagePlanningItemStatus;
+  content?: string; // e.g., the content of the planning item
 }
 
 export const enum MessageLabelKey {

@@ -69,6 +69,7 @@ const {
   isChatInitialized,
   resetChatMetadata,
   processingState,
+  planningState,
   error: chatError,
   resetErrors: resetChatErrors
 } = useChatMessageComposable(
@@ -450,6 +451,7 @@ function unmount() {
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :processing-state="processingMessageState"
+        :planning-state="planningState"
         v-bind="$attrs"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
