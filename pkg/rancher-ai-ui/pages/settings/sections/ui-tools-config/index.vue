@@ -4,7 +4,6 @@ import { isEqual, debounce } from 'lodash';
 import { ref, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import { useShell } from '@shell/apis';
 import Checkbox from '@components/Form/Checkbox/Checkbox.vue';
 import ToggleSwitch from '@components/Form/ToggleSwitch/ToggleSwitch.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
@@ -20,7 +19,6 @@ import ToolDetails from './tool-details/index.vue';
 type FilterState = Record<string, string[]>;
 
 const store = useStore();
-const shellApi = useShell();
 const { t } = useI18n(store);
 
 const RANCHER_VERSION_KEY = 'rancher-version';
@@ -45,6 +43,8 @@ const emit = defineEmits(['update:value', 'publish:tools']);
 const initValue = ref({ ...props.value });
 const hasToolsConfigChanges = ref(false);
 const hasToolEnabledChanges = ref(false);
+
+const toolDetailsRef = ref<InstanceType<typeof ToolDetails>>();
 
 const searchQuery = ref('');
 const debouncedSearchQuery = ref('');
@@ -231,18 +231,9 @@ const resetToolsToDefaults = () => {
 };
 
 function openToolDetails(tool: UITool) {
-  if (!shellApi?.slideIn?.open) {
-    return;
+  if (toolDetailsRef.value?.show) {
+    toolDetailsRef.value.show(tool);
   }
-
-  shellApi.slideIn.open(ToolDetails, {
-    showHeader:          false,
-    props:               { tool },
-    width:               'default',
-    height:              'full',
-    top:                 '0',
-    returnFocusSelector: '.tools-grid-container',
-  });
 }
 </script>
 
@@ -427,8 +418,9 @@ function openToolDetails(tool: UITool) {
                   :id="tool.name"
                   :key="tool.name"
                   class="tool-card"
-                  :value="tool"
                   variant="medium"
+                  :tabindex="0"
+                  :value="tool"
                   :header="{
                     title: {
                       key: `aiConfig.form.section.tools.fields.tools.name.${tool.name}`,
@@ -438,7 +430,8 @@ function openToolDetails(tool: UITool) {
                   :content="{
                     text: tool.description
                   }"
-                  @click="() => openToolDetails(tool)"
+                  @click="openToolDetails(tool)"
+                  @keydown.enter="openToolDetails(tool)"
                 >
                   <template
                     v-once
@@ -493,6 +486,9 @@ function openToolDetails(tool: UITool) {
       </div>
     </div>
   </div>
+  <ToolDetails
+    ref="toolDetailsRef"
+  />
 </template>
 
 <style lang="scss" scoped>
@@ -657,8 +653,8 @@ function openToolDetails(tool: UITool) {
 .tool-card {
   cursor: pointer;
 
-  &:hover {
-    box-shadow: 0 2px 8px var(--shadow);
+  &:hover, &:focus-visible {
+    border-color: var(--primary);
   }
 }
 

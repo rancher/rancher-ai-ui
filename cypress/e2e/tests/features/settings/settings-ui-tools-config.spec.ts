@@ -158,17 +158,23 @@ describe('Feature: settings-ui-tools-config', () => {
     // Click on the tool card to open the slide-in panel
     uiToolsConfig.toolCard('Show YAML').click();
 
+    // Wait for the panel to be in the DOM
+    cy.contains('Usage').scrollIntoView().should('be.visible');
+
     // Wait for slide-in panel to appear and be visible
-    cy.get('[data-testid="slide-in-panel-component"]').should('be.visible');
+    cy.get('[data-testid="rancher-ai-ui-tool-info-panel-detail"]').should('be.visible');
 
     // Verify tool details are displayed in the slide-in
-    cy.contains('View the complete YAML').should('be.visible');
+    cy.contains('View the complete YAML').scrollIntoView().should('be.visible');
 
     // Click outside the slide-in panel to close it
-    cy.get('body').click(50, 50);
+    cy.get('body').realClick({
+      x: 200,
+      y: 200
+    });
 
     // Verify the panel is closed
-    cy.get('[data-testid="slide-in-panel-component"]').should('not.be.visible');
+    cy.get('[data-testid="rancher-ai-ui-tool-info-panel-detail"]').should('not.be.visible');
 
     cy.get('[data-testid="rancher-ai-ui-settings-tools"]').screenshot('settings-ui-tools-config-test-8-tool-details-panel');
   });
