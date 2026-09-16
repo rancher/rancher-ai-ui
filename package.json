@@ -9,6 +9,7 @@
     "@rancher/shell": "3.0.13"
   },
   "resolutions": {
+    "@rancher/shell/js-yaml": "4.3.2",
     "@types/node": "25.3.3",
     "@types/lodash": "4.17.5"
   },
