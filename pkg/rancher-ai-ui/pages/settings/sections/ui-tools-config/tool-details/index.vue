@@ -9,7 +9,7 @@ import Preview from './Preview.vue';
 const store = useStore();
 const { t } = useI18n(store);
 
-const BASE_PATH = 'https://raw.githubusercontent.com/torchiaf/rancher-ai-ui/feature-ui-tools-preview/assets/ui-tools/screenshots';
+const BASE_PATH = 'https://raw.githubusercontent.com/rancher/rancher-ai-ui/main/assets/ui-tools/screenshots';
 
 const tool = ref<UITool | null>(null);
 const showSlideIn = ref(false);
