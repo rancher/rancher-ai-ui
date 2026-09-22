@@ -44,7 +44,7 @@ function activateFocusTrap() {
     if (slideInElement && !focusTrap.value) {
       focusTrap.value = createFocusTrap(slideInElement, {
         escapeDeactivates: false,
-        allowOutsideClick: false,
+        allowOutsideClick: true,
       });
 
       focusTrap.value.activate();
