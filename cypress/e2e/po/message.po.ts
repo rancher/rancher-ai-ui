@@ -66,6 +66,14 @@ class RawMessagePo extends ComponentPo {
     return this.self().get('[data-testid="rancher-ai-ui-chat-message-confirmation-status-canceled"]').should('contain.text', args.withLabel);
   }
 
+  isFullyVisible() {
+    return this.self().then(($el) => {
+      const rect = $el[0].getBoundingClientRect();
+
+      cy.wrap(rect.bottom <= window.innerHeight);
+    });
+  }
+
   thinkingLabel() {
     return this.self().get('[data-testid="rancher-ai-ui-chat-message-thinking-label"]');
   }

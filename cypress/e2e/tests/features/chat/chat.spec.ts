@@ -8,6 +8,7 @@ import ProductNavPo from '@rancher/cypress/e2e/po/side-bars/product-side-nav.po'
 import { SettingsPagePo as GlobalSettings } from '@rancher/cypress/e2e/po/pages/global-settings/settings.po';
 import { SettingsPagePo } from '@/cypress/e2e/po/settings.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
+import ChatPanelMenuPo from '@/cypress/e2e/po/chat-panel-menu.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
 import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import { SlidingBadgePo } from '@/cypress/e2e/po/hook.po';
@@ -17,6 +18,7 @@ import { rancherAgentConfig, fleetAgentConfig, provisioningAgentConfig } from '@
 
 describe('Chat', () => {
   const chat = new ChatPo();
+  const chatMenu = new ChatPanelMenuPo();
 
   beforeEach(() => {
     cy.login();
@@ -484,6 +486,7 @@ describe('Chat', () => {
       cy.cleanChatHistory();
       cy.clearLLMResponses();
       cy.installUIToolsDefinition();
+      cy.clearLocalStorage('rancher-ai-ui*');
     });
 
     beforeEach(() => {
@@ -1093,7 +1096,111 @@ describe('Chat', () => {
       chat.getMessage(2).timestamp().should('be.visible');
     });
 
-    it('it should scroll to bottom on system error message', () => {
+    it('it should not scroll to bottom when auto-scroll is OFF', () => {
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      // Set auto-scroll to OFF and verify that the preference is applied
+      chatMenu.toggleMenu();
+
+      chatMenu.clickOption('Turn Auto-Scroll OFF');
+
+      const autoScrollMessage = chat.getMessage(2);
+
+      autoScrollMessage.containsText('The auto-scroll of the chat window is now turned OFF').and('be.visible');
+
+      cy.wait(200);
+
+      chatMenu.toggleMenu();
+
+      chatMenu.self().should('contain.text', 'Turn Auto-Scroll ON');
+
+      chatMenu.toggleMenu();
+
+      cy.enqueueLLMResponse({
+        text: [
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' very very', ' very very', ' very very',
+          ' long response',
+        ],
+      });
+
+      // Long responses should stop auto-scrolling when reaching the bottom
+      chat.sendMessage('Request 1');
+
+      const requestMessage = chat.getMessage(3);
+      const responseMessage = chat.getMessage(4);
+
+      responseMessage.isCompleted();
+
+      chat.messagesPanel().processingState().should('not.exist');
+
+      // Verify that the request message is visible and the response message is not fully visible as auto-scroll is off
+      requestMessage.self().should('be.visible');
+      responseMessage.isFullyVisible().should('be.false');
+
+      // Verify that the scroll button exists since auto-scroll is off
+      chat.messagesPanel().scrollButton().checkExists();
+    });
+
+    it('it should scroll to bottom on System message', () => {
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      // Send multiple messages to expand the chat
+      for (let i = 0; i < 2; i++) {
+        chat.sendMessage(`Request ${ i + 1 }`);
+
+        const responseMessage = chat.getMessage(3 + (i * 2));
+
+        responseMessage.isCompleted();
+      }
+
+      chat.messagesPanel().processingState().should('not.exist');
+
+      // Verify that the request message is not visible and the last message is visible, meaning that the chat has scrolled to the bottom
+      chat.getMessage(2).self().should('not.be.visible');
+      chat.getMessage(5).self().should('be.visible');
+
+      chat.messagesPanel().scrollButton().checkNotExists();
+
+      chat.messagesPanel().scrollTop();
+
+      // Verify that the last message is not visible
+      chat.getMessage(5).self().should('not.be.visible');
+      chat.messagesPanel().scrollButton().self().should('be.visible');
+
+      // Set auto-scroll to ON to send a System message in the chat
+      chatMenu.toggleMenu();
+
+      chatMenu.clickOption('Turn Auto-Scroll');
+
+      const systemMessage = chat.getMessage(6);
+
+      systemMessage.self().should('be.visible');
+    });
+
+    it('it should scroll to bottom on Error message', () => {
       HomePagePo.goTo();
 
       chat.open();
@@ -1140,6 +1247,7 @@ describe('Chat', () => {
       cy.clearLLMResponses();
       cy.cleanChatHistory();
       cy.uninstallUIToolsDefinition();
+      cy.clearLocalStorage('rancher-ai-ui*');
     });
   });
 
