@@ -523,8 +523,6 @@ aiConfig:
                 label: Category
                 action: Filter tools by this category
         details:
-          category: 'Category:'
-          preview: 'Preview'
           revision: 'REVISION'
           detail: 'DETAIL'
           usage: 'Usage'
