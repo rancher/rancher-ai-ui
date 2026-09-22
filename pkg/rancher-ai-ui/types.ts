@@ -466,3 +466,6 @@ export const enum StorageKey {
   ENABLE_AUTO_SCROLL = 'enable_auto_scroll'
 }
 
+export interface Preferences {
+  [StorageKey.ENABLE_AUTO_SCROLL]?: boolean;
+}

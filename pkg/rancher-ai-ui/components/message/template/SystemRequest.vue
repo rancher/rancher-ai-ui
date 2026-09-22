@@ -55,7 +55,10 @@ function doAction(type: 'confirm' | 'cancel') {
         />
       </div>
 
-      <div class="chat-system-request-actions">
+      <div
+        v-if="props.message?.actions?.length"
+        class="chat-system-request-actions"
+      >
         <div
           v-if="props.message.confirmation"
           class="chat-system-request-actions-result"
@@ -172,6 +175,10 @@ function doAction(type: 'confirm' | 'cancel') {
     gap: 4px;
     flex-wrap: wrap;
     justify-content: space-between;
+
+    &:has(> :first-child:last-child) {
+      justify-content: flex-end;
+    }
   }
 }
 
