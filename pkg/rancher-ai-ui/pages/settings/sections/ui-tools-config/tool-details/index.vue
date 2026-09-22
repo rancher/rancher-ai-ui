@@ -140,6 +140,7 @@ defineExpose({
 
             <div class="tool-preview-container">
               <Preview
+                :key="tool?.name"
                 :name="tool?.name"
                 :path="BASE_PATH"
                 :index="0"
@@ -156,6 +157,7 @@ defineExpose({
 
             <div class="tool-preview-container">
               <Preview
+                :key=" `${tool?.name}-1` "
                 :name="tool?.name"
                 :path="BASE_PATH"
                 :index="1"
