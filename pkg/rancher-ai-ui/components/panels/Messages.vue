@@ -7,7 +7,8 @@ import { useI18n } from '@shell/composables/useI18n';
 import {
   Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase,
   MessageInternalSource,
-  MessageProcessingState
+  MessageProcessingState,
+  StorageKey
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
@@ -18,6 +19,7 @@ import McpAuthenticationRequest from '../message/template/McpAuthenticationReque
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
 import { useScrollComposable } from '../../composables/useScrollComposable';
+import { useLocalStorageComposable } from '../../composables/useLocalStorageComposable';
 
 /**
  * Messages panel displaying the chat messages.
@@ -57,21 +59,36 @@ const props = defineProps({
 
 const emit = defineEmits(['update:message', 'confirm:message', 'send:message']);
 
+const storage = useLocalStorageComposable();
+
 const messagesView = ref<HTMLDivElement | null>(null);
 
 const lastMessageContainer = ref<HTMLDivElement | null>(null);
+const lastUserMessageContainer = ref<HTMLDivElement | null>(null);
 const lastMessageObserver = ref<MutationObserver | null>(null);
 
 // Ref callback to assign the last message container for auto-scrolling for each message/error list
 const containerRef = (count: number, index: number) => {
   return (elem: Element | ComponentPublicInstance | null) => {
+    // Assign the last message container for auto-scrolling
     if (index === count - 1) {
       lastMessageContainer.value = (elem as ComponentPublicInstance)?.$el || elem;
+    }
+    // Assign the second-to-last user message container for auto-scrolling
+    // If this is a user message, the last one will be system or assistant message
+    if (index === count - 2) {
+      if (props.messages[index]?.role === Role.User) {
+        lastUserMessageContainer.value = (elem as ComponentPublicInstance)?.$el || elem;
+      } else {
+        lastUserMessageContainer.value = null;
+      }
     }
   };
 };
 
-// Observes changes to the last message container to trigger auto-scrolling when content changes
+/**
+ * Observes changes to the last message container to trigger auto-scrolling when content changes.
+ */
 function setupObserver(newContainer: HTMLDivElement | null) {
   // Clean up old observer
   if (lastMessageObserver.value) {
@@ -82,10 +99,7 @@ function setupObserver(newContainer: HTMLDivElement | null) {
   // Setup new observer on the last message container
   if (newContainer) {
     lastMessageObserver.value = new MutationObserver(() => {
-      const isUserMessage = props.messages && props.messages[props.messages.length - 1]?.role === Role.User;
-      const isErrorMessage = props.systemErrors?.length > 0;
-
-      scrollToBottom({ force: isUserMessage || isErrorMessage });
+      handleMessageScroll();
     });
 
     lastMessageObserver.value.observe(newContainer, {
@@ -96,8 +110,55 @@ function setupObserver(newContainer: HTMLDivElement | null) {
   }
 }
 
+/**
+ * Handles changes in the message phase by triggering a scroll to the bottom.
+ */
 function onPhaseChange() {
   requestAnimationFrame(() => scrollToBottom());
+}
+
+/**
+ * Scrolls to the bottom of the messages based on auto-scroll settings and message type.
+ */
+function handleMessageScroll() {
+  if (props.messages?.length <= 1) {
+    return;
+  }
+
+  const lastMessage = props.messages[props.messages.length - 1];
+
+  const isAssistantMessage = lastMessage?.role === Role.Assistant;
+  const isErrorMessage = props.systemErrors?.length > 0;
+
+  if (!isAssistantMessage || isErrorMessage) {
+    requestAnimationFrame(() => {
+      updateScrollState();
+
+      scrollToBottom({ force: true });
+    });
+
+    return;
+  }
+
+  // The auto-scroll setting is enabled here.
+  // Scroll to the bottom immediately.
+  if (storage.get(StorageKey.ENABLE_AUTO_SCROLL)) {
+    scrollToBottom();
+
+    return;
+  }
+
+  const viewportHeight = messagesView.value?.clientHeight || 600;
+  const lastRequestHeight = (lastUserMessageContainer.value?.clientHeight || 0) + (lastMessageContainer.value?.clientHeight || 0);
+
+  // The auto-scroll setting is disabled here.
+  // Scroll to the bottom until the (last user request + the first part of the assistant's response) is visible.
+  if (lastRequestHeight + 100 < viewportHeight) {
+    scrollToBottom();
+  // Stop scrolling automatically and update the scroll state to show the fast scroll button.
+  } else {
+    updateScrollState();
+  }
 }
 
 const {
@@ -167,7 +228,10 @@ watch(
   { immediate: true }
 );
 
-// Scroll when the last message/error changes (HTML content update)
+/**
+ * Scroll when the last message/error changes (HTML content update)
+ * It ensures the scroll mechanism works correctly for the last assistant message when its HTML content is updated.
+ */
 watch(
   lastMessageContainer,
   (container) => setupObserver(container)

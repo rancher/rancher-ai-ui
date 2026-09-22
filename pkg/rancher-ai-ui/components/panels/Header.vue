@@ -3,6 +3,7 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import RcButton from '@components/RcButton/RcButton.vue';
 import ChatPanelMenu from '../header/ChatPanelMenu.vue';
+import { Preferences } from 'types.js';
 
 /**
  * Header panel for the AI chat interface.
@@ -14,11 +15,13 @@ const store = useStore();
 const { t } = useI18n(store);
 
 type Props = {
+  preferences?: Preferences;
   disabled?: boolean;
   hasPermissions?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  preferences:    () => ({}),
   disabled:       false,
   hasPermissions: true
 });
@@ -30,6 +33,7 @@ const emit = defineEmits([
   'config:chat',
   'shortcuts:chat',
   'toggle:history',
+  'update:preferences',
 ]);
 
 function toggleHistory() {
@@ -81,10 +85,12 @@ function toggleHistory() {
       class="chat-menu"
     >
       <ChatPanelMenu
+        :preferences="props.preferences"
         @download:chat="emit('download:chat')"
         @show:help="emit('show:help')"
         @config:chat="emit('config:chat')"
         @shortcuts:chat="emit('shortcuts:chat')"
+        @update:preferences="emit('update:preferences', $event)"
       />
     </div>
     <div class="chat-close-btn">

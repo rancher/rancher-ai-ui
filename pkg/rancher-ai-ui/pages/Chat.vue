@@ -6,7 +6,7 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, Role, StorageType
+  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, Preferences, Role, StorageKey, StorageType
 } from '../types';
 import { extractMessageText } from '../utils/label';
 import Chat from '../handlers/chat';
@@ -19,6 +19,7 @@ import { useAIAgentApiComposable } from '../composables/useAIAgentApiComposable'
 import { useAgentComposable } from '../composables/useAgentComposable';
 import { useInputComposable } from '../composables/useInputComposable';
 import { useKeyboardShortcutsComposable } from '../composables/useKeyboardShortcutsComposable';
+import { useLocalStorageComposable } from '../composables/useLocalStorageComposable';
 import AppModal from '@shell/components/AppModal.vue';
 import Header from '../components/panels/Header.vue';
 import Messages from '../components/panels/Messages.vue';
@@ -63,6 +64,7 @@ const {
   loadMessages,
   selectContext,
   clearMessageBox,
+  notifyPreferencesUpdate,
   chatMetadata,
   isChatInitialized,
   resetChatMetadata,
@@ -119,9 +121,13 @@ const {
   onDeleteChat:      deleteCurrentChat,
 });
 
+const storage = useLocalStorageComposable();
+
 const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
 const deletingChat = ref<HistoryChat | null>(null);
+
+const preferences = computed<Preferences>(() => ({ [StorageKey.ENABLE_AUTO_SCROLL]: storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true }));
 
 const chatAgents = computed<Agent[]>(() => {
   return agents.value.map((agent) => {
@@ -179,6 +185,19 @@ async function toggleHistoryPanel() {
     chatHistory.value = await fetchChats();
   }
   showHistory.value = !showHistory.value;
+}
+
+async function updatePreferences({ key, value }: { key: StorageKey, value: any }) {
+  const currentValue = { ...preferences.value }[key];
+
+  if (value !== currentValue) {
+    storage.set(key, value);
+
+    await notifyPreferencesUpdate({
+      key,
+      value
+    });
+  }
 }
 
 async function updateChat(args:{ id: string, payload: Partial<HistoryChat> }) {
@@ -415,6 +434,7 @@ function unmount() {
       :data-testid="`rancher-ai-ui-chat-panel-${ isChatInitialized && ws?.readyState === 1 ? 'ready' : 'not-ready' }`"
     >
       <Header
+        :preferences="preferences"
         :disabled="disabled"
         :has-permissions="hasPermissions"
         @close:chat="closePanel"
@@ -422,6 +442,7 @@ function unmount() {
         @download:chat="downloadMessages"
         @shortcuts:chat="openShortcuts"
         @toggle:history="toggleHistoryPanel"
+        @update:preferences="updatePreferences"
       />
       <Messages
         :active-chat-id="chatMetadata.chatId"

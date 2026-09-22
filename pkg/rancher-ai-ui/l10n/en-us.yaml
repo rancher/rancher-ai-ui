@@ -32,6 +32,11 @@ ai:
             create: 'Please contact your administrator to install the UI tools.'
             update: 'The UI tools are <b>disabled</b> due to definition change.<br>Please ask your administrator to refresh and enable the UI tools to get the latest updates.'
           refreshTooltip: 'Go to settings to handle the UI tools.'
+      updatePreferences:
+        info:
+          enable_auto_scroll:
+            true: 'The <code>auto-scroll</code> of the chat window is now turned <b>ON</b>&ensp;'
+            false: 'The <code>auto-scroll</code> of the chat window is now turned <b>OFF</b>'
       switchAgent:
         info: '<code>{agent}</code> Agent has been selected in adaptive mode for the last few prompts.<br>Usually, manual selection is best for faster response times.<br><br>Would you like me to switch over to <b>manual</b> agent selection?<br>'
         actions:
@@ -256,6 +261,13 @@ ai:
         shortcuts:
           label: View Keyboard Shortcuts
           description: View Keyboard Shortcuts for your assistant
+        autoscroll:
+          label:
+            enable: Turn Auto-Scroll ON
+            disable: Turn Auto-Scroll OFF
+          description:
+            enable: Automatically scroll to the bottom of the chat when new messages arrive
+            disable: Stop automatically scrolling to the bottom of the chat when new messages arrive
   history:
     chat:
       create: Start a New Chat
