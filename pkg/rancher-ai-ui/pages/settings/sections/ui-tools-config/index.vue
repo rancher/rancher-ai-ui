@@ -419,7 +419,6 @@ function openToolDetails(tool: UITool) {
                   :key="tool.name"
                   class="tool-card"
                   variant="medium"
-                  :tabindex="0"
                   :value="tool"
                   :header="{
                     title: {
@@ -430,8 +429,8 @@ function openToolDetails(tool: UITool) {
                   :content="{
                     text: tool.description
                   }"
-                  @click="openToolDetails(tool)"
-                  @keydown.enter="openToolDetails(tool)"
+                  :clickable="true"
+                  @card-click="openToolDetails(tool)"
                 >
                   <template
                     v-once
@@ -647,14 +646,6 @@ function openToolDetails(tool: UITool) {
 
   :deep() .item-card-body {
     gap: 0;
-  }
-}
-
-.tool-card {
-  cursor: pointer;
-
-  &:hover, &:focus-visible {
-    border-color: var(--primary);
   }
 }
 
