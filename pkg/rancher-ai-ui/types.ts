@@ -461,3 +461,8 @@ export const enum LLMProvider {
   Bedrock = 'bedrock',
   GenericOpenAI = 'generic-openai',
 }
+
+export const enum StorageKey {
+  ENABLE_AUTO_SCROLL = 'enable_auto_scroll'
+}
+

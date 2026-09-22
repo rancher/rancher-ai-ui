@@ -8,6 +8,7 @@ import chatStore from './store/chat';
 import inputStore from './store/input';
 import contextStore from './store/context';
 import stagingStore from './store/staging';
+import storageStore from './store/storage';
 import Chat from './handlers/chat';
 import Hooks from './handlers/hooks/index';
 import BadgeSlidingOverlay from './handlers/hooks/overlay/badge-sliding';
@@ -78,6 +79,7 @@ export default function(extension: IExtension, { store }: any): void {
   extension.addDashboardStore(inputStore.config.namespace, inputStore.specifics, inputStore.config);
   extension.addDashboardStore(contextStore.config.namespace, contextStore.specifics, contextStore.config);
   extension.addDashboardStore(stagingStore.config.namespace, stagingStore.specifics, stagingStore.config);
+  extension.addDashboardStore(storageStore.config.namespace, storageStore.specifics, storageStore.config);
 
   // Inject hooks in the main window
   Hooks.inject(BadgeSlidingOverlay, store);
