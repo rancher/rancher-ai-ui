@@ -2,7 +2,7 @@
 import { ref, nextTick } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
-import { useWatcherBasedSetupFocusTrapWithDestroyIncluded } from '@shell/composables/focusTrap';
+import { createFocusTrap, FocusTrap } from 'focus-trap';
 import { UITool } from '../../../../../types';
 import Preview from './Preview.vue';
 
@@ -14,20 +14,18 @@ const BASE_PATH = 'https://raw.githubusercontent.com/rancher/rancher-ai-ui/main/
 const tool = ref<UITool | null>(null);
 const showSlideIn = ref(false);
 const isActive = ref(false);
-const glassRef = ref<HTMLDivElement>();
-
-useWatcherBasedSetupFocusTrapWithDestroyIncluded(() => showSlideIn.value, '#tool-slide-in-content-element');
+const focusTrap = ref<FocusTrap | null>(null);
 
 function show(value: UITool) {
   tool.value = value;
   showSlideIn.value = true;
 
-  nextTick(() => {
-    glassRef.value?.focus();
-  });
+  activateFocusTrap();
 }
 
 function hide() {
+  deactivateFocusTrap();
+
   showSlideIn.value = false;
 }
 
@@ -37,6 +35,28 @@ function onEnter() {
 
 function onLeave() {
   isActive.value = false;
+}
+
+function activateFocusTrap() {
+  nextTick(() => {
+    const slideInElement = document.getElementById('tool-slide-in-content-element');
+
+    if (slideInElement && !focusTrap.value) {
+      focusTrap.value = createFocusTrap(slideInElement, {
+        escapeDeactivates: false,
+        allowOutsideClick: false,
+      });
+
+      focusTrap.value.activate();
+    }
+  });
+}
+
+function deactivateFocusTrap() {
+  if (focusTrap.value) {
+    focusTrap.value.deactivate();
+    focusTrap.value = null;
+  }
 }
 
 defineExpose({
@@ -49,11 +69,8 @@ defineExpose({
   <div class="tool-info-panel">
     <div
       v-if="showSlideIn"
-      ref="glassRef"
       class="glass"
-      tabindex="0"
       @click="hide()"
-      @keydown.enter.space="hide()"
     />
     <transition
       name="slide"
@@ -65,6 +82,7 @@ defineExpose({
         id="tool-slide-in-content-element"
         class="slideIn"
         :class="{'active': isActive}"
+        @keydown.esc="hide()"
       >
         <div
           class="tool-info-container"
