@@ -20,7 +20,7 @@ describe('Feature: chat-panel-menu', () => {
   });
 
   it('Test 1: Menu button opens the ⋮ dropdown', () => {
-    menu.openMenu();
+    menu.toggleMenu();
 
     cy.contains('.v-popper__popper', 'Download Messages').should('be.visible');
     cy.contains('.v-popper__popper', 'View Keyboard Shortcuts').should('be.visible');
@@ -30,7 +30,7 @@ describe('Feature: chat-panel-menu', () => {
   });
 
   it('Test 2: "Keyboard shortcuts" menu option opens the shortcuts popover', () => {
-    menu.openMenu();
+    menu.toggleMenu();
     menu.clickOption('View Keyboard Shortcuts');
 
     menu.shortcutsTitle().should('be.visible');
@@ -40,7 +40,7 @@ describe('Feature: chat-panel-menu', () => {
   });
 
   it('Test 3: Shortcuts popover lists the correct shortcut actions', () => {
-    menu.openMenu();
+    menu.toggleMenu();
     menu.clickOption('View Keyboard Shortcuts');
 
     menu.shortcutsTitle().should('be.visible');
@@ -70,7 +70,7 @@ describe('Feature: chat-panel-menu', () => {
     chat.open();
     chat.isReady();
 
-    menu.openMenu();
+    menu.toggleMenu();
     menu.clickOption('Edit Configuration');
 
     cy.url().should('match', /\/(ai-assistant|settings)/);
@@ -84,7 +84,7 @@ describe('Feature: chat-panel-menu', () => {
     chat.sendMessage('Hello');
     chat.getMessage(3).isCompleted();
 
-    menu.openMenu();
+    menu.toggleMenu();
     menu.clickOption('Download Messages');
 
     // Download is a background operation — chat panel should remain open

@@ -11,7 +11,7 @@ export default class ChatPanelMenuPo extends ComponentPo {
   }
 
   /** Click the ⋮ (icon-actions) menu trigger */
-  openMenu() {
+  toggleMenu() {
     return this.self().find('.icon-actions').click();
   }
 
