@@ -2,14 +2,17 @@
 import { ref, nextTick } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import { PRODUCT_NAME } from '../../../../../product';
 import { createFocusTrap, FocusTrap } from 'focus-trap';
 import { UITool } from '../../../../../types';
+import { remoteAssetsBasePath } from '../../../../../utils/version';
 import Preview from './Preview.vue';
 
 const store = useStore();
 const { t } = useI18n(store);
 
-const BASE_PATH = 'https://raw.githubusercontent.com/rancher/rancher-ai-ui/main/assets/ui-tools/screenshots';
+const isDev = (store as any).$extension.getPlugins()?.[PRODUCT_NAME];
+const BASE_PATH = `${ remoteAssetsBasePath(isDev) }/ui-tools/screenshots`;
 
 const tool = ref<UITool | null>(null);
 const slideInPanel = ref<HTMLElement | null>(null);
@@ -139,7 +142,7 @@ defineExpose({
 
             <div class="tool-preview-container">
               <Preview
-                :key="tool?.name"
+                :key="`${tool?.name}_0`"
                 :name="tool?.name"
                 :path="BASE_PATH"
                 :index="0"
@@ -156,7 +159,7 @@ defineExpose({
 
             <div class="tool-preview-container">
               <Preview
-                :key=" `${tool?.name}-1` "
+                :key="`${tool?.name}_1`"
                 :name="tool?.name"
                 :path="BASE_PATH"
                 :index="1"

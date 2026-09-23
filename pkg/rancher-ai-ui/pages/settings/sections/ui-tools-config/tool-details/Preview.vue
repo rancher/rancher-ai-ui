@@ -19,6 +19,7 @@ const props = defineProps({
 const path = computed(() => `${ props.path }/${ props.name }_${ props.index }.png`);
 
 const isLoading = ref(true);
+const isError = ref(false);
 
 const handleImageLoad = () => {
   isLoading.value = false;
@@ -26,9 +27,14 @@ const handleImageLoad = () => {
 
 const handleImageError = () => {
   isLoading.value = false;
+  isError.value = true;
 };
 
 const openImageFullScreen = () => {
+  if (isError.value) {
+    return;
+  }
+
   window.open(path.value, '_blank');
 };
 </script>
@@ -48,7 +54,10 @@ const openImageFullScreen = () => {
         :src="path"
         :alt="`${props.name} preview`"
         class="preview-img"
-        :class="{ 'is-loaded': !isLoading }"
+        :class="{
+          'is-loaded': !isLoading,
+          'is-error': isError
+        }"
         @load="handleImageLoad"
         @error="handleImageError"
         @click="openImageFullScreen"
@@ -93,6 +102,11 @@ const openImageFullScreen = () => {
 
 .preview-img.is-loaded {
   animation: fadeIn 0.3s ease-in;
+}
+
+.preview-img.is-error {
+  width: 50%;
+  cursor: not-allowed;
 }
 
 @keyframes fadeIn {
