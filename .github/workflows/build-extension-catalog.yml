@@ -1,9 +1,7 @@
 name: Build and Release Extension Catalog
 
 on:
-  workflow_dispatch:
-  release:
-    types: [released]
+  push:
 
 defaults:
   run:
