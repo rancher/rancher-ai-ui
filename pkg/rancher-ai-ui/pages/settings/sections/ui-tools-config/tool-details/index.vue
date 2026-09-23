@@ -12,13 +12,14 @@ const { t } = useI18n(store);
 const BASE_PATH = 'https://raw.githubusercontent.com/rancher/rancher-ai-ui/main/assets/ui-tools/screenshots';
 
 const tool = ref<UITool | null>(null);
-const showSlideIn = ref(false);
+const slideInPanel = ref<HTMLElement | null>(null);
+const showSlideInPanel = ref(false);
 const isActive = ref(false);
 const focusTrap = ref<FocusTrap | null>(null);
 
 function show(value: UITool) {
   tool.value = value;
-  showSlideIn.value = true;
+  showSlideInPanel.value = true;
 
   activateFocusTrap();
 }
@@ -26,7 +27,7 @@ function show(value: UITool) {
 function hide() {
   deactivateFocusTrap();
 
-  showSlideIn.value = false;
+  showSlideInPanel.value = false;
 }
 
 function onEnter() {
@@ -39,10 +40,8 @@ function onLeave() {
 
 function activateFocusTrap() {
   nextTick(() => {
-    const slideInElement = document.getElementById('tool-slide-in-content-element');
-
-    if (slideInElement && !focusTrap.value) {
-      focusTrap.value = createFocusTrap(slideInElement, {
+    if (slideInPanel.value && !focusTrap.value) {
+      focusTrap.value = createFocusTrap(slideInPanel.value, {
         escapeDeactivates: false,
         allowOutsideClick: true,
       });
@@ -68,7 +67,7 @@ defineExpose({
 <template>
   <div class="tool-info-panel">
     <div
-      v-if="showSlideIn"
+      v-if="showSlideInPanel"
       class="glass"
       @click="hide()"
     />
@@ -78,8 +77,8 @@ defineExpose({
       @after-leave="onLeave"
     >
       <aside
-        v-show="showSlideIn && tool"
-        id="tool-slide-in-content-element"
+        v-show="showSlideInPanel && tool"
+        ref="slideInPanel"
         class="slideIn"
         :class="{'active': isActive}"
         @keydown.esc="hide()"
