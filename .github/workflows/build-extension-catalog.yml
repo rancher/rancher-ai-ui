@@ -2,6 +2,8 @@ name: Build and Release Extension Catalog
 
 on:
   push:
+    branches:
+      - release-1.0
 
 defaults:
   run:
