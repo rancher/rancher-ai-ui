@@ -10,6 +10,12 @@ OUTPUT_DIR="$2"
 [ -z "$SOURCE_DIR" ] && { echo "Usage: sh $0 [sourceDir] [outputDir]"; exit 1; }
 [ -z "$OUTPUT_DIR" ] && { echo "Usage: sh $0 [sourceDir] [outputDir]"; exit 1; }
 
+# Check if source directory has any png files (excluding fail files) before proceeding
+if [ -z "$(find "$SOURCE_DIR" -type f -name "*.png" ! -name "*fail*" 2>/dev/null)" ]; then
+  echo "❌ No screenshots found in '$SOURCE_DIR'"
+  exit 1
+fi
+
 # Create or empty output directory
 rm -rf "$OUTPUT_DIR"/* 2>/dev/null
 mkdir -p "$OUTPUT_DIR" || { echo "❌ Failed to create output directory"; exit 1; }
