@@ -117,4 +117,11 @@ const openImageFullScreen = () => {
     opacity: 1;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-img.is-loaded {
+    animation: none;
+    opacity: 1;
+  }
+}
 </style>

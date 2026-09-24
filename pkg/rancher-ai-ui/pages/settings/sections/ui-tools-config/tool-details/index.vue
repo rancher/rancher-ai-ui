@@ -256,6 +256,13 @@ onBeforeUnmount(() => {
         right: 0;
       }
 
+      @media (prefers-reduced-motion: reduce) {
+        &.slide-enter-active,
+        &.slide-leave-active {
+          transition: none;
+        }
+      }
+
       &__header__buttons {
         display: flex;
       }
