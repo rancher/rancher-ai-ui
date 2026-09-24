@@ -545,6 +545,8 @@ aiConfig:
             suggestions:
               detail: 'Receive quick action suggestions based on the current context and your interaction with the AI assistant. This tool provides up to 3 recommended next steps you can take to continue your workflow.'
               usage: 'Click on any suggestion to send it to the AI assistant or click on edit to modify it before sending. Suggestions are tailored to your current context and can help you discover new capabilities or continue your workflow more efficiently.'
+          image-preview:
+            placeholder: '{ toolName } - step { pos } of 2'
         publish:
           message:
             admin:

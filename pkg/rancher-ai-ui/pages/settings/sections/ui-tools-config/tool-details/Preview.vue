@@ -42,6 +42,8 @@ const openImageFullScreen = () => {
 <template>
   <div
     class="preview-section"
+    @click="openImageFullScreen"
+    @keydown.enter.stop="openImageFullScreen"
   >
     <div class="img-container">
       <div
@@ -51,8 +53,9 @@ const openImageFullScreen = () => {
         <i class="icon icon-spinner icon-spin icon-3x" />
       </div>
       <img
+        role="presentation"
         :src="path"
-        :alt="`${props.name} preview`"
+        :alt="`&nbsp;${ t('aiConfig.form.section.tools.details.image-preview.placeholder', { toolName: props.name, pos: props.index + 1 }, true) }`"
         class="preview-img"
         :class="{
           'is-loaded': !isLoading,
@@ -60,7 +63,6 @@ const openImageFullScreen = () => {
         }"
         @load="handleImageLoad"
         @error="handleImageError"
-        @click="openImageFullScreen"
       />
     </div>
   </div>
