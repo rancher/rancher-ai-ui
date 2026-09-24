@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
             tabindex="0"
           >
             <div class="tool-detail-section">
-              <span
+              <div
                 v-clean-html="t(`aiConfig.form.section.tools.details.tools.${ tool?.name }.detail`)"
                 class="detail-content"
               />
