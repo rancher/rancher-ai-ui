@@ -124,14 +124,20 @@ onBeforeUnmount(() => {
                   @click="hide()"
                   @keydown.enter.space="hide()"
                 >
-                  <i class="icon icon-close" />
+                  <i
+                    class="icon icon-close"
+                    aria-hidden="true"
+                  />
                 </button>
               </div>
             </div>
           </div>
 
           <div class="tool-category">
-            <i class="category-icon icon icon-category-alt" />
+            <i
+              class="category-icon icon icon-category-alt"
+              aria-hidden="true"
+            />
             <span class="category-value">
               {{ tool?.category }}
             </span>
