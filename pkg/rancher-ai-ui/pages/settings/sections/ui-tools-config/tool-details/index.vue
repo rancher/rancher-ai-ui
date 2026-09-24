@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, onBeforeUnmount } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { PRODUCT_NAME } from '../../../../../product';
@@ -59,11 +59,17 @@ function deactivateFocusTrap() {
     focusTrap.value.deactivate();
     focusTrap.value = null;
   }
+
+  slideInPanel.value = null;
 }
 
 defineExpose({
   show,
   hide
+});
+
+onBeforeUnmount(() => {
+  deactivateFocusTrap();
 });
 </script>
 
