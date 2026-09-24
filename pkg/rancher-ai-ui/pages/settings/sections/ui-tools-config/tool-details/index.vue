@@ -301,6 +301,7 @@ onBeforeUnmount(() => {
     height: 100%;
     overflow: hidden;
     padding: 2px; // + 10px from main-panel = 12px total
+    user-select: text;
   }
 
   .tool-header {
@@ -349,7 +350,6 @@ onBeforeUnmount(() => {
       font-size: 13px;
       font-weight: 500;
       color: var(--link-text-secondary);
-      user-select: none;
       text-transform: capitalize;
     }
   }
@@ -361,7 +361,7 @@ onBeforeUnmount(() => {
     padding: 2px 8px;
     border-radius: 4px;
     width: fit-content;
-    user-select: none;
+    user-select: text;
   }
 
   .tool-scrollable-content {
@@ -374,6 +374,7 @@ onBeforeUnmount(() => {
   .tool-detail-section,
   .tool-usage-section {
     margin-bottom: 8px;
+    user-select: text;
   }
 
   .tool-revision-section,
