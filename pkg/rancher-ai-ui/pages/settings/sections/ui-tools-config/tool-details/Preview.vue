@@ -40,10 +40,11 @@ const openImageFullScreen = () => {
 </script>
 
 <template>
-  <div
+  <button
+    type="button"
     class="preview-section"
+    :aria-label="t('aiConfig.form.section.tools.details.image-preview.placeholder', { toolName: props.name, pos: props.index + 1 }, true)"
     @click="openImageFullScreen"
-    @keydown.enter.stop="openImageFullScreen"
   >
     <div class="img-container">
       <div
@@ -53,7 +54,9 @@ const openImageFullScreen = () => {
         aria-live="polite"
       >
         <i class="icon icon-spinner icon-spin icon-3x" />
-        <span style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;">Loading preview...</span>
+        <span class="sr-only">
+          {{ t('aiConfig.form.section.tools.details.image-preview.loading') }}
+        </span>
       </div>
       <div
         v-if="isError"
@@ -78,20 +81,23 @@ const openImageFullScreen = () => {
         @error="handleImageError"
       />
     </div>
-  </div>
+  </button>
 </template>
 
 <style lang="scss" scoped>
 .preview-section {
+  background: transparent;
+  width: 100%;
   padding: 12px 16px;
 
   .img-container {
-    min-height: 250px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     position: relative;
+    width: 100%;
+    min-height: 250px;
   }
 
   .preview-img {
