@@ -116,15 +116,16 @@ onBeforeUnmount(() => {
             </div>
             <div class="tool-close">
               <div class="slideIn__header__buttons">
-                <div
+                <button
                   class="slideIn__header__button"
                   role="button"
+                  :aria-label="t('generic.close')"
                   tabindex="0"
                   @click="hide()"
                   @keydown.enter.space="hide()"
                 >
                   <i class="icon icon-close" />
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -254,6 +255,10 @@ onBeforeUnmount(() => {
         align-items: center;
         justify-content: center;
         padding: 2px;
+        background-color: transparent;
+
+        line-height: 0;
+        min-height: 0;
 
         > i {
           font-size: 20px;
