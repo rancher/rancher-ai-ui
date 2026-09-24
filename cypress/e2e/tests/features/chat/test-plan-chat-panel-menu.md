@@ -289,7 +289,7 @@ export class ChatPanelMenuPo extends ComponentPo {
   }
 
   /** Click the ⋮ menu trigger (icon-actions) */
-  openMenu() {
+  toggleMenu() {
     return this.self().find('.icon-actions').click();
   }
 

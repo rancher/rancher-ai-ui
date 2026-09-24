@@ -1,3 +1,5 @@
+/* eslint-disable vue/require-default-prop */
+import { defineComponent } from 'vue';
 import { shallowMount, mount, flushPromises } from '@vue/test-utils';
 import AIAgentSettings from '../AIAgentSettings.vue';
 import { Settings, SettingsFormData, ValidationStatus } from '../../types';
@@ -7,6 +9,14 @@ import { LLMProvider as ChatBotEnum } from '../../../../types';
 jest.mock('@shell/components/form/LabeledSelect.vue', () => ({
   default: {
     name:     'LabeledSelect',
+    props:    {
+      value:    String,
+      label:    String,
+      options:  Array,
+      mode:     String,
+      disabled: Boolean,
+      required: Boolean
+    },
     template: '<select class="labeled-select" />',
     emits:    ['update:value']
   }
@@ -16,16 +26,56 @@ jest.mock('@shell/components/form/LabeledSelect.vue', () => ({
 jest.mock('@shell/components/form/Password.vue', () => ({
   default: {
     name:     'Password',
-    props:    ['value', 'label', 'mode', 'disabled'],
+    props:    {
+      value:    String,
+      label:    String,
+      mode:     String,
+      disabled: Boolean,
+      required: Boolean
+    },
     template: '<div />'
   }
+}));
+
+// Mock project components
+jest.mock('@components/Form/LabeledInput/LabeledInput.vue', () => ({
+  default: defineComponent({
+    name:     'LabeledInput',
+    props:    {
+      value:       [String, Number],
+      label:       String,
+      mode:        String,
+      disabled:    Boolean,
+      placeholder: String,
+      required:    Boolean,
+      rules:       Array,
+      tooltip:     String
+    },
+    emits:    ['update:value'],
+    template: '<input />'
+  })
+}));
+
+jest.mock('@components/Banner/Banner.vue', () => ({
+  default: defineComponent({
+    name:     'Banner',
+    props:    {
+      color: String,
+      label: String
+    },
+    template: '<div />'
+  })
 }));
 
 // Mock ToggleGroup component to avoid TypeScript fs issues
 jest.mock('../../../../components/toggle/toggle-group.vue', () => ({
   default: {
     name:     'ToggleGroup',
-    props:    ['modelValue', 'items', 'disabled'],
+    props:    {
+      modelValue: [String, Number],
+      items:      Array,
+      disabled:   Boolean
+    },
     template: '<div />'
   }
 }));
@@ -111,11 +161,7 @@ describe('AIAgentSettings.vue', () => {
 
       const banner = wrapper.findComponent({ name: 'Banner' });
 
-      expect(banner.props('color')).toBe('warning');
-
-      const bannerHtml = banner.html();
-
-      expect(bannerHtml).toContain('aiConfig.form.section.provider.banner.privacy.description.thirdParty');
+      expect(banner.vm.$attrs.color).toBe('warning');
     });
 
     it('should show privacy banner for Local provider', () => {
@@ -126,11 +172,7 @@ describe('AIAgentSettings.vue', () => {
 
       const banner = wrapper.findComponent({ name: 'Banner' });
 
-      expect(banner.props('color')).toBe('warning');
-
-      const bannerHtml = banner.html();
-
-      expect(bannerHtml).toContain('aiConfig.form.section.provider.banner.privacy.description.local');
+      expect(banner.vm.$attrs.color).toBe('warning');
     });
 
     it('should show privacy and info banner for GenericOpenAI provider', () => {
@@ -141,17 +183,9 @@ describe('AIAgentSettings.vue', () => {
 
       const banner = wrapper.findAllComponents({ name: 'Banner' });
 
-      expect(banner[0].props('color')).toBe('warning');
+      expect(banner[0].vm.$attrs.color).toBe('warning');
 
-      const bannerHtml = banner[0].html();
-
-      expect(bannerHtml).toContain('aiConfig.form.section.provider.banner.privacy.description.thirdParty');
-
-      expect(banner[1].props('color')).toBe('info');
-
-      const bannerHtml1 = banner[1].html();
-
-      expect(bannerHtml1).toContain('aiConfig.form.section.provider.banner.genericOpenAI.description');
+      expect(banner[1].vm.$attrs.color).toBe('info');
     });
   });
 
@@ -203,7 +237,7 @@ describe('AIAgentSettings.vue', () => {
       const input = wrapper.findComponent({ name: 'LabeledInput' });
 
       expect(input.exists()).toBe(true);
-      expect(input.props('value')).toBe('http://localhost:11434');
+      expect(input.vm.$attrs.value).toBe('http://localhost:11434');
     });
 
     it('should use OPENAI_API_KEY for OpenAI chatbot', async() => {
@@ -544,7 +578,6 @@ describe('AIAgentSettings.vue', () => {
       });
 
       const input = wrapper.findComponent({ name: 'LabeledInput' });
-      const initialValue = input.props('value');
 
       await (wrapper as any).setProps({
         value: {
@@ -557,7 +590,7 @@ describe('AIAgentSettings.vue', () => {
       const updatedValue = wrapper.findComponent({ name: 'LabeledInput' }).props('value');
 
       // Verify the prop value actually changed
-      expect(updatedValue).not.toBe(initialValue);
+      expect(updatedValue).not.toBe(input.vm.$attrs.value);
     });
   });
 

@@ -24,6 +24,10 @@ jest.mock('../../../composables/useAIAgentApiComposable', () => ({
 jest.mock('../sections/AIAgentSettings.vue', () => ({}));
 jest.mock('../sections/ai-agent-configs/index.vue', () => ({}));
 jest.mock('../../../dialog/ApplySettingsCard.vue', () => ({}));
+jest.mock('@components/Form/Checkbox/Checkbox.vue', () => ({
+  name:     'Checkbox',
+  template: '<div><slot /></div>'
+}));
 jest.mock('@components/RcButton/RcButton.vue', () => ({
   default: {
     name:     'RcButton',

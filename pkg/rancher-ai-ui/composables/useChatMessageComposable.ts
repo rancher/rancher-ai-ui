@@ -242,7 +242,7 @@ export function useChatMessageComposable(
     };
   }
 
-  function buildSystemRequestMessage(args: { content: any; component?: MessageTemplateComponent; actions: MessageAction[] }): Message {
+  function buildSystemRequestMessage(args: { content: any; component?: MessageTemplateComponent; actions?: MessageAction[] }): Message {
     const {
       component = MessageTemplateComponent.SystemRequest,
       content,
@@ -364,6 +364,14 @@ export function useChatMessageComposable(
     wsSend(ws, response);
 
     setProcessingState({ phase: nextPhase });
+  }
+
+  async function notifyPreferencesUpdate({ key, value }: { key: string, value: any }) {
+    const content = { message: t(`ai.message.system.updatePreferences.info.${ key }.${ value }`, {}, true) };
+
+    const message = buildSystemRequestMessage({ content });
+
+    await addMessage(message);
   }
 
   function onopen(event: { target: WebSocket }) {
@@ -750,6 +758,7 @@ export function useChatMessageComposable(
     loadMessages,
     resetMessages,
     clearMessageBox,
+    notifyPreferencesUpdate,
     chatMetadata,
     isChatInitialized,
     resetChatMetadata,
