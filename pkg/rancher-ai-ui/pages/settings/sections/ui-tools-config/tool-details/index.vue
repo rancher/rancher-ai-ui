@@ -19,9 +19,12 @@ const slideInPanel = ref<HTMLElement | null>(null);
 const showSlideInPanel = ref(false);
 const isActive = ref(false);
 const focusTrap = ref<FocusTrap | null>(null);
+const triggerElement = ref<HTMLElement | null>(null);
 
-function show(value: UITool) {
+function show(value: UITool, sourceElement: HTMLElement) {
+  triggerElement.value = sourceElement;
   tool.value = value;
+
   showSlideInPanel.value = true;
 
   activateFocusTrap();
@@ -29,8 +32,14 @@ function show(value: UITool) {
 
 function hide() {
   deactivateFocusTrap();
-
   showSlideInPanel.value = false;
+
+  // Restore focus to the source element
+  nextTick(() => {
+    if (triggerElement.value) {
+      triggerElement.value.focus();
+    }
+  });
 }
 
 function onEnter() {

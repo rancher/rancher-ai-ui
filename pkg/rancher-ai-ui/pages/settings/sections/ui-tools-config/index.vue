@@ -230,9 +230,11 @@ const resetToolsToDefaults = () => {
   emit('update:value', updatedValue);
 };
 
-function openToolDetails(tool: UITool) {
+function openToolDetails(tool: UITool, event: Event) {
   if (toolDetailsRef.value?.show) {
-    toolDetailsRef.value.show(tool);
+    const cardElement = event.currentTarget as HTMLElement;
+
+    toolDetailsRef.value.show(tool, cardElement);
   }
 }
 </script>
@@ -419,6 +421,7 @@ function openToolDetails(tool: UITool) {
                   :key="tool.name"
                   class="tool-card"
                   variant="medium"
+                  tabindex="0"
                   :value="tool"
                   :header="{
                     title: {
@@ -430,7 +433,7 @@ function openToolDetails(tool: UITool) {
                     text: tool.description
                   }"
                   :clickable="true"
-                  @card-click="openToolDetails(tool)"
+                  @card-click="openToolDetails(tool, $event)"
                 >
                   <template
                     v-once
