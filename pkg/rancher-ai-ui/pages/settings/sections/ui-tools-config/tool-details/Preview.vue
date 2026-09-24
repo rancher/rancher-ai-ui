@@ -89,6 +89,11 @@ const openImageFullScreen = () => {
     transform: scaleX(1.06) scaleY(1.09);
     transform-origin: center;
   }
+
+  &:focus-visible {
+    @include focus-outline;
+    outline-offset: -2px;
+  }
 }
 
 .spinner-wrapper {

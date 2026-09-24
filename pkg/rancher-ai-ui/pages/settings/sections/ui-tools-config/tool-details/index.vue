@@ -173,6 +173,7 @@ onBeforeUnmount(() => {
                 :name="tool?.name"
                 :path="BASE_PATH"
                 :index="0"
+                tabindex="0"
               />
             </div>
 
@@ -190,6 +191,7 @@ onBeforeUnmount(() => {
                 :name="tool?.name"
                 :path="BASE_PATH"
                 :index="1"
+                tabindex="0"
               />
             </div>
           </div>
@@ -368,6 +370,10 @@ onBeforeUnmount(() => {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
+
+    &:focus-visible {
+      @include focus-outline;
+    }
   }
 
   .tool-revision-section,
