@@ -28,26 +28,24 @@ const resourceButtonsRef = useTemplateRef('resourceButtonsRef');
 const visibilityObserver = ref<IntersectionObserver | null>(null);
 const isVisible = ref(false);
 
-const showRemaining = ref(false);
+const batchesShown = ref(1);
 
 const actions = computed(() => {
-  if (props.actions.length > THRESHOLD) {
-    return props.actions.slice(0, THRESHOLD);
-  }
-
-  return props.actions;
+  const displayLimit = batchesShown.value * THRESHOLD;
+  return props.actions.slice(0, displayLimit);
 });
 
 const remaining = computed(() => {
-  if (props.actions.length > THRESHOLD) {
-    return props.actions.slice(THRESHOLD);
+  const displayLimit = batchesShown.value * THRESHOLD;
+  if (props.actions.length > displayLimit) {
+    return props.actions.slice(displayLimit, displayLimit + THRESHOLD);
   }
 
   return [];
 });
 
 const toggleRemaining = () => {
-  showRemaining.value = !showRemaining.value;
+  batchesShown.value += 1;
 };
 
 /**
@@ -99,38 +97,25 @@ onBeforeUnmount(() => {
             :is-visible="isVisible"
           />
         </div>
-        <template v-if="showRemaining">
-          <div
-            v-for="(action, index) in remaining"
-            :key="index"
-            class="mt-2 chat-msg-actions"
-          >
-            <ResourceButton
-              :value="action"
-              :is-visible="isVisible"
-            />
-          </div>
-        </template>
       </div>
-      <span
-        v-if="remaining.length > 0"
-        class="chat-msg-actions-more"
-        @click="toggleRemaining"
-      >
-        <template v-if="!showRemaining">
+      <div class="chat-msg-actions-controls">
+        <span
+          v-if="remaining.length > 0"
+          class="chat-msg-actions-show-more"
+          @click="toggleRemaining"
+        >
           {{ t('ai.message.actions.more', { count: remaining.length }, true) }}
-        </template>
-        <template v-else>
+          <i class="icon icon-sm icon icon-chevron-down text-label" />
+        </span>
+        <span
+          v-if="batchesShown > 1"
+          class="chat-msg-actions-show-less"
+          @click="batchesShown -= 1"
+        >
           {{ t('ai.message.actions.less', {}, true) }}
-        </template>
-        <i
-          class="icon icon-sm"
-          :class="{
-            'icon icon-chevron-down text-label': !showRemaining,
-            'icon icon-chevron-up text-label': showRemaining,
-          }"
-        />
-      </span>
+          <i class="icon icon-sm icon icon-chevron-up text-label" />
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -168,8 +153,15 @@ onBeforeUnmount(() => {
   margin-top: 2px;
 }
 
-.chat-msg-actions-more {
-  color: #94a3b8;
-  cursor: pointer;
+.chat-msg-actions-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  .chat-msg-actions-show-more,
+  .chat-msg-actions-show-less {
+    color: #94a3b8;
+    cursor: pointer;
+  }
 }
 </style>
