@@ -1,0 +1,31 @@
+name: Head Extension Catalog Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Prevents race conditions and limits job-level concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+# Restrict default permissions to none at the top workflow level
+permissions: {}
+
+jobs:
+  call-build-workflow:
+    name: Build extension catalog
+    
+    permissions:
+      actions: write # Required to allow the reusable workflow to build artifacts and publish container packages
+      contents: read 
+      packages: write # Required to allow the reusable workflow to build artifacts and publish container packages
+    uses: rancher/dashboard/.github/workflows/build-extension-catalog.yml@04e9b18ed96b496b9d80c3a7d7c6b1788330dc85
+    with:
+      registry_target: "ghcr.io"
+      registry_user: ${{ github.actor }}
+      tagged_release: "head"
+    secrets:
+      registry_token: ${{ secrets.GITHUB_TOKEN }}
