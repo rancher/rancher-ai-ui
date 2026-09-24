@@ -508,6 +508,10 @@ aiConfig:
             tooltip: 'Enabling the UI tools brings additional capabilities to the AI assistant chat, but it also requires more time to respond, which might result in longer response times. Disable the tools if you prefer faster responses.'
           tools:
             label: Available Tools
+            action:
+              toggle:
+                enable: Enable { name } tool
+                disable: Disable { name } tool
             name:
               show-yaml: Show YAML
               show-yaml-diff: Show YAML Diff

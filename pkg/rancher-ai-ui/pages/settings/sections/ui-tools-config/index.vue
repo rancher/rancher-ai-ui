@@ -419,7 +419,6 @@ function openToolDetails(tool: UITool, event: Event) {
                   v-for="tool in filteredTools"
                   :id="tool.name"
                   :key="tool.name"
-                  class="tool-card"
                   variant="medium"
                   tabindex="0"
                   :value="tool"
@@ -454,6 +453,7 @@ function openToolDetails(tool: UITool, event: Event) {
                       class="toggle-enable-tool"
                       :value="tool.enabled"
                       :disabled="readOnly"
+                      :aria-label="t(`aiConfig.form.section.tools.fields.tools.action.toggle.${tool.enabled ? 'disable' : 'enable'}`, { name: tool.name })"
                       @click.stop
                       @update:value="updateToolEnabled(tool.name, $event)"
                     />
