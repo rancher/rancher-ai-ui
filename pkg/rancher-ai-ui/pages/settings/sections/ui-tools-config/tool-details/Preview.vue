@@ -49,10 +49,23 @@ const openImageFullScreen = () => {
       <div
         v-if="isLoading"
         class="spinner-wrapper"
+        role="status"
+        aria-live="polite"
       >
         <i class="icon icon-spinner icon-spin icon-3x" />
+        <span style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;">Loading preview...</span>
+      </div>
+      <div
+        v-if="isError"
+        class="preview-unavailable"
+        role="alert"
+        :aria-label="t('aiConfig.form.section.tools.details.image-preview.error')"
+      >
+        <i class="icon icon-warning" />
+        <span>{{ t('aiConfig.form.section.tools.details.image-preview.error') }}</span>
       </div>
       <img
+        v-else
         role="presentation"
         :src="path"
         :alt="`&nbsp;${ t('aiConfig.form.section.tools.details.image-preview.placeholder', { toolName: props.name, pos: props.index + 1 }, true) }`"
@@ -78,6 +91,7 @@ const openImageFullScreen = () => {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    position: relative;
   }
 
   .preview-img {
@@ -105,6 +119,23 @@ const openImageFullScreen = () => {
   justify-content: center;
   width: 100%;
   height: 100%;
+}
+
+.preview-unavailable {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--warning-banner-bg);
+  border-color: var(--warning);
+  color: var(--body-text);
+  padding: 8px 12px;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
 .preview-img.is-loaded {
