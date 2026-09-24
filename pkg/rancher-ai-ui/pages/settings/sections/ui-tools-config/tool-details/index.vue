@@ -154,7 +154,12 @@ onBeforeUnmount(() => {
             <h3>{{ t('aiConfig.form.section.tools.details.detail') }}</h3>
           </div>
 
-          <div class="tool-scrollable-content">
+          <div
+            class="tool-scrollable-content"
+            role="region"
+            :aria-label="t('aiConfig.form.section.tools.details.detail')"
+            tabindex="0"
+          >
             <div class="tool-detail-section">
               <span
                 v-clean-html="t(`aiConfig.form.section.tools.details.tools.${ tool?.name }.detail`)"
