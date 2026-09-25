@@ -230,7 +230,8 @@ export const enum MessagePlanningTaskStatus {
   Pending = 'pending',
   InProgress = 'in_progress',
   Completed = 'completed',
-  Error = 'error',
+  Canceled = 'cancelled',
+  NotApplicable = 'not_applicable',
 }
 
 export interface MessagePlanningState {
