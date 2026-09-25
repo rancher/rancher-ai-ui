@@ -63,7 +63,7 @@ describe('Feature: settings-ui-tools-config', () => {
     uiToolsConfig.self().scrollIntoView();
     uiToolsConfig.enabledCheckbox().isChecked();
 
-    uiToolsConfig.enabledCheckbox().set(false);
+    uiToolsConfig.enabledCheckbox().set();
 
     settingsPage.settings().saveButton().click();
     new ApplySettingsPromptPo().confirm();
@@ -75,7 +75,7 @@ describe('Feature: settings-ui-tools-config', () => {
     uiToolsConfig.enabledCheckbox().isUnchecked();
 
     // Restore original state
-    uiToolsConfig.enabledCheckbox().set(true);
+    uiToolsConfig.enabledCheckbox().set();
     settingsPage.settings().saveButton().click();
     new ApplySettingsPromptPo().confirm();
     settingsPage.settings().saveButton().should('contain.text', 'Saved');

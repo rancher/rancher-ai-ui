@@ -17,7 +17,10 @@ interface AgentOption {
   displayName: string;
   description?: string;
   error: boolean;
-  tooltip: string;
+  tooltip: {
+    content: string,
+    delay: { show: number }
+  } | null;
 }
 
 const store = useStore();
@@ -50,18 +53,28 @@ const options = computed<AgentOption[]>(() => {
       name:        ADAPTIVE_MODE_ID,
       displayName: t('ai.agents.items.default.displayName'),
       error:       false,
-      tooltip:     t('ai.agents.items.default.description'),
+      tooltip:     {
+        content: t('ai.agents.items.default.description'),
+        delay:   { show: 500 }
+      },
     }
   ] : [];
 
   return [
     ...defaultOptions,
-    ...props.agents.map((agent) => ({
-      name:        agent.name,
-      displayName: agent.displayName || agent.name,
-      error:       agent.status !== AgentState.Active,
-      tooltip:     agent.status !== AgentState.Active ? t('ai.agents.items.unavailable', {}, true) : (agent.description || ''),
-    }))
+    ...props.agents.map((agent) => {
+      const displayName = agent.displayName || agent.name || '';
+
+      return {
+        displayName: displayName.length > 30 ? `${ displayName.slice(0, 30) }...` : displayName,
+        name:        agent.name,
+        error:       agent.status !== AgentState.Active,
+        tooltip:     displayName.length > 30 ? {
+          content: displayName,
+          delay:   { show: 500 }
+        } : null,
+      };
+    })
   ];
 });
 
@@ -127,7 +140,7 @@ const isOpen = ref(false);
         <rc-dropdown-item
           v-for="(opt, i) in options"
           :key="i"
-          v-clean-tooltip="{ content: opt.tooltip, delay: { show: 500 } }"
+          v-clean-tooltip="opt.tooltip"
           :data-testid="`rancher-ai-ui-multi-agent-select-option-${opt.name}`"
           class="agent-label"
           :disabled="opt.error"
