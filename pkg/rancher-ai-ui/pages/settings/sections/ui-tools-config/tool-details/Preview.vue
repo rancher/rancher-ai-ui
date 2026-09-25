@@ -43,6 +43,7 @@ const openImageFullScreen = () => {
   <button
     type="button"
     class="preview-section"
+    :class="{ 'is-error': isError }"
     :aria-label="t('aiConfig.form.section.tools.details.image-preview.placeholder', { toolName: props.name, pos: props.index + 1 }, true)"
     @click="openImageFullScreen"
   >
@@ -110,6 +111,10 @@ const openImageFullScreen = () => {
     margin-top: 4px;
     transform: scaleX(1.06) scaleY(1.09);
     transform-origin: center;
+  }
+
+  &.is-error {
+    cursor: not-allowed;
   }
 
   &:focus-visible {
