@@ -448,6 +448,7 @@ function unmount() {
       <Messages
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
+        :agents="chatAgents"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :processing-state="processingMessageState"

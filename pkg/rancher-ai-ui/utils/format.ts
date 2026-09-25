@@ -261,7 +261,7 @@ export function formatPlanning(value: string): MessagePlanningState | null {
   try {
     const parsed = JSON.parse(value);
 
-    return JSON.parse(value);
+    return parsed;
   } catch (err) {
     error('Failed to parse planning items:', err);
   }

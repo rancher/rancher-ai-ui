@@ -9,8 +9,8 @@ import {
   MessageInternalSource,
   MessageProcessingState,
   StorageKey,
-  MessagePlanningTask,
-  MessagePlanningState
+  MessagePlanningState,
+  Agent
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
@@ -44,6 +44,10 @@ const props = defineProps({
   messages: {
     type:    Array as PropType<Message[]>,
     default: () => [],
+  },
+  agents: {
+    type:     Array as PropType<Agent[]>,
+    default:  () => [],
   },
   systemErrors: {
     type:    Array as PropType<ChatError[]>,
@@ -270,6 +274,7 @@ onBeforeUnmount(() => {
         v-if="props.planningState && message.id === props.planningState.messageId"
         class="chat-message-planning"
         :value="props.planningState"
+        :agents="agents"
       />
       <component
         :is="getMessageTemplate(message.templateContent?.component)"
