@@ -7,7 +7,9 @@ import { useI18n } from '@shell/composables/useI18n';
 import {
   Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase,
   MessageInternalSource,
-  MessageProcessingState
+  MessageProcessingState,
+  MessagePlanningState,
+  Agent
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
@@ -17,6 +19,7 @@ import SystemRequest from '../message/template/SystemRequest.vue';
 import McpAuthenticationRequest from '../message/template/McpAuthenticationRequest.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
+import Planning from '../message/Planning.vue';
 import { useScrollComposable } from '../../composables/useScrollComposable';
 
 /**
@@ -37,12 +40,20 @@ const props = defineProps({
     type:    Array as PropType<Message[]>,
     default: () => [],
   },
+  agents: {
+    type:     Array as PropType<Agent[]>,
+    default:  () => [],
+  },
   systemErrors: {
     type:    Array as PropType<ChatError[]>,
     default: () => [],
   },
   processingState: {
     type:    Object as PropType<MessageProcessingState | null>,
+    default: null,
+  },
+  planningState: {
+    type:    Object as PropType<MessagePlanningState | null>,
     default: null,
   },
   layout: {
@@ -192,6 +203,12 @@ onBeforeUnmount(() => {
       v-for="(message, i) in formattedMessages"
       :key="i"
     >
+      <Planning
+        v-if="props.planningState && message.id === props.planningState.messageId"
+        class="chat-message-planning"
+        :value="props.planningState"
+        :agents="agents"
+      />
       <component
         :is="getMessageTemplate(message.templateContent?.component)"
         v-if="!!message.templateContent"
@@ -258,8 +275,15 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
+.chat-message-planning,
 .chat-message-template {
   margin-bottom: 16px;
+}
+
+.chat-message-planning {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .chat-message-fast-scroll {

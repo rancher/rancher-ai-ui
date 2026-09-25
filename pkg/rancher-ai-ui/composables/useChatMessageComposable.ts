@@ -21,6 +21,7 @@ import {
   MessageInternalSource,
   MessageLabelKey,
   MessagePhase,
+  MessagePlanningState,
   MessageProcessingState,
   MessageTag,
   MessageTemplateComponent,
@@ -39,7 +40,8 @@ import {
   formatAgentMetadata,
   formatMcpAuthenticationRequest,
   formatMcpRefreshTokenRequest,
-  formatAuthenticationErrorMessage
+  formatAuthenticationErrorMessage,
+  formatPlanning
 } from '../utils/format';
 import { validateUrl } from '../utils/url';
 import { downloadFile } from '@shell/utils/download';
@@ -90,11 +92,19 @@ export function useChatMessageComposable(
   const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
   const processingState = computed(() => store.getters['rancher-ai-ui/chat/processingState'](chatId));
+  const planningState = computed(() => store.getters['rancher-ai-ui/chat/planningState'](chatId));
 
   const setProcessingState = (processingState: MessageProcessingState) => {
     store.commit('rancher-ai-ui/chat/setProcessingState', {
       chatId,
       processingState
+    });
+  };
+
+  const setPlanningState = (planningState: MessagePlanningState | null) => {
+    store.commit('rancher-ai-ui/chat/setPlanningState', {
+      chatId,
+      planningState
     });
   };
 
@@ -383,6 +393,8 @@ export function useChatMessageComposable(
     const ws = event.target as WebSocket;
     const data = event.data;
 
+    // console.log('-- ', data);
+
     if (!isChatInitialized.value) {
       try {
         processChatErrors(data);
@@ -511,6 +523,10 @@ export function useChatMessageComposable(
       currentMsg.value.thinking = false;
       break;
     }
+    case Tag.ProcessingTools:
+      setProcessingState({ phase: MessagePhase.ProcessingTools });
+
+      break;
     case Tag.MessageEnd:
       setProcessingState({ phase: MessagePhase.Idle });
       currentMsg.value.messageContent = currentMsg.value.messageContent?.replace(/[\r\n]+$/, '');
@@ -632,6 +648,22 @@ export function useChatMessageComposable(
           break;
         }
 
+        if (data.startsWith(Tag.PlanningStart) && data.endsWith(Tag.PlanningEnd)) {
+          const planning = formatPlanning(data);
+
+          if (!!planning) {
+            setPlanningState({
+              ...planning,
+              messageId: currentMsg.value.id || '',
+            });
+          }
+
+          // TODO reset planning state after finalizing
+          // setPlanningState(null);
+
+          break;
+        }
+
         if (data.startsWith(Tag.ErrorStart) && data.endsWith(Tag.ErrorEnd)) {
           const err = formatErrorMessage(data);
 
@@ -648,12 +680,6 @@ export function useChatMessageComposable(
             message: err.message,
             key:     'authentication'
           };
-        }
-
-        if (data === Tag.ProcessingTools) {
-          setProcessingState({ phase: MessagePhase.ProcessingTools });
-
-          break;
         }
 
         currentMsg.value.messageContent += data;
@@ -754,6 +780,7 @@ export function useChatMessageComposable(
     isChatInitialized,
     resetChatMetadata,
     processingState,
+    planningState,
     error,
     resetErrors: () => setErrors(null),
   };

@@ -14,7 +14,7 @@ import { warn } from '../../../../utils/log';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../../../../product';
 import { AIAgentAPIEvent } from '../../../../types';
 import { AiAgentConfigOAuth2SecretPayload } from '../../types';
-import DiscoveryBanner from '../../../../components/DiscoveryBanner/DiscoveryBanner.vue';
+import DiscoveryBanner from '../../../../components/DiscoveryBanner.vue';
 import { useAIAgentApiComposable } from '../../../../composables/useAIAgentApiComposable';
 
 interface DiscoveryStatus {

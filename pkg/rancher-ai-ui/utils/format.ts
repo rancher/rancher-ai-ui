@@ -18,6 +18,7 @@ import {
   SubAgentProcessingMetadata,
   AgentSelectionMode,
   McpAuthenticationRequest,
+  MessagePlanningState,
 } from '../types';
 import { error } from '../utils/log';
 import { validateActionResource } from './validator';
@@ -252,6 +253,20 @@ export function formatTools(tools: ToolCall[], remaining: string): { tools: Tool
     tools,
     remaining
   };
+}
+
+export function formatPlanning(value: string): MessagePlanningState | null {
+  value = value.replaceAll(Tag.PlanningStart, '').replaceAll(Tag.PlanningEnd, '').trim();
+
+  try {
+    const parsed = JSON.parse(value);
+
+    return parsed;
+  } catch (err) {
+    error('Failed to parse planning items:', err);
+  }
+
+  return null;
 }
 
 export function formatFileMessages(principal: any, messages: Message[]): string {

@@ -201,6 +201,13 @@ ai:
     label:
       default: processing request
       authenticationRequired: 'Awaiting authentication'
+  planning:
+    header:
+      simple: 'Executing the following tasks...'
+      approval: 'Awaiting approval to execute the following tasks...'
+    actions:
+      confirm: 'Start Execution'
+      cancel: 'Cancel'
   error:
     chat:
       generic: 'An error occurred initializing the chat'
