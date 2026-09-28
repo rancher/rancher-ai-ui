@@ -213,6 +213,14 @@ ai:
     actions:
       confirm: 'Start Execution'
       cancel: 'Cancel'
+      cancelRunning: 'Cancel Execution'
+    status:
+      completed: 'Completed'
+      canceling: 'Canceling Execution...'
+      canceled: 'Canceled'
+      failed: 'Execution failed'
+    notification:
+      approvalInfo: 'You can request changes before executing the plan above or you can update the current configuration if you’d like me to run these tasks automatically in the future.<br><br>However, after you approve the plan, you won’t be able to write a new prompt until the execution is completed.'
   error:
     chat:
       generic: 'An error occurred initializing the chat'

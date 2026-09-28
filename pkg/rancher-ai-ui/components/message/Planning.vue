@@ -4,16 +4,18 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { StateColor } from '@shell/utils/style';
 import StatusBar from '@shell/components/Resource/Detail/StatusBar.vue';
-import { Agent, MessagePlanningState, MessagePlanningTaskStatus } from '../../types';
+import { Agent, MessagePlanningState, MessagePlanningStatus } from '../../types';
 import ContextTag from '../context/ContextTag.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
 
-const STATUS_ICON: Record<MessagePlanningTaskStatus, string> = {
-  [MessagePlanningTaskStatus.Pending]:       'icon-spinner icon-spin',
-  [MessagePlanningTaskStatus.InProgress]:    'icon-chevron-right',
-  [MessagePlanningTaskStatus.Completed]:     'icon-checkmark',
-  [MessagePlanningTaskStatus.Canceled]:      'icon-close',
-  [MessagePlanningTaskStatus.NotApplicable]: 'icon-minus',
+const STATUS_ICON: Record<MessagePlanningStatus, string> = {
+  [MessagePlanningStatus.Pending]:       'icon-spinner icon-spin',
+  [MessagePlanningStatus.InProgress]:    'icon-chevron-right',
+  [MessagePlanningStatus.Completed]:     'icon-checkmark',
+  [MessagePlanningStatus.Canceling]:     'icon-close',
+  [MessagePlanningStatus.Canceled]:      'icon-close',
+  [MessagePlanningStatus.Failed]:        'icon-error',
+  [MessagePlanningStatus.NotApplicable]: 'icon-minus',
 };
 
 const store = useStore();
@@ -28,6 +30,10 @@ const props = defineProps({
     type:     Array as PropType<Agent[]>,
     default:  () => [],
   },
+  disabled: {
+    type:     Boolean,
+    default:  false,
+  },
 });
 
 const emit = defineEmits(['confirm']);
@@ -37,35 +43,35 @@ const items = computed(() => (props.value.tasks || []).map(({ task, agent: agent
 
   return {
     task,
-    agent: agent?.displayName || agent?.name || agentName,
-    icon:  STATUS_ICON[status || MessagePlanningTaskStatus.Pending],
+    agent:  agent?.displayName || agent?.name || agentName,
+    status: status || MessagePlanningStatus.Pending,
   };
 }));
+
+const inactiveStatus = computed(() => props.value.status === MessagePlanningStatus.Canceling || props.value.status === MessagePlanningStatus.Canceled);
 
 const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
   const totalTasks = props.value.tasks?.length || 0;
 
-  const completedTasks = props.value.tasks?.filter((task) => task.status === MessagePlanningTaskStatus.Completed).length || 0;
+  const completedTasks = props.value.tasks?.filter((task) => task.status === MessagePlanningStatus.Completed).length || 0;
   const remainingTasks = totalTasks - completedTasks;
 
-  // If no tasks are completed, show a full empty progress bar with a small filled portion to indicate liveness
-  if (completedTasks === 0) {
-    return [{
-      color:   'info',
-      percent: 1,
-    }, {
-      color:   'disabled',
-      percent: 99,
-    }];
-  }
+  // Determine the colors for the active and empty segments based on the inactive status
+  const fillColor = inactiveStatus.value ? 'disabled' : 'info';
+  const emptyColor = inactiveStatus.value ? 'rc-disabled-background' : 'disabled';
+
+  // Initial progress bar segments, start with a minimal filled portion to indicate liveness
+  // Otherwise, calculate the actual percentages based on completed and remaining tasks
+  const fillPercent = completedTasks > 0 ? completedTasks / totalTasks * 100 : 1;
+  const emptyPercent = completedTasks > 0 ? remainingTasks / totalTasks * 100 : 99;
 
   return [{
-    color:   'info',
-    percent: completedTasks / totalTasks * 100,
+    color:   fillColor,
+    percent: fillPercent,
   }, {
-    color:   'disabled',
-    percent: remainingTasks / totalTasks * 100,
-  }];
+    color:   emptyColor,
+    percent: emptyPercent,
+  }] as Array<{ color: StateColor; percent: number }>;
 });
 </script>
 
@@ -73,6 +79,10 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
   <div
     v-if="items.length"
     class="planning-state-container"
+    :class="{
+      'disabled-panel': props.disabled,
+      'sticky': !props.disabled || props.value.status === MessagePlanningStatus.Pending || props.value.status === MessagePlanningStatus.InProgress || props.value.status === MessagePlanningStatus.Canceling
+    }"
   >
     <div class="planning-state-header">
       {{ t(`ai.planning.header.${ props.value.approval ? 'approval' : 'simple' }`) }}
@@ -89,13 +99,16 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     <div
       v-for="(item, index) in items"
       :key="index"
-      class="planning-state-item"
+      :class="[
+        'planning-state-item',
+        `planning-state-status-${ props.value.status === MessagePlanningStatus.Canceling || props.value.status === MessagePlanningStatus.Canceled ? MessagePlanningStatus.Canceling : item.status }`
+      ]"
     >
       <i
-        v-if="item.icon"
-        :class="['icon', item.icon]"
+        v-if="item.status"
+        :class="['icon', STATUS_ICON[item.status]]"
       />
-      <span class="planning-state-item-label">
+      <span class="label">
         {{ item.task }}
       </span>
       <ContextTag
@@ -105,40 +118,73 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
         }"
         :remove-enabled="false"
         type="user"
-        class="planning-state-item-agent"
+        class="agent"
       />
     </div>
-    <div
-      v-if="props.value.approval"
-      class="planning-state-actions"
-    >
-      <RcButton
-        small
-        variant="tertiary"
-        class="cancel-button"
-        @click="emit('confirm', false)"
+    <template v-if="props.value.approval">
+      <div
+        v-if="!props.value.status || props.value.status === MessagePlanningStatus.Pending"
+        class="planning-state-actions"
       >
-        <span class="rc-button-label">
-          {{ t('ai.planning.actions.cancel') }}
-        </span>
-      </RcButton>
-      <RcButton
-        small
-        variant="tertiary"
-        class="confirm-button"
-        @click="emit('confirm', true)"
+        <RcButton
+          small
+          variant="tertiary"
+          class="cancel-button"
+          @click="emit('confirm', false)"
+        >
+          <span class="rc-button-label">
+            {{ t('ai.planning.actions.cancel') }}
+          </span>
+        </RcButton>
+        <RcButton
+          small
+          variant="tertiary"
+          class="confirm-button"
+          @click="emit('confirm', true)"
+        >
+          <i class="icon icon-play" />
+          <span class="rc-button-label">
+            {{ t('ai.planning.actions.confirm') }}
+          </span>
+        </RcButton>
+      </div>
+      <div
+        v-else-if="props.value.status === MessagePlanningStatus.InProgress"
+        class="planning-state-actions"
       >
-        <i class="icon icon-play" />
-        <span class="rc-button-label">
-          {{ t('ai.planning.actions.confirm') }}
+        <RcButton
+          small
+          variant="tertiary"
+          class="cancel-button"
+          @click="emit('confirm', false)"
+        >
+          <span class="rc-button-label">
+            {{ t('ai.planning.actions.cancelRunning') }}
+          </span>
+        </RcButton>
+      </div>
+      <div
+        v-else
+        :class="[
+          'planning-state-result',
+          `planning-state-status-${ props.value.status }`
+        ]"
+      >
+        <i :class="['icon', STATUS_ICON[props.value.status]]" />
+        <span class="label">
+          {{ t(`ai.planning.status.${ props.value.status }`) }}
         </span>
-      </RcButton>
-    </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped lang="scss">
 .planning-state {
+  &-progress {
+    user-select: none;
+  }
+
   &-container {
     display: flex;
     flex-direction: column;
@@ -148,6 +194,12 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     border: 1px solid var(--border);
     border-radius: 8px;
     position: relative;
+
+    &.sticky {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
 
     &::before {
       content: '';
@@ -170,40 +222,39 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     }
   }
 
-  &-item {
+  &-item, &-result {
     display: flex;
     align-items: center;
     line-height: 1.5;
 
-    &-label {
+    .label {
       word-break: break-word;
       white-space: pre-line;
-      margin-right: 8px;
+      margin-right: auto;
     }
 
     .icon {
       line-height: 0.5;
       margin-right: 12px;
-
-      &.icon-chevron-right {
-        color: var(--info);
-      }
-
-      &.icon-checkmark {
-        color: var(--success);
-      }
-
-      &.icon-close {
-        color: var(--error);
-      }
     }
   }
 
-  &-actions {
+  &-item {
+    gap: 8px;
+  }
+
+  &-result {
+    margin-left: auto;
+  }
+
+  &-actions, &-result {
     display: flex;
     justify-content: flex-end;
+    margin-top: 16px;
+  }
+
+  &-actions {
     gap: 8px;
-    margin-top: 24px;
 
     .cancel-button, .confirm-button {
       white-space: unset;
@@ -215,6 +266,29 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
 
     .cancel-button {
       background: transparent;
+    }
+  }
+
+  &-status {
+    &-in_progress, &-completed {
+      .icon {
+        color: var(--info);
+      }
+    }
+    &-canceling {
+      .icon, .label {
+        opacity: 0.5;
+      }
+    }
+    &-cancelled {
+      .icon, .label {
+        color: var(--error);
+      }
+    }
+    &-failed {
+      .icon, .label {
+        color: var(--error);
+      }
     }
   }
 }

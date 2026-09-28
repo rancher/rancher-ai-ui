@@ -252,7 +252,7 @@ export function useChatMessageComposable(
     };
   }
 
-  function buildSystemRequestMessage(args: { content: any; component?: MessageTemplateComponent; actions?: MessageAction[] }): Message {
+  function buildSystemMessage(args: { content: any; component?: MessageTemplateComponent; actions?: MessageAction[] }): Message {
     const {
       component = MessageTemplateComponent.SystemRequest,
       content,
@@ -310,7 +310,7 @@ export function useChatMessageComposable(
         }
       ];
 
-      const message = buildSystemRequestMessage({
+      const message = buildSystemMessage({
         content,
         actions
       });
@@ -360,7 +360,7 @@ export function useChatMessageComposable(
         }
       ];
 
-      const message = buildSystemRequestMessage({
+      const message = buildSystemMessage({
         component: MessageTemplateComponent.McpAuthenticationRequest,
         content,
         actions
@@ -379,7 +379,7 @@ export function useChatMessageComposable(
   async function notifyPreferencesUpdate({ key, value }: { key: string, value: any }) {
     const content = { message: t(`ai.message.system.updatePreferences.info.${ key }.${ value }`, {}, true) };
 
-    const message = buildSystemRequestMessage({ content });
+    const message = buildSystemMessage({ content });
 
     await addMessage(message);
   }
@@ -400,8 +400,6 @@ export function useChatMessageComposable(
   async function onmessage(event: MessageEvent) {
     const ws = event.target as WebSocket;
     const data = event.data;
-
-    // console.log('-- ', data);
 
     if (!isChatInitialized.value) {
       try {
@@ -659,11 +657,22 @@ export function useChatMessageComposable(
         if (data.startsWith(Tag.PlanningStart) && data.endsWith(Tag.PlanningEnd)) {
           const planning = formatPlanning(data);
 
-          if (!!planning) {
+          if (planning) {
             setPlanningState({
               ...planning,
               messageId: currentMsg.value.id || '',
             });
+
+            // Avoids multiple planning messages being processed simultaneously
+            if (currentMsg.value.id !== planningState.value?.messageId) {
+              break;
+            }
+
+            if (planning.approval) {
+              currentMsg.value.messageContent = t('ai.planning.notification.approvalInfo', {}, true);
+            }
+
+            currentMsg.value.planning = true;
           }
 
           // TODO reset planning state after finalizing

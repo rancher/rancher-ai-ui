@@ -208,7 +208,6 @@ export const enum MessageTemplateComponent {
   NoPermission = 'no-permission',
   SystemRequest = 'system-request',
   McpAuthenticationRequest = 'mcp-authentication-request',
-  Planning = 'planning',
 }
 
 export interface MessageTemplate {
@@ -220,23 +219,26 @@ export interface MessageTemplate {
   };
 }
 
-export interface MessagePlanningTask {
-  task: string;
-  status?: MessagePlanningTaskStatus;
-  agent?: string;
-}
-
-export const enum MessagePlanningTaskStatus {
+export const enum MessagePlanningStatus {
   Pending = 'pending',
   InProgress = 'in_progress',
   Completed = 'completed',
+  Canceling = 'canceling',
   Canceled = 'cancelled',
+  Failed = 'failed',
   NotApplicable = 'not_applicable',
+}
+
+export interface MessagePlanningTask {
+  task: string;
+  status?: MessagePlanningStatus;
+  agent?: string;
 }
 
 export interface MessagePlanningState {
   messageId: number | string;
   tasks: MessagePlanningTask[];
+  status?: MessagePlanningStatus;
   approval?: boolean;
 }
 
@@ -262,6 +264,7 @@ export interface Message {
   contextContent?: Context[];
   templateContent?: MessageTemplate;
   thinking?: boolean;
+  planning?: boolean;
   completed?: boolean;
   showThinking?: boolean;
   showCompleteMessage?: boolean;

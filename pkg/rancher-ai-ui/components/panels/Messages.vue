@@ -275,6 +275,7 @@ onBeforeUnmount(() => {
         class="chat-message-planning"
         :value="props.planningState"
         :agents="agents"
+        :disabled="props.disabled"
       />
       <component
         :is="getMessageTemplate(message.templateContent?.component)"
@@ -345,12 +346,6 @@ onBeforeUnmount(() => {
 .chat-message-planning,
 .chat-message-template {
   margin-bottom: 16px;
-}
-
-.chat-message-planning {
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 .chat-message-fast-scroll {
