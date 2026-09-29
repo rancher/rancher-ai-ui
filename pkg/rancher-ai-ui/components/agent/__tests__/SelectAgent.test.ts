@@ -217,8 +217,7 @@ describe('SelectAgent.vue', () => {
       },
     });
 
-    // Test via props - disabled should be passed down
-    expect((wrapper.props as any)('disabled')).toBe(true);
+    expect(wrapper.find('button').attributes('disabled')).toBeDefined();
   });
 
   it('should return unknown label when no agents match', () => {
