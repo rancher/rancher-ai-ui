@@ -64,9 +64,10 @@ const options = computed<AgentOption[]>(() => {
     ...defaultOptions,
     ...props.agents.map((agent) => {
       const displayName = agent.displayName || agent.name || '';
+      const isTruncated = displayName.length > MAX_AGENT_NAME_LENGTH;
 
       return {
-        displayName: displayName.length > 30 ? `${ displayName.slice(0, 30) }...` : displayName,
+        displayName: isTruncated ? `${ displayName.slice(0, MAX_AGENT_NAME_LENGTH) }...` : displayName,
         name:        agent.name,
         error:       agent.status !== AgentState.Active,
         tooltip:     agent.status !== AgentState.Active ? {
