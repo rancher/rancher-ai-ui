@@ -22,7 +22,7 @@ jobs:
       actions: write # Required to allow the reusable workflow to build artifacts and publish container packages
       contents: read 
       packages: write # Required to allow the reusable workflow to build artifacts and publish container packages
-    uses: rancher/dashboard/.github/workflows/build-extension-catalog.yml@04e9b18ed96b496b9d80c3a7d7c6b1788330dc85
+    uses: rancher/dashboard/.github/workflows/build-extension-catalog.yml@7aadf695b550973c8b29ee5ca38e1d85d1fa2903
     with:
       registry_target: "ghcr.io"
       registry_user: ${{ github.actor }}
