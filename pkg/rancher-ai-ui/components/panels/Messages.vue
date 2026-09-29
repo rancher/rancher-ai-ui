@@ -27,6 +27,9 @@ import { useLocalStorageComposable } from '../../composables/useLocalStorageComp
  * Everything related to message rendering and auto-scrolling is handled here.
  */
 
+const FALLBACK_VIEWPORT_HEIGHT = 600;
+const RESPONSE_PEEK_HEIGHT = 100;
+
 const store = useStore();
 const { t } = useI18n(store);
 
@@ -148,12 +151,12 @@ function handleMessageScroll() {
     return;
   }
 
-  const viewportHeight = messagesView.value?.clientHeight || 600;
+  const viewportHeight = messagesView.value?.clientHeight || FALLBACK_VIEWPORT_HEIGHT;
   const lastRequestHeight = (lastUserMessageContainer.value?.clientHeight || 0) + (lastMessageContainer.value?.clientHeight || 0);
 
   // The auto-scroll setting is disabled here.
   // Scroll to the bottom until the (last user request + the first part of the assistant's response) is visible.
-  if (lastRequestHeight + 100 < viewportHeight) {
+  if (lastRequestHeight + RESPONSE_PEEK_HEIGHT < viewportHeight) {
     scrollToBottom();
   // Stop scrolling automatically and update the scroll state to show the fast scroll button.
   } else {
