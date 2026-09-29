@@ -69,10 +69,13 @@ const options = computed<AgentOption[]>(() => {
         displayName: displayName.length > 30 ? `${ displayName.slice(0, 30) }...` : displayName,
         name:        agent.name,
         error:       agent.status !== AgentState.Active,
-        tooltip:     displayName.length > 30 ? {
+        tooltip:     agent.status !== AgentState.Active ? {
+          content: t('ai.agents.items.unavailable', {}, true),
+          delay:   { show: 500 }
+        } : (displayName.length > 30 ? {
           content: displayName,
           delay:   { show: 500 }
-        } : null,
+        } : null),
       };
     })
   ];
