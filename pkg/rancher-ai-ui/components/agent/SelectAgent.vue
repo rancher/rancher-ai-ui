@@ -11,6 +11,7 @@ import {
 } from '@components/RcDropdown';
 
 const ADAPTIVE_MODE_ID = '__adaptive__';
+const MAX_AGENT_NAME_LENGTH = 30;
 
 interface AgentOption {
   name: string;

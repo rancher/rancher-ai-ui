@@ -1,4 +1,4 @@
-import { shallowMount } from '@vue/test-utils';
+import { mount, shallowMount } from '@vue/test-utils';
 import SelectAgent from '../SelectAgent.vue';
 import { Agent, AgentState } from '../../../types';
 
@@ -57,7 +57,7 @@ const mockErrorAgent: Agent = {
 
 describe('SelectAgent.vue', () => {
   it('should render with no agents', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [],
@@ -72,7 +72,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should display correct label for selected agent', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[0]],
@@ -85,7 +85,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should show adaptive mode as default when multiple agents exist', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[0], mockAgents[1]],
@@ -101,7 +101,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should not show adaptive mode when only one agent exists', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[0]],
@@ -115,7 +115,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should truncate long agent names to 30 characters', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[2]],
@@ -131,7 +131,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should add tooltip for truncated names', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[2]],
@@ -147,7 +147,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should not add tooltip for short names', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[0]],
@@ -162,7 +162,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should mark inactive agents as error', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[0], mockErrorAgent],
@@ -177,7 +177,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should emit select event with agent name', async() => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[0]],
@@ -193,7 +193,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should emit empty string for adaptive mode', async() => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[0], mockAgents[1]],
@@ -221,7 +221,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should return unknown label when no agents match', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [],
@@ -234,7 +234,7 @@ describe('SelectAgent.vue', () => {
   });
 
   it('should filter active agents correctly', () => {
-    const wrapper = mount(SelectAgent, {
+    const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
       props: {
         agents:    [mockAgents[0], mockErrorAgent, mockAgents[1]],
