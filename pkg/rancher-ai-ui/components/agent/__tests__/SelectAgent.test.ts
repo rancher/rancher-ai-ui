@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import SelectAgent from '../SelectAgent.vue';
 import { Agent, AgentState } from '../../../types';
 
