@@ -81,7 +81,7 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     class="planning-state-container"
     :class="{
       'disabled-panel': props.disabled,
-      'sticky': !props.disabled || props.value.status === MessagePlanningStatus.Pending || props.value.status === MessagePlanningStatus.InProgress || props.value.status === MessagePlanningStatus.Canceling
+      'sticky': !props.disabled && (props.value.status === MessagePlanningStatus.Pending || props.value.status === MessagePlanningStatus.InProgress || props.value.status === MessagePlanningStatus.Canceling)
     }"
   >
     <div class="planning-state-header">

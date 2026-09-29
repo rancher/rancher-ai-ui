@@ -225,6 +225,7 @@ const mutations = {
 
     // Update the items of the existing planning state
     state.chats[chatId].planningState.tasks = planningState?.tasks || [];
+    state.chats[chatId].planningState.status = planningState?.status;
   },
 
   setError(state: State, args: { chatId: string; error: ChatError | null }) {
