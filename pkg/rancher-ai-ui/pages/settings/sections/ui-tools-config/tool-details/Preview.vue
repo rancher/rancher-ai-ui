@@ -43,7 +43,7 @@ const openImageFullScreen = () => {
   <button
     type="button"
     class="preview-section"
-    :class="{ 'is-error': isError }"
+    :class="{ 'is-error': isError}"
     :aria-label="t('aiConfig.form.section.tools.details.image-preview.placeholder', { toolName: props.name, pos: props.index + 1 }, true)"
     @click="openImageFullScreen"
   >
