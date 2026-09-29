@@ -60,6 +60,7 @@ const {
   sendMessage,
   updateMessage,
   confirmMessage,
+  confirmPlanning,
   downloadMessages,
   loadMessages,
   selectContext,
@@ -456,6 +457,7 @@ function unmount() {
         v-bind="$attrs"
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
+        @confirm:planning="confirmPlanning($event, ws)"
         @send:message="sendMessage($event, ws)"
       />
       <Processing

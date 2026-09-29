@@ -71,7 +71,12 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:message', 'confirm:message', 'send:message']);
+const emit = defineEmits([
+  'update:message',
+  'confirm:message',
+  'send:message',
+  'confirm:planning'
+]);
 
 const storage = useLocalStorageComposable();
 
@@ -276,6 +281,7 @@ onBeforeUnmount(() => {
         :value="props.planningState"
         :agents="agents"
         :disabled="props.disabled"
+        @confirm="emit('confirm:planning', { result: $event })"
       />
       <component
         :is="getMessageTemplate(message.templateContent?.component)"

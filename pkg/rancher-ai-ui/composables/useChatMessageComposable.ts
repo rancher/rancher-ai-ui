@@ -199,6 +199,13 @@ export function useChatMessageComposable(
     }
   }
 
+  function confirmPlanning({ result }: { result: boolean }, ws: WebSocket) {
+    wsSend(ws, formatWSInputMessage({
+      prompt: result ? ConfirmationResponse.Yes : ConfirmationResponse.No,
+      tags:   [MessageTag.Confirmation]
+    }));
+  }
+
   function getMessage(messageId: string) {
     return store.getters['rancher-ai-ui/chat/message']({
       chatId,
@@ -788,6 +795,7 @@ export function useChatMessageComposable(
     addMessage,
     updateMessage,
     confirmMessage,
+    confirmPlanning,
     selectContext,
     downloadMessages,
     loadMessages,
