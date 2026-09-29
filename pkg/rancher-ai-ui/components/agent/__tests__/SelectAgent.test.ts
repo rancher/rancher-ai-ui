@@ -3,9 +3,9 @@ import SelectAgent from '../SelectAgent.vue';
 import { Agent, AgentState } from '../../../types';
 
 jest.mock('@components/RcDropdown', () => ({
-  RcDropdown:        { default: {} },
-  RcDropdownTrigger: { default: {} },
-  RcDropdownItem:    { default: {} },
+  RcDropdown:        { template: '<div><slot /><slot name="dropdownCollection" /></div>' },
+  RcDropdownTrigger: { template: '<button><slot /></button>' },
+  RcDropdownItem:    { template: '<div><slot /></div>' },
 }));
 
 jest.mock('vuex', () => ({ useStore: () => ({ getters: { 'i18n/t': (key: string) => key } }) }));
