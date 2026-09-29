@@ -11,7 +11,6 @@ import {
 } from '@components/RcDropdown';
 
 const ADAPTIVE_MODE_ID = '__adaptive__';
-const MAX_AGENT_NAME_LENGTH = 30;
 
 interface AgentOption {
   name: string;
@@ -46,6 +45,20 @@ const props = defineProps({
 
 const emit = defineEmits(['select']);
 
+const truncatedAgentNames = ref<Set<string>>(new Set());
+
+const checkTruncation = (name: string, el: HTMLElement | null) => {
+  if (!el) {
+    return;
+  }
+
+  if (el.offsetWidth < el.scrollWidth) {
+    truncatedAgentNames.value.add(name);
+  } else {
+    truncatedAgentNames.value.delete(name);
+  }
+};
+
 const activeAgentNames = computed(() => props.agents.filter((agent) => agent.status === AgentState.Active).map((agent) => agent.name));
 
 const options = computed<AgentOption[]>(() => {
@@ -65,16 +78,16 @@ const options = computed<AgentOption[]>(() => {
     ...defaultOptions,
     ...props.agents.map((agent) => {
       const displayName = agent.displayName || agent.name || '';
-      const isTruncated = displayName.length > MAX_AGENT_NAME_LENGTH;
+      const isTruncated = truncatedAgentNames.value.has(agent.name);
 
       return {
-        displayName: isTruncated ? `${ displayName.slice(0, MAX_AGENT_NAME_LENGTH) }...` : displayName,
+        displayName,
         name:        agent.name,
         error:       agent.status !== AgentState.Active,
         tooltip:     agent.status !== AgentState.Active ? {
           content: t('ai.agents.items.unavailable', {}, true),
           delay:   { show: 500 }
-        } : (displayName.length > 30 ? {
+        } : (isTruncated ? {
           content: displayName,
           delay:   { show: 500 }
         } : null),
@@ -152,7 +165,10 @@ const isOpen = ref(false);
           :disabled="opt.error"
           @click="debouncedSelectAgent(opt.name)"
         >
-          <span class="agent-label-display-name">
+          <span
+            :ref="(el) => checkTruncation(opt.name, el as HTMLElement | null)"
+            class="agent-label-display-name"
+          >
             {{ opt.displayName || opt.name }}
           </span>
           <i
@@ -203,9 +219,10 @@ const isOpen = ref(false);
   align-items: center;
 
   .agent-label-display-name {
-    max-width: 200px;
-    word-break: break-word;
-    white-space: pre-line;
+    max-width: 190px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .icon {

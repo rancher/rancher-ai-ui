@@ -114,38 +114,6 @@ describe('SelectAgent.vue', () => {
     expect((wrapper.vm as any).options[0].name).toBe('agent-1');
   });
 
-  it('should truncate long agent names to 30 characters', () => {
-    const wrapper = shallowMount(SelectAgent, {
-      ...requiredSetup(),
-      props: {
-        agents:    [mockAgents[2]],
-        agentName: '',
-        disabled:  false,
-      },
-    });
-
-    const option = (wrapper.vm as any).options[0];
-
-    expect(option.displayName).toBe('Third Agent with a Very Long N...');
-    expect(option.displayName).toHaveLength(33); // 30 chars + "..."
-  });
-
-  it('should add tooltip for truncated names', () => {
-    const wrapper = shallowMount(SelectAgent, {
-      ...requiredSetup(),
-      props: {
-        agents:    [mockAgents[2]],
-        agentName: '',
-        disabled:  false,
-      },
-    });
-
-    const option = (wrapper.vm as any).options[0];
-
-    expect(option.tooltip).not.toBeNull();
-    expect(option.tooltip?.content).toBe('Third Agent with a Very Long Name That Exceeds Thirty Characters Total');
-  });
-
   it('should not add tooltip for short names', () => {
     const wrapper = shallowMount(SelectAgent, {
       ...requiredSetup(),
@@ -155,6 +123,61 @@ describe('SelectAgent.vue', () => {
         disabled:  false,
       },
     });
+
+    const option = (wrapper.vm as any).options[0];
+
+    expect(option.tooltip).toBeNull();
+  });
+
+  it('should show tooltip when CSS truncation is detected', () => {
+    const wrapper = shallowMount(SelectAgent, {
+      ...requiredSetup(),
+      props: {
+        agents:    [mockAgents[2]],
+        agentName: '',
+        disabled:  false,
+      },
+    });
+
+    // Create a mock element that simulates CSS truncation
+    const mockElement = {
+      offsetWidth: 100,
+      scrollWidth: 150, // scrollWidth > offsetWidth = truncated
+    } as HTMLElement;
+
+    // Call checkTruncation with the mock element
+    (wrapper.vm as any).checkTruncation('agent-3', mockElement);
+
+    // Verify the agent was added to truncatedAgentNames
+    expect((wrapper.vm as any).truncatedAgentNames.has('agent-3')).toBe(true);
+
+    const option = (wrapper.vm as any).options[0];
+
+    expect(option.tooltip).not.toBeNull();
+    expect(option.tooltip?.content).toBe('Third Agent with a Very Long Name That Exceeds Thirty Characters Total');
+  });
+
+  it('should not show tooltip when text is not truncated', () => {
+    const wrapper = shallowMount(SelectAgent, {
+      ...requiredSetup(),
+      props: {
+        agents:    [mockAgents[0]],
+        agentName: '',
+        disabled:  false,
+      },
+    });
+
+    // Create a mock element that is NOT truncated
+    const mockElement = {
+      offsetWidth: 200,
+      scrollWidth: 150, // scrollWidth < offsetWidth = not truncated
+    } as HTMLElement;
+
+    // Call checkTruncation with the mock element
+    (wrapper.vm as any).checkTruncation('agent-1', mockElement);
+
+    // Verify the agent was NOT added to truncatedAgentNames
+    expect((wrapper.vm as any).truncatedAgentNames.has('agent-1')).toBe(false);
 
     const option = (wrapper.vm as any).options[0];
 
