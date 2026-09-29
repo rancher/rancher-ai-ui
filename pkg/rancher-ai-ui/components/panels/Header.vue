@@ -3,7 +3,7 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import RcButton from '@components/RcButton/RcButton.vue';
 import ChatPanelMenu from '../header/ChatPanelMenu.vue';
-import { Preferences } from 'types.js';
+import { Preferences } from '../../types';
 
 /**
  * Header panel for the AI chat interface.
