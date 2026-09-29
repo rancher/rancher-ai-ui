@@ -18,6 +18,10 @@ runs:
       run: ./.github/scripts/load-rancher-branches-metadata.sh https://raw.githubusercontent.com/rancher/dashboard/master/branches-metadata.json ${{ inputs.rancher_branch }}
       shell: bash
 
+    - name: Use Kubernetes version supported by the AI agent
+      run: echo "K3S_VERSION=v1.34.5+k3s1" >> "$GITHUB_ENV"
+      shell: bash
+
     - name: Setup Node env
       uses: ./.github/actions/setup
 
@@ -59,7 +63,7 @@ runs:
       shell: bash
 
     - name: Collect Rancher logs on failure
-      if: steps.cypress.outcome != 'success'
+      if: failure() || steps.cypress.outcome != 'success'
       run: |
         kubectl get pods -A || true
         kubectl get uiplugins.catalog.cattle.io -A -o yaml || true
