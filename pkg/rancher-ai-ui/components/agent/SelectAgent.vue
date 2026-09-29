@@ -144,6 +144,7 @@ const isOpen = ref(false);
           v-for="(opt, i) in options"
           :key="i"
           v-clean-tooltip="opt.tooltip"
+          :aria-label="opt.tooltip?.content"
           :data-testid="`rancher-ai-ui-multi-agent-select-option-${opt.name}`"
           class="agent-label"
           :disabled="opt.error"
