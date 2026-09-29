@@ -189,7 +189,7 @@ describe('SelectAgent.vue', () => {
     (wrapper.vm as any).debouncedSelectAgent('agent-1');
 
     expect(wrapper.emitted('select')).toBeTruthy();
-    expect(wrapper.emitted('select')?.[0]).toEqual(['agent-1']);
+    expect(wrapper.emitted('select')?.[0]).toStrictEqual(['agent-1']);
   });
 
   it('should emit empty string for adaptive mode', async() => {
