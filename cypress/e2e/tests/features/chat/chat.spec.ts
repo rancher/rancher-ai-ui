@@ -442,7 +442,7 @@ describe('Chat', () => {
       chat.open();
 
       chat.isNotReady();
-      chat.getSystemErrorMessage(1).containsText('No agent configurations available.');
+      chat.getSystemErrorMessage(1).containsText('No AI agents are available');
 
       // Re-install the chart, including the mcp, to make the agents available again and allow reconnection
       cy.installRancherAIService({ waitForAIServiceReady: false });
