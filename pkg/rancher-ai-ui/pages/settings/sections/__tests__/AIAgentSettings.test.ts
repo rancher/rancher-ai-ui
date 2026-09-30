@@ -577,7 +577,7 @@ describe('AIAgentSettings.vue', () => {
         },
       });
 
-      const input = wrapper.findComponent({ name: 'LabeledInput' });
+      const initialValue = wrapper.findComponent({ name: 'LabeledInput' }).vm.$attrs.value;
 
       await (wrapper as any).setProps({
         value: {
@@ -587,10 +587,10 @@ describe('AIAgentSettings.vue', () => {
       });
 
       await wrapper.vm.$nextTick();
-      const updatedValue = wrapper.findComponent({ name: 'LabeledInput' }).props('value');
+      const updatedValue = wrapper.findComponent({ name: 'LabeledInput' }).vm.$attrs.value;
 
       // Verify the prop value actually changed
-      expect(updatedValue).not.toBe(input.vm.$attrs.value);
+      expect(updatedValue).not.toBe(initialValue);
     });
   });
 
