@@ -15,9 +15,11 @@ const ADAPTIVE_MODE_ID = '__adaptive__';
 interface AgentOption {
   name: string;
   displayName: string;
-  description?: string;
   error: boolean;
-  tooltip: string;
+  tooltip: {
+    content: string,
+    delay: { show: number }
+  } | null;
 }
 
 const store = useStore();
@@ -42,6 +44,20 @@ const props = defineProps({
 
 const emit = defineEmits(['select']);
 
+const truncatedAgentNames = ref<Set<string>>(new Set());
+
+const checkTruncation = (name: string, el: HTMLElement | null) => {
+  if (!el) {
+    return;
+  }
+
+  if (el.offsetWidth < el.scrollWidth) {
+    truncatedAgentNames.value.add(name);
+  } else {
+    truncatedAgentNames.value.delete(name);
+  }
+};
+
 const activeAgentNames = computed(() => props.agents.filter((agent) => agent.status === AgentState.Active).map((agent) => agent.name));
 
 const options = computed<AgentOption[]>(() => {
@@ -50,18 +66,32 @@ const options = computed<AgentOption[]>(() => {
       name:        ADAPTIVE_MODE_ID,
       displayName: t('ai.agents.items.default.displayName'),
       error:       false,
-      tooltip:     t('ai.agents.items.default.description'),
+      tooltip:     {
+        content: t('ai.agents.items.default.description'),
+        delay:   { show: 500 }
+      },
     }
   ] : [];
 
   return [
     ...defaultOptions,
-    ...props.agents.map((agent) => ({
-      name:        agent.name,
-      displayName: agent.displayName || agent.name,
-      error:       agent.status !== AgentState.Active,
-      tooltip:     agent.status !== AgentState.Active ? t('ai.agents.items.unavailable', {}, true) : (agent.description || ''),
-    }))
+    ...props.agents.map((agent) => {
+      const displayName = agent.displayName || agent.name || '';
+      const isTruncated = truncatedAgentNames.value.has(agent.name);
+
+      return {
+        displayName,
+        name:        agent.name,
+        error:       agent.status !== AgentState.Active,
+        tooltip:     agent.status !== AgentState.Active ? {
+          content: t('ai.agents.items.unavailable', {}, true),
+          delay:   { show: 500 }
+        } : (isTruncated ? {
+          content: displayName,
+          delay:   { show: 500 }
+        } : null),
+      };
+    })
   ];
 });
 
@@ -127,13 +157,16 @@ const isOpen = ref(false);
         <rc-dropdown-item
           v-for="(opt, i) in options"
           :key="i"
-          v-clean-tooltip="{ content: opt.tooltip, delay: { show: 500 } }"
+          v-clean-tooltip="opt.tooltip"
           :data-testid="`rancher-ai-ui-multi-agent-select-option-${opt.name}`"
           class="agent-label"
           :disabled="opt.error"
           @click="debouncedSelectAgent(opt.name)"
         >
-          <span class="agent-label-display-name">
+          <span
+            :ref="(el) => checkTruncation(opt.name, el as HTMLElement | null)"
+            class="agent-label-display-name"
+          >
             {{ opt.displayName || opt.name }}
           </span>
           <i
@@ -184,9 +217,10 @@ const isOpen = ref(false);
   align-items: center;
 
   .agent-label-display-name {
-    max-width: 200px;
-    word-break: break-word;
-    white-space: pre-line;
+    max-width: 190px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .icon {
