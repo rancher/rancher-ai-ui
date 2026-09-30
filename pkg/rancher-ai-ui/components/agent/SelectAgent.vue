@@ -15,7 +15,6 @@ const ADAPTIVE_MODE_ID = '__adaptive__';
 interface AgentOption {
   name: string;
   displayName: string;
-  description?: string;
   error: boolean;
   tooltip: {
     content: string,
