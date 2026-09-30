@@ -12,8 +12,9 @@ import TextAreaAutoGrow from '@components/Form/TextArea/TextAreaAutoGrow.vue';
 import RcItemCard from '@components/RcItemCard/RcItemCard.vue';
 import RcItemCardAction from '@components/RcItemCard/RcItemCardAction.vue';
 import { getRancherVersion } from '../../../../utils/version';
-import { UIToolsConfig, UIToolsConfigs, ToolsDefinitionActionType } from '../../../../types';
+import { UIToolsConfig, UIToolsConfigs, ToolsDefinitionActionType, UITool } from '../../../../types';
 import Intro from './Intro.vue';
+import ToolDetails from './tool-details/index.vue';
 
 type FilterState = Record<string, string[]>;
 
@@ -42,6 +43,8 @@ const emit = defineEmits(['update:value', 'publish:tools']);
 const initValue = ref({ ...props.value });
 const hasToolsConfigChanges = ref(false);
 const hasToolEnabledChanges = ref(false);
+
+const toolDetailsRef = ref<InstanceType<typeof ToolDetails>>();
 
 const searchQuery = ref('');
 const debouncedSearchQuery = ref('');
@@ -226,6 +229,14 @@ const resetToolsToDefaults = () => {
 
   emit('update:value', updatedValue);
 };
+
+function openToolDetails(tool: UITool, event: Event) {
+  if (toolDetailsRef.value?.show) {
+    const cardElement = event.currentTarget as HTMLElement;
+
+    toolDetailsRef.value.show(tool, cardElement);
+  }
+}
 </script>
 
 <template>
@@ -408,8 +419,9 @@ const resetToolsToDefaults = () => {
                   v-for="tool in filteredTools"
                   :id="tool.name"
                   :key="tool.name"
-                  :value="tool"
                   variant="medium"
+                  tabindex="0"
+                  :value="tool"
                   :header="{
                     title: {
                       key: `aiConfig.form.section.tools.fields.tools.name.${tool.name}`,
@@ -419,6 +431,8 @@ const resetToolsToDefaults = () => {
                   :content="{
                     text: tool.description
                   }"
+                  :clickable="true"
+                  @card-click="openToolDetails(tool, $event)"
                 >
                   <template
                     v-once
@@ -439,6 +453,8 @@ const resetToolsToDefaults = () => {
                       class="toggle-enable-tool"
                       :value="tool.enabled"
                       :disabled="readOnly"
+                      :aria-label="t(`aiConfig.form.section.tools.fields.tools.action.toggle.${tool.enabled ? 'disable' : 'enable'}`, { name: tool.name })"
+                      @click.stop
                       @update:value="updateToolEnabled(tool.name, $event)"
                     />
                   </template>
@@ -449,7 +465,7 @@ const resetToolsToDefaults = () => {
                       <rc-button
                         variant="ghost"
                         class="app-chart-card-footer-button secondary-text-link"
-                        @click="filterByCategory(tool.category)"
+                        @click.stop="filterByCategory(tool.category)"
                       >
                         <i
                           v-clean-tooltip="t('aiConfig.form.section.tools.fields.tools.category.tooltip.label', {}, true)"
@@ -472,6 +488,9 @@ const resetToolsToDefaults = () => {
       </div>
     </div>
   </div>
+  <ToolDetails
+    ref="toolDetailsRef"
+  />
 </template>
 
 <style lang="scss" scoped>
@@ -630,23 +649,6 @@ const resetToolsToDefaults = () => {
 
   :deep() .item-card-body {
     gap: 0;
-  }
-}
-
-.tool-card {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card-background);
-  overflow: hidden;
-  transition: all 0.2s ease;
-  min-width: 0;
-  height: 200px;
-
-  &:hover {
-    border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 }
 

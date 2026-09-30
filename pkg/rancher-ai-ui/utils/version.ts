@@ -38,3 +38,9 @@ export function getRancherVersion(): string {
 }
 
 export const uiVersion = packageJson.version;
+
+export const remoteAssetsBasePath = (isDev: boolean) => {
+  const branchOrTag = isDev ? 'main' : `rancher-ai-ui-${ uiVersion }`;
+
+  return `https://raw.githubusercontent.com/rancher/rancher-ai-ui/${ branchOrTag }/assets`;
+};

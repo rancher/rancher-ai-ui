@@ -98,10 +98,10 @@ API=https://your-rancher yarn dev
 
 ```bash
 # Launch Cypress dashboard - interactive mode
-TEST_SKIP=setup TEST_PASSWORD=${rancher-password} KUBECONFIG_PATH=$YOUR_KUBECONFIG_PATH yarn cypress:open
+TEST_SKIP=setup,global-ui TEST_PASSWORD=${rancher-password} KUBECONFIG_PATH=$YOUR_KUBECONFIG_PATH yarn cypress:open
 
 # Run Cypress tests in background
-TEST_SKIP=setup TEST_PASSWORD=${rancher-password} KUBECONFIG_PATH=$YOUR_KUBECONFIG_PATH yarn cypress:run
+TEST_SKIP=setup,global-ui TEST_PASSWORD=${rancher-password} KUBECONFIG_PATH=$YOUR_KUBECONFIG_PATH yarn cypress:run
 ```
 
 #### Environment variables
@@ -115,7 +115,7 @@ TEST_SKIP=setup TEST_PASSWORD=${rancher-password} KUBECONFIG_PATH=$YOUR_KUBECONF
   install/uninstall commands use it instead of Rancher's `generateKubeconfig` action, which is
   required for `helm uninstall` to actually tear the agent down. Optional - falls back to
   `generateKubeconfig` when unset.
-- `TEST_SKIP=setup`, avoid to execute bootstrap setup tests for already initialized Rancher instances, it has to be toggled in case of new instances
+- `TEST_SKIP=setup,global-ui`, avoid to execute bootstrap setup tests for already initialized Rancher instances and global UI tests, it has to be toggled in case of new instances
 
 
 License
