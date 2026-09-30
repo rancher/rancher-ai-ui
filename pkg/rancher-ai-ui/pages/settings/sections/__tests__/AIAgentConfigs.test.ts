@@ -26,6 +26,24 @@ jest.mock('@shell/components/form/FileSelector.vue', () => ({
   }
 }));
 
+// Mock ArrayList component to avoid TypeScript import issues in shell components
+jest.mock('@shell/components/form/ArrayList.vue', () => ({
+  name:     'ArrayList',
+  template: '<div><slot /></div>'
+}));
+
+// Mock LabeledInput component to avoid TypeScript import issues in shell components
+jest.mock('@components/Form/LabeledInput/LabeledInput.vue', () => ({
+  name:     'LabeledInput',
+  template: '<div><slot /></div>'
+}));
+
+// Mock Checkbox component to avoid TypeScript import issues in shell components
+jest.mock('@components/Form/Checkbox/Checkbox.vue', () => ({
+  name:     'Checkbox',
+  template: '<div><slot /></div>'
+}));
+
 // Mock LabeledSelect component to avoid TypeScript import issues in shell components
 jest.mock('@shell/components/form/LabeledSelect.vue', () => ({
   default: {
