@@ -278,7 +278,7 @@ describe('Multi Agent Chat', () => {
 
       chat.open();
 
-      chat.getSystemErrorMessage(1).containsText('No agent configurations available.');
+      chat.getSystemErrorMessage(1).containsText('No AI agents are available');
     });
 
     it('It should show an error message if all enabled agents are in error state', () => {
