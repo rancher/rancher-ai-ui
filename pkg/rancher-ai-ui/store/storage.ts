@@ -14,7 +14,7 @@ const DEFAULT_STORAGE = { [StorageKey.ENABLE_AUTO_SCROLL]: true };
 
 const getters = {
   get: (state: State) => (user: string, revision: number) => {
-    if (state?.data && state.user === user && state.revision === revision) {
+    if (state?.data) {
       return state.data;
     }
 
@@ -25,12 +25,16 @@ const getters = {
         const parsed = JSON.parse(stored);
 
         if (parsed.revision === `${ revision }` || parsed.user === user) {
+          state.data = parsed.data;
+
           return parsed.data;
         }
       }
     } catch (error) {
       warn(`Failed to get local storage item`, error);
     }
+
+    state.data = DEFAULT_STORAGE;
 
     return DEFAULT_STORAGE;
   }
