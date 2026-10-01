@@ -54,6 +54,11 @@ jest.mock('@shell/components/form/LabeledSelect.vue', () => ({
   }
 }));
 
+jest.mock('@components/Form/LabeledInput/LabeledInput.vue', () => ({
+  name:     'LabeledInput',
+  template: '<div><slot /></div>'
+}));
+
 jest.mock('@shell/components/DetailText.vue', () => ({
   default: {
     name:     'DetailText',
