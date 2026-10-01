@@ -24,7 +24,7 @@ const getters = {
       if (stored) {
         const parsed = JSON.parse(stored);
 
-        if (parsed.revision === `${ revision }` || parsed.user === user) {
+        if (parsed.revision === revision && parsed.user === user) {
           state.data = parsed.data;
 
           return parsed.data;
