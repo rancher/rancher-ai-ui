@@ -14,7 +14,7 @@ const DEFAULT_STORAGE = { [StorageKey.ENABLE_AUTO_SCROLL]: true };
 
 const getters = {
   get: (state: State) => (user: string, revision: number) => {
-    if (state?.data) {
+    if (state?.data && state.user === user && state.revision === revision) {
       return state.data;
     }
 
