@@ -18,6 +18,15 @@ export interface InstallRancherAIServiceArgs {
   waitForAIServiceReady?: boolean;
 }
 
+export interface PlanningTaskResponse {
+  label: string;
+  agent: string;
+  result?: {
+    status: 'completed' | 'error' | 'failed' | 'pending' | 'in_progress' | 'canceled' | 'unknown';
+    message: string;
+  }
+}
+
 declare global {
   namespace Cypress {
     interface Chainable {
@@ -33,6 +42,7 @@ declare global {
       installUIToolsDefinition(): void;
       updateUIToolsDefinition(): void;
       uninstallUIToolsDefinition(): void;
+      enqueuePlanningResponse(tasks: PlanningTaskResponse[]): void;
       // Utils for screenshots and video recording
       setFullScreen(): void;
     }
