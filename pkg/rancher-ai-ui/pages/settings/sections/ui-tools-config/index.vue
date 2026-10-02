@@ -672,6 +672,7 @@ function openToolDetails(tool: UITool, event: Event) {
 
 .toggle-enable-tool {
   :deep() .switch {
+    min-width: 32px;
     width: 32px;
     height: 16px;
   }
