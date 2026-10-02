@@ -8,7 +8,9 @@ import {
   Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase,
   MessageInternalSource,
   MessageProcessingState,
-  StorageKey
+  StorageKey,
+  MessagePlanningState,
+  Agent
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
@@ -18,6 +20,7 @@ import SystemRequest from '../message/template/SystemRequest.vue';
 import McpAuthenticationRequest from '../message/template/McpAuthenticationRequest.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
+import Planning from '../message/Planning.vue';
 import { useScrollComposable } from '../../composables/useScrollComposable';
 import { useLocalStorageComposable } from '../../composables/useLocalStorageComposable';
 
@@ -42,12 +45,20 @@ const props = defineProps({
     type:    Array as PropType<Message[]>,
     default: () => [],
   },
+  agents: {
+    type:     Array as PropType<Agent[]>,
+    default:  () => [],
+  },
   systemErrors: {
     type:    Array as PropType<ChatError[]>,
     default: () => [],
   },
   processingState: {
     type:    Object as PropType<MessageProcessingState | null>,
+    default: null,
+  },
+  planningState: {
+    type:    Object as PropType<MessagePlanningState | null>,
     default: null,
   },
   layout: {
@@ -60,7 +71,12 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:message', 'confirm:message', 'send:message']);
+const emit = defineEmits([
+  'update:message',
+  'confirm:message',
+  'send:message',
+  'confirm:planning'
+]);
 
 const storage = useLocalStorageComposable();
 
@@ -259,6 +275,14 @@ onBeforeUnmount(() => {
       v-for="(message, i) in formattedMessages"
       :key="i"
     >
+      <Planning
+        v-if="props.planningState && message.id === props.planningState.messageId"
+        class="chat-message-planning"
+        :value="props.planningState"
+        :agents="agents"
+        :disabled="props.disabled"
+        @confirm="emit('confirm:planning', { result: $event })"
+      />
       <component
         :is="getMessageTemplate(message.templateContent?.component)"
         v-if="!!message.templateContent"
@@ -325,6 +349,7 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
+.chat-message-planning,
 .chat-message-template {
   margin-bottom: 16px;
 }

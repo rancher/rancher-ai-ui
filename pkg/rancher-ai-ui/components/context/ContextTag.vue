@@ -49,6 +49,7 @@ const emit = defineEmits(['remove']);
   flex-direction: row;
   gap: 8px;
   height: 24px;
+  min-width: fit-content;
   line-height: 1;
   margin-right: 0;
   margin-left: 0;

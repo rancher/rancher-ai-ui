@@ -5,6 +5,7 @@ import './commands/rancher-ai-service';
 import './commands/llm-mock-service-api';
 import './commands/chat-history';
 import './commands/multi-agent';
+import './commands/planning';
 import './commands/ui-tools';
 import './commands/screen';
 

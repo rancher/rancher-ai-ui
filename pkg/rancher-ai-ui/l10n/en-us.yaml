@@ -206,6 +206,21 @@ ai:
     label:
       default: processing request
       authenticationRequired: 'Awaiting authentication'
+  planning:
+    header:
+      simple: 'Executing the following tasks...'
+      approval: 'Awaiting approval to execute the following tasks...'
+    actions:
+      confirm: 'Start Execution'
+      cancel: 'Cancel'
+      cancelRunning: 'Cancel Execution'
+    status:
+      completed: 'Completed'
+      canceling: 'Canceling Execution...'
+      cancelled: 'Canceled'
+      failed: 'Execution failed'
+    notification:
+      approvalInfo: 'You can request changes before executing the plan above or you can update the current configuration if you’d like me to run these tasks automatically in the future.<br><br>However, after you approve the plan, you won’t be able to write a new prompt until the execution is completed.'
   error:
     chat:
       generic: 'An error occurred initializing the chat'
@@ -608,6 +623,17 @@ aiConfig:
             =1 { {count} tool in total }
             other { {count} tools in total }
           }
+      chat:
+        header: Chat
+        description: Choose the way Liz handles requests and tracks usage
+        multiStepPlanning:
+          title: Multi-Step Planning
+          tooltip: Liz will assist you in planning multi-step operations efficiently.
+          enableMultiStep:
+            label: Enable multi-step planning for complex operations <b>(Adaptive Mode only)</b>
+          requireApproval:
+            label: Require manual approval before executing a multi-step plan
+            tooltip: All multi-step plans will require your confirmation before execution
     EMBEDDINGS_MODEL:
       label: Embeddings Model
     ENABLE_RAG:

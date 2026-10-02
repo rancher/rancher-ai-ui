@@ -27,6 +27,8 @@ export const enum Tag {
   AuthenticationRequestEnd = '</authentication>',
   TokenRefreshRequestStart = '<token-refresh>',
   TokenRefreshRequestEnd = '</token-refresh>',
+  PlanningStart = '<plan>',
+  PlanningEnd = '</plan>',
   ChatErrorStart = '<chat-error>',
   ChatErrorEnd = '</chat-error>',
   AuthenticationErrorStart = '<auth-error>',
@@ -217,6 +219,29 @@ export interface MessageTemplate {
   };
 }
 
+export const enum MessagePlanningStatus {
+  Pending = 'pending',
+  InProgress = 'in_progress',
+  Completed = 'completed',
+  Canceling = 'canceling',
+  Canceled = 'cancelled',
+  Failed = 'failed',
+  NotApplicable = 'not_applicable',
+}
+
+export interface MessagePlanningTask {
+  task: string;
+  status?: MessagePlanningStatus;
+  agent?: string;
+}
+
+export interface MessagePlanningState {
+  messageId: number | string;
+  tasks: MessagePlanningTask[];
+  status?: MessagePlanningStatus;
+  approval?: boolean;
+}
+
 export const enum MessageLabelKey {
   Summary = 'summary',
 }
@@ -239,6 +264,7 @@ export interface Message {
   contextContent?: Context[];
   templateContent?: MessageTemplate;
   thinking?: boolean;
+  planning?: boolean;
   completed?: boolean;
   showThinking?: boolean;
   showCompleteMessage?: boolean;
