@@ -86,3 +86,86 @@ Cypress.Commands.add('uninstallRancherAIService', () => {
     cy.wait(2000);
   });
 });
+
+/**
+ * Updates the AI Assistant configurations by modifying the relevant ConfigMap and Secret, then restarts the Ai Agent deployment.
+ *
+ * @param data - A record of key-value pairs to update in the ConfigMap and Secret.
+ * @returns A promise that resolves once the configurations have been updated and the deployment restarted.
+ * @example
+ * cy.updateAiAssistantConfigs({ PLAN_ENABLED: 'true' });
+ */
+Cypress.Commands.add('updateAiAssistantConfigs', (data: Record<string, string>) => {
+  const namespace = 'cattle-ai-agent-system';
+  const configMapName = 'llm-config';
+  const secretName = 'llm-secret';
+
+  cy.getRancherResource('v1', 'configmaps', `${ namespace }/${ configMapName }`).then((configMapResp) => {
+    const configMap = configMapResp.body;
+    const configMapData = configMap.data || {};
+
+    // Merge data for configmap
+    Object.entries(data).forEach(([key, value]) => {
+      if (configMapData[key] !== undefined) {
+        configMapData[key] = value;
+      }
+    });
+
+    const updatedConfigMap = {
+      metadata: { ...configMap.metadata },
+      data:     configMapData
+    };
+
+    return cy.getRancherResource('v1', 'secrets', `${ namespace }/${ secretName }`).then((secretResp) => {
+      const secret = secretResp.body;
+      const secretData = secret.data || {};
+
+      cy.log(`Fetched Secret: ${ JSON.stringify(secretData) }`);
+
+      // Merge data for secret
+      Object.entries(data).forEach(([key, value]) => {
+        if (secretData[key] !== undefined) {
+          secretData[key] = btoa(value);
+        }
+      });
+
+      const updatedSecret = {
+        metadata: { ...secret.metadata },
+        data:     secretData
+      };
+
+      // Update Settings
+      cy.setRancherResource('v1', 'configmaps', `${ namespace }/${ configMapName }`, updatedConfigMap);
+      cy.setRancherResource('v1', 'secrets', `${ namespace }/${ secretName }`, updatedSecret);
+
+      cy.log('Updated ConfigMap and Secret');
+
+      return resolveKubeconfig().then((kubeconfig) => {
+        cy.log('Restarting rancher-ai-agent deployment...');
+
+        const restartCmd = `kubectl rollout restart deployment/rancher-ai-agent -n cattle-ai-agent-system --kubeconfig=${ kubeconfig }`;
+
+        cy.exec(restartCmd, {
+          failOnNonZeroExit: true,
+          timeout:           30000
+        }).then((result) => {
+          cy.log(`Deployment rollout initiated: ${ result.stdout }`);
+        });
+
+        // Wait for rollout to complete (timeout 300s)
+        const waitCmd = `kubectl rollout status deployment/rancher-ai-agent -n cattle-ai-agent-system --timeout=300s --kubeconfig=${ kubeconfig }`;
+
+        cy.log('Waiting for pod to be active...');
+        cy.exec(waitCmd, {
+          failOnNonZeroExit: true,
+          timeout:           330000
+        }).then((result) => {
+          cy.log(`Pod is ready: ${ result.stdout }`);
+        });
+
+        // Wait a bit more to ensure the pod is fully ready
+        cy.wait(2000);
+      });
+    });
+  });
+});
