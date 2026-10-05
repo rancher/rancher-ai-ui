@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, type PropType } from 'vue';
+import {
+  computed, type PropType, ref, watch, onBeforeUnmount
+} from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { StateColor } from '@shell/utils/style';
@@ -37,6 +39,40 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['confirm']);
+
+const stickyWithDelay = ref(false);
+let timeout: NodeJS.Timeout | null = null;
+
+watch(() => props.value.status, (newStatus) => {
+  clearStickyTimeout();
+
+  const shouldStick = !props.disabled && (
+    newStatus === MessagePlanningStatus.Pending ||
+    newStatus === MessagePlanningStatus.InProgress ||
+    newStatus === MessagePlanningStatus.Canceling
+  );
+
+  if (shouldStick) {
+    // Apply sticky immediately
+    stickyWithDelay.value = true;
+  } else {
+    // Remove sticky after a delay of 2 seconds
+    timeout = setTimeout(() => {
+      stickyWithDelay.value = false;
+    }, 2000);
+  }
+});
+
+function clearStickyTimeout() {
+  if (timeout) {
+    clearTimeout(timeout);
+    timeout = null;
+  }
+}
+
+onBeforeUnmount(() => {
+  clearStickyTimeout();
+});
 
 const items = computed(() => (props.value.tasks || []).map(({ task, agent: agentName, status }) => {
   const agent = props.agents.find((a) => a.name === agentName);
@@ -81,7 +117,7 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     class="planning-state-container"
     :class="{
       'disabled-panel': props.disabled,
-      'sticky': !props.disabled && (props.value.status === MessagePlanningStatus.Pending || props.value.status === MessagePlanningStatus.InProgress || props.value.status === MessagePlanningStatus.Canceling)
+      'sticky': stickyWithDelay
     }"
   >
     <div class="planning-state-header">
@@ -194,6 +230,7 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     border: 1px solid var(--border);
     border-radius: 8px;
     position: relative;
+    transition: all 0.3s ease;
 
     &.sticky {
       position: sticky;
