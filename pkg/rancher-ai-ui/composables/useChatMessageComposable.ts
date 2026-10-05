@@ -676,7 +676,13 @@ export function useChatMessageComposable(
             }
 
             if (planning.approval) {
-              currentMsg.value.messageContent = t('ai.planning.notification.approvalInfo', {}, true);
+              currentMsg.value.templateContent = {
+                component: MessageTemplateComponent.PlanningInfo,
+                content:   {
+                  principal,
+                  message: 'empty'
+                }
+              };
             }
 
             currentMsg.value.planning = true;

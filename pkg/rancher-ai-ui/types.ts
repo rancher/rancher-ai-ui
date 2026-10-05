@@ -208,6 +208,7 @@ export const enum MessageTemplateComponent {
   NoPermission = 'no-permission',
   SystemMessage = 'system-message',
   McpAuthenticationRequest = 'mcp-authentication-request',
+  PlanningInfo = 'planning-info',
 }
 
 export interface MessageTemplate {
