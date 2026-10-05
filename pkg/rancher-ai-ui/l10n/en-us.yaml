@@ -206,6 +206,7 @@ ai:
     label:
       default: processing request
       authenticationRequired: 'Awaiting authentication'
+      planningApprovalRequired: 'Awaiting plan approval'
   planning:
     header:
       simple: 'Executing the following tasks...'

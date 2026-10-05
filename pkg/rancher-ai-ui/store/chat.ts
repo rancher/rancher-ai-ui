@@ -4,7 +4,8 @@ import {
   ChatError,
   ChatMetadata,
   ConfirmationStatus, Message, MessageInternalSource, MessagePhase, MessageProcessingState, Role,
-  MessagePlanningState
+  MessagePlanningState,
+  MessagePlanningStatus
 } from '../types';
 
 /**
@@ -64,7 +65,7 @@ const getters = {
     }
 
     // If there is a message pending confirmation, enforce AwaitingConfirmation phase
-    if (messages.find((msg) => msg.confirmation?.status === ConfirmationStatus.Pending)) {
+    if (messages.find((msg) => msg.confirmation?.status === ConfirmationStatus.Pending || state.chats[chatId]?.planningState?.status === MessagePlanningStatus.Pending)) {
       return { phase: MessagePhase.AwaitingConfirmation };
     }
 
