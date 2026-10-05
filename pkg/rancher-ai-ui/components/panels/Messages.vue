@@ -16,7 +16,7 @@ import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
 import Welcome from '../message/template/Welcome.vue';
 import NoPermission from '../message/template/NoPermissions.vue';
-import SystemRequest from '../message/template/SystemRequest.vue';
+import SystemMessage from '../message/template/SystemMessage.vue';
 import McpAuthenticationRequest from '../message/template/McpAuthenticationRequest.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
@@ -222,8 +222,8 @@ function getMessageTemplate(component: MessageTemplateComponent) {
     return Welcome;
   case MessageTemplateComponent.NoPermission:
     return NoPermission;
-  case MessageTemplateComponent.SystemRequest:
-    return SystemRequest;
+  case MessageTemplateComponent.SystemMessage:
+    return SystemMessage;
   case MessageTemplateComponent.McpAuthenticationRequest:
     return McpAuthenticationRequest;
   default:

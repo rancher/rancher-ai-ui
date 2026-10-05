@@ -206,7 +206,7 @@ export interface MessageConfirmationAction {
 export const enum MessageTemplateComponent {
   Welcome = 'welcome',
   NoPermission = 'no-permission',
-  SystemRequest = 'system-request',
+  SystemMessage = 'system-message',
   McpAuthenticationRequest = 'mcp-authentication-request',
 }
 

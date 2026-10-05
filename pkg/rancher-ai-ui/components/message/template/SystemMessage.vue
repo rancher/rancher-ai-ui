@@ -41,15 +41,15 @@ function doAction(type: 'confirm' | 'cancel') {
 
 <template>
   <div
-    class="chat-system-request-message"
+    class="chat-system-message"
     :class="{ 'disabled-panel': props.disabled }"
   >
     <SystemAvatar class="chat-msg-avatar" />
     <div
       v-if="props.message?.templateContent?.content?.message"
-      class="chat-system-request-msg-bubble"
+      class="chat-system-msg-bubble"
     >
-      <div class="chat-system-request-msg-text">
+      <div class="chat-system-msg-text">
         <span
           v-clean-html="formatMessageContent(props.message.templateContent.content.message || '')"
         />
@@ -57,23 +57,23 @@ function doAction(type: 'confirm' | 'cancel') {
 
       <div
         v-if="props.message?.actions?.length"
-        class="chat-system-request-actions"
+        class="chat-system-actions"
       >
         <div
           v-if="props.message.confirmation"
-          class="chat-system-request-actions-result"
+          class="chat-system-actions-result"
           :class="`status-${props.message.confirmation.status}`"
           :data-testid="`rancher-ai-ui-chat-message-confirmation-status-${ props.message.confirmation.status }`"
         >
           <i :class="[ 'icon', props.message.confirmation.icon ]" />
           <span
             v-clean-html="formatMessageContent(props.message.confirmation.label || '')"
-            class="chat-system-request-msg-text"
+            class="chat-system-msg-text"
           />
         </div>
         <div
           v-else
-          class="chat-system-request-actions-buttons"
+          class="chat-system-actions-buttons"
         >
           <RcButton
             v-if="actions.cancel?.action"
@@ -104,12 +104,12 @@ function doAction(type: 'confirm' | 'cancel') {
 </template>
 
 <style lang='scss' scoped>
-.chat-system-request-message {
+.chat-system-message {
   display: flex;
   gap: 8px;
 }
 
-.chat-system-request-msg-bubble {
+.chat-system-msg-bubble {
   position: relative;
   background: var(--body-bg);
   color: var(--body-text);
@@ -123,19 +123,19 @@ function doAction(type: 'confirm' | 'cancel') {
   gap: 6px;
 
   /* Hide actions by default, show on hover */
-  &:hover .chat-system-request-msg-bubble-actions {
+  &:hover .chat-system-msg-bubble-actions {
     opacity: 1;
     pointer-events: auto;
   }
 }
 
-.chat-system-request-msg-text, :deep() pre {
+.chat-system-msg-text, :deep() pre {
   word-break: break-word;
   white-space: pre-line;
   list-style-position: inside;
 }
 
-.chat-system-request-msg-text {
+.chat-system-msg-text {
   &:deep(code) {
     padding: initial;
     border: initial;
@@ -159,17 +159,17 @@ function doAction(type: 'confirm' | 'cancel') {
   }
 }
 
-.theme-dark .chat-system-request-msg-text :deep(code) {
+.theme-dark .chat-system-msg-text :deep(code) {
   color: #C0EFDE;
 }
 
-.chat-system-request-actions {
+.chat-system-actions {
   display: flex;
   flex-direction: row;
   gap: 8px;
   margin-top: 16px;
 
-  .chat-system-request-actions-buttons {
+  .chat-system-actions-buttons {
     display: flex;
     width: 100%;
     gap: 4px;
@@ -182,7 +182,7 @@ function doAction(type: 'confirm' | 'cancel') {
   }
 }
 
-.chat-system-request-actions-result {
+.chat-system-actions-result {
   display: flex;
   flex-direction: row;
   align-items: center;

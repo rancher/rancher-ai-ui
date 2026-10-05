@@ -261,7 +261,7 @@ export function useChatMessageComposable(
 
   function buildSystemMessage(args: { content: any; component?: MessageTemplateComponent; actions?: MessageAction[] }): Message {
     const {
-      component = MessageTemplateComponent.SystemRequest,
+      component = MessageTemplateComponent.SystemMessage,
       content,
       actions
     } = args;
