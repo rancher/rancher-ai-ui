@@ -18,7 +18,7 @@ import {
   SubAgentProcessingMetadata,
   AgentSelectionMode,
   McpAuthenticationRequest,
-  MessagePlanningState,
+  MessagePlanning,
 } from '../types';
 import { error } from '../utils/log';
 import { validateActionResource } from './validator';
@@ -255,7 +255,7 @@ export function formatTools(tools: ToolCall[], remaining: string): { tools: Tool
   };
 }
 
-export function formatPlanning(value: string): MessagePlanningState | null {
+export function formatPlanning(value: string): MessagePlanning | null {
   value = value.replaceAll(Tag.PlanningStart, '').replaceAll(Tag.PlanningEnd, '').trim();
 
   try {

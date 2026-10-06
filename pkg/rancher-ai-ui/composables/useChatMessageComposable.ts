@@ -21,7 +21,7 @@ import {
   MessageInternalSource,
   MessageLabelKey,
   MessagePhase,
-  MessagePlanningState,
+  MessagePlanning,
   MessageProcessingState,
   MessageTag,
   MessageTemplateComponent,
@@ -101,7 +101,7 @@ export function useChatMessageComposable(
     });
   };
 
-  const setPlanningState = (planningState: MessagePlanningState | null) => {
+  const setPlanningState = (planningState: MessagePlanning | null) => {
     store.commit('rancher-ai-ui/chat/setPlanningState', {
       chatId,
       planningState
@@ -542,6 +542,7 @@ export function useChatMessageComposable(
       break;
     case Tag.MessageEnd:
       setProcessingState({ phase: MessagePhase.Idle });
+
       currentMsg.value.messageContent = currentMsg.value.messageContent?.replace(/[\r\n]+$/, '');
       currentMsg.value.thinking = false;
       currentMsg.value.completed = true;
@@ -663,33 +664,32 @@ export function useChatMessageComposable(
 
         if (data.startsWith(Tag.PlanningStart) && data.endsWith(Tag.PlanningEnd)) {
           const planning = formatPlanning(data);
+          const messageId = currentMsg.value.id || '';
 
           if (planning) {
             setPlanningState({
               ...planning,
-              messageId: currentMsg.value.id || '',
+              messageId
             });
 
-            // Avoids multiple planning messages being processed simultaneously
-            if (currentMsg.value.id !== planningState.value?.messageId) {
-              break;
-            }
-
-            if (planning.approval) {
+            if (planningState.value.messageId === messageId) {
+              // New planning state - bound to the current message
               currentMsg.value.templateContent = {
-                component: MessageTemplateComponent.PlanningInfo,
+                component: MessageTemplateComponent.Planning,
                 content:   {
                   principal,
                   message: 'empty'
                 }
               };
+              currentMsg.value.planningContent = planning;
+            } else {
+              // Update the planning state - bound to a previous message
+              updateMessage({
+                id:              planningState.value.messageId,
+                planningContent: planningState.value,
+              });
             }
-
-            currentMsg.value.planning = true;
           }
-
-          // TODO reset planning state after finalizing
-          // setPlanningState(null);
 
           break;
         }
@@ -812,7 +812,6 @@ export function useChatMessageComposable(
     isChatInitialized,
     resetChatMetadata,
     processingState,
-    planningState,
     error,
     resetErrors: () => setErrors(null),
   };

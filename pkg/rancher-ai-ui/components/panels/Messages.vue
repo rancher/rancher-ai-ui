@@ -9,7 +9,6 @@ import {
   MessageInternalSource,
   MessageProcessingState,
   StorageKey,
-  MessagePlanningState,
   Agent
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
@@ -18,10 +17,9 @@ import Welcome from '../message/template/Welcome.vue';
 import NoPermission from '../message/template/NoPermissions.vue';
 import SystemMessage from '../message/template/SystemMessage.vue';
 import McpAuthenticationRequest from '../message/template/McpAuthenticationRequest.vue';
-import PlanningInfo from '../message/template/PlanningInfo.vue';
+import Planning from '../message/template/Planning.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
-import Planning from '../message/Planning.vue';
 import { useScrollComposable } from '../../composables/useScrollComposable';
 import { useLocalStorageComposable } from '../../composables/useLocalStorageComposable';
 
@@ -56,10 +54,6 @@ const props = defineProps({
   },
   processingState: {
     type:    Object as PropType<MessageProcessingState | null>,
-    default: null,
-  },
-  planningState: {
-    type:    Object as PropType<MessagePlanningState | null>,
     default: null,
   },
   layout: {
@@ -229,8 +223,8 @@ function getMessageTemplate(component: MessageTemplateComponent) {
     return SystemMessage;
   case MessageTemplateComponent.McpAuthenticationRequest:
     return McpAuthenticationRequest;
-  case MessageTemplateComponent.PlanningInfo:
-    return PlanningInfo;
+  case MessageTemplateComponent.Planning:
+    return Planning;
   default:
     return null;
   }
@@ -280,14 +274,6 @@ onBeforeUnmount(() => {
       v-for="(message, i) in formattedMessages"
       :key="i"
     >
-      <Planning
-        v-if="props.planningState && message.id === props.planningState.messageId"
-        class="chat-message-planning"
-        :value="props.planningState"
-        :agents="agents"
-        :disabled="props.disabled"
-        @confirm="emit('confirm:planning', { result: $event })"
-      />
       <component
         :is="getMessageTemplate(message.templateContent?.component)"
         v-if="!!message.templateContent"
@@ -297,11 +283,14 @@ onBeforeUnmount(() => {
         }"
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
+        :agents="props.agents"
         :disabled="props.disabled"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
         :message="message"
         @update:message="emit('update:message', $event)"
         @send:message="emit('send:message', $event)"
+        @confirm:message="emit('confirm:message', $event)"
+        @confirm:planning="emit('confirm:planning', $event)"
       />
       <MessageComponent
         v-else
@@ -354,7 +343,6 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
-.chat-message-planning,
 .chat-message-template {
   margin-bottom: 16px;
 }

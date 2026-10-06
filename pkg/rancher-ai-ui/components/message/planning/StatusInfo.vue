@@ -6,12 +6,12 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { StateColor } from '@shell/utils/style';
 import StatusBar from '@shell/components/Resource/Detail/StatusBar.vue';
-import { Agent, MessagePlanningState, MessagePlanningStatus } from '../../types';
-import ContextTag from '../context/ContextTag.vue';
+import { Agent, MessagePlanning, MessagePlanningStatus } from '../../../types';
+import ContextTag from '../../context/ContextTag.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
 
 const STATUS_ICON: Record<MessagePlanningStatus, string> = {
-  [MessagePlanningStatus.Pending]:       'icon-spinner icon-spin',
+  [MessagePlanningStatus.Pending]:       'icon-spinner',
   [MessagePlanningStatus.InProgress]:    'icon-chevron-right',
   [MessagePlanningStatus.Completed]:     'icon-checkmark',
   [MessagePlanningStatus.Canceling]:     'icon-close',
@@ -25,7 +25,7 @@ const { t } = useI18n(store);
 
 const props = defineProps({
   value: {
-    type:     Object as PropType<MessagePlanningState>,
+    type:     Object as PropType<MessagePlanning>,
     required: true,
   },
   agents: {
@@ -41,38 +41,7 @@ const props = defineProps({
 const emit = defineEmits(['confirm']);
 
 const stickyWithDelay = ref(false);
-let timeout: NodeJS.Timeout | null = null;
-
-watch(() => props.value.status, (newStatus) => {
-  clearStickyTimeout();
-
-  const shouldStick = !props.disabled && (
-    newStatus === MessagePlanningStatus.Pending ||
-    newStatus === MessagePlanningStatus.InProgress ||
-    newStatus === MessagePlanningStatus.Canceling
-  );
-
-  if (shouldStick) {
-    // Apply sticky immediately
-    stickyWithDelay.value = true;
-  } else {
-    // Remove sticky after a delay of 2 seconds
-    timeout = setTimeout(() => {
-      stickyWithDelay.value = false;
-    }, 2000);
-  }
-});
-
-function clearStickyTimeout() {
-  if (timeout) {
-    clearTimeout(timeout);
-    timeout = null;
-  }
-}
-
-onBeforeUnmount(() => {
-  clearStickyTimeout();
-});
+let timeout: NodeJS.Timeout | null = null; // eslint-disable-line no-undef
 
 const items = computed(() => (props.value.tasks || []).map(({ task, agent: agentName, status }) => {
   const agent = props.agents.find((a) => a.name === agentName);
@@ -84,6 +53,9 @@ const items = computed(() => (props.value.tasks || []).map(({ task, agent: agent
   };
 }));
 
+const spinningStatus = computed(() => props.value.status === MessagePlanningStatus.Pending ||
+  props.value.status === MessagePlanningStatus.InProgress ||
+  props.value.status === MessagePlanningStatus.Canceling);
 const inactiveStatus = computed(() => props.value.status === MessagePlanningStatus.Canceling || props.value.status === MessagePlanningStatus.Canceled);
 
 const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
@@ -109,6 +81,37 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     percent: emptyPercent,
   }] as Array<{ color: StateColor; percent: number }>;
 });
+
+watch(() => props.value.status, (newStatus) => {
+  clearStickyTimeout();
+
+  const shouldStick = (
+    newStatus === MessagePlanningStatus.Pending ||
+    newStatus === MessagePlanningStatus.InProgress ||
+    newStatus === MessagePlanningStatus.Canceling
+  );
+
+  if (shouldStick) {
+    // Apply sticky immediately
+    stickyWithDelay.value = true;
+  } else {
+    // Remove sticky after a delay of 2 seconds
+    timeout = setTimeout(() => {
+      stickyWithDelay.value = false;
+    }, 2000);
+  }
+}, { immediate: true });
+
+function clearStickyTimeout() {
+  if (timeout) {
+    clearTimeout(timeout);
+    timeout = null;
+  }
+}
+
+onBeforeUnmount(() => {
+  clearStickyTimeout();
+});
 </script>
 
 <template>
@@ -117,7 +120,7 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     class="planning-state-container"
     :class="{
       'disabled-panel': props.disabled,
-      'sticky': stickyWithDelay
+      'sticky': !props.disabled && stickyWithDelay
     }"
   >
     <div class="planning-state-header">
@@ -142,7 +145,11 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     >
       <i
         v-if="item.status"
-        :class="['icon', STATUS_ICON[item.status]]"
+        :class="{
+          'icon': true,
+          'icon-spin': item.status === MessagePlanningStatus.Pending && spinningStatus,
+          [STATUS_ICON[item.status]]: true,
+        }"
       />
       <span class="label">
         {{ item.task }}
@@ -226,6 +233,7 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
     flex-direction: column;
     gap: 8px;
     padding: 12px;
+    margin-bottom: 16px;
     background: var(--body-bg);
     border: 1px solid var(--border);
     border-radius: 8px;

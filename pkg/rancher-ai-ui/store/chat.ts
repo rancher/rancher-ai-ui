@@ -4,7 +4,7 @@ import {
   ChatError,
   ChatMetadata,
   ConfirmationStatus, Message, MessageInternalSource, MessagePhase, MessageProcessingState, Role,
-  MessagePlanningState,
+  MessagePlanning as MessagePlanningState,
   MessagePlanningStatus
 } from '../types';
 
@@ -65,7 +65,7 @@ const getters = {
     }
 
     // If there is a message pending confirmation, enforce AwaitingConfirmation phase
-    if (messages.find((msg) => msg.confirmation?.status === ConfirmationStatus.Pending || state.chats[chatId]?.planningState?.status === MessagePlanningStatus.Pending)) {
+    if (messages.find((msg) => msg.confirmation?.status === ConfirmationStatus.Pending || msg.planningContent?.status === MessagePlanningStatus.Pending)) {
       return { phase: MessagePhase.AwaitingConfirmation };
     }
 
@@ -217,14 +217,26 @@ const mutations = {
       return;
     }
 
-    // No existing planning state with an ID, set a new planning state
+    if (!planningState) {
+      return;
+    }
+
+    // Save the new planning state if none exists
     if (!state.chats[chatId].planningState?.messageId) {
-      state.chats[chatId].planningState = planningState as MessagePlanningState;
+      state.chats[chatId].planningState = planningState;
 
       return;
     }
 
-    // Update the items of the existing planning state
+    // Replace the expired planning with the new one
+    if (state.chats[chatId].planningState?.status === MessagePlanningStatus.Canceled || state.chats[chatId].planningState?.status === MessagePlanningStatus.Failed || state.chats[chatId].planningState?.status === MessagePlanningStatus.Completed) {
+      state.chats[chatId].planningState = {
+        ...planningState,
+        messageId: planningState.messageId,
+      };
+    }
+
+    // Update the items of the existing planning state, preserving the messageId
     state.chats[chatId].planningState.tasks = planningState?.tasks || [];
     state.chats[chatId].planningState.status = planningState?.status;
   },
