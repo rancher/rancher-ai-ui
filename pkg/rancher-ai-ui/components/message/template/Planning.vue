@@ -30,6 +30,7 @@ const emit = defineEmits(['update:message', 'confirm:message', 'send:message', '
 <template>
   <StatusInfo
     v-if="props.message?.planningContent"
+    v-bind="$attrs"
     :value="props.message.planningContent"
     :agents="props.agents"
     :disabled="props.disabled"
@@ -44,6 +45,7 @@ const emit = defineEmits(['update:message', 'confirm:message', 'send:message', '
   />
   <MessageComponent
     v-else
+    v-bind="$attrs"
     :message="props.message"
     :disabled="props.disabled"
     :pending-confirmation="props.pendingConfirmation"
