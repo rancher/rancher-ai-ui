@@ -82,6 +82,12 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
   }] as Array<{ color: StateColor; percent: number }>;
 });
 
+const planningHeader = computed(() => {
+  const distinctAgents = Array.from(new Set((props.value.tasks || []).map(({ agent }) => agent)));
+
+  return t(`ai.planning.header.label.${ props.value.approval ? 'withApproval' : 'withoutApproval' }.${ props.value.status }`, { count: distinctAgents.length });
+});
+
 watch(() => props.value.status, (newStatus) => {
   clearStickyTimeout();
 
@@ -124,7 +130,7 @@ onBeforeUnmount(() => {
     }"
   >
     <div class="planning-state-header">
-      {{ t(`ai.planning.header.${ props.value.approval ? 'approval' : 'simple' }`) }}
+      {{ planningHeader }}
     </div>
 
     <div class="planning-state-progress">

@@ -209,8 +209,37 @@ ai:
       planningApprovalRequired: 'Awaiting plan approval'
   planning:
     header:
-      simple: 'Executing the following tasks...'
-      approval: 'Awaiting approval to execute the following tasks...'
+      label:
+        withoutApproval:
+          pending: 'Executing the following tasks...'
+          in_progress: |-
+            {count, plural,
+              =1 { Using 1 agent to execute the following tasks... }
+              other { Using {count} agents to execute the following tasks... }
+            }
+          completed: 'All tasks have been completed'
+          canceling: |-
+            {count, plural,
+              =1 { Using 1 agent to execute the following tasks... }
+              other { Using {count} agents to execute the following tasks... }
+            }
+          cancelled: 'Execution has been canceled'
+          failed: 'Execution has been stopped'
+        withApproval:
+          pending: 'Awaiting approval to execute the following tasks...'
+          in_progress: |-
+            {count, plural,
+              =1 { Using 1 agent to execute the following tasks... }
+              other { Using {count} agents to execute the following tasks... }
+            }
+          completed: 'All tasks have been completed'
+          canceling: |-
+            {count, plural,
+              =1 { Using 1 agent to execute the following tasks... }
+              other { Using {count} agents to execute the following tasks... }
+            }
+          cancelled: 'Execution has been canceled'
+          failed: 'Execution has been stopped'
     actions:
       confirm: 'Start Execution'
       cancel: 'Cancel'
