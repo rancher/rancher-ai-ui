@@ -780,6 +780,10 @@ export function useChatMessageComposable(
     store.commit('rancher-ai-ui/chat/clearMessageBox', chatId);
   }
 
+  function clearPendingConfirmations() {
+    store.commit('rancher-ai-ui/chat/clearPendingConfirmations', chatId);
+  }
+
   onMounted(() => {
     store.dispatch('rancher-ai-ui/chat/init', {
       chatId,
@@ -807,6 +811,7 @@ export function useChatMessageComposable(
     loadMessages,
     resetMessages,
     clearMessageBox,
+    clearPendingConfirmations,
     notifyPreferencesUpdate,
     chatMetadata,
     isChatInitialized,

@@ -278,6 +278,22 @@ const mutations = {
 
     delete state.messageBox[chatId];
   },
+
+  clearPendingConfirmations(state: State, chatId: string) {
+    if (!chatId || !state.chats[chatId]) {
+      return;
+    }
+
+    for (const message of Object.values(state.chats[chatId].messages)) {
+      if (message.confirmation?.status === ConfirmationStatus.Pending) {
+        message.confirmation.status = ConfirmationStatus.Canceled;
+      }
+      if (message.planningContent?.status === MessagePlanningStatus.Pending || message.planningContent?.status === MessagePlanningStatus.Canceling || message.planningContent?.status === MessagePlanningStatus.InProgress) {
+        message.planningContent.status = MessagePlanningStatus.Canceled;
+        state.chats[chatId].planningState = undefined;
+      }
+    }
+  }
 };
 
 const actions = {

@@ -65,6 +65,7 @@ const {
   loadMessages,
   selectContext,
   clearMessageBox,
+  clearPendingConfirmations,
   notifyPreferencesUpdate,
   chatMetadata,
   isChatInitialized,
@@ -393,6 +394,10 @@ watch(() => [
    */
   if (!newDisabled && newIsChatInitialized && newMessage) {
     ensureConnectionAndSendMessage(newMessage);
+  }
+
+  if (newDisabled && systemErrors.value.length > 0) {
+    clearPendingConfirmations();
   }
 }, {
   immediate: true,
