@@ -3,7 +3,9 @@ import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
 import {
   ChatError,
   ChatMetadata,
-  ConfirmationStatus, Message, MessageInternalSource, MessagePhase, MessageProcessingState, Role
+  ConfirmationStatus, Message, MessageInternalSource, MessagePhase, MessageProcessingState, Role,
+  MessagePlanning as MessagePlanningState,
+  MessagePlanningStatus
 } from '../types';
 
 /**
@@ -19,6 +21,7 @@ interface Chat {
   agentName?: string;
   messages: Record<string, Message>;
   processingState?: MessageProcessingState;
+  planningState?: MessagePlanningState;
   error?: ChatError | null;
 }
 
@@ -62,7 +65,7 @@ const getters = {
     }
 
     // If there is a message pending confirmation, enforce AwaitingConfirmation phase
-    if (messages.find((msg) => msg.confirmation?.status === ConfirmationStatus.Pending)) {
+    if (messages.find((msg) => msg.confirmation?.status === ConfirmationStatus.Pending || msg.planningContent?.status === MessagePlanningStatus.Pending)) {
       return { phase: MessagePhase.AwaitingConfirmation };
     }
 
@@ -77,6 +80,9 @@ const getters = {
     }
 
     return { phase: MessagePhase.Idle };
+  },
+  planningState: (state: State) => (chatId: string) => {
+    return state.chats[chatId]?.planningState;
   },
   error: (state: State) => (chatId: string) => {
     return state.chats[chatId]?.error || null;
@@ -204,6 +210,37 @@ const mutations = {
     state.chats[chatId].processingState = processingState;
   },
 
+  setPlanningState(state: State, args: { chatId: string; planningState: MessagePlanningState | null }) {
+    const { chatId, planningState } = args;
+
+    if (!chatId || !state.chats[chatId]) {
+      return;
+    }
+
+    if (!planningState) {
+      return;
+    }
+
+    // Save the new planning state if none exists
+    if (!state.chats[chatId].planningState?.messageId) {
+      state.chats[chatId].planningState = planningState;
+
+      return;
+    }
+
+    // Replace the expired planning with the new one
+    if (state.chats[chatId].planningState?.status === MessagePlanningStatus.Canceled || state.chats[chatId].planningState?.status === MessagePlanningStatus.Failed || state.chats[chatId].planningState?.status === MessagePlanningStatus.Completed) {
+      state.chats[chatId].planningState = {
+        ...planningState,
+        messageId: planningState.messageId,
+      };
+    }
+
+    // Update the items of the existing planning state, preserving the messageId
+    state.chats[chatId].planningState.tasks = planningState?.tasks || [];
+    state.chats[chatId].planningState.status = planningState?.status;
+  },
+
   setError(state: State, args: { chatId: string; error: ChatError | null }) {
     const { chatId, error } = args;
 
@@ -241,6 +278,22 @@ const mutations = {
 
     delete state.messageBox[chatId];
   },
+
+  clearPendingConfirmations(state: State, chatId: string) {
+    if (!chatId || !state.chats[chatId]) {
+      return;
+    }
+
+    for (const message of Object.values(state.chats[chatId].messages)) {
+      if (message.confirmation?.status === ConfirmationStatus.Pending) {
+        message.confirmation.status = ConfirmationStatus.Canceled;
+      }
+      if (message.planningContent?.status === MessagePlanningStatus.Pending || message.planningContent?.status === MessagePlanningStatus.Canceling || message.planningContent?.status === MessagePlanningStatus.InProgress) {
+        message.planningContent.status = MessagePlanningStatus.Canceled;
+        state.chats[chatId].planningState = undefined;
+      }
+    }
+  }
 };
 
 const actions = {

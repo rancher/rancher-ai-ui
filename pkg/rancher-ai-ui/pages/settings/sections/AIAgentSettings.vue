@@ -851,4 +851,8 @@ div.mb-0 {
     left: calc(100% - 48px);
   }
 }
+
+:deep() button.toggle-group-item {
+  border-width: 1px;
+}
 </style>

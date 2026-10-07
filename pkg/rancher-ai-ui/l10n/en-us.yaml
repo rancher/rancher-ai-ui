@@ -206,6 +206,55 @@ ai:
     label:
       default: processing request
       authenticationRequired: 'Awaiting authentication'
+      planningApprovalRequired: 'Awaiting plan approval'
+  planning:
+    header:
+      label:
+        withoutApproval:
+          pending: 'Executing the following tasks...'
+          in_progress: |-
+            {count, plural,
+              =1 { Using 1 agent to execute the following tasks... }
+              other { Using {count} agents to execute the following tasks... }
+            }
+          completed: 'All tasks have been completed'
+          canceling: |-
+            {count, plural,
+              =1 { Using 1 agent to execute the following tasks... }
+              other { Using {count} agents to execute the following tasks... }
+            }
+          cancelled: 'Execution has been canceled'
+          failed: 'Execution has been stopped'
+        withApproval:
+          pending: 'Awaiting approval to execute the following tasks...'
+          in_progress: |-
+            {count, plural,
+              =1 { Using 1 agent to execute the following tasks... }
+              other { Using {count} agents to execute the following tasks... }
+            }
+          completed: 'All tasks have been completed'
+          canceling: |-
+            {count, plural,
+              =1 { Using 1 agent to execute the following tasks... }
+              other { Using {count} agents to execute the following tasks... }
+            }
+          cancelled: 'Execution has been canceled'
+          failed: 'Execution has been stopped'
+    actions:
+      confirm: 'Start Execution'
+      cancel: 'Cancel'
+      cancelRunning: 'Cancel Execution'
+    status:
+      completed: 'Completed'
+      canceling: 'Canceling Execution...'
+      cancelled: 'Canceled'
+      failed: 'Execution failed'
+    notification:
+      approvalInfo:
+        tooltip: 'Go to Chat settings'
+        label:
+          admin: 'You can request changes before executing the plan above or you can update the current <goToChatSettings>configuration</goToChatSettings> if you’d like me to run these tasks automatically in the future.<br><br>However, after you approve the plan, you won’t be able to write a new prompt until the execution is completed, but I might need your input on various decisions I need to make.'
+          user: 'You can request changes before executing the plan above.<br><br>However, after you approve the plan, you won’t be able to write a new prompt until the execution is completed, but I might need your input on various decisions I need to make.'
   error:
     chat:
       generic: 'An error occurred initializing the chat'
@@ -608,6 +657,17 @@ aiConfig:
             =1 { {count} tool in total }
             other { {count} tools in total }
           }
+      chat:
+        header: Chat
+        description: Choose the way Liz handles requests and tracks usage
+        multiStepPlanning:
+          title: Multi-Step Planning
+          tooltip: Liz will assist you in planning multi-step operations efficiently.
+          enableMultiStep:
+            label: Enable multi-step planning for complex operations <b>(Adaptive Mode only)</b>
+          requireApproval:
+            label: Require manual approval before executing a multi-step plan
+            tooltip: All multi-step plans will require your confirmation before execution
     EMBEDDINGS_MODEL:
       label: Embeddings Model
     ENABLE_RAG:
