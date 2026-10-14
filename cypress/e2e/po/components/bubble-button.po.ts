@@ -10,12 +10,6 @@ export default class BubbleButtonPo extends ComponentPo {
     this.parentEl = parent;
   }
 
-  // Override self() to scope within the parent element so the correct button
-  // is targeted when multiple messages with the same button type are visible.
-  self() {
-    return this.parentEl.find(`[data-testid="rancher-ai-ui-bubble-btn-${ this.icon }"]`);
-  }
-
   click() {
     // Use .within() to guarantee the click is scoped to the parent message element.
     // This prevents .first() from picking the first matching button across all messages
