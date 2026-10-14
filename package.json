@@ -33,7 +33,7 @@
     "@babel/core": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@rancher/cypress": "1.0.11",
+    "@rancher/cypress": "1.0.12",
     "@types/jest": "^30.0.0",
     "@types/lodash": "4.17.25",
     "@types/markdown-it": "^14.2.0",
