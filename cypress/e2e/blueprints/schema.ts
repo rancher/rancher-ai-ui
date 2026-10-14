@@ -1,3 +1,13 @@
+export const gitRepoSchema = {
+  'id':   'fleet.cattle.io.gitrepo',
+  'type': 'schema',
+};
+
+export const virtualMachineSchema = {
+  'id':   'kubevirt.io.virtualmachine',
+  'type': 'schema',
+};
+
 export const machineInventorySchema = {
   'id':    'elemental.cattle.io.machineinventory',
   'type':  'schema',
@@ -60,4 +70,14 @@ export const machineInventorySchema = {
   },
   '_id':    'elemental.cattle.io.machineinventory',
   '_group': 'elemental.cattle.io'
+};
+
+export const clusterRepoSchema = {
+  'id':   'catalog.cattle.io.clusterrepos',
+  'type': 'schema',
+};
+
+export const appsSchema = {
+  id:   'catalog.cattle.io.apps',
+  type: 'schema',
 };
