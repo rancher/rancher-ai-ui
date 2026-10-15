@@ -22,6 +22,7 @@ import {
   MessageLabelKey,
   MessagePhase,
   MessageProcessingState,
+  MessageStopType,
   MessageTag,
   MessageTemplateComponent,
   Role,
@@ -39,7 +40,8 @@ import {
   formatAgentMetadata,
   formatMcpAuthenticationRequest,
   formatMcpRefreshTokenRequest,
-  formatAuthenticationErrorMessage
+  formatAuthenticationErrorMessage,
+  formatStopMessage
 } from '../utils/format';
 import { validateUrl } from '../utils/url';
 import { downloadFile } from '@shell/utils/download';
@@ -187,6 +189,13 @@ export function useChatMessageComposable(
     if (message.source === MessageInternalSource.MessageBox) {
       clearMessageBox();
     }
+  }
+
+  function stopMessage(ws: WebSocket) {
+    wsSend(ws, formatWSInputMessage({
+      prompt: '',
+      tags:   [MessageTag.Stop]
+    }));
   }
 
   function getMessage(messageId: string) {
@@ -374,6 +383,14 @@ export function useChatMessageComposable(
     await addMessage(message);
   }
 
+  async function notifyManualStopMessage() {
+    const content = { message: t('ai.message.system.manualStopMessage.info', {}, true) };
+
+    const message = buildSystemRequestMessage({ content });
+
+    await addMessage(message);
+  }
+
   function onopen(event: { target: WebSocket }) {
     const ws = event.target;
 
@@ -525,7 +542,13 @@ export function useChatMessageComposable(
       currentMsg.value.thinking = false;
       currentMsg.value.completed = true;
 
-      await ensureSwitchAgentSuggestion(currentMsg.value.agentMetadata?.recommended);
+      if (currentMsg.value.stopType) {
+        if (currentMsg.value.stopType === MessageStopType.Manual) {
+          await notifyManualStopMessage();
+        }
+      } else {
+        await ensureSwitchAgentSuggestion(currentMsg.value.agentMetadata?.recommended);
+      }
 
       break;
     default:
@@ -658,6 +681,14 @@ export function useChatMessageComposable(
           };
         }
 
+        if (data.startsWith(Tag.StopStart) && data.endsWith(Tag.StopEnd)) {
+          const stop = formatStopMessage(data);
+
+          currentMsg.value.stopType = stop?.type || null;
+
+          break;
+        }
+
         if (data === Tag.ProcessingTools) {
           setProcessingState({ phase: MessagePhase.ProcessingTools });
 
@@ -753,6 +784,7 @@ export function useChatMessageComposable(
     addMessage,
     updateMessage,
     confirmMessage,
+    stopMessage,
     selectContext,
     downloadMessages,
     loadMessages,

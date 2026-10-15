@@ -60,6 +60,7 @@ const {
   sendMessage,
   updateMessage,
   confirmMessage,
+  stopMessage,
   downloadMessages,
   loadMessages,
   selectContext,
@@ -479,6 +480,7 @@ function unmount() {
         :messages="messages"
         :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"
+        @stop:content="stopMessage(ws)"
         @select:agent="selectAgent"
       />
       <History
