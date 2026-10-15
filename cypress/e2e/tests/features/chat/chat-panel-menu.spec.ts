@@ -13,6 +13,10 @@ describe('Feature: chat-panel-menu', () => {
     HomePagePo.goTo();
     chat.open();
     chat.isReady();
+
+    const welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
   });
 
   afterEach(() => {
@@ -112,10 +116,12 @@ describe('Feature: chat-panel-menu', () => {
     history.isClosed();
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').type('{ctrl}{shift}s');
+    cy.wait(500);
 
     history.isOpen();
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').type('{ctrl}{shift}s');
+    cy.wait(500);
 
     history.isClosed();
 
