@@ -180,7 +180,7 @@ function reset() {
   max-width: 100%;
   align-items: center;
   gap: 8px;
-  color: var(--active-nav);
+  color: var(--active);
 }
 
 .context-reset {
@@ -201,10 +201,10 @@ function reset() {
   max-width: 100%;
   align-items: center;
   gap: 8px;
-  color: var(--active-nav);
+  color: var(--active);
 }
 
 .icon-pin-outlined {
-  color: var(--active-nav);
+  color: var(--active);
 }
 </style>

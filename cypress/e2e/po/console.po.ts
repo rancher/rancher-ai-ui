@@ -45,6 +45,14 @@ export class ConsolePo extends ComponentPo {
     return this.self().get('textarea[data-testid="rancher-ai-ui-chat-input-textarea"]');
   }
 
+  sendButton() {
+    return this.self().find('[data-testid="rancher-ai-ui-chat-console-send-message"]');
+  }
+
+  stopButton() {
+    return this.self().find('[data-testid="rancher-ai-ui-chat-console-stop-message"]');
+  }
+
   selectAgent() {
     return new SelectAgentPo();
   }
@@ -59,6 +67,10 @@ export class ConsolePo extends ComponentPo {
 
   enter() {
     this.textarea().type('{enter}');
+  }
+
+  stopMessage() {
+    return this.stopButton().click();
   }
 
   autocompleteOverlay() {

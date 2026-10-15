@@ -60,6 +60,7 @@ const {
   sendMessage,
   updateMessage,
   confirmMessage,
+  stopMessage,
   downloadMessages,
   loadMessages,
   selectContext,
@@ -479,6 +480,7 @@ function unmount() {
         :messages="messages"
         :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"
+        @stop:content="stopMessage(ws)"
         @select:agent="selectAgent"
       />
       <History
@@ -553,7 +555,7 @@ function unmount() {
 }
 
 .connection-processing-label {
-  color: var(--active-nav);
+  color: var(--active);
   font-family: "Inter", Arial, sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
