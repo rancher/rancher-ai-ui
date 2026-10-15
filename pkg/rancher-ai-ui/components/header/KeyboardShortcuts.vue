@@ -46,9 +46,9 @@ const shortcuts: Shortcut[] = [
   },
   {
     action:           t('ai.shortcuts.items.toggleHistory'),
-    mac:              ['⌘', ' Shift S'],
-    windows:          'Ctrl Shift S',
-    macSymbolIndexes: [0, 2],
+    mac:              ['⌘', ' Shift H'],
+    windows:          'Ctrl Shift H',
+    macSymbolIndexes: [0],
   },
   {
     action:               t('ai.shortcuts.items.deleteChat'),

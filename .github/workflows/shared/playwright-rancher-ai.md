@@ -65,7 +65,7 @@ Before sending a message, enqueue a mock response via a PUT request to
 |-------------------|-------------------|--------|
 | Alt+K | Cmd+Shift+K | Open/Close chat panel |
 | Ctrl+Shift+O | Ctrl+Shift+O | New chat |
-| Ctrl+Shift+S | Ctrl+Shift+S | Toggle history panel |
+| Ctrl+Shift+H | Ctrl+Shift+H | Toggle history panel |
 | Ctrl+Shift+C | Ctrl+Shift+C | Copy last response |
 | Ctrl+Shift+Backspace | Ctrl+Shift+Backspace | Delete chat |
 

@@ -45,7 +45,7 @@ export function useKeyboardShortcutsComposable(options: KeyboardShortcutsOptions
       return;
     }
 
-    if (e[alternateKey] && e.shiftKey && e.key?.toLowerCase() === 's') {
+    if (e[alternateKey] && e.shiftKey && e.key?.toLowerCase() === 'h') {
       e.preventDefault();
       if (!disabled()) {
         onToggleHistory();

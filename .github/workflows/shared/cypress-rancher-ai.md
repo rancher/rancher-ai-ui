@@ -120,7 +120,7 @@ cy.get('body').type(isMac ? '{meta}{shift}k' : '{alt}k');
 cy.get('[data-testid="rancher-ai-ui-chat-container"]')
   .type('{ctrl}{shift}o');           // New chat
 cy.get('[data-testid="rancher-ai-ui-chat-container"]')
-  .type('{ctrl}{shift}s');           // Toggle history
+  .type('{ctrl}{shift}h');           // Toggle history
 cy.get('[data-testid="rancher-ai-ui-chat-container"]')
   .type('{ctrl}{shift}c');           // Copy last response
 cy.get('[data-testid="rancher-ai-ui-chat-container"]')

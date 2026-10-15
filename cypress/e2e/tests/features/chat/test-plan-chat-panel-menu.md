@@ -197,9 +197,9 @@
 
 ---
 
-### Test 7: Keyboard shortcut Ctrl+Shift+S (Toggle history) opens history panel
+### Test 7: Keyboard shortcut Ctrl+Shift+H (Toggle history) opens history panel
 
-**Description**: Pressing `Ctrl+Shift+S` while the chat panel is focused toggles the history panel visibility.
+**Description**: Pressing `Ctrl+Shift+H` while the chat panel is focused toggles the history panel visibility.
 
 **Preconditions**:
 - User is logged in
@@ -209,11 +209,11 @@
 **Steps**:
 1. Open chat panel and wait for ready state
 2. Verify history is closed
-3. Press `{ctrl}{shift}s` on `[data-testid="rancher-ai-ui-chat-container"]`
+3. Press `{ctrl}{shift}h` on `[data-testid="rancher-ai-ui-chat-container"]`
 
 **Assertions**:
 - History panel becomes visible (`history.isOpen()`)
-4. Press `{ctrl}{shift}s` again
+4. Press `{ctrl}{shift}h` again
 - History panel closes (`history.isClosed()`)
 
 **Selectors**:
