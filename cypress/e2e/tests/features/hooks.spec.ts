@@ -529,6 +529,65 @@ describe('Hooks', () => {
         chat.getMessage(2).checkNotExists();
       });
 
+      it('It should not send a message from the sliding badge when there is pending response', () => {
+        const homePage = new HomePagePo();
+
+        HomePagePo.goTo();
+
+        chat.open();
+
+        const welcomeMessage = chat.getMessage(1);
+
+        welcomeMessage.isCompleted();
+
+        cy.enqueueLLMResponse({
+          text: [
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' long response',
+          ],
+        });
+
+        chat.sendMessage('Request');
+
+        const resultMessage = chat.getMessage(3);
+
+        resultMessage.self().should('exist');
+
+        const homeClusterList = homePage.list();
+
+        const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+
+        const slidingBadge = new SlidingBadgePo(statusColumn);
+
+        slidingBadge.click();
+
+        resultMessage.self().should('not.contain.text', 'long response');
+
+        // The sliding badge click should not send a new message
+        chat.getMessage(4).checkNotExists();
+
+        chat.console().textarea().then(($textarea) => {
+          const text = $textarea.val() as string;
+
+          // Check that the staged message contains all expected parts
+          expect(text).to.contain('Please analyse the Cluster');
+          expect(text).to.contain('Explain');
+        });
+
+        resultMessage.self().should('contain.text', 'long response');
+      });
+
       afterEach(() => {
         cy.cleanChatHistory();
       });

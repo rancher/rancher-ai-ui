@@ -15,6 +15,8 @@ export const enum Tag {
   MessageEnd = '</message>',
   ThinkingStart = '<think>',
   ThinkingEnd = '</think>',
+  StopStart = '<stop-message>',
+  StopEnd = '</stop-message>',
   ToolsStart = '<ui-tools>',
   ToolsEnd = '</ui-tools>',
   McpResultStart = '<mcp-response>',
@@ -177,6 +179,7 @@ export const enum MessageTag {
   Ephemeral = 'ephemeral',
   Welcome = 'welcome',
   Confirmation = 'confirmation',
+  Stop = 'stop',
 }
 
 export interface MessageAction {
@@ -227,6 +230,11 @@ export const enum MessageInternalSource {
   Error = 'error',
 }
 
+export const enum MessageStopType {
+  Preempted = 'new-request',
+  Manual = 'message-manual-stop',
+}
+
 export type SourceLinkItem = { key?: string; label?: string; value: string; } | string;
 
 export interface Message {
@@ -238,6 +246,7 @@ export interface Message {
   summaryContent?: string;
   contextContent?: Context[];
   templateContent?: MessageTemplate;
+  stopType?: MessageStopType | null;
   thinking?: boolean;
   completed?: boolean;
   showThinking?: boolean;
@@ -424,6 +433,7 @@ export interface HistoryChatMessage {
   labels?: Record<MessageLabelKey, string>;
   tags?: string[];
   confirmation?: boolean;
+  stopped?: MessageStopType | null;
   tools?: ToolCall[];
   createdAt: string;
 }

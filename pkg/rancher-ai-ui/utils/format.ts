@@ -18,6 +18,7 @@ import {
   SubAgentProcessingMetadata,
   AgentSelectionMode,
   McpAuthenticationRequest,
+  MessageStopType,
 } from '../types';
 import { error } from '../utils/log';
 import { validateActionResource } from './validator';
@@ -326,7 +327,23 @@ export function formatAuthenticationErrorMessage(value: string): ChatError {
   return { message: 'An error occurred.' };
 }
 
-export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: Agent[]): Message {
+export function formatStopMessage(value: string): { type: MessageStopType | null } | null {
+  value = value.replaceAll(Tag.StopStart, '').replaceAll(Tag.StopEnd, '').trim();
+
+  if (value) {
+    try {
+      const parsed = JSON.parse(value);
+
+      return { type: parsed?.reason || null };
+    } catch (err) {
+      error('Failed to parse stop message:', err);
+    }
+  }
+
+  return null;
+}
+
+export function buildMessageFromHistoryMessage(t: Function, msg: HistoryChatMessage, agents: Agent[]): Message {
   /**
    * Parsing agent metadata
    */
@@ -402,11 +419,15 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
    */
   let thinkingContent = '';
 
-  if (msg.message?.startsWith(Tag.ThinkingStart) && msg.message?.includes(Tag.ThinkingEnd)) {
-    const thinkingPart = msg.message.substring(
-      msg.message.indexOf(Tag.ThinkingStart),
-      msg.message.indexOf(Tag.ThinkingEnd) + Tag.ThinkingEnd.length
-    );
+  if (msg.message?.includes(Tag.ThinkingStart)) {
+    const startIdx = msg.message.indexOf(Tag.ThinkingStart);
+    const endIdx = msg.message.indexOf(Tag.ThinkingEnd);
+
+    // The end tag might not exist if the message was stopped manually
+    // If closing tag exists, use it; otherwise, extract to end of message (for stopped messages)
+    const endPos = endIdx !== -1 ? endIdx + Tag.ThinkingEnd.length : msg.message.length;
+
+    const thinkingPart = msg.message.substring(startIdx, endPos);
 
     thinkingContent = thinkingPart
       .replaceAll(Tag.ThinkingStart, '')
@@ -423,8 +444,22 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
    */
   const summaryContent = msg.labels?.[MessageLabelKey.Summary] || undefined;
 
+  /**
+   * Parsing role and message content
+   */
+  let role = msg.role === 'agent' ? Role.Assistant : Role.User;
+  let messageContent = msg.message;
+
+  /**
+   * Patch message properties for stop messages
+   */
+  if (msg.stopped === MessageStopType.Manual) {
+    role = Role.System;
+    messageContent = t('ai.message.system.manualStopMessage.info', {}, true);
+  }
+
   return {
-    role:              msg.role === 'agent' ? Role.Assistant : Role.User,
+    role,
     completed:         true,
     thinking:          false,
     showThinking:      false,
@@ -435,8 +470,9 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
     relatedResourcesActions,
     confirmation,
     sourceLinks,
+    messageContent,
+    stopType:          msg.stopped || null,
     tools:             msg.tools || [],
-    messageContent:    msg.message,
     timestamp:         new Date(msg.createdAt),
   };
 }
