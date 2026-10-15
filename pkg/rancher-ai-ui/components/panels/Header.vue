@@ -113,7 +113,7 @@ function toggleHistory() {
 
 <style lang="scss" scoped>
 .chat-header {
-  background: var(--active-nav);
+  background: var(--active);
   color: var(--on-active);
   padding: 12px;
   display: flex;

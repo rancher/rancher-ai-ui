@@ -334,7 +334,7 @@ onMounted(() => {
   position: relative;
 
   &.focused {
-    border: solid 1px var(--active-nav);
+    border: solid 1px var(--active);
   }
 
   &.disabled {
@@ -412,7 +412,7 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     background-color: var(--accent-btn);
-    color: var(--active-nav);
+    color: var(--active);
     border-radius: 4px;
     border: none;
 

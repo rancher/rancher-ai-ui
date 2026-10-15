@@ -188,7 +188,7 @@ const isOpen = ref(false);
   align-items: center;
   cursor: pointer;
   gap: 4px;
-  color: var(--active-nav);
+  color: var(--active);
   font-weight: 500;
   min-width: 0;
   max-width: 100%;
@@ -204,7 +204,7 @@ const isOpen = ref(false);
 .chevron-icon {
   font-size: 12px;
   transition: transform 0.2s ease;
-  color: var(--active-nav);
+  color: var(--active);
 
   &.is-open {
     transform: rotate(180deg);
@@ -224,7 +224,7 @@ const isOpen = ref(false);
   }
 
   .icon {
-    color: var(--active-nav);
+    color: var(--active);
 
     &.hidden {
       visibility: hidden;
