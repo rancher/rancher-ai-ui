@@ -18,6 +18,9 @@ import {
   SubAgentProcessingMetadata,
   AgentSelectionMode,
   McpAuthenticationRequest,
+  MessageStopType,
+  MessagePlanning,
+  PlanningStopType,
 } from '../types';
 import { error } from '../utils/log';
 import { validateActionResource } from './validator';
@@ -254,6 +257,20 @@ export function formatTools(tools: ToolCall[], remaining: string): { tools: Tool
   };
 }
 
+export function formatPlanning(value: string): MessagePlanning | null {
+  value = value.replaceAll(Tag.PlanningStart, '').replaceAll(Tag.PlanningEnd, '').trim();
+
+  try {
+    const parsed = JSON.parse(value);
+
+    return parsed;
+  } catch (err) {
+    error('Failed to parse planning items:', err);
+  }
+
+  return null;
+}
+
 export function formatFileMessages(principal: any, messages: Message[]): string {
   const avatar = {
     [Role.User]:      `👤 ${ principal?.name || 'user' }`,
@@ -324,6 +341,22 @@ export function formatAuthenticationErrorMessage(value: string): ChatError {
   }
 
   return { message: 'An error occurred.' };
+}
+
+export function formatStopMessage(value: string): { type: MessageStopType | PlanningStopType | null } | null {
+  value = value.replaceAll(Tag.StopStart, '').replaceAll(Tag.StopEnd, '').trim();
+
+  if (value) {
+    try {
+      const parsed = JSON.parse(value);
+
+      return { type: parsed?.reason || null };
+    } catch (err) {
+      error('Failed to parse stop message:', err);
+    }
+  }
+
+  return null;
 }
 
 export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: Agent[]): Message {
@@ -423,8 +456,27 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
    */
   const summaryContent = msg.labels?.[MessageLabelKey.Summary] || undefined;
 
+  /**
+   * Parsing role and message content
+   */
+  let role = msg.role === 'agent' ? Role.Assistant : Role.User;
+  let messageContent = msg.message;
+
+  /**
+   * Patch message properties for stop messages
+   */
+  if (msg.stopped === MessageStopType.Manual) {
+    role = Role.System;
+    messageContent = 'You stopped the previous response';
+  }
+
+  if (msg.stopped === PlanningStopType.Manual) {
+    role = Role.System;
+    messageContent = 'You stopped the previous plan';
+  }
+
   return {
-    role:              msg.role === 'agent' ? Role.Assistant : Role.User,
+    role,
     completed:         true,
     thinking:          false,
     showThinking:      false,
@@ -435,8 +487,9 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
     relatedResourcesActions,
     confirmation,
     sourceLinks,
+    messageContent,
+    stopType:          msg.stopped || null,
     tools:             msg.tools || [],
-    messageContent:    msg.message,
     timestamp:         new Date(msg.createdAt),
   };
 }

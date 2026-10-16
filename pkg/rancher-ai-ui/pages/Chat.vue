@@ -59,11 +59,15 @@ const {
   onclose,
   sendMessage,
   updateMessage,
+  stopMessage,
   confirmMessage,
+  confirmPlanning,
+  stopPlanning,
   downloadMessages,
   loadMessages,
   selectContext,
   clearMessageBox,
+  clearPendingConfirmations,
   notifyPreferencesUpdate,
   chatMetadata,
   isChatInitialized,
@@ -393,6 +397,10 @@ watch(() => [
   if (!newDisabled && newIsChatInitialized && newMessage) {
     ensureConnectionAndSendMessage(newMessage);
   }
+
+  if (newDisabled && systemErrors.value.length > 0) {
+    clearPendingConfirmations();
+  }
 }, {
   immediate: true,
   deep:      true,
@@ -447,6 +455,7 @@ function unmount() {
       <Messages
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
+        :agents="chatAgents"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :processing-state="processingMessageState"
@@ -454,6 +463,8 @@ function unmount() {
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
+        @confirm:planning="confirmPlanning($event, ws)"
+        @stop:planning="stopPlanning(ws)"
       />
       <Processing
         class="connection-processing-label text-label"
@@ -479,6 +490,7 @@ function unmount() {
         :messages="messages"
         :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"
+        @stop:content="stopMessage(ws)"
         @select:agent="selectAgent"
       />
       <History
@@ -553,7 +565,7 @@ function unmount() {
 }
 
 .connection-processing-label {
-  color: var(--active-nav);
+  color: var(--active);
   font-family: "Inter", Arial, sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
