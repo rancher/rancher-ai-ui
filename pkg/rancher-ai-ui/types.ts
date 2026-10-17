@@ -232,7 +232,7 @@ export const enum MessageInternalSource {
 
 export const enum MessageStopType {
   Preempted = 'new-request',
-  Manual = 'user-stop',
+  Manual = 'message-manual-stop',
 }
 
 export type SourceLinkItem = { key?: string; label?: string; value: string; } | string;
