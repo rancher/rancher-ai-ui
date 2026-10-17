@@ -105,86 +105,6 @@ describe('History Messages', () => {
 
     responseMessage.isCompleted();
 
-    cy.enqueueLLMResponse({
-      agentResponses: [{
-        agent:   'rancher',
-        mcpTool: {
-          name: 'createKubernetesResource',
-          args: {
-            kind:      'Pod',
-            name:      'my-pod',
-            manifest:  `{
-              apiVersion: 'v1',
-              kind:       'Pod',
-              metadata:   {
-                name:      'my-pod',
-                namespace: 'default'
-              },
-            }`,
-            cluster:   'local',
-            namespace: 'default'
-          }
-        },
-      }],
-      text: 'Pod created successfully.'
-    });
-
-    chat.sendMessage('Create a pod');
-
-    let confirmationRequestMessage = chat.getMessage(5);
-
-    confirmationRequestMessage.scrollIntoView();
-    confirmationRequestMessage.isCompleted();
-    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
-    confirmationRequestMessage.confirmButton().click();
-    confirmationRequestMessage.isConfirmed();
-
-    const resultMessage = chat.getMessage(6);
-
-    resultMessage.isCompleted();
-    resultMessage.containsText('Pod created successfully.');
-
-    cy.enqueueLLMResponse({
-      agentResponses: [{
-        agent:   'rancher',
-        mcpTool: {
-          name: 'createKubernetesResource',
-          args: {
-            kind:      'Pod',
-            name:      'my-pod',
-            manifest:  `{
-              apiVersion: 'v1',
-              kind:       'Pod',
-              metadata:   {
-                name:      'my-pod',
-                namespace: 'default'
-              },
-            }`,
-            cluster:   'local',
-            namespace: 'default'
-          }
-        },
-      }],
-      text: 'Pod creation canceled.'
-    });
-
-    chat.sendMessage('Create a pod but cancel');
-
-    confirmationRequestMessage = chat.getMessage(8);
-
-    confirmationRequestMessage.scrollIntoView();
-    confirmationRequestMessage.isCompleted();
-    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
-    confirmationRequestMessage.cancelButton().click();
-    confirmationRequestMessage.isCanceled();
-    confirmationRequestMessage.containsText('Canceled');
-
-    /**
-     * The agent does not continue to process the tool action when the confirmation request
-     * is canceled, so it doesn't produce a result message in this case.
-     */
-    // resultMessage.containsText('Pod creation canceled.');
-
     // Create a new chat to trigger the history population
     history.open();
     history.createChat();
@@ -253,37 +173,202 @@ describe('History Messages', () => {
       .scrollIntoView()
       .should('be.visible')
       .and('contain.text', 'test-pod');
+  });
+
+  it('It should properly parse confirmation and cancellation messages', () => {
+    chat.open();
+
+    let welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    cy.enqueueLLMResponse({
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod',
+            manifest:  `{
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod',
+                namespace: 'default'
+              },
+            }`,
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      }],
+      text: 'Pod created successfully.'
+    });
+
+    chat.sendMessage('Create a pod');
+
+    let confirmationRequestMessage = chat.getMessage(3);
+
+    confirmationRequestMessage.scrollIntoView();
+    confirmationRequestMessage.isCompleted();
+    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
+    confirmationRequestMessage.confirmButton().click();
+    confirmationRequestMessage.isConfirmed();
+
+    const resultMessage = chat.getMessage(4);
+
+    resultMessage.isCompleted();
+    resultMessage.containsText('Pod created successfully.');
+
+    cy.enqueueLLMResponse({
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod',
+            manifest:  `{
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod',
+                namespace: 'default'
+              },
+            }`,
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      }],
+      text: 'Pod creation canceled.'
+    });
+
+    chat.sendMessage('Create a pod but cancel');
+
+    confirmationRequestMessage = chat.getMessage(6);
+
+    confirmationRequestMessage.scrollIntoView();
+    confirmationRequestMessage.isCompleted();
+    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
+    confirmationRequestMessage.cancelButton().click();
+    confirmationRequestMessage.isCanceled();
+    confirmationRequestMessage.containsText('Canceled');
+
+    /**
+     * The agent does not continue to process the tool action when the confirmation request
+     * is canceled, so it doesn't produce a result message in this case.
+     */
+    // resultMessage.containsText('Pod creation canceled.');
+
+    // Create a new chat to trigger the history population
+    history.open();
+    history.createChat();
+
+    welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    // Now open history and select the previous chat
+    history.open();
+    history.chatItem(0).select();
+    chat.isReady();
 
     // Verify confirmation action
-    let historyUserMessage = chat.getMessage(3);
+    let historyUserMessage = chat.getMessage(1);
 
     historyUserMessage.scrollIntoView();
     historyUserMessage.containsText('Create a pod');
 
-    const historyConfirmedMessage = chat.getMessage(4);
+    const historyConfirmedMessage = chat.getMessage(2);
 
     historyConfirmedMessage.scrollIntoView();
     historyConfirmedMessage.confirmButton().should('not.exist');
     historyConfirmedMessage.cancelButton().should('not.exist');
     historyConfirmedMessage.isConfirmed();
 
-    const historyResultMessage = chat.getMessage(5);
+    const historyResultMessage = chat.getMessage(3);
 
     historyResultMessage.scrollIntoView();
     historyResultMessage.containsText('Pod created successfully.');
 
     // Verify cancel action
-    historyUserMessage = chat.getMessage(6);
+    historyUserMessage = chat.getMessage(4);
 
     historyUserMessage.scrollIntoView();
     historyUserMessage.containsText('Create a pod but cancel');
 
-    const historyCanceledMessage = chat.getMessage(7);
+    const historyCanceledMessage = chat.getMessage(5);
 
     historyCanceledMessage.scrollIntoView();
     historyCanceledMessage.confirmButton().should('not.exist');
     historyCanceledMessage.cancelButton().should('not.exist');
     historyCanceledMessage.isCanceled();
+  });
+
+  it('It should properly parse stopped messages', () => {
+    chat.open();
+
+    let welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    cy.enqueueLLMResponse({
+      text: [
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' long response',
+      ],
+    });
+    chat.sendMessage('Let me stop a message');
+
+    const userMessage = chat.getMessage(2);
+
+    userMessage.scrollIntoView();
+    userMessage.containsText('Let me stop a message');
+
+    const resultMessage = chat.getMessage(3);
+
+    resultMessage.self().should('exist');
+
+    chat.console().stopButton().click();
+
+    resultMessage.isCompleted();
+
+    // Create a new chat to trigger the history population
+    history.open();
+    history.createChat();
+
+    welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    // Now open history and select the previous chat
+    history.open();
+    history.chatItem(0).select();
+    chat.isReady();
+
+    // Verify stopped message
+    const historyResultMessage = chat.getMessage(2);
+
+    historyResultMessage.self().should('contain.text', 'very');
+    historyResultMessage.self().should('not.contain.text', 'long response');
+
+    const stopNotificationMessage = chat.getMessage(3);
+
+    stopNotificationMessage.self().should('exist');
+    stopNotificationMessage.containsText('You stopped the previous response');
   });
 
   after(() => {

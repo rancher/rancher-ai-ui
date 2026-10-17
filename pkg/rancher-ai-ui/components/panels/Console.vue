@@ -61,6 +61,7 @@ defineExpose({ focusInput });
 
 const emit = defineEmits([
   'input:content',
+  'stop:content',
   'select:agent'
 ]);
 
@@ -73,6 +74,33 @@ const isFocused = ref(false);
 const completeText = ref('');
 const MAX_HEIGHT = 200;
 const historyIndex = ref(-1);
+
+const isResponsePending = computed(() => {
+  // Find the last user message index, iterating from end
+  let lastUserMessageIndex = -1;
+
+  for (let i = props.messages.length - 1; i >= 0; i--) {
+    if (props.messages[i].role === Role.User) {
+      lastUserMessageIndex = i;
+      break;
+    }
+  }
+
+  // Find the last incomplete assistant message after the last user message
+  let lastIncompleteAssistantMessageIndex = -1;
+
+  if (lastUserMessageIndex !== -1) {
+    for (let i = props.messages.length - 1; i > lastUserMessageIndex; i--) {
+      if (props.messages[i].role === Role.Assistant && !props.messages[i].completed) {
+        lastIncompleteAssistantMessageIndex = i;
+        break;
+      }
+    }
+  }
+
+  // Return true if there is no incomplete assistant message after the last user message
+  return lastIncompleteAssistantMessageIndex !== -1;
+});
 
 const text = computed(() => {
   if (props.disabled) {
@@ -187,6 +215,13 @@ function sendContent(event: Event) {
   }
 }
 
+function stopContent(event: Event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  emit('stop:content');
+}
+
 function selectAgent(agentName: string) {
   emit('select:agent', agentName);
   nextTick(() => focusInput());
@@ -276,7 +311,7 @@ onMounted(() => {
         @focus="isFocused = true"
         @blur="isFocused = false"
       />
-      <div class="chat-input-actions">
+      <div class="chat-input-options">
         <SelectAgent
           v-if="props.agents.length > 1"
           :agents="props.agents"
@@ -285,11 +320,23 @@ onMounted(() => {
           @select="selectAgent"
         />
         <div
-          class="chat-input-send"
+          class="chat-input-actions"
           :class="{ 'disabled-panel': props.disabled }"
         >
           <RcButton
+            v-if="isResponsePending"
+            class="stop-button"
+            data-testid="rancher-ai-ui-chat-console-stop-message"
+            :disabled="props.disabled"
+            @click="stopContent"
+            @keydown.space="stopContent"
+          >
+            <i class="icon icon-stop" />
+          </RcButton>
+          <RcButton
+            v-else
             class="send-button"
+            data-testid="rancher-ai-ui-chat-console-send-message"
             :disabled="!cleanInput(text) || props.disabled"
             @click="sendContent"
             @keydown.enter="sendContent"
@@ -334,7 +381,7 @@ onMounted(() => {
   position: relative;
 
   &.focused {
-    border: solid 1px var(--active-nav);
+    border: solid 1px var(--active);
   }
 
   &.disabled {
@@ -392,7 +439,7 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-.chat-input-actions {
+.chat-input-options {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -401,20 +448,39 @@ onMounted(() => {
   min-height: 36px;
 }
 
-.chat-input-send {
-  .send-button {
+.chat-input-actions {
+  .rc-button {
     height: 32px;
     width: 32px;
     min-width: 32px;
     min-height: 32px;
+  }
+
+  .send-button {
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: var(--accent-btn);
-    color: var(--active-nav);
+    color: var(--active);
     border-radius: 4px;
     border: none;
+
+    &:disabled {
+      background-color: transparent;
+      color: var(--primary);
+    }
+
+    &:hover:not(:disabled) {
+      background-color: #c6dcff;
+      color: var(--primary);
+    }
+  }
+
+  .rc-button.stop-button {
+    color: var(--primary);
+    background: var(--tertiary, var(--accent-btn));
+    padding: var(--rc-button-padding, 0 10px);
 
     &:disabled {
       background-color: transparent;

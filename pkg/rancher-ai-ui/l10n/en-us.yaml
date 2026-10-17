@@ -37,6 +37,8 @@ ai:
           enable_auto_scroll:
             true: 'The <code>auto-scroll</code> of the chat window is now turned <b>ON</b>&ensp;'
             false: 'The <code>auto-scroll</code> of the chat window is now turned <b>OFF</b>'
+      manualStopMessage:
+        info: 'You stopped the previous response.'
       switchAgent:
         info: '<code>{agent}</code> Agent has been selected in adaptive mode for the last few prompts.<br>Usually, manual selection is best for faster response times.<br><br>Would you like me to switch over to <b>manual</b> agent selection?<br>'
         actions:
