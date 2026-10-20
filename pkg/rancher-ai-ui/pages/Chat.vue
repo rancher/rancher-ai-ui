@@ -6,7 +6,7 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, Preferences, Role, StorageKey, StorageType
+  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, MessagePlanningStatus, Preferences, Role, StorageKey, StorageType
 } from '../types';
 import { extractMessageText } from '../utils/label';
 import Chat from '../handlers/chat';
@@ -60,17 +60,19 @@ const {
   onclose,
   sendMessage,
   updateMessage,
-  confirmMessage,
   stopMessage,
+  confirmMessage,
   downloadMessages,
   loadMessages,
   selectContext,
   clearMessageBox,
+  clearPendingConfirmations,
   notifyPreferencesUpdate,
   chatMetadata,
   isChatInitialized,
   resetChatMetadata,
   processingState,
+  planningState,
   error: chatError,
   resetErrors: resetChatErrors
 } = useChatMessageComposable(
@@ -129,7 +131,10 @@ const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
 const deletingChat = ref<HistoryChat | null>(null);
 
-const preferences = computed<Preferences>(() => ({ [StorageKey.ENABLE_AUTO_SCROLL]: storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true }));
+const preferences = computed<Preferences>(() => ({
+  [StorageKey.ENABLE_AUTO_SCROLL]: storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true,
+  [StorageKey.PIN_PLANNING]:       storage.get(StorageKey.PIN_PLANNING) === 'true' || storage.get(StorageKey.PIN_PLANNING) === true
+}));
 
 const chatAgents = computed<Agent[]>(() => {
   return agents.value.map((agent) => {
@@ -328,8 +333,9 @@ function ensureConnectionAndSendMessage(data: string | Message) {
 
     connect(chatMetadata.value.chatId);
   } else {
-    if (!!pendingResponse.value) {
-      // Stage the message to the console input because a response is pending; we do not want to stop the current response
+    if (!!pendingResponse.value || planningState.value?.status === MessagePlanningStatus.InProgress || planningState.value?.status === MessagePlanningStatus.Pending || planningState.value?.status === MessagePlanningStatus.Canceling) {
+      // Stage the message to the console input because a response or planning is pending
+      // We do not want to stop the current response or planning process
       stageMessageToConsoleInput(data);
 
       // We do not want to keep the old message around when not sending it immediately
@@ -411,6 +417,10 @@ watch(() => [
   if (!newDisabled && newIsChatInitialized && newMessage) {
     ensureConnectionAndSendMessage(newMessage);
   }
+
+  if (newDisabled && systemErrors.value.length > 0) {
+    clearPendingConfirmations();
+  }
 }, {
   immediate: true,
   deep:      true,
@@ -466,6 +476,7 @@ function unmount() {
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
         :pending-response="pendingResponse"
+        :agents="chatAgents"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :processing-state="processingMessageState"
@@ -473,6 +484,7 @@ function unmount() {
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
+        @stop:message="stopMessage(ws)"
       />
       <Processing
         class="connection-processing-label text-label"

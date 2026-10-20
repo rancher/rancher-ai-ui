@@ -30,17 +30,13 @@ const props = defineProps({
 const emit = defineEmits(['action']);
 
 const options = computed(() => {
-  const opts = [];
+  const opts: string[] = [];
 
-  if (props.tool.input.option1) {
-    opts.push(props.tool.input.option1);
-  }
-  if (props.tool.input.option2) {
-    opts.push(props.tool.input.option2);
-  }
-  if (props.tool.input.option3) {
-    opts.push(props.tool.input.option3);
-  }
+  Object.keys(props.tool.input || {}).forEach((key) => {
+    if (key.startsWith('option') && props.tool.input[key]) {
+      opts.push(props.tool.input[key]);
+    }
+  });
 
   return opts;
 });

@@ -275,6 +275,35 @@ describe('AI Assistant Configuration', () => {
     });
   });
 
+  describe('Chat section', () => {
+    beforeEach(() => {
+      settingsPage.goTo();
+      settingsPage.waitForPage();
+    });
+
+    it('It should correctly handle the planning settings', () => {
+      const chatConfig = settingsPage.settings().chatConfig();
+
+      chatConfig.enablePlanning().isUnchecked();
+      chatConfig.enablePlanning().set();
+      chatConfig.enablePlanning().isChecked();
+
+      chatConfig.enablePlanningApproval().isUnchecked();
+      chatConfig.enablePlanningApproval().set();
+      chatConfig.enablePlanningApproval().isChecked();
+
+      settingsPage.settings().saveButton().click();
+      new ApplySettingsPromptPo().confirm();
+
+      // Check if the settings were saved correctly
+      settingsPage.goTo();
+      settingsPage.waitForPage();
+
+      chatConfig.enablePlanning().isChecked();
+      chatConfig.enablePlanningApproval().isChecked();
+    });
+  });
+
   after(() => {
     cy.installRancherAIService();
   });

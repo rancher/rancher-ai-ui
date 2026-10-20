@@ -2,10 +2,11 @@ import { describe, it, expect, beforeEach } from '@jest/globals';
 import {
   formatStopMessage,
   buildMessageFromHistoryMessage,
+  formatPlanning,
 } from '../format';
 import {
   Role, HistoryChatMessage, MessageStopType, Agent,
-  AgentSelectionMode, Tag, MessageLabelKey
+  AgentSelectionMode, Tag, MessageLabelKey, PlanningStopType
 } from '../../types';
 
 // Mock i18n for testing
@@ -46,6 +47,113 @@ describe('formatStopMessage', () => {
     const result = formatStopMessage(data);
 
     expect(result).toEqual({ type: MessageStopType.Manual });
+  });
+});
+
+describe('formatPlanning', () => {
+  it('should parse valid planning JSON with tasks and tools', () => {
+    const planningData = {
+      approval:  false,
+      status:    'pending',
+      principal: 'user',
+      tasks:     [
+        {
+          label:  'Create namespace',
+          agent:  'rancher',
+          status: 'pending',
+          tools:  [{
+            name:        'kubectl',
+            description: 'Kubernetes CLI'
+          }]
+        },
+        {
+          label:  'Deploy application',
+          agent:  'fleet',
+          status: 'pending',
+          tools:  [{
+            name:        'helm',
+            description: 'Helm package manager'
+          }]
+        }
+      ]
+    };
+
+    const data = `${ Tag.PlanningStart }${ JSON.stringify(planningData) }${ Tag.PlanningEnd }`;
+    const result = formatPlanning(data);
+
+    expect(result).toEqual(planningData);
+    expect(result?.tasks).toHaveLength(2);
+    expect(result?.tasks[0].tools).toHaveLength(1);
+    expect(result?.tasks[1].tools).toHaveLength(1);
+  });
+
+  it('should parse planning with no tools', () => {
+    const planningData = {
+      approval:  false,
+      status:    'pending',
+      principal: 'user',
+      tasks:     [
+        {
+          label:  'Information gathering',
+          agent:  'rancher',
+          status: 'pending'
+        }
+      ]
+    };
+
+    const data = `${ Tag.PlanningStart }${ JSON.stringify(planningData) }${ Tag.PlanningEnd }`;
+    const result = formatPlanning(data);
+
+    expect(result).toEqual(planningData);
+    expect(result?.tasks[0].tools).toBeUndefined();
+  });
+
+  it('should return null for malformed planning JSON', () => {
+    const data = `${ Tag.PlanningStart }invalid json not parseable${ Tag.PlanningEnd }`;
+    const result = formatPlanning(data);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null for empty string', () => {
+    const result = formatPlanning('');
+
+    expect(result).toBeNull();
+  });
+
+  it('should handle whitespace around tags', () => {
+    const planningData = {
+      approval: false,
+      status:   'pending',
+      tasks:    []
+    };
+
+    const data = `${ Tag.PlanningStart }  ${ JSON.stringify(planningData) }  ${ Tag.PlanningEnd }`;
+    const result = formatPlanning(data);
+
+    expect(result).toEqual(planningData);
+  });
+
+  it('should parse planning with executing status', () => {
+    const planningData = {
+      approval:  false,
+      status:    'executing',
+      principal: 'user',
+      tasks:     [
+        {
+          label:  'Deploy service',
+          agent:  'rancher',
+          status: 'executing',
+          tools:  []
+        }
+      ]
+    };
+
+    const data = `${ Tag.PlanningStart }${ JSON.stringify(planningData) }${ Tag.PlanningEnd }`;
+    const result = formatPlanning(data);
+
+    expect(result?.status).toBe('executing');
+    expect(result?.tasks[0].status).toBe('executing');
   });
 });
 
@@ -103,7 +211,7 @@ describe('buildMessageFromHistoryMessage', () => {
     const result = buildMessageFromHistoryMessage(mockT, historyMsg, mockAgents);
 
     expect(result.thinkingContent).toBe('I was thinking about this when...');
-    expect(result.messageContent).toBe('ai.message.system.manualStopMessage.info');
+    expect(result.messageContent).toBe('ai.message.system.message-manual-stop.info');
     expect(result.stopType).toBe(MessageStopType.Manual);
   });
 
@@ -118,7 +226,7 @@ describe('buildMessageFromHistoryMessage', () => {
     const result = buildMessageFromHistoryMessage(mockT, historyMsg, mockAgents);
 
     expect(result.role).toBe(Role.System);
-    expect(result.messageContent).toBe('ai.message.system.manualStopMessage.info');
+    expect(result.messageContent).toBe('ai.message.system.message-manual-stop.info');
     expect(result.stopType).toBe(MessageStopType.Manual);
   });
 
@@ -229,7 +337,7 @@ describe('buildMessageFromHistoryMessage', () => {
     const result = buildMessageFromHistoryMessage(mockT, historyMsg, mockAgents);
 
     expect(result.thinkingContent).toBe('Thinking about how to help...');
-    expect(result.messageContent).toBe('ai.message.system.manualStopMessage.info');
+    expect(result.messageContent).toBe('ai.message.system.message-manual-stop.info');
     expect(result.role).toBe(Role.System);
     expect(result.stopType).toBe(MessageStopType.Manual);
   });
@@ -259,5 +367,36 @@ describe('buildMessageFromHistoryMessage', () => {
 
     expect(result.thinkingContent).toBe('All thinking no response');
     expect(result.messageContent).toBe('');
+  });
+
+  it('should set role to System and message content for planning stop (manual)', () => {
+    const historyMsg = {
+      role:      'agent',
+      message:   'Response text',
+      stopped:   PlanningStopType.Manual,
+      createdAt: '2026-10-29T10:00:00Z'
+    } as HistoryChatMessage;
+
+    const result = buildMessageFromHistoryMessage(mockT, historyMsg, mockAgents);
+
+    expect(result.role).toBe(Role.System);
+    expect(result.messageContent).toBe('ai.message.system.planning-manual-stop.info');
+    expect(result.stopType).toBe(PlanningStopType.Manual);
+  });
+
+  it('should handle planning stop during planning with thinking content', () => {
+    const historyMsg = {
+      role:      'agent',
+      message:   `${ Tag.ThinkingStart }Planning the deployment strategy...`,
+      stopped:   PlanningStopType.Manual,
+      createdAt: '2026-10-29T10:00:00Z'
+    } as HistoryChatMessage;
+
+    const result = buildMessageFromHistoryMessage(mockT, historyMsg, mockAgents);
+
+    expect(result.thinkingContent).toBe('Planning the deployment strategy...');
+    expect(result.messageContent).toBe('ai.message.system.planning-manual-stop.info');
+    expect(result.role).toBe(Role.System);
+    expect(result.stopType).toBe(PlanningStopType.Manual);
   });
 });
