@@ -60,12 +60,15 @@ const {
   onclose,
   sendMessage,
   updateMessage,
-  confirmMessage,
   stopMessage,
+  confirmMessage,
+  confirmPlanning,
+  stopPlanning,
   downloadMessages,
   loadMessages,
   selectContext,
   clearMessageBox,
+  clearPendingConfirmations,
   notifyPreferencesUpdate,
   chatMetadata,
   isChatInitialized,
@@ -411,6 +414,10 @@ watch(() => [
   if (!newDisabled && newIsChatInitialized && newMessage) {
     ensureConnectionAndSendMessage(newMessage);
   }
+
+  if (newDisabled && systemErrors.value.length > 0) {
+    clearPendingConfirmations();
+  }
 }, {
   immediate: true,
   deep:      true,
@@ -466,6 +473,7 @@ function unmount() {
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
         :pending-response="pendingResponse"
+        :agents="chatAgents"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :processing-state="processingMessageState"
@@ -473,6 +481,8 @@ function unmount() {
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
+        @confirm:planning="confirmPlanning($event, ws)"
+        @stop:planning="stopPlanning(ws)"
       />
       <Processing
         class="connection-processing-label text-label"
