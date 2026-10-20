@@ -375,7 +375,12 @@ ai:
     label: Tools
     show-yaml:
       name: Show YAML
-      tooltip: View the YAML configuration for the {name} {kind} in {namespace} namespace
+      tooltip: |-
+        {
+          namespace, select,
+            null { View the YAML configuration for the {name} {kind} }
+            other { View the YAML configuration for the {name} {kind} in {namespace} namespace }
+        }
     show-yaml-diff:
       name: Show YAML Diff
       tooltip: View the differences between the current and previous YAML configurations for the {name} {kind} in {namespace} namespace
