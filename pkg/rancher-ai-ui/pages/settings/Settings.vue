@@ -782,7 +782,7 @@ onMounted(async() => {
           :section-id="'chat-settings'"
           :title="t('aiConfig.form.section.chat.header')"
           :description="t('aiConfig.form.section.chat.description')"
-          data-testid="rancher-ai-ui-settings-chat-settings"
+          data-testid="rancher-ai-ui-settings-chat"
         >
           <ChatSettings
             :value="aiAgentSettings"
