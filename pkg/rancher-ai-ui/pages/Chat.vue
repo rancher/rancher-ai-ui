@@ -62,9 +62,6 @@ const {
   updateMessage,
   stopMessage,
   confirmMessage,
-  confirmPlanning,
-  stopPlanning,
-  updateMessagePlanning,
   downloadMessages,
   loadMessages,
   selectContext,
@@ -482,9 +479,7 @@ function unmount() {
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
-        @confirm:planning="confirmPlanning($event, ws)"
-        @stop:planning="stopPlanning(ws)"
-        @update:message:planning="updateMessagePlanning($event)"
+        @stop:message="stopMessage(ws)"
       />
       <Processing
         class="connection-processing-label text-label"

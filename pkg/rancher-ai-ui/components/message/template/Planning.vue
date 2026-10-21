@@ -24,14 +24,8 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits([
-  'update:message',
-  'confirm:message',
-  'send:message',
-  'confirm:planning',
-  'stop:planning',
-  'update:message:planning'
-]);
+const emit = defineEmits(['update:message', 'confirm:message', 'send:message', 'stop:message']);
+
 </script>
 
 <template>
@@ -44,10 +38,10 @@ const emit = defineEmits([
       :value="props.message.planningContent"
       :agents="props.agents"
       :disabled="props.disabled"
-      @confirm="emit('confirm:planning', { result: $event })"
-      @stop="emit('stop:planning')"
-      @collapse="emit('update:message:planning', {
-        messageId: props.message.id,
+      @confirm="emit('confirm:message', { result: $event })"
+      @stop="emit('stop:message')"
+      @collapse="emit('update:message', {
+        ...props.message,
         planningContent: {
           ...props.message.planningContent,
           isCollapsed: $event

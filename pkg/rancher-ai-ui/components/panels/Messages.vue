@@ -74,9 +74,7 @@ const emit = defineEmits([
   'update:message',
   'confirm:message',
   'send:message',
-  'confirm:planning',
-  'stop:planning',
-  'update:message:planning'
+  'stop:message'
 ]);
 
 const storage = useLocalStorageComposable();
@@ -297,9 +295,7 @@ onBeforeUnmount(() => {
         @update:message="emit('update:message', $event)"
         @send:message="emit('send:message', $event)"
         @confirm:message="emit('confirm:message', $event)"
-        @confirm:planning="emit('confirm:planning', $event)"
-        @stop:planning="emit('stop:planning')"
-        @update:message:planning="emit('update:message:planning', $event)"
+        @stop:message="emit('stop:message')"
       />
       <MessageComponent
         v-else
