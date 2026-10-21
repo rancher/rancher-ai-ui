@@ -216,41 +216,56 @@ ai:
       authenticationRequired: 'Awaiting authentication'
   planning:
     header:
+      executing: 'Executing: { task }'
       label:
         withoutApproval:
-          pending: 'Executing the following tasks...'
-          in_progress: |-
-            {count, plural,
-              =1 { Using 1 agent to execute the following tasks... }
-              other { Using {count} agents to execute the following tasks... }
-            }
-          completed: 'All tasks have been completed'
-          canceling: |-
-            {count, plural,
-              =1 { Using 1 agent to execute the following tasks... }
-              other { Using {count} agents to execute the following tasks... }
-            }
-          cancelled: 'Execution has been canceled'
-          failed: 'Execution has been stopped'
+          expanded:
+            pending: 'Executing the following tasks'
+            in_progress: |-
+              {count, plural,
+                =1 { Using 1 agent to execute the following tasks }
+                other { Using {count} agents to execute the following tasks }
+              }
+            completed: 'All tasks have been completed'
+            canceling: |-
+              {count, plural,
+                =1 { Using 1 agent to execute the following tasks }
+                other { Using {count} agents to execute the following tasks }
+              }
+            cancelled: 'Plan execution has been canceled'
+            failed: 'Plan execution has been stopped'
+          collapsed:
+            pending: 'Executing planned tasks'
+            completed: 'All tasks have been completed'
+            cancelled: 'Plan execution has been canceled'
+            failed: 'Plan execution has been stopped'
         withApproval:
-          pending: 'Awaiting approval to execute the following tasks...'
-          in_progress: |-
-            {count, plural,
-              =1 { Using 1 agent to execute the following tasks... }
-              other { Using {count} agents to execute the following tasks... }
-            }
-          completed: 'All tasks have been completed'
-          canceling: |-
-            {count, plural,
-              =1 { Using 1 agent to execute the following tasks... }
-              other { Using {count} agents to execute the following tasks... }
-            }
-          cancelled: 'Execution has been canceled'
-          failed: 'Execution has been stopped'
+          expanded:
+            pending: 'Awaiting approval to execute the following tasks'
+            in_progress: |-
+              {count, plural,
+                =1 { Using 1 agent to execute the following tasks }
+                other { Using {count} agents to execute the following tasks }
+              }
+            completed: 'All tasks have been completed'
+            canceling: |-
+              {count, plural,
+                =1 { Using 1 agent to execute the following tasks }
+                other { Using {count} agents to execute the following tasks }
+              }
+            cancelled: 'Plan execution has been canceled'
+            failed: 'Plan execution has been stopped'
+          collapsed:
+            pending: 'Awaiting approval to execute planned tasks'
+            completed: 'All tasks have been completed'
+            cancelled: 'Plan execution has been canceled'
+            failed: 'Plan execution has been stopped'
     actions:
       confirm: 'Start Execution'
       cancel: 'Cancel'
       cancelRunning: 'Cancel Execution'
+      expand: 'Expand'
+      collapse: 'Collapse'
     status:
       completed: 'Completed'
       canceling: 'Canceling Execution...'

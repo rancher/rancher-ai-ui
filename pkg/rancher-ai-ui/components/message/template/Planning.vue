@@ -24,7 +24,14 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:message', 'confirm:message', 'send:message', 'confirm:planning', 'stop:planning']);
+const emit = defineEmits([
+  'update:message',
+  'confirm:message',
+  'send:message',
+  'confirm:planning',
+  'stop:planning',
+  'update:message:planning'
+]);
 </script>
 
 <template>
@@ -39,6 +46,13 @@ const emit = defineEmits(['update:message', 'confirm:message', 'send:message', '
       :disabled="props.disabled"
       @confirm="emit('confirm:planning', { result: $event })"
       @stop="emit('stop:planning')"
+      @collapse="emit('update:message:planning', {
+        messageId: props.message.id,
+        planningContent: {
+          ...props.message.planningContent,
+          isCollapsed: $event
+        }
+      })"
     />
     <ApprovalInfo
       v-if="props.message.planningContent.approval"

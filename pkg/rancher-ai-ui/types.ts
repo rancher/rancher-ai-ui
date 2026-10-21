@@ -245,6 +245,7 @@ export interface MessagePlanning {
   tasks: MessagePlanningTask[];
   status?: MessagePlanningStatus;
   approval?: boolean;
+  isCollapsed?: boolean;
 }
 
 export const enum MessageLabelKey {

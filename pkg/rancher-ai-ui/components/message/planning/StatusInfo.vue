@@ -38,8 +38,9 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['confirm', 'stop']);
+const emit = defineEmits(['confirm', 'stop', 'collapse']);
 
+const isCollapsed = ref(props.value.isCollapsed);
 const stickyWithDelay = ref(false);
 let timeout: NodeJS.Timeout | null = null; // eslint-disable-line no-undef
 
@@ -85,8 +86,32 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
 const planningHeader = computed(() => {
   const distinctAgents = Array.from(new Set((props.value.tasks || []).map(({ agent }) => agent)));
 
-  return t(`ai.planning.header.label.${ props.value.approval ? 'withApproval' : 'withoutApproval' }.${ props.value.status }`, { count: distinctAgents.length });
+  const approvalKey = props.value.approval ? 'withApproval' : 'withoutApproval';
+  const collapseKey = isCollapsed.value ? 'collapsed' : 'expanded';
+
+  return t(`ai.planning.header.label.${ approvalKey }.${ collapseKey }.${ props.value.status }`, { count: distinctAgents.length });
 });
+
+const currentRunningTask = computed(() => {
+  if (props.value.status === MessagePlanningStatus.InProgress) {
+    return items.value.find((item) => item.status === MessagePlanningStatus.InProgress)?.task;
+  }
+
+  return null;
+});
+
+const displayHeader = computed(() => {
+  if (isCollapsed.value && currentRunningTask.value) {
+    return  t('ai.planning.header.executing', { task: currentRunningTask.value });
+  }
+
+  return planningHeader.value;
+});
+
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value;
+  emit('collapse', isCollapsed.value);
+}
 
 watch(() => props.value.status, (newStatus) => {
   clearStickyTimeout();
@@ -117,6 +142,11 @@ function clearStickyTimeout() {
 
 onBeforeUnmount(() => {
   clearStickyTimeout();
+
+  // Collapse the panel when closing the chat
+  if (!props.value.isCollapsed) {
+    emit('collapse', true);
+  }
 });
 </script>
 
@@ -126,12 +156,25 @@ onBeforeUnmount(() => {
     class="planning-state-container"
     :class="{
       'disabled-panel': props.disabled,
-      'sticky': !props.disabled && stickyWithDelay
+      'sticky': !props.disabled && stickyWithDelay,
+      'collapsed': isCollapsed
     }"
     data-testid="rancher-ai-ui-planning-status-info-content"
   >
     <div class="planning-state-header">
-      {{ planningHeader }}
+      <span>
+        {{ displayHeader }}
+      </span>
+      <RcButton
+        size="small"
+        variant="ghost"
+        :aria-label="t(`ai.planning.actions.${ isCollapsed ? 'expand' : 'collapse' }`)"
+        class="collapse-button"
+        @click="toggleCollapse"
+        @keydown.enter.space.stop="toggleCollapse"
+      >
+        <i :class="['icon', isCollapsed ? 'icon-chevron-down' : 'icon-chevron-up']" />
+      </RcButton>
     </div>
 
     <div class="planning-state-progress">
@@ -143,35 +186,41 @@ onBeforeUnmount(() => {
     </div>
 
     <div
-      v-for="(item, index) in items"
-      :key="index"
-      :class="[
-        'planning-state-item',
-        `planning-state-status-${ props.value.status === MessagePlanningStatus.Canceling || props.value.status === MessagePlanningStatus.Canceled ? MessagePlanningStatus.Canceling : item.status }`
-      ]"
-      :data-testid="`rancher-ai-ui-planning-status-info-item-${index}`"
+      v-if="!isCollapsed"
+      class="planning-state-content"
     >
-      <i
-        v-if="item.status"
-        :class="{
-          'icon': true,
-          'icon-spin': item.status === MessagePlanningStatus.Pending && spinningStatus,
-          [STATUS_ICON[item.status]]: true,
-        }"
-      />
-      <span class="label">
-        {{ item.task }}
-      </span>
-      <ContextTag
-        v-if="item.agent"
-        :item="{
-          valueLabel: item.agent
-        }"
-        :remove-enabled="false"
-        type="user"
-        class="agent"
-      />
+      <div
+        v-for="(item, index) in items"
+        :key="index"
+        :class="[
+          'planning-state-item',
+          `planning-state-status-${ props.value.status === MessagePlanningStatus.Canceling || props.value.status === MessagePlanningStatus.Canceled ? MessagePlanningStatus.Canceling : item.status }`
+        ]"
+        :data-testid="`rancher-ai-ui-planning-status-info-item-${index}`"
+      >
+        <i
+          v-if="item.status"
+          :class="{
+            'icon': true,
+            'icon-spin': item.status === MessagePlanningStatus.Pending && spinningStatus,
+            [STATUS_ICON[item.status]]: true,
+          }"
+        />
+        <span class="label">
+          {{ item.task }}
+        </span>
+        <ContextTag
+          v-if="item.agent"
+          :item="{
+            valueLabel: item.agent
+          }"
+          :remove-enabled="false"
+          type="user"
+          class="agent"
+        />
+      </div>
     </div>
+
     <template v-if="props.value.approval">
       <div
         v-if="!props.value.status || props.value.status === MessagePlanningStatus.Pending"
@@ -180,6 +229,7 @@ onBeforeUnmount(() => {
         <RcButton
           small
           variant="tertiary"
+          :aria-label="t('ai.planning.actions.cancel')"
           class="cancel-button"
           @click="emit('confirm', false)"
         >
@@ -191,6 +241,7 @@ onBeforeUnmount(() => {
           small
           variant="tertiary"
           class="confirm-button"
+          :aria-label="t('ai.planning.actions.confirm')"
           @click="emit('confirm', true)"
         >
           <i class="icon icon-play" />
@@ -206,6 +257,7 @@ onBeforeUnmount(() => {
         <RcButton
           small
           variant="tertiary"
+          :aria-label="t('ai.planning.actions.cancelRunning')"
           class="cancel-button"
           @click="emit('stop')"
         >
@@ -218,6 +270,7 @@ onBeforeUnmount(() => {
         v-else
         :class="[
           'planning-state-result',
+          `planning-state-result-${ isCollapsed ? 'collapsed' : 'expanded' }`,
           `planning-state-status-${ props.value.status }`
         ]"
       >
@@ -234,6 +287,22 @@ onBeforeUnmount(() => {
 .planning-state {
   &-progress {
     user-select: none;
+  }
+
+  &-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 0;
+    }
   }
 
   &-container {
@@ -275,6 +344,24 @@ onBeforeUnmount(() => {
     }
   }
 
+  &-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: slideDown 0.3s ease-out;
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        max-height: 0;
+      }
+      to {
+        opacity: 1;
+        max-height: 1000px;
+      }
+    }
+  }
+
   &-item, &-result {
     display: flex;
     align-items: center;
@@ -296,14 +383,18 @@ onBeforeUnmount(() => {
     gap: 8px;
   }
 
-  &-result {
-    margin-left: auto;
-  }
-
   &-actions, &-result {
     display: flex;
     justify-content: flex-end;
     margin-top: 16px;
+  }
+
+  &-result {
+    margin-left: auto;
+
+    &-collapsed {
+      margin-top: 8px;
+    }
   }
 
   &-actions {
@@ -344,5 +435,10 @@ onBeforeUnmount(() => {
       }
     }
   }
+}
+
+.collapse-button {
+  max-height: 16px;
+  color: var(--on-tertiary, var(--primary));
 }
 </style>
