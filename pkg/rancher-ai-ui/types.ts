@@ -506,9 +506,11 @@ export const enum LLMProvider {
 }
 
 export const enum StorageKey {
-  ENABLE_AUTO_SCROLL = 'enable_auto_scroll'
+  ENABLE_AUTO_SCROLL = 'enable_auto_scroll',
+  PIN_PLANNING = 'pin_planning'
 }
 
 export interface Preferences {
   [StorageKey.ENABLE_AUTO_SCROLL]?: boolean;
+  [StorageKey.PIN_PLANNING]?: boolean;
 }

@@ -34,6 +34,7 @@ const emit = defineEmits([
 
 const options = computed(() => {
   const isAutoScrollEnabled = props.preferences[StorageKey.ENABLE_AUTO_SCROLL];
+  const isPlanningPinned = props.preferences[StorageKey.PIN_PLANNING];
 
   return [
     {
@@ -52,6 +53,17 @@ const options = computed(() => {
         emit('update:preferences', {
           key:   StorageKey.ENABLE_AUTO_SCROLL,
           value: !isAutoScrollEnabled
+        });
+      },
+    },
+    {
+      label:       t(`ai.menu.options.chat.pinPlanning.label.${ isPlanningPinned ? 'disable' : 'enable' }`),
+      description: t(`ai.menu.options.chat.pinPlanning.description.${ isPlanningPinned ? 'disable' : 'enable' }`),
+      icon:        isPlanningPinned ? 'icon-pin-outlined' : 'icon-pin',
+      action:      () => {
+        emit('update:preferences', {
+          key:   StorageKey.PIN_PLANNING,
+          value: !isPlanningPinned
         });
       },
     },
