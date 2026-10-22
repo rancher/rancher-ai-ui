@@ -1,9 +1,11 @@
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 
 import ChatPo from '@/cypress/e2e/po/chat.po';
+import ChatPanelMenuPo from '@/cypress/e2e/po/chat-panel-menu.po';
 
 describe('Message Planning', () => {
   const chat = new ChatPo();
+  const chatMenu = new ChatPanelMenuPo();
 
   before(() => {
     cy.login();
@@ -23,17 +25,18 @@ describe('Message Planning', () => {
 
     beforeEach(() => {
       cy.login();
+      cy.cleanChatHistory();
 
       HomePagePo.goTo();
-    });
 
-    it('Execution succeeds', () => {
       chat.open();
 
       const welcomeMessage = chat.getMessage(1);
 
       welcomeMessage.isCompleted();
+    });
 
+    it('Execution succeeds', () => {
       cy.enqueuePlanningResponse([
         {
           label:  'Create a new namespace in the cluster \'local\'.',
@@ -73,12 +76,6 @@ describe('Message Planning', () => {
     });
 
     it('Execution fails', () => {
-      chat.open();
-
-      const welcomeMessage = chat.getMessage(1);
-
-      welcomeMessage.isCompleted();
-
       cy.enqueuePlanningResponse([
         {
           label:  'Create a new namespace in the cluster \'local\'.',
@@ -111,7 +108,7 @@ describe('Message Planning', () => {
 
       planningMessage.cancelButton().should('not.exist');
 
-      planningMessage.header().contains('Execution has been stopped');
+      planningMessage.header().contains('Plan execution has been stopped');
 
       planningMessage.item(0).icon().should('have.class', 'icon-checkmark');
       planningMessage.item(1).icon().should('have.class', 'icon-error');
@@ -147,17 +144,18 @@ describe('Message Planning', () => {
 
     beforeEach(() => {
       cy.login();
+      cy.cleanChatHistory();
 
       HomePagePo.goTo();
-    });
 
-    it('Execution succeeds', () => {
       chat.open();
 
       const welcomeMessage = chat.getMessage(1);
 
       welcomeMessage.isCompleted();
+    });
 
+    it('Execution succeeds', () => {
       cy.enqueuePlanningResponse([
         {
           label:  'Create a new namespace in the cluster \'local\'.',
@@ -202,12 +200,6 @@ describe('Message Planning', () => {
     });
 
     it('Execution fails', () => {
-      chat.open();
-
-      const welcomeMessage = chat.getMessage(1);
-
-      welcomeMessage.isCompleted();
-
       cy.enqueuePlanningResponse([
         {
           label:  'Create a new namespace in the cluster \'local\'.',
@@ -242,7 +234,7 @@ describe('Message Planning', () => {
 
       planningMessage.cancelButton().should('be.visible');
 
-      planningMessage.header().contains('Execution has been stopped');
+      planningMessage.header().contains('Plan execution has been stopped');
       planningMessage.status().contains('Execution failed');
 
       planningMessage.cancelButton().should('not.exist');
@@ -264,12 +256,6 @@ describe('Message Planning', () => {
     });
 
     it('Execution cancelled', () => {
-      chat.open();
-
-      const welcomeMessage = chat.getMessage(1);
-
-      welcomeMessage.isCompleted();
-
       cy.enqueuePlanningResponse([
         {
           label:  'Create a new namespace in the cluster \'local\'.',
@@ -302,7 +288,7 @@ describe('Message Planning', () => {
 
       planningMessage.cancel();
 
-      planningMessage.header().contains('Execution has been canceled');
+      planningMessage.header().contains('Plan execution has been canceled');
       planningMessage.status().contains('Canceled');
 
       planningMessage.cancelButton().should('not.exist');
@@ -317,12 +303,6 @@ describe('Message Planning', () => {
     });
 
     it('Execution stopped', () => {
-      chat.open();
-
-      const welcomeMessage = chat.getMessage(1);
-
-      welcomeMessage.isCompleted();
-
       cy.enqueuePlanningResponse([
         {
           label:  'Create a new namespace in the cluster \'local\'.',
@@ -359,7 +339,7 @@ describe('Message Planning', () => {
 
       planningMessage.cancel();
 
-      planningMessage.header().contains('Execution has been canceled');
+      planningMessage.header().contains('Plan execution has been canceled');
       planningMessage.status().contains('Canceled');
 
       planningMessage.cancelButton().should('not.exist');
@@ -378,9 +358,184 @@ describe('Message Planning', () => {
     });
   });
 
+  describe('Planning message handling', () => {
+    before(() => {
+      cy.login();
+      cy.installUIToolsDefinition();
+      cy.clearLLMResponses();
+      cy.clearLocalStorage('rancher-ai-ui*');
+      cy.updateAiAssistantConfigs({
+        PLAN_ENABLED:          'true',
+        PLAN_APPROVAL_ENABLED: 'true'
+      });
+    });
+
+    beforeEach(() => {
+      cy.login();
+      cy.cleanChatHistory();
+
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+    });
+
+    it('It should collapse and expand the status panel', () => {
+      cy.enqueuePlanningResponse([
+        {
+          label:  'Create a new namespace in the cluster \'local\'.',
+          agent:  'rancher',
+          result: {
+            status:  'completed',
+            message: 'Namespace created'
+          }
+        },
+        {
+          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:  'fleet',
+          result: {
+            status:  'completed',
+            message: 'Pod created'
+          }
+        }
+      ]);
+
+      chat.sendMessage('Create a namespace and a Pod in it');
+
+      let planningMessage = chat.getMessage(3).planning();
+
+      // Planning message is expanded
+      planningMessage.header().should('be.visible');
+      planningMessage.header().should('contain', 'Awaiting approval to execute the following tasks');
+      planningMessage.item(0).self().should('be.visible');
+      planningMessage.item(1).self().should('be.visible');
+
+      planningMessage.toggleCollapse();
+
+      // Planning message is collapsed
+      planningMessage.header().should('be.visible');
+      planningMessage.header().should('contain', 'Awaiting approval to execute planned tasks');
+
+      planningMessage.item(0).self().should('not.exist');
+      planningMessage.item(1).self().should('not.exist');
+
+      planningMessage.approve();
+
+      planningMessage.header().should('contain', 'Executing: Create a new namespace');
+
+      // Planning message is expanded again
+      planningMessage.toggleCollapse();
+
+      planningMessage.item(0).self().should('be.visible');
+      planningMessage.item(1).self().should('be.visible');
+
+      planningMessage.status().contains('Completed');
+
+      chat.close();
+      chat.open();
+
+      chat.getMessage(4).checkExists();
+
+      // When closing the chat, the planning should collapse
+      planningMessage = chat.getMessage(3).planning();
+
+      planningMessage.self().scrollIntoView();
+
+      planningMessage.header().should('be.visible');
+      planningMessage.item(0).self().should('not.exist');
+      planningMessage.item(1).self().should('not.exist');
+    });
+
+    it('It should pin and unpin the status panel', () => {
+      chatMenu.toggleMenu();
+
+      chatMenu.clickOption('Unpin Planning Messages');
+
+      let systemMessage = chat.getMessage(2);
+
+      systemMessage.containsText('The planning messages are now unpinned');
+
+      cy.enqueuePlanningResponse([
+        {
+          label:  'Create a new namespace in the cluster \'local\'.',
+          agent:  'rancher',
+          result: {
+            status:  'completed',
+            message: 'Namespace created'
+          }
+        },
+        {
+          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:  'fleet',
+          result: {
+            status:  'completed',
+            message: 'Pod created'
+          }
+        }
+      ]);
+
+      chat.sendMessage('Create a namespace and a Pod in it');
+
+      let planningMessage = chat.getMessage(4).planning();
+
+      // The planning message should exist but not be visible because it is unpinned and the chat is scrolled to the bottom
+      planningMessage.header().should('exist');
+      planningMessage.header().should('be.not.visible');
+
+      planningMessage.cancel();
+
+      planningMessage.status().contains('Canceled');
+
+      cy.clearLLMResponses();
+
+      chatMenu.toggleMenu();
+
+      chatMenu.clickOption('Pin Planning Messages');
+
+      systemMessage = chat.getMessage(6);
+
+      systemMessage.containsText('The planning messages are now pinned');
+
+      cy.enqueuePlanningResponse([
+        {
+          label:  'Create a new namespace in the cluster \'local\'.',
+          agent:  'rancher',
+          result: {
+            status:  'completed',
+            message: 'Namespace created'
+          }
+        },
+        {
+          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:  'fleet',
+          result: {
+            status:  'completed',
+            message: 'Pod created'
+          }
+        }
+      ]);
+
+      chat.sendMessage('Create a namespace and a Pod in it');
+
+      planningMessage = chat.getMessage(8).planning();
+
+      // The planning message should exist and be visible because it is pinned
+      planningMessage.header().should('exist');
+      planningMessage.header().should('be.visible');
+
+      planningMessage.cancel();
+
+      planningMessage.status().contains('Canceled');
+    });
+  });
+
   after(() => {
     cy.clearLLMResponses();
     cy.uninstallUIToolsDefinition();
+    cy.clearLocalStorage('rancher-ai-ui*');
     cy.updateAiAssistantConfigs({
       PLAN_ENABLED:          'false',
       PLAN_APPROVAL_ENABLED: 'false'

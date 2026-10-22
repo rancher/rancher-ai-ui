@@ -19,6 +19,10 @@ class PlanningItemPo extends ComponentPo {
 }
 
 export default class PlanningPo extends ComponentPo {
+  constructor(self: Cypress.Chainable) {
+    super(self.find('.planning-state-container'));
+  }
+
   header() {
     return this.self().get('.planning-state-header');
   }
@@ -43,11 +47,19 @@ export default class PlanningPo extends ComponentPo {
     return this.self().get('.rc-button').contains('Cancel');
   }
 
+  toggleCollapseButton() {
+    return this.self().get('[data-testid="rancher-ai-ui-planning-status-info-toggle-collapse-button"]');
+  }
+
   approve() {
     this.startButton().click();
   }
 
   cancel() {
     this.cancelButton().click();
+  }
+
+  toggleCollapse() {
+    this.toggleCollapseButton().click();
   }
 }

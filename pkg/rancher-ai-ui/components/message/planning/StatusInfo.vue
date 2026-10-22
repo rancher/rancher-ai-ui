@@ -172,6 +172,7 @@ onBeforeUnmount(() => {
         size="small"
         variant="ghost"
         :aria-label="t(`ai.planning.actions.${ isCollapsed ? 'expand' : 'collapse' }`)"
+        :data-testid="'rancher-ai-ui-planning-status-info-toggle-collapse-button'"
         class="collapse-button"
         @click="toggleCollapse"
         @keydown.enter.space.stop="toggleCollapse"
