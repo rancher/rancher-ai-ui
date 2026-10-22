@@ -347,8 +347,8 @@ ai:
             enable: Pin Planning Messages
             disable: Unpin Planning Messages
           description:
-            enable: Keep the planning panels pinned to the top of the chat window
-            disable: Unpin the planning panels from the top of the chat window
+            enable: Keep the Planning Messages pinned to the top of the chat window
+            disable: Unpin the Planning Messages from the top of the chat window
   history:
     chat:
       create: Start a New Chat
