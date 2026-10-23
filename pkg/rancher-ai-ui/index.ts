@@ -1,7 +1,9 @@
 import { defineAsyncComponent } from 'vue';
 import { importTypes } from '@rancher/auto-import';
-import { ActionLocation, IExtension } from '@shell/core/types';
+import { Action, ActionLocation, IExtension } from '@shell/core/types';
 import { NotificationLevel } from '@shell/types/notifications';
+import { PRODUCT_NAME } from './product';
+import { NotificationType } from './types';
 import { warn } from './utils/log';
 import extensionRouting from './routing/extension-routing';
 import connectionStore from './store/connection';
@@ -10,6 +12,7 @@ import inputStore from './store/input';
 import contextStore from './store/context';
 import stagingStore from './store/staging';
 import storageStore from './store/storage';
+import notificationStore from './store/notification';
 import Chat from './handlers/chat';
 import Hooks from './handlers/hooks/index';
 import BadgeSlidingOverlay from './handlers/hooks/overlay/badge-sliding';
@@ -67,10 +70,19 @@ export default function(extension: IExtension, { store }: any): void {
         mac: ['meta', 'shift', 'k'] 
       },
       icon: 'icon-ai',
+      showNotificationIndicator: () => {
+        if (Chat.isOpen(store)) {
+          return false;
+        }
+
+        const unreadCount = store.getters[`${ PRODUCT_NAME }/notification/unreadCount`](NotificationType.MESSAGE);
+  
+        return unreadCount > 0;
+      },
       invoke: () => {
         Chat.isOpen(store) ? Chat.close(store) : Chat.open(store);
       },
-    }
+    } as Action
   );
 
   // Add stores
@@ -80,6 +92,7 @@ export default function(extension: IExtension, { store }: any): void {
   extension.addDashboardStore(contextStore.config.namespace, contextStore.specifics, contextStore.config);
   extension.addDashboardStore(stagingStore.config.namespace, stagingStore.specifics, stagingStore.config);
   extension.addDashboardStore(storageStore.config.namespace, storageStore.specifics, storageStore.config);
+  extension.addDashboardStore(notificationStore.config.namespace, notificationStore.specifics, notificationStore.config);
 
   // Inject hooks in the main window
   Hooks.inject(BadgeSlidingOverlay, store);

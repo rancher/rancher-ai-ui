@@ -40,6 +40,9 @@ ai:
           pin_planning:
             true: 'The planning messages are now pinned to the top of the chat window.'
             false: 'The planning messages are now unpinned from the top of the chat window.'
+          enable_notifications:
+            true: 'Notifications are now turned <b>ON</b>'
+            false: 'Notifications are now turned <b>OFF</b>'
       message-manual-stop:
         info: 'You stopped the previous response.'
       planning-manual-stop:
@@ -123,6 +126,13 @@ ai:
     resources:
       cluster: Cluster
       namespace: Namespace
+  notification:
+    message:
+      title: Rancher AI Assistant
+      summary:
+        message: 'You have unread messages'
+        planning: 'Planning message ready: {count} tasks'
+        idle: 'Response complete'
   configurations:
     label: Uses AI, running {name} ({model}).
     verifyResults:
@@ -349,6 +359,13 @@ ai:
           description:
             enable: Keep the Planning Messages pinned to the top of the chat window
             disable: Unpin the Planning Messages from the top of the chat window
+        notifications:
+          label:
+            enable: Enable Notifications
+            disable: Disable Notifications
+          description:
+            enable: Turn on Message Notifications
+            disable: Turn off Message Notifications
   history:
     chat:
       create: Start a New Chat
