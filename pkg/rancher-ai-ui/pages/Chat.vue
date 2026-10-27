@@ -109,7 +109,7 @@ const {
   restore: restorePanel,
 } = useHeaderComposable();
 
-const { cleanInputAndTags } = useInputComposable();
+const { updateInput, focusConsoleInput, cleanInputAndTags } = useInputComposable();
 
 const {
   handleKeydown,
@@ -266,6 +266,15 @@ function copyLastAssistantMessage() {
   }
 }
 
+function stageMessageToConsoleInput(data: string | Message) {
+  const summaryContent = (data as Message).summaryContent;
+  const text = data as string;
+
+  // The messages from the messageBox will always have summaryContent; adding the text as defensive fallback
+  updateInput(cleanInputAndTags(summaryContent || text));
+  focusConsoleInput();
+}
+
 function routeToSettings() {
   store.state.$router.push({
     name:   `c-cluster-settings-${ PRODUCT_NAME }`,
@@ -321,7 +330,16 @@ function ensureConnectionAndSendMessage(data: string | Message) {
 
     connect(chatMetadata.value.chatId);
   } else {
-    sendMessage(data, ws.value);
+    if (!!pendingResponse.value) {
+      // Stage the message to the console input because a response is pending; we do not want to stop the current response
+      stageMessageToConsoleInput(data);
+
+      // We do not want to keep the old message around when not sending it immediately
+      clearMessageBox();
+    } else {
+      // Send the message immediately
+      sendMessage(data, ws.value);
+    }
   }
 }
 
@@ -379,7 +397,7 @@ watch(() => [
    * If the chat is open but not ready (e.g. waiting for AI agent deployment),
    * clear the message box so that the message is not sent when the chat becomes ready
    *
-   * This is false when the chat is closed and then is open with the message box already filled.
+   * This is false when the chat is closed and then goes open with the message box already filled.
    */
   if (isChatOpenAndNotReady) {
     if (newMessage) {

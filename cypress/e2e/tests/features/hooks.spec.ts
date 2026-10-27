@@ -529,6 +529,60 @@ describe('Hooks', () => {
         chat.getMessage(2).checkNotExists();
       });
 
+      it('It should not send a message from the sliding badge when there is pending response', () => {
+        const homePage = new HomePagePo();
+
+        HomePagePo.goTo();
+
+        chat.open();
+
+        const welcomeMessage = chat.getMessage(1);
+
+        welcomeMessage.isCompleted();
+
+        cy.enqueueLLMResponse({
+          text: [
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' very very very very very very very very',
+            ' long response',
+          ],
+        });
+
+        chat.sendMessage('Request');
+
+        const resultMessage = chat.getMessage(3);
+
+        resultMessage.self().should('exist');
+
+        const homeClusterList = homePage.list();
+
+        const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+
+        const slidingBadge = new SlidingBadgePo(statusColumn);
+
+        slidingBadge.click();
+
+        resultMessage.self().should('not.contain.text', 'long response');
+
+        // The sliding badge click should not send a new message
+        chat.getMessage(4).checkNotExists();
+
+        // Text message text is staged to the console input
+        chat.console().textarea().should('have.value', 'Please analyse the Cluster "local" and troubleshoot any problems.');
+
+        resultMessage.self().should('contain.text', 'long response');
+      });
+
       afterEach(() => {
         cy.cleanChatHistory();
       });
