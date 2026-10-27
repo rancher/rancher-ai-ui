@@ -124,6 +124,14 @@ function handleTextareaKeydown(event: KeyboardEvent) {
     nextTick(autoResizePrompt);
   }
 
+  // Skip Enter if response is pending
+  if (event.key === 'Enter' && !event.shiftKey && isResponsePending.value) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    return;
+  }
+
   // When there is completeText it will stop and not send Content
   if (event.key === 'Enter' && !event.shiftKey && completeText.value) {
     event.preventDefault();

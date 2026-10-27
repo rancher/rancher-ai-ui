@@ -155,7 +155,7 @@ describe('Console Actions', () => {
     stopNotificationMessage.containsText('You stopped the previous response.');
   });
 
-  it('It should stop a message when a new message is sent', () => {
+  it('It should not send or stop a message when a response is pending', () => {
     cy.enqueueLLMResponse(longResponsePayload);
 
     chat.sendMessage('User request');
@@ -167,28 +167,29 @@ describe('Console Actions', () => {
 
     const resultMessage = chat.getMessage(3);
 
-    // Verify that the result message exists before attempting to send a new message
-    resultMessage.self().should('exist');
-
-    chat.sendMessage('New user request');
-
-    // Verify that the result message does not contain the full long response after
-    // sending a new message (which stops the previous one)
+    // Verify that the result message starts appearing with partial content
+    chat.console().sendButton().should('not.exist');
+    chat.console().stopButton().should('exist');
     resultMessage.self().should('contain.text', 'very');
     resultMessage.self().should('not.contain.text', 'long response');
+
+    // Type a new message and press Enter to attempt sending it while the previous response is still pending
+    chat.sendMessage('New user request');
+
+    // Verify that no new message has been sent while the previous response is still pending nor has the previous response completed
+    resultMessage.self().should('not.contain.text', 'long response');
+    chat.console().stopButton().should('exist');
+    chat.console().sendButton().should('not.exist');
+    chat.console().textarea().should('have.value', 'New user request');
+    chat.getMessage(5).self().should('not.exist');
+
+    // Verify that the result message has completed and the console buttons are in the expected state after the response is done
     resultMessage.isCompleted();
-
-    // Verify that the stop notification message does not appear as a separate message
-    cy.contains('You stopped the previous response.').should('not.exist');
-
-    // Verify that the conversation continues with the new user request
-    const newUserMessage = chat.getMessage(4);
-
-    newUserMessage.containsText('New user request');
-
-    const newResultMessage = chat.getMessage(5);
-
-    newResultMessage.self().should('exist');
+    resultMessage.self().should('contain.text', 'long response');
+    chat.console().stopButton().should('not.exist');
+    chat.console().sendButton().should('exist');
+    chat.console().textarea().should('have.value', 'New user request');
+    chat.getMessage(5).self().should('not.exist');
   });
 
   after(() => {
