@@ -17,6 +17,7 @@ import LlmModelLabel from '../console/LlmModelLabel.vue';
 import VerifyResultsDisclaimer from '../console/VerifyResultsDisclaimer.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
 import { extractMessageText } from '../../utils/label';
+import { getIconWithFallback } from '../../utils/icon';
 import Chat from '../../handlers/chat';
 
 /**
@@ -72,6 +73,7 @@ const {
 const promptTextarea = ref<HTMLTextAreaElement | null>(null);
 const isFocused = ref(false);
 const completeText = ref('');
+const stopIconClass = ref('icon-stop');
 const MAX_HEIGHT = 200;
 const historyIndex = ref(-1);
 
@@ -274,6 +276,8 @@ watch(
 );
 
 onMounted(() => {
+  stopIconClass.value = getIconWithFallback('icon-stop', 'icon-close');
+
   setConsoleRef({ focusInput });
 
   nextTick(() => {
@@ -339,7 +343,7 @@ onMounted(() => {
             @click="stopContent"
             @keydown.space="stopContent"
           >
-            <i class="icon icon-stop" />
+            <i :class="['icon', stopIconClass]" />
           </RcButton>
           <RcButton
             v-else
