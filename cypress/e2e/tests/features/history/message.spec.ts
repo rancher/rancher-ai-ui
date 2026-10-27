@@ -307,7 +307,79 @@ describe('History Messages', () => {
     historyCanceledMessage.isCanceled();
   });
 
-  it('It should properly parse stopped messages', () => {
+  it('It should properly parse thinking phase of stopped messages', () => {
+    chat.open();
+
+    let welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    cy.enqueueLLMResponse({
+      text: [
+        '<think>',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' long thinking',
+        '</think>',
+        'your response'
+      ],
+    });
+    chat.sendMessage('Let me stop the message');
+
+    const userMessage = chat.getMessage(2);
+
+    userMessage.scrollIntoView();
+    userMessage.containsText('Let me stop the message');
+
+    const resultMessage = chat.getMessage(3);
+
+    resultMessage.self().should('exist');
+
+    chat.console().stopButton().click();
+
+    resultMessage.isCompleted();
+
+    // Create a new chat to trigger the history population
+    history.open();
+    history.createChat();
+
+    welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    // Now open history and select the previous chat
+    history.open();
+    history.chatItem(0).select();
+    chat.isReady();
+
+    // Verify stopped thinking phase
+    const historyResultMessage = chat.getMessage(2);
+
+    historyResultMessage.self().should('not.contain.text', 'your response');
+
+    historyResultMessage.thinkingButton().click();
+
+    historyResultMessage.self().should('contain.text', 'very');
+    historyResultMessage.self().should('not.contain.text', 'long thinking');
+    historyResultMessage.self().should('not.contain.text', 'your response');
+
+    const stopNotificationMessage = chat.getMessage(3);
+
+    stopNotificationMessage.self().should('exist');
+    stopNotificationMessage.containsText('You stopped the previous response');
+  });
+
+  it('It should properly parse text content of stopped messages', () => {
     chat.open();
 
     let welcomeMessage = chat.getMessage(1);
@@ -331,12 +403,12 @@ describe('History Messages', () => {
         ' long response',
       ],
     });
-    chat.sendMessage('Let me stop a message');
+    chat.sendMessage('Let me stop the message');
 
     const userMessage = chat.getMessage(2);
 
     userMessage.scrollIntoView();
-    userMessage.containsText('Let me stop a message');
+    userMessage.containsText('Let me stop the message');
 
     const resultMessage = chat.getMessage(3);
 

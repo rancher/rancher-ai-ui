@@ -617,6 +617,25 @@ export function useChatMessageComposable(
         break;
       }
 
+      if (currentMsg.value.completed === false) {
+        if (data.startsWith(Tag.ErrorStart) && data.endsWith(Tag.ErrorEnd)) {
+          const err = formatErrorMessage(data);
+
+          throw {
+            message: err.message,
+            key:     'message'
+          };
+        }
+
+        if (data.startsWith(Tag.StopStart) && data.endsWith(Tag.StopEnd)) {
+          const stop = formatStopMessage(data);
+
+          currentMsg.value.stopType = stop?.type || null;
+
+          break;
+        }
+      }
+
       if (currentMsg.value.completed === false && currentMsg.value.thinking === true) {
         if (!currentMsg.value.thinkingContent && data.trim() === '') {
           break;
@@ -663,15 +682,6 @@ export function useChatMessageComposable(
           break;
         }
 
-        if (data.startsWith(Tag.ErrorStart) && data.endsWith(Tag.ErrorEnd)) {
-          const err = formatErrorMessage(data);
-
-          throw {
-            message: err.message,
-            key:     'message'
-          };
-        }
-
         if (data.startsWith(Tag.AuthenticationErrorStart) && data.endsWith(Tag.AuthenticationErrorEnd)) {
           const err = formatAuthenticationErrorMessage(data);
 
@@ -679,14 +689,6 @@ export function useChatMessageComposable(
             message: err.message,
             key:     'authentication'
           };
-        }
-
-        if (data.startsWith(Tag.StopStart) && data.endsWith(Tag.StopEnd)) {
-          const stop = formatStopMessage(data);
-
-          currentMsg.value.stopType = stop?.type || null;
-
-          break;
         }
 
         if (data === Tag.ProcessingTools) {
@@ -708,6 +710,7 @@ export function useChatMessageComposable(
 
         break;
       }
+
       break;
     }
   }

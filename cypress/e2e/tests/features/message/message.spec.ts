@@ -376,6 +376,101 @@ describe('Messages', () => {
     confirmationRequestMessage.containsText('Canceled');
   });
 
+  it('Stop message during send thinking phase', () => {
+    chat.open();
+
+    const welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    cy.enqueueLLMResponse({
+      text: [
+        '<think>',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' long thinking',
+        '</think>',
+        'your response'
+      ],
+    });
+    chat.sendMessage('Let me stop the message');
+
+    const userMessage = chat.getMessage(2);
+
+    userMessage.scrollIntoView();
+    userMessage.containsText('Let me stop the message');
+
+    const resultMessage = chat.getMessage(3);
+
+    resultMessage.self().should('exist');
+
+    chat.console().stopButton().click();
+
+    resultMessage.isCompleted();
+
+    resultMessage.self().should('not.contain.text', 'your response');
+
+    resultMessage.thinkingButton().click();
+
+    resultMessage.self().should('contain.text', 'very');
+    resultMessage.self().should('not.contain.text', 'long thinking');
+    resultMessage.self().should('not.contain.text', 'your response');
+  });
+
+  it('Stop message during send content phase', () => {
+    chat.open();
+
+    const welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    cy.enqueueLLMResponse({
+      text: [
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' very very very very very very very very',
+        ' long response',
+      ],
+    });
+
+    chat.sendMessage('Let me stop the message');
+
+    const userMessage = chat.getMessage(2);
+
+    userMessage.scrollIntoView();
+    userMessage.containsText('Let me stop the message');
+
+    const resultMessage = chat.getMessage(3);
+
+    resultMessage.self().should('exist');
+
+    chat.console().stopButton().click();
+
+    resultMessage.isCompleted();
+
+    resultMessage.self().should('contain.text', 'very');
+    resultMessage.self().should('not.contain.text', 'long response');
+  });
+
   after(() => {
     cy.deleteRancherResource('v1', 'pods', 'default/my-pod', false);
 

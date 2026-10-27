@@ -419,11 +419,15 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
    */
   let thinkingContent = '';
 
-  if (msg.message?.startsWith(Tag.ThinkingStart) && msg.message?.includes(Tag.ThinkingEnd)) {
-    const thinkingPart = msg.message.substring(
-      msg.message.indexOf(Tag.ThinkingStart),
-      msg.message.indexOf(Tag.ThinkingEnd) + Tag.ThinkingEnd.length
-    );
+  if (msg.message?.includes(Tag.ThinkingStart)) {
+    const startIdx = msg.message.indexOf(Tag.ThinkingStart);
+    const endIdx = msg.message.indexOf(Tag.ThinkingEnd);
+
+    // The end tag might not exist if the message was stopped manually
+    // If closing tag exists, use it; otherwise, extract to end of message (for stopped messages)
+    const endPos = endIdx !== -1 ? endIdx + Tag.ThinkingEnd.length : msg.message.length;
+
+    const thinkingPart = msg.message.substring(startIdx, endPos);
 
     thinkingContent = thinkingPart
       .replaceAll(Tag.ThinkingStart, '')
