@@ -276,6 +276,7 @@ watch(
 );
 
 onMounted(() => {
+  // TODO we can remove this when all supported versions have the 'icon-stop' icon available
   stopIconClass.value = getIconWithFallback('icon-stop', 'icon-close');
 
   setConsoleRef({ focusInput });
