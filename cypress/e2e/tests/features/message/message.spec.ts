@@ -409,6 +409,7 @@ describe('Messages', () => {
 
     userMessage.scrollIntoView();
     userMessage.containsText('Let me stop the message');
+    userMessage.resendButton().self().should('not.exist');
 
     const resultMessage = chat.getMessage(3);
 
@@ -458,6 +459,7 @@ describe('Messages', () => {
 
     userMessage.scrollIntoView();
     userMessage.containsText('Let me stop the message');
+    userMessage.resendButton().self().should('not.exist');
 
     const resultMessage = chat.getMessage(3);
 

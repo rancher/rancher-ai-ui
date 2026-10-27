@@ -52,6 +52,10 @@ const props = defineProps({
     type:    Array as PropType<Message[]>,
     default: () => [],
   },
+  pendingResponse: {
+    type:    Object as PropType<Message | null>,
+    default: null,
+  },
   hasPermissions: {
     type:    Boolean,
     default: true,
@@ -77,33 +81,6 @@ const stopIconClass = ref('icon-stop');
 const MAX_HEIGHT = 200;
 const historyIndex = ref(-1);
 
-const isResponsePending = computed(() => {
-  // Find the last user message index, iterating from end
-  let lastUserMessageIndex = -1;
-
-  for (let i = props.messages.length - 1; i >= 0; i--) {
-    if (props.messages[i].role === Role.User) {
-      lastUserMessageIndex = i;
-      break;
-    }
-  }
-
-  // Find the last incomplete assistant message after the last user message
-  let lastIncompleteAssistantMessageIndex = -1;
-
-  if (lastUserMessageIndex !== -1) {
-    for (let i = props.messages.length - 1; i > lastUserMessageIndex; i--) {
-      if (props.messages[i].role === Role.Assistant && !props.messages[i].completed) {
-        lastIncompleteAssistantMessageIndex = i;
-        break;
-      }
-    }
-  }
-
-  // Return true if there is no incomplete assistant message after the last user message
-  return lastIncompleteAssistantMessageIndex !== -1;
-});
-
 const text = computed(() => {
   if (props.disabled) {
     return '';
@@ -127,7 +104,7 @@ function handleTextareaKeydown(event: KeyboardEvent) {
   }
 
   // Skip Enter if response is pending
-  if (event.key === 'Enter' && !event.shiftKey && isResponsePending.value) {
+  if (event.key === 'Enter' && !event.shiftKey && !!props.pendingResponse) {
     event.preventDefault();
     event.stopPropagation();
 
@@ -337,7 +314,7 @@ onMounted(() => {
           :class="{ 'disabled-panel': props.disabled }"
         >
           <RcButton
-            v-if="isResponsePending"
+            v-if="!!props.pendingResponse"
             class="stop-button"
             data-testid="rancher-ai-ui-chat-console-stop-message"
             :disabled="props.disabled"

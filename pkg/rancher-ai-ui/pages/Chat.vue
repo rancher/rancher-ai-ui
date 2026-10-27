@@ -54,6 +54,7 @@ const {
 const {
   messages,
   messageBox,
+  pendingResponse,
   onopen,
   onmessage,
   onclose,
@@ -448,6 +449,7 @@ function unmount() {
       <Messages
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
+        :pending-response="pendingResponse"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :processing-state="processingMessageState"
@@ -478,6 +480,7 @@ function unmount() {
         :agent-name="agentName"
         :disabled="!isChatInitialized || disabled"
         :messages="messages"
+        :pending-response="pendingResponse"
         :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"
         @stop:content="stopMessage(ws)"

@@ -88,6 +88,35 @@ export function useChatMessageComposable(
 
   const messageBox = computed(() => store.getters['rancher-ai-ui/chat/messageBox'](chatId));
   const messages = computed(() => Object.values(store.getters['rancher-ai-ui/chat/messages'](chatId)) as Message[]);
+  const pendingResponse = computed(() => {
+    // Find the last user message index, iterating from end
+    let lastUserMessageIndex = -1;
+
+    for (let i = messages.value.length - 1; i >= 0; i--) {
+      if (messages.value[i].role === Role.User) {
+        lastUserMessageIndex = i;
+        break;
+      }
+    }
+
+    // Find the last incomplete assistant message after the last user message
+    let lastIncompleteAssistantMessageIndex = -1;
+
+    if (lastUserMessageIndex !== -1) {
+      for (let i = messages.value.length - 1; i > lastUserMessageIndex; i--) {
+        if (messages.value[i].role === Role.Assistant && !messages.value[i].completed) {
+          lastIncompleteAssistantMessageIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (lastIncompleteAssistantMessageIndex !== -1) {
+      return messages.value[lastIncompleteAssistantMessageIndex];
+    }
+
+    return null;
+  });
 
   const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
@@ -783,6 +812,7 @@ export function useChatMessageComposable(
     onclose,
     messages,
     messageBox,
+    pendingResponse,
     sendMessage,
     addMessage,
     updateMessage,
