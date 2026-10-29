@@ -22,6 +22,7 @@ import {
   MessageLabelKey,
   MessagePhase,
   MessagePlanning,
+  MessagePlanningStatus,
   MessageProcessingState,
   MessageStopType,
   MessageTag,
@@ -427,7 +428,9 @@ export function useChatMessageComposable(
   }
 
   async function notifyStopMessage(type: MessageStopType | PlanningStopType) {
-    const content = { message: t(`ai.message.system.${ type }.info`, {}, true) };
+    const isPlanningActive = planningState.value?.status === MessagePlanningStatus.Pending || planningState.value?.status === MessagePlanningStatus.InProgress || planningState.value?.status === MessagePlanningStatus.Canceling;
+
+    const content = { message: t(`ai.message.system.${ !isPlanningActive ? MessageStopType.Manual : type }.info`, {}, true) };
 
     const message = buildSystemMessage({ content });
 
@@ -898,6 +901,7 @@ export function useChatMessageComposable(
     isChatInitialized,
     resetChatMetadata,
     processingState,
+    planningState,
     error,
     resetErrors: () => setErrors(null),
   };

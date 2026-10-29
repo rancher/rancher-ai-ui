@@ -54,8 +54,9 @@ function routeToSettings() {
           >
             <template #goToChatSettings="{ content }">
               <a
-                v-clean-tooltip="{ content: t('ai.planning.notification.approvalInfo.tooltip'), delay: { show: 300 } }"
+                v-clean-tooltip="{ content: t('ai.planning.notification.approvalInfo.action'), delay: { show: 300 } }"
                 class="text-label clickable-label"
+                :aria-label="t('ai.planning.notification.approvalInfo.action')"
                 @click="routeToSettings()"
               >
                 {{ content }}
