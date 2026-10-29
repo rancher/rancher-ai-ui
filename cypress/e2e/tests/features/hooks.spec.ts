@@ -579,7 +579,7 @@ describe('Hooks', () => {
 
         chat.console().textarea().then(($textarea) => {
           const text = $textarea.val() as string;
-          
+
           // Check that the staged message contains all expected parts
           expect(text).to.contain('Please analyse the Cluster');
           expect(text).to.contain('Explain');
