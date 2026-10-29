@@ -6,7 +6,7 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, Preferences, Role, StorageKey, StorageType
+  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, MessagePlanningStatus, Preferences, Role, StorageKey, StorageType
 } from '../types';
 import { extractMessageText } from '../utils/label';
 import Chat from '../handlers/chat';
@@ -72,6 +72,7 @@ const {
   isChatInitialized,
   resetChatMetadata,
   processingState,
+  planningState,
   error: chatError,
   resetErrors: resetChatErrors
 } = useChatMessageComposable(
@@ -332,8 +333,9 @@ function ensureConnectionAndSendMessage(data: string | Message) {
 
     connect(chatMetadata.value.chatId);
   } else {
-    if (!!pendingResponse.value) {
-      // Stage the message to the console input because a response is pending; we do not want to stop the current response
+    if (!!pendingResponse.value || planningState.value?.status === MessagePlanningStatus.InProgress || planningState.value?.status === MessagePlanningStatus.Pending || planningState.value?.status === MessagePlanningStatus.Canceling) {
+      // Stage the message to the console input because a response or planning is pending
+      // We do not want to stop the current response or planning process
       stageMessageToConsoleInput(data);
 
       // We do not want to keep the old message around when not sending it immediately
