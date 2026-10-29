@@ -343,7 +343,7 @@ export function formatStopMessage(value: string): { type: MessageStopType | null
   return null;
 }
 
-export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: Agent[]): Message {
+export function buildMessageFromHistoryMessage(t: Function, msg: HistoryChatMessage, agents: Agent[]): Message {
   /**
    * Parsing agent metadata
    */
@@ -455,7 +455,7 @@ export function buildMessageFromHistoryMessage(msg: HistoryChatMessage, agents: 
    */
   if (msg.stopped === MessageStopType.Manual) {
     role = Role.System;
-    messageContent = 'You stopped the previous response';
+    messageContent = t('ai.message.system.manualStopMessage.info', {}, true);
   }
 
   return {

@@ -1,4 +1,6 @@
 import { ComputedRef } from 'vue';
+import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
 import { error } from '../utils/log';
 import {
@@ -56,6 +58,9 @@ interface UIToolsCallsPayload {
  */
 
 export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
+  const store = useStore();
+  const { t } = useI18n(store);
+
   const apiPath = `/api/v1/namespaces/${ AGENT_NAMESPACE }/services/http:${ AGENT_NAME }:80/proxy/${ AGENT_REST_API_PATH }`;
 
   let llmModelsAbortController: AbortController | null = null;
@@ -390,7 +395,7 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
 
       const messages = await data.json() as HistoryChatMessage[];
 
-      return messages.map((msg) => buildMessageFromHistoryMessage(msg, agents?.value || []));
+      return messages.map((msg) => buildMessageFromHistoryMessage(t, msg, agents?.value || []));
     } catch (err) {
       error('Failed to fetch messages:', err);
 
