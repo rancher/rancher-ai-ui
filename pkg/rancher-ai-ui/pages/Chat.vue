@@ -267,11 +267,9 @@ function copyLastAssistantMessage() {
 }
 
 function stageMessageToConsoleInput(data: string | Message) {
-  const summaryContent = (data as Message).summaryContent;
-  const text = data as string;
+  // The messages from the messageBox will always be of type Message
+  updateInput(typeof data === 'string' ? data : extractMessageText(data));
 
-  // The messages from the messageBox will always have summaryContent; adding the text as defensive fallback
-  updateInput(cleanInputAndTags(summaryContent || text));
   focusConsoleInput();
 }
 

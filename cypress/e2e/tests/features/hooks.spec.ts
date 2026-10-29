@@ -577,8 +577,13 @@ describe('Hooks', () => {
         // The sliding badge click should not send a new message
         chat.getMessage(4).checkNotExists();
 
-        // Text message text is staged to the console input
-        chat.console().textarea().should('have.value', 'Please analyse the Cluster "local" and troubleshoot any problems.');
+        chat.console().textarea().then(($textarea) => {
+          const text = $textarea.val() as string;
+          
+          // Check that the staged message contains all expected parts
+          expect(text).to.contain('Please analyse the Cluster');
+          expect(text).to.contain('Explain');
+        });
 
         resultMessage.self().should('contain.text', 'long response');
       });
