@@ -59,7 +59,7 @@ const options = computed(() => {
     {
       label:       t(`ai.menu.options.chat.pinPlanning.label.${ isPlanningPinned ? 'disable' : 'enable' }`),
       description: t(`ai.menu.options.chat.pinPlanning.description.${ isPlanningPinned ? 'disable' : 'enable' }`),
-      icon:        isPlanningPinned ? 'icon-pin-outlined' : 'icon-pin',
+      icon:        isPlanningPinned ? 'icon-pin-outlined flip-x' : 'icon-pin flip-x',
       action:      () => {
         emit('update:preferences', {
           key:   StorageKey.PIN_PLANNING,
