@@ -103,9 +103,13 @@ ai:
         confirmExpectedState: 'Confirm that this is the expected state and what it implies.'
       theError: 'the error'
       anyProblems: 'any problems'
-  prompt:
-    placeholder: Ask Liz...
-    send: Send
+  console:
+    prompt:
+      placeholder: Ask Liz...
+      send: Send
+    actions:
+      stop: Stop message
+      send: Send message
   context:
     label: CONTEXT
     add: Context
