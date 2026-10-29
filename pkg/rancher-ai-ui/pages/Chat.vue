@@ -54,12 +54,14 @@ const {
 const {
   messages,
   messageBox,
+  pendingResponse,
   onopen,
   onmessage,
   onclose,
   sendMessage,
   updateMessage,
   confirmMessage,
+  stopMessage,
   downloadMessages,
   loadMessages,
   selectContext,
@@ -107,7 +109,7 @@ const {
   restore: restorePanel,
 } = useHeaderComposable();
 
-const { cleanInputAndTags } = useInputComposable();
+const { updateInput, focusConsoleInput, cleanInputAndTags } = useInputComposable();
 
 const {
   handleKeydown,
@@ -264,6 +266,13 @@ function copyLastAssistantMessage() {
   }
 }
 
+function stageMessageToConsoleInput(data: string | Message) {
+  // The messages from the messageBox will always be of type Message
+  updateInput(typeof data === 'string' ? data : extractMessageText(data));
+
+  focusConsoleInput();
+}
+
 function routeToSettings() {
   store.state.$router.push({
     name:   `c-cluster-settings-${ PRODUCT_NAME }`,
@@ -319,7 +328,16 @@ function ensureConnectionAndSendMessage(data: string | Message) {
 
     connect(chatMetadata.value.chatId);
   } else {
-    sendMessage(data, ws.value);
+    if (!!pendingResponse.value) {
+      // Stage the message to the console input because a response is pending; we do not want to stop the current response
+      stageMessageToConsoleInput(data);
+
+      // We do not want to keep the old message around when not sending it immediately
+      clearMessageBox();
+    } else {
+      // Send the message immediately
+      sendMessage(data, ws.value);
+    }
   }
 }
 
@@ -377,7 +395,7 @@ watch(() => [
    * If the chat is open but not ready (e.g. waiting for AI agent deployment),
    * clear the message box so that the message is not sent when the chat becomes ready
    *
-   * This is false when the chat is closed and then is open with the message box already filled.
+   * This is false when the chat is closed and then goes open with the message box already filled.
    */
   if (isChatOpenAndNotReady) {
     if (newMessage) {
@@ -447,6 +465,7 @@ function unmount() {
       <Messages
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
+        :pending-response="pendingResponse"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :processing-state="processingMessageState"
@@ -477,8 +496,10 @@ function unmount() {
         :agent-name="agentName"
         :disabled="!isChatInitialized || disabled"
         :messages="messages"
+        :pending-response="pendingResponse"
         :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"
+        @stop:content="stopMessage(ws)"
         @select:agent="selectAgent"
       />
       <History
@@ -553,7 +574,7 @@ function unmount() {
 }
 
 .connection-processing-label {
-  color: var(--active-nav);
+  color: var(--active);
   font-family: "Inter", Arial, sans-serif;
   font-size: 0.875rem;
   font-weight: 600;

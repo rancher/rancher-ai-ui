@@ -22,6 +22,7 @@ import {
   MessageLabelKey,
   MessagePhase,
   MessageProcessingState,
+  MessageStopType,
   MessageTag,
   MessageTemplateComponent,
   Role,
@@ -39,7 +40,8 @@ import {
   formatAgentMetadata,
   formatMcpAuthenticationRequest,
   formatMcpRefreshTokenRequest,
-  formatAuthenticationErrorMessage
+  formatAuthenticationErrorMessage,
+  formatStopMessage
 } from '../utils/format';
 import { validateUrl } from '../utils/url';
 import { downloadFile } from '@shell/utils/download';
@@ -86,6 +88,35 @@ export function useChatMessageComposable(
 
   const messageBox = computed(() => store.getters['rancher-ai-ui/chat/messageBox'](chatId));
   const messages = computed(() => Object.values(store.getters['rancher-ai-ui/chat/messages'](chatId)) as Message[]);
+  const pendingResponse = computed(() => {
+    // Find the last user message index, iterating from end
+    let lastUserMessageIndex = -1;
+
+    for (let i = messages.value.length - 1; i >= 0; i--) {
+      if (messages.value[i].role === Role.User) {
+        lastUserMessageIndex = i;
+        break;
+      }
+    }
+
+    // Find the last incomplete assistant message after the last user message
+    let lastIncompleteAssistantMessageIndex = -1;
+
+    if (lastUserMessageIndex !== -1) {
+      for (let i = messages.value.length - 1; i > lastUserMessageIndex; i--) {
+        if (messages.value[i].role === Role.Assistant && !messages.value[i].completed) {
+          lastIncompleteAssistantMessageIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (lastIncompleteAssistantMessageIndex !== -1) {
+      return messages.value[lastIncompleteAssistantMessageIndex];
+    }
+
+    return null;
+  });
 
   const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
@@ -187,6 +218,13 @@ export function useChatMessageComposable(
     if (message.source === MessageInternalSource.MessageBox) {
       clearMessageBox();
     }
+  }
+
+  function stopMessage(ws: WebSocket) {
+    wsSend(ws, formatWSInputMessage({
+      prompt: '',
+      tags:   [MessageTag.Stop]
+    }));
   }
 
   function getMessage(messageId: string) {
@@ -374,6 +412,14 @@ export function useChatMessageComposable(
     await addMessage(message);
   }
 
+  async function notifyManualStopMessage() {
+    const content = { message: t('ai.message.system.manualStopMessage.info', {}, true) };
+
+    const message = buildSystemRequestMessage({ content });
+
+    await addMessage(message);
+  }
+
   function onopen(event: { target: WebSocket }) {
     const ws = event.target;
 
@@ -525,7 +571,13 @@ export function useChatMessageComposable(
       currentMsg.value.thinking = false;
       currentMsg.value.completed = true;
 
-      await ensureSwitchAgentSuggestion(currentMsg.value.agentMetadata?.recommended);
+      if (currentMsg.value.stopType) {
+        if (currentMsg.value.stopType === MessageStopType.Manual) {
+          await notifyManualStopMessage();
+        }
+      } else {
+        await ensureSwitchAgentSuggestion(currentMsg.value.agentMetadata?.recommended);
+      }
 
       break;
     default:
@@ -594,6 +646,25 @@ export function useChatMessageComposable(
         break;
       }
 
+      if (currentMsg.value.completed === false) {
+        if (data.startsWith(Tag.ErrorStart) && data.endsWith(Tag.ErrorEnd)) {
+          const err = formatErrorMessage(data);
+
+          throw {
+            message: err.message,
+            key:     'message'
+          };
+        }
+
+        if (data.startsWith(Tag.StopStart) && data.endsWith(Tag.StopEnd)) {
+          const stop = formatStopMessage(data);
+
+          currentMsg.value.stopType = stop?.type || null;
+
+          break;
+        }
+      }
+
       if (currentMsg.value.completed === false && currentMsg.value.thinking === true) {
         if (!currentMsg.value.thinkingContent && data.trim() === '') {
           break;
@@ -640,15 +711,6 @@ export function useChatMessageComposable(
           break;
         }
 
-        if (data.startsWith(Tag.ErrorStart) && data.endsWith(Tag.ErrorEnd)) {
-          const err = formatErrorMessage(data);
-
-          throw {
-            message: err.message,
-            key:     'message'
-          };
-        }
-
         if (data.startsWith(Tag.AuthenticationErrorStart) && data.endsWith(Tag.AuthenticationErrorEnd)) {
           const err = formatAuthenticationErrorMessage(data);
 
@@ -677,6 +739,7 @@ export function useChatMessageComposable(
 
         break;
       }
+
       break;
     }
   }
@@ -749,10 +812,12 @@ export function useChatMessageComposable(
     onclose,
     messages,
     messageBox,
+    pendingResponse,
     sendMessage,
     addMessage,
     updateMessage,
     confirmMessage,
+    stopMessage,
     selectContext,
     downloadMessages,
     loadMessages,

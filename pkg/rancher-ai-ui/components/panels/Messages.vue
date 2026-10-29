@@ -42,6 +42,10 @@ const props = defineProps({
     type:    Array as PropType<Message[]>,
     default: () => [],
   },
+  pendingResponse: {
+    type:    Object as PropType<Message | null>,
+    default: null,
+  },
   systemErrors: {
     type:    Array as PropType<ChatError[]>,
     default: () => [],
@@ -269,6 +273,7 @@ onBeforeUnmount(() => {
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
         :disabled="props.disabled"
+        :pending-response="props.pendingResponse"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
         :message="message"
         @update:message="emit('update:message', $event)"
@@ -281,6 +286,7 @@ onBeforeUnmount(() => {
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
         :message="message"
         :disabled="props.disabled"
+        :pending-response="props.pendingResponse"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
         @update:message="emit('update:message', $event)"
         @confirm:message="emit('confirm:message', $event)"

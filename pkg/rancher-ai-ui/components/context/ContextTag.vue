@@ -73,7 +73,7 @@ const emit = defineEmits(['remove']);
 .vs__selected {
   line-height: 2px;
   border: none;
-  color: var(--active-nav);
+  color: var(--active);
 }
 
 .user-context {
