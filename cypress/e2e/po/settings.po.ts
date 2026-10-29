@@ -37,6 +37,10 @@ export class SettingsPo extends ComponentPo {
     return new UiToolsConfig(this.self());
   }
 
+  chatConfig() {
+    return new ChatConfig(this.self());
+  }
+
   saveButton() {
     return this.self().get('[data-testid="rancher-ai-ui-settings-save-button"]');
   }
@@ -158,6 +162,20 @@ export class UiToolsConfig extends ComponentPo {
 
   resetFiltersLink() {
     return this.self().find('.reset-filters-link');
+  }
+}
+
+export class ChatConfig extends ComponentPo {
+  constructor(self: Cypress.Chainable) {
+    super('[data-testid="rancher-ai-ui-settings-chat"]', self);
+  }
+
+  enablePlanning() {
+    return CheckboxInputPo.byLabel(this.self(), 'Enable multi-step planning for complex operations ');
+  }
+
+  enablePlanningApproval() {
+    return CheckboxInputPo.byLabel(this.self(), 'Require manual approval before executing a multi-step plan');
   }
 }
 

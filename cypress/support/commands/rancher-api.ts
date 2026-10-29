@@ -1,4 +1,33 @@
+import { LoginPagePo } from '@rancher/cypress/e2e/po/pages/login-page.po';
 import { rancherApiUrl } from '../utils/rancher-url';
+
+/**
+ * Redefines the default login command to use the Rancher login page for POST request payload compatibility,
+ * tolerating Rancher version differences in the login request.
+ */
+Cypress.Commands.add('login', () => {
+  const username = Cypress.env('username');
+  const password = Cypress.env('password');
+
+  cy.session(['compat', username, password], () => {
+    const loginPage = new LoginPagePo();
+
+    LoginPagePo.goTo();
+    // Guard against the login page hanging on its loading spinner.
+    loginPage.ensureFormReady();
+    loginPage.switchToLocal();
+    loginPage.username().set(username);
+    loginPage.password().set(password);
+    loginPage.submit();
+    // Success is detected by navigating away from /auth/login, not by asserting on the login
+    // request, whose shape varies across the versions under test.
+    cy.location('pathname', { timeout: 120000 }).should('not.contain', '/auth/login');
+  });
+
+  // The api-request commands rely on a CSRF token that cy.login() normally caches; set it here
+  // since this path bypasses cy.login().
+  cy.refreshCsrfToken();
+});
 
 /**
  * Gets a Rancher resource via the Rancher API

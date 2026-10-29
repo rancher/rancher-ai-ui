@@ -6,10 +6,11 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, Preferences, Role, StorageKey, StorageType
+  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, MessagePlanningStatus, Preferences, Role, StorageKey, StorageType
 } from '../types';
 import { extractMessageText } from '../utils/label';
 import Chat from '../handlers/chat';
+import Notifications from '../handlers/notification/index';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
 import { useContextComposable } from '../composables/useContextComposable';
@@ -54,21 +55,25 @@ const {
 const {
   messages,
   messageBox,
+  pendingResponse,
   onopen,
   onmessage,
   onclose,
   sendMessage,
   updateMessage,
+  stopMessage,
   confirmMessage,
   downloadMessages,
   loadMessages,
   selectContext,
   clearMessageBox,
+  clearPendingConfirmations,
   notifyPreferencesUpdate,
   chatMetadata,
   isChatInitialized,
   resetChatMetadata,
   processingState,
+  planningState,
   error: chatError,
   resetErrors: resetChatErrors
 } = useChatMessageComposable(
@@ -107,7 +112,7 @@ const {
   restore: restorePanel,
 } = useHeaderComposable();
 
-const { cleanInputAndTags } = useInputComposable();
+const { updateInput, focusConsoleInput, cleanInputAndTags } = useInputComposable();
 
 const {
   handleKeydown,
@@ -127,7 +132,11 @@ const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
 const deletingChat = ref<HistoryChat | null>(null);
 
-const preferences = computed<Preferences>(() => ({ [StorageKey.ENABLE_AUTO_SCROLL]: storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true }));
+const preferences = computed<Preferences>(() => ({
+  [StorageKey.ENABLE_AUTO_SCROLL]:   storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true,
+  [StorageKey.ENABLE_NOTIFICATIONS]: storage.get(StorageKey.ENABLE_NOTIFICATIONS) === 'true' || storage.get(StorageKey.ENABLE_NOTIFICATIONS) === true,
+  [StorageKey.PIN_PLANNING]:         storage.get(StorageKey.PIN_PLANNING) === 'true' || storage.get(StorageKey.PIN_PLANNING) === true,
+}));
 
 const chatAgents = computed<Agent[]>(() => {
   return agents.value.map((agent) => {
@@ -264,6 +273,13 @@ function copyLastAssistantMessage() {
   }
 }
 
+function stageMessageToConsoleInput(data: string | Message) {
+  // The messages from the messageBox will always be of type Message
+  updateInput(typeof data === 'string' ? data : extractMessageText(data));
+
+  focusConsoleInput();
+}
+
 function routeToSettings() {
   store.state.$router.push({
     name:   `c-cluster-settings-${ PRODUCT_NAME }`,
@@ -319,7 +335,17 @@ function ensureConnectionAndSendMessage(data: string | Message) {
 
     connect(chatMetadata.value.chatId);
   } else {
-    sendMessage(data, ws.value);
+    if (!!pendingResponse.value || planningState.value?.status === MessagePlanningStatus.InProgress || planningState.value?.status === MessagePlanningStatus.Pending || planningState.value?.status === MessagePlanningStatus.Canceling) {
+      // Stage the message to the console input because a response or planning is pending
+      // We do not want to stop the current response or planning process
+      stageMessageToConsoleInput(data);
+
+      // We do not want to keep the old message around when not sending it immediately
+      clearMessageBox();
+    } else {
+      // Send the message immediately
+      sendMessage(data, ws.value);
+    }
   }
 }
 
@@ -377,7 +403,7 @@ watch(() => [
    * If the chat is open but not ready (e.g. waiting for AI agent deployment),
    * clear the message box so that the message is not sent when the chat becomes ready
    *
-   * This is false when the chat is closed and then is open with the message box already filled.
+   * This is false when the chat is closed and then goes open with the message box already filled.
    */
   if (isChatOpenAndNotReady) {
     if (newMessage) {
@@ -393,27 +419,42 @@ watch(() => [
   if (!newDisabled && newIsChatInitialized && newMessage) {
     ensureConnectionAndSendMessage(newMessage);
   }
+
+  if (newDisabled && systemErrors.value.length > 0) {
+    clearPendingConfirmations();
+  }
 }, {
   immediate: true,
   deep:      true,
 });
 
 onMounted(() => {
-  // Ensure disconnection on browser refresh/close
-  window.addEventListener('beforeunload', unmount);
+  window.addEventListener('beforeunload', clearBeforeUnload);
+
+  clearOnFocus();
+  window.addEventListener('focus', clearOnFocus);
 });
 
 onBeforeUnmount(() => {
-  unmount();
-  window.removeEventListener('beforeunload', unmount);
+  clearBeforeUnload();
+  window.removeEventListener('beforeunload', clearBeforeUnload);
+
+  clearOnFocus();
+  window.removeEventListener('focus', clearOnFocus);
 });
 
-function unmount() {
+function clearBeforeUnload() {
   // Clear connection when websocket is disconnected and chat is manually closed
   if ((!Chat.isOpen(store) && !isChatInitialized.value)) {
     disconnect();
   }
+  // Restore the panel to its default position when the chat is closed or the page is refreshed
   restorePanel();
+}
+
+function clearOnFocus() {
+  // Clear notifications
+  Notifications.message().clear(store);
 }
 </script>
 
@@ -447,6 +488,8 @@ function unmount() {
       <Messages
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
+        :pending-response="pendingResponse"
+        :agents="chatAgents"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :processing-state="processingMessageState"
@@ -454,6 +497,7 @@ function unmount() {
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
+        @stop:message="stopMessage(ws)"
       />
       <Processing
         class="connection-processing-label text-label"
@@ -477,8 +521,10 @@ function unmount() {
         :agent-name="agentName"
         :disabled="!isChatInitialized || disabled"
         :messages="messages"
+        :pending-response="pendingResponse"
         :has-permissions="hasPermissions"
         @input:content="ensureConnectionAndSendMessage($event)"
+        @stop:content="stopMessage(ws)"
         @select:agent="selectAgent"
       />
       <History
@@ -553,7 +599,7 @@ function unmount() {
 }
 
 .connection-processing-label {
-  color: var(--active-nav);
+  color: var(--active);
   font-family: "Inter", Arial, sans-serif;
   font-size: 0.875rem;
   font-weight: 600;

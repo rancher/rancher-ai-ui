@@ -37,6 +37,16 @@ ai:
           enable_auto_scroll:
             true: 'The <code>auto-scroll</code> of the chat window is now turned <b>ON</b>&ensp;'
             false: 'The <code>auto-scroll</code> of the chat window is now turned <b>OFF</b>'
+          pin_planning:
+            true: 'The planning messages are now pinned to the top of the chat window.'
+            false: 'The planning messages are now unpinned from the top of the chat window.'
+          enable_notifications:
+            true: 'Notifications are now turned <b>ON</b>'
+            false: 'Notifications are now turned <b>OFF</b>'
+      message-manual-stop:
+        info: 'You stopped the previous response.'
+      planning-manual-stop:
+        info: 'The execution of the previous plan has been stopped.'
       switchAgent:
         info: '<code>{agent}</code> Agent has been selected in adaptive mode for the last few prompts.<br>Usually, manual selection is best for faster response times.<br><br>Would you like me to switch over to <b>manual</b> agent selection?<br>'
         actions:
@@ -63,7 +73,7 @@ ai:
       label: SOURCE
     relatedResourcesActions:
       label: RELATED RESOURCES
-    quickActions:
+    routeActions:
       label: QUICK ACTIONS
     actions:
       label: 'View {kind}: {name}'
@@ -101,9 +111,13 @@ ai:
         confirmExpectedState: 'Confirm that this is the expected state and what it implies.'
       theError: 'the error'
       anyProblems: 'any problems'
-  prompt:
-    placeholder: Ask Liz...
-    send: Send
+  console:
+    prompt:
+      placeholder: Ask Liz...
+      send: Send
+    actions:
+      stop: Stop message
+      send: Send message
   context:
     label: CONTEXT
     add: Context
@@ -112,6 +126,13 @@ ai:
     resources:
       cluster: Cluster
       namespace: Namespace
+  notification:
+    message:
+      title: Rancher AI Assistant
+      summary:
+        message: 'You have unread messages'
+        planning: 'Planning message ready: {count} tasks'
+        idle: 'Response complete'
   configurations:
     label: Uses AI, running {name} ({model}).
     verifyResults:
@@ -206,6 +227,69 @@ ai:
     label:
       default: processing request
       authenticationRequired: 'Awaiting authentication'
+  planning:
+    header:
+      executing: 'Executing: { task }'
+      label:
+        withoutApproval:
+          expanded:
+            pending: 'Executing the following tasks'
+            in_progress: |-
+              {count, plural,
+                =1 { Using 1 agent to execute the following tasks }
+                other { Using {count} agents to execute the following tasks }
+              }
+            completed: 'All tasks have been completed'
+            canceling: |-
+              {count, plural,
+                =1 { Using 1 agent to execute the following tasks }
+                other { Using {count} agents to execute the following tasks }
+              }
+            cancelled: 'Plan execution has been canceled'
+            failed: 'Plan execution has been stopped'
+          collapsed:
+            pending: 'Executing planned tasks'
+            completed: 'All tasks have been completed'
+            cancelled: 'Plan execution has been canceled'
+            failed: 'Plan execution has been stopped'
+        withApproval:
+          expanded:
+            pending: 'Awaiting approval to execute the following tasks'
+            in_progress: |-
+              {count, plural,
+                =1 { Using 1 agent to execute the following tasks }
+                other { Using {count} agents to execute the following tasks }
+              }
+            completed: 'All tasks have been completed'
+            canceling: |-
+              {count, plural,
+                =1 { Using 1 agent to execute the following tasks }
+                other { Using {count} agents to execute the following tasks }
+              }
+            cancelled: 'Plan execution has been canceled'
+            failed: 'Plan execution has been stopped'
+          collapsed:
+            pending: 'Awaiting approval to execute planned tasks'
+            completed: 'All tasks have been completed'
+            cancelled: 'Plan execution has been canceled'
+            failed: 'Plan execution has been stopped'
+    actions:
+      confirm: 'Start Execution'
+      cancel: 'Cancel'
+      cancelRunning: 'Cancel Execution'
+      expand: 'Expand'
+      collapse: 'Collapse'
+    status:
+      completed: 'Completed'
+      canceling: 'Canceling Execution...'
+      cancelled: 'Canceled'
+      failed: 'Execution failed'
+    notification:
+      approvalInfo:
+        action: 'Go to Chat settings'
+        label:
+          admin: 'You can request changes before executing the plan above or you can update the current <goToChatSettings>configuration</goToChatSettings> if you’d like me to run these tasks automatically in the future.<br><br>However, after you approve the plan, you won’t be able to write a new prompt until the execution is completed, but I might need your input on various decisions I need to make.'
+          user: 'You can request changes before executing the plan above.<br><br>However, after you approve the plan, you won’t be able to write a new prompt until the execution is completed, but I might need your input on various decisions I need to make.'
   error:
     chat:
       generic: 'An error occurred initializing the chat'
@@ -268,6 +352,20 @@ ai:
           description:
             enable: Automatically scroll to the bottom of the chat when new messages arrive
             disable: Stop automatically scrolling to the bottom of the chat when new messages arrive
+        pinPlanning:
+          label:
+            enable: Pin Planning Messages
+            disable: Unpin Planning Messages
+          description:
+            enable: Keep the Planning Messages pinned to the top of the chat window
+            disable: Unpin the Planning Messages from the top of the chat window
+        notifications:
+          label:
+            enable: Enable Notifications
+            disable: Disable Notifications
+          description:
+            enable: Turn on Message Notifications
+            disable: Turn off Message Notifications
   history:
     chat:
       create: Start a New Chat
@@ -319,7 +417,12 @@ ai:
     label: Tools
     show-yaml:
       name: Show YAML
-      tooltip: View the YAML configuration for the {name} {kind} in {namespace} namespace
+      tooltip: |-
+        {
+          namespace, select,
+            null { View the YAML configuration for the {name} {kind} }
+            other { View the YAML configuration for the {name} {kind} in {namespace} namespace }
+        }
     show-yaml-diff:
       name: Show YAML Diff
       tooltip: View the differences between the current and previous YAML configurations for the {name} {kind} in {namespace} namespace
@@ -608,6 +711,17 @@ aiConfig:
             =1 { {count} tool in total }
             other { {count} tools in total }
           }
+      chat:
+        header: Chat
+        description: Choose the way Liz handles requests and tracks usage
+        multiStepPlanning:
+          title: Multi-Step Planning
+          tooltip: Liz will assist you in planning multi-step operations efficiently.
+          enableMultiStep:
+            label: Enable multi-step planning for complex operations <b>(Adaptive Mode only)</b>
+          requireApproval:
+            label: Require manual approval before executing a multi-step plan
+            tooltip: All multi-step plans will require your confirmation before execution
     EMBEDDINGS_MODEL:
       label: Embeddings Model
     ENABLE_RAG:

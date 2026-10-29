@@ -34,6 +34,8 @@ const emit = defineEmits([
 
 const options = computed(() => {
   const isAutoScrollEnabled = props.preferences[StorageKey.ENABLE_AUTO_SCROLL];
+  const isPlanningPinned = props.preferences[StorageKey.PIN_PLANNING];
+  const isNotificationsEnabled = props.preferences[StorageKey.ENABLE_NOTIFICATIONS];
 
   return [
     {
@@ -54,6 +56,28 @@ const options = computed(() => {
           value: !isAutoScrollEnabled
         });
       },
+    },
+    {
+      label:       t(`ai.menu.options.chat.pinPlanning.label.${ isPlanningPinned ? 'disable' : 'enable' }`),
+      description: t(`ai.menu.options.chat.pinPlanning.description.${ isPlanningPinned ? 'disable' : 'enable' }`),
+      icon:        isPlanningPinned ? 'icon-pin-outlined' : 'icon-pin',
+      action:      () => {
+        emit('update:preferences', {
+          key:   StorageKey.PIN_PLANNING,
+          value: !isPlanningPinned
+        });
+      },
+    },
+    {
+      label:       t(`ai.menu.options.chat.notifications.label.${ isNotificationsEnabled ? 'disable' : 'enable' }`),
+      description: t(`ai.menu.options.chat.notifications.description.${ isNotificationsEnabled ? 'disable' : 'enable' }`),
+      icon:        isNotificationsEnabled ? 'icon-notify-busy' : 'icon-notify-bell',
+      action:      () => {
+        emit('update:preferences', {
+          key:   StorageKey.ENABLE_NOTIFICATIONS,
+          value: !isNotificationsEnabled
+        });
+      }
     },
     {
       label:       t('ai.menu.options.chat.shortcuts.label'),

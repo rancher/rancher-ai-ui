@@ -17,6 +17,7 @@ import LlmModelLabel from '../console/LlmModelLabel.vue';
 import VerifyResultsDisclaimer from '../console/VerifyResultsDisclaimer.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
 import { extractMessageText } from '../../utils/label';
+import { getIconWithFallback } from '../../utils/icon';
 import Chat from '../../handlers/chat';
 
 /**
@@ -51,6 +52,10 @@ const props = defineProps({
     type:    Array as PropType<Message[]>,
     default: () => [],
   },
+  pendingResponse: {
+    type:    Object as PropType<Message | null>,
+    default: null,
+  },
   hasPermissions: {
     type:    Boolean,
     default: true,
@@ -61,6 +66,7 @@ defineExpose({ focusInput });
 
 const emit = defineEmits([
   'input:content',
+  'stop:content',
   'select:agent'
 ]);
 
@@ -71,6 +77,7 @@ const {
 const promptTextarea = ref<HTMLTextAreaElement | null>(null);
 const isFocused = ref(false);
 const completeText = ref('');
+const stopIconClass = ref('icon-stop');
 const MAX_HEIGHT = 200;
 const historyIndex = ref(-1);
 
@@ -94,6 +101,14 @@ function handleTextareaKeydown(event: KeyboardEvent) {
     updateInput(completeText.value);
     clearCompleteTextHistory();
     nextTick(autoResizePrompt);
+  }
+
+  // Skip Enter if response is pending
+  if (event.key === 'Enter' && !event.shiftKey && !!props.pendingResponse) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    return;
   }
 
   // When there is completeText it will stop and not send Content
@@ -187,6 +202,13 @@ function sendContent(event: Event) {
   }
 }
 
+function stopContent(event: Event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  emit('stop:content');
+}
+
 function selectAgent(agentName: string) {
   emit('select:agent', agentName);
   nextTick(() => focusInput());
@@ -231,6 +253,9 @@ watch(
 );
 
 onMounted(() => {
+  // TODO we can remove this when all supported versions have the 'icon-stop' icon available
+  stopIconClass.value = getIconWithFallback('icon-stop', 'icon-close');
+
   setConsoleRef({ focusInput });
 
   nextTick(() => {
@@ -267,7 +292,7 @@ onMounted(() => {
         class="chat-input"
         rows="1"
         :value="text"
-        :placeholder="props.disabled || completeText ? '' : t('ai.prompt.placeholder')"
+        :placeholder="props.disabled || completeText ? '' : t('ai.console.prompt.placeholder')"
         :disabled="props.disabled"
         autocomplete="off"
         data-testid="rancher-ai-ui-chat-input-textarea"
@@ -276,7 +301,7 @@ onMounted(() => {
         @focus="isFocused = true"
         @blur="isFocused = false"
       />
-      <div class="chat-input-actions">
+      <div class="chat-input-options">
         <SelectAgent
           v-if="props.agents.length > 1"
           :agents="props.agents"
@@ -285,11 +310,25 @@ onMounted(() => {
           @select="selectAgent"
         />
         <div
-          class="chat-input-send"
+          class="chat-input-actions"
           :class="{ 'disabled-panel': props.disabled }"
         >
           <RcButton
+            v-if="!!props.pendingResponse"
+            class="stop-button"
+            data-testid="rancher-ai-ui-chat-console-stop-message"
+            :aria-label="t('ai.console.actions.stop')"
+            :disabled="props.disabled"
+            @click="stopContent"
+            @keydown.space="stopContent"
+          >
+            <i :class="['icon', stopIconClass]" />
+          </RcButton>
+          <RcButton
+            v-else
             class="send-button"
+            data-testid="rancher-ai-ui-chat-console-send-message"
+            :aria-label="t('ai.console.actions.send')"
             :disabled="!cleanInput(text) || props.disabled"
             @click="sendContent"
             @keydown.enter="sendContent"
@@ -334,7 +373,7 @@ onMounted(() => {
   position: relative;
 
   &.focused {
-    border: solid 1px var(--active-nav);
+    border: solid 1px var(--active);
   }
 
   &.disabled {
@@ -392,7 +431,7 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-.chat-input-actions {
+.chat-input-options {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -401,20 +440,39 @@ onMounted(() => {
   min-height: 36px;
 }
 
-.chat-input-send {
-  .send-button {
+.chat-input-actions {
+  .rc-button {
     height: 32px;
     width: 32px;
     min-width: 32px;
     min-height: 32px;
+  }
+
+  .send-button {
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: var(--accent-btn);
-    color: var(--active-nav);
+    color: var(--active);
     border-radius: 4px;
     border: none;
+
+    &:disabled {
+      background-color: transparent;
+      color: var(--primary);
+    }
+
+    &:hover:not(:disabled) {
+      background-color: #c6dcff;
+      color: var(--primary);
+    }
+  }
+
+  .rc-button.stop-button {
+    color: var(--primary);
+    background: var(--tertiary, var(--accent-btn));
+    padding: var(--rc-button-padding, 0 9px);
 
     &:disabled {
       background-color: transparent;

@@ -10,7 +10,11 @@ interface State {
   data?: Record<StorageKey, any>;
 }
 
-const DEFAULT_STORAGE = { [StorageKey.ENABLE_AUTO_SCROLL]: true };
+const DEFAULT_STORAGE = {
+  [StorageKey.ENABLE_AUTO_SCROLL]:   true,
+  [StorageKey.ENABLE_NOTIFICATIONS]: true,
+  [StorageKey.PIN_PLANNING]:         true
+};
 
 const getters = {
   get: (state: State) => (user: string, revision: number) => {

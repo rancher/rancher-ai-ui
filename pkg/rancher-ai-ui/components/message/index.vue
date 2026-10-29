@@ -2,15 +2,16 @@
 import { computed, nextTick, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import RcButton from '@components/RcButton/RcButton.vue';
 import {
   FormattedMessage, MessageInternalSource, MessagePhase, Role as RoleEnum, ToolActionEvent,
-  ToolActionEventType
+  ToolActionEventType, Message
 } from '../../types';
 import { ToolName } from '../tools/types';
 import { extractMessageText } from '../../utils/label';
 import Tools from '../tools/index.vue';
-import ResourceButtons from '../message/resource-buttons/index.vue';
-import RouteButtons from '../message/route-buttons/index.vue';
+import ResourceButtons from './resource-buttons/index.vue';
+import RouteButtons from './route-buttons/index.vue';
 import Tool from '../tools/Tool.vue';
 import SourceLinks from '../tools/components/SourceLinks.vue';
 import Confirmation from './Confirmation.vue';
@@ -19,7 +20,6 @@ import UserAvatar from './avatar/UserAvatar.vue';
 import SystemAvatar from './avatar/SystemAvatar.vue';
 import Processing from '../Processing.vue';
 import BubbleButton from '../BubbleButton.vue';
-import RcButton from '@components/RcButton/RcButton.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
 
 const store = useStore();
@@ -33,6 +33,10 @@ const props = defineProps({
   disabled: {
     type:    Boolean,
     default: false,
+  },
+  pendingResponse: {
+    type:    Object as PropType<Message | null>,
+    default: null,
   },
   pendingConfirmation: {
     type:    Boolean,
@@ -129,7 +133,7 @@ function handleToolAction(event: ToolActionEvent) {
             @click="handleShowThinking"
           />
           <BubbleButton
-            v-if="props.message.role === RoleEnum.User && !pendingConfirmation"
+            v-if="props.message.role === RoleEnum.User && !props.pendingConfirmation"
             :icon="'icon-edit'"
             :tooltip="t('ai.message.actions.tooltip.editBeforeResend')"
             :show-success="true"
@@ -142,7 +146,7 @@ function handleToolAction(event: ToolActionEvent) {
             @click="handleCopy"
           />
           <BubbleButton
-            v-if="props.message.role === RoleEnum.User && !pendingConfirmation"
+            v-if="props.message.role === RoleEnum.User && !props.pendingResponse && !props.pendingConfirmation"
             :icon="'icon-backup'"
             :tooltip="t('ai.message.actions.tooltip.resend')"
             @click="handleResendMessage"
@@ -289,7 +293,7 @@ function handleToolAction(event: ToolActionEvent) {
         class="mmt-2"
       >
         <RouteButtons
-          :label="t('ai.message.quickActions.label')"
+          :label="t('ai.message.routeActions.label')"
           :actions="props.message.actions"
         />
       </div>
