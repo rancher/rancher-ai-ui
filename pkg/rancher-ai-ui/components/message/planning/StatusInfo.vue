@@ -7,9 +7,8 @@ import { useI18n } from '@shell/composables/useI18n';
 import { StateColor } from '@shell/utils/style';
 import StatusBar from '@shell/components/Resource/Detail/StatusBar.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
-import { Agent, MessagePlanning, MessagePlanningStatus, StorageKey } from '../../../types';
+import { Agent, MessagePlanning, MessagePlanningStatus } from '../../../types';
 import ContextTag from '../../context/ContextTag.vue';
-import { useLocalStorageComposable } from '../../../composables/useLocalStorageComposable';
 
 const STATUS_ICON: Record<MessagePlanningStatus, string> = {
   [MessagePlanningStatus.Pending]:       'icon-spinner',
@@ -40,8 +39,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['confirm', 'stop', 'collapse']);
-
-const storage = useLocalStorageComposable();
 
 const isCollapsed = ref(props.value.isCollapsed);
 const stickyWithDelay = ref(false);
@@ -119,11 +116,10 @@ function toggleCollapse() {
 watch(() => props.value.status, (newStatus) => {
   clearStickyTimeout();
 
-  const shouldStick = storage.get(StorageKey.PIN_PLANNING) && (
+  const shouldStick =
     newStatus === MessagePlanningStatus.Pending ||
     newStatus === MessagePlanningStatus.InProgress ||
-    newStatus === MessagePlanningStatus.Canceling
-  );
+    newStatus === MessagePlanningStatus.Canceling;
 
   if (shouldStick) {
     // Apply sticky immediately

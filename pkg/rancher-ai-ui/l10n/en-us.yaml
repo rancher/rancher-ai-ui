@@ -37,9 +37,6 @@ ai:
           enable_auto_scroll:
             true: 'The <code>auto-scroll</code> of the chat window is now turned <b>ON</b>&ensp;'
             false: 'The <code>auto-scroll</code> of the chat window is now turned <b>OFF</b>'
-          pin_planning:
-            true: 'The planning messages are now pinned to the top of the chat window.'
-            false: 'The planning messages are now unpinned from the top of the chat window.'
       message-manual-stop:
         info: 'You stopped the previous response.'
       planning-manual-stop:
@@ -342,13 +339,6 @@ ai:
           description:
             enable: Automatically scroll to the bottom of the chat when new messages arrive
             disable: Stop automatically scrolling to the bottom of the chat when new messages arrive
-        pinPlanning:
-          label:
-            enable: Pin Planning Messages
-            disable: Unpin Planning Messages
-          description:
-            enable: Keep the Planning Messages pinned to the top of the chat window
-            disable: Unpin the Planning Messages from the top of the chat window
   history:
     chat:
       create: Start a New Chat

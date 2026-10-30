@@ -1,11 +1,9 @@
 import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 
 import ChatPo from '@/cypress/e2e/po/chat.po';
-import ChatPanelMenuPo from '@/cypress/e2e/po/chat-panel-menu.po';
 
 describe('Message Planning', () => {
   const chat = new ChatPo();
-  const chatMenu = new ChatPanelMenuPo();
 
   before(() => {
     cy.login();
@@ -447,88 +445,6 @@ describe('Message Planning', () => {
       planningMessage.header().should('be.visible');
       planningMessage.item(0).self().should('not.exist');
       planningMessage.item(1).self().should('not.exist');
-    });
-
-    it('It should pin and unpin the status panel', () => {
-      chatMenu.toggleMenu();
-
-      chatMenu.clickOption('Unpin Planning Messages');
-
-      let systemMessage = chat.getMessage(2);
-
-      systemMessage.containsText('The planning messages are now unpinned');
-
-      cy.enqueuePlanningResponse([
-        {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
-            status:  'completed',
-            message: 'Namespace created'
-          }
-        },
-        {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
-            status:  'completed',
-            message: 'Pod created'
-          }
-        }
-      ]);
-
-      chat.sendMessage('Create a namespace and a Pod in it');
-
-      let planningMessage = chat.getMessage(4).planning();
-
-      // The planning message should exist but not be visible because it is unpinned and the chat is scrolled to the bottom
-      planningMessage.header().should('exist');
-      planningMessage.header().should('be.not.visible');
-
-      planningMessage.cancel();
-
-      planningMessage.status().contains('Canceled');
-
-      cy.clearLLMResponses();
-
-      chatMenu.toggleMenu();
-
-      chatMenu.clickOption('Pin Planning Messages');
-
-      systemMessage = chat.getMessage(6);
-
-      systemMessage.containsText('The planning messages are now pinned');
-
-      cy.enqueuePlanningResponse([
-        {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
-            status:  'completed',
-            message: 'Namespace created'
-          }
-        },
-        {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
-            status:  'completed',
-            message: 'Pod created'
-          }
-        }
-      ]);
-
-      chat.sendMessage('Create a namespace and a Pod in it');
-
-      planningMessage = chat.getMessage(8).planning();
-
-      // The planning message should exist and be visible because it is pinned
-      planningMessage.header().should('exist');
-      planningMessage.header().should('be.visible');
-
-      planningMessage.cancel();
-
-      planningMessage.status().contains('Canceled');
     });
   });
 

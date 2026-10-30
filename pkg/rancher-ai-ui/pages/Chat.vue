@@ -131,10 +131,7 @@ const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
 const deletingChat = ref<HistoryChat | null>(null);
 
-const preferences = computed<Preferences>(() => ({
-  [StorageKey.ENABLE_AUTO_SCROLL]: storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true,
-  [StorageKey.PIN_PLANNING]:       storage.get(StorageKey.PIN_PLANNING) === 'true' || storage.get(StorageKey.PIN_PLANNING) === true
-}));
+const preferences = computed<Preferences>(() => ({ [StorageKey.ENABLE_AUTO_SCROLL]: storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true }));
 
 const chatAgents = computed<Agent[]>(() => {
   return agents.value.map((agent) => {
