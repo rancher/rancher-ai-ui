@@ -355,6 +355,8 @@ onBeforeUnmount(() => {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    max-height: 50vh;
+    overflow-y: auto;
     animation: slideDown 0.3s ease-out;
 
     @keyframes slideDown {
