@@ -428,9 +428,7 @@ export function useChatMessageComposable(
   }
 
   async function notifyStopMessage(type: MessageStopType | PlanningStopType) {
-    const isPlanningActive = planningState.value?.status === MessagePlanningStatus.Pending || planningState.value?.status === MessagePlanningStatus.InProgress || planningState.value?.status === MessagePlanningStatus.Canceling;
-
-    const content = { message: t(`ai.message.system.${ !isPlanningActive ? MessageStopType.Manual : type }.info`, {}, true) };
+    const content = { message: t(`ai.message.system.${ type }.info`, {}, true) };
 
     const message = buildSystemMessage({ content });
 

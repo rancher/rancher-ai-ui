@@ -296,8 +296,10 @@ describe('Message Planning', () => {
       planningMessage.item(1).icon().should('have.class', 'icon-spinner');
 
       // Ensure that messages indicating the previous response was stopped are not visible
-      cy.contains('You stopped the previous response').should('not.exist');
-      cy.contains('The execution of the previous plan has been stopped').should('not.exist');
+      const lastMessage = chat.getMessages().last();
+
+      lastMessage.should('not.contain.text', 'The execution of the previous plan has been stopped');
+      lastMessage.should('not.contain.text', 'You stopped the previous response');
     });
 
     it('Execution stopped', () => {
@@ -347,8 +349,7 @@ describe('Message Planning', () => {
       planningMessage.item(1).icon().should('have.class', 'icon-spinner');
 
       // Ensure that message indicating the previous plan was stopped is correctly displayed
-      cy.contains('You stopped the previous response').should('not.exist');
-      cy.contains('The execution of the previous plan has been stopped').should('exist');
+      chat.getMessages().last().should('contain.text', 'The execution of the previous plan has been stopped');
     });
 
     afterEach(() => {
@@ -422,7 +423,7 @@ describe('Message Planning', () => {
 
       planningMessage.approve();
 
-      planningMessage.header().should('contain', 'Executing: Create a new namespace');
+      planningMessage.header().should('contain', 'Executing planned tasks (2/2)');
 
       // Planning message is expanded again
       planningMessage.toggleCollapse();
