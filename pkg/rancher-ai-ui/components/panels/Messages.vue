@@ -8,14 +8,16 @@ import {
   Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase,
   MessageInternalSource,
   MessageProcessingState,
-  StorageKey
+  StorageKey,
+  Agent
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
 import Welcome from '../message/template/Welcome.vue';
 import NoPermission from '../message/template/NoPermissions.vue';
-import SystemRequest from '../message/template/SystemRequest.vue';
+import SystemMessage from '../message/template/SystemMessage.vue';
 import McpAuthenticationRequest from '../message/template/McpAuthenticationRequest.vue';
+import Planning from '../message/template/Planning.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
 import { useScrollComposable } from '../../composables/useScrollComposable';
@@ -46,6 +48,10 @@ const props = defineProps({
     type:    Object as PropType<Message | null>,
     default: null,
   },
+  agents: {
+    type:     Array as PropType<Agent[]>,
+    default:  () => [],
+  },
   systemErrors: {
     type:    Array as PropType<ChatError[]>,
     default: () => [],
@@ -64,7 +70,12 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:message', 'confirm:message', 'send:message']);
+const emit = defineEmits([
+  'update:message',
+  'confirm:message',
+  'send:message',
+  'stop:message'
+]);
 
 const storage = useLocalStorageComposable();
 
@@ -73,6 +84,8 @@ const messagesView = ref<HTMLDivElement | null>(null);
 const lastMessageContainer = ref<HTMLDivElement | null>(null);
 const lastUserMessageContainer = ref<HTMLDivElement | null>(null);
 const lastMessageObserver = ref<MutationObserver | null>(null);
+const observerPaused = ref(false);
+const animationEndListener = ref<((e: Event) => void) | null>(null); // eslint-disable-line no-unused-vars
 
 // Ref callback to assign the last message container for auto-scrolling for each message/error list
 const containerRef = (count: number, index: number) => {
@@ -94,7 +107,42 @@ const containerRef = (count: number, index: number) => {
 };
 
 /**
+ * Resumes the observer when animation completes
+ */
+function resumeObserver() {
+  observerPaused.value = false;
+  // Remove listeners to avoid memory leaks
+  if (lastMessageContainer.value && animationEndListener.value) {
+    lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
+    lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
+  }
+}
+
+/**
+ * Pauses the observer during animations
+ * Resumes automatically when animation events fire, rather than using a timeout.
+ */
+function pauseObserverForAnimation() {
+  // Mark observer as paused
+  observerPaused.value = true;
+
+  // Remove any previous listener
+  if (lastMessageContainer.value && animationEndListener.value) {
+    lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
+    lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
+  }
+
+  // Listen for animation/transition completion
+  if (lastMessageContainer.value) {
+    animationEndListener.value = () => resumeObserver();
+    lastMessageContainer.value.addEventListener('transitionend', animationEndListener.value, { once: true });
+    lastMessageContainer.value.addEventListener('animationend', animationEndListener.value, { once: true });
+  }
+}
+
+/**
  * Observes changes to the last message container to trigger auto-scrolling when content changes.
+ * Skips scroll handling if observer is paused.
  */
 function setupObserver(newContainer: HTMLDivElement | null) {
   // Clean up old observer
@@ -106,7 +154,10 @@ function setupObserver(newContainer: HTMLDivElement | null) {
   // Setup new observer on the last message container
   if (newContainer) {
     lastMessageObserver.value = new MutationObserver(() => {
-      handleMessageScroll();
+      // Skip scroll handling if observer is paused (during animation)
+      if (!observerPaused.value) {
+        handleMessageScroll();
+      }
     });
 
     lastMessageObserver.value.observe(newContainer, {
@@ -204,16 +255,20 @@ const systemErrorMessages = computed<FormattedMessage[]>(() => {
   }));
 });
 
+const hasUserMessages = computed(() => formattedMessages.value.some((message) => message.role === Role.User));
+
 function getMessageTemplate(component: MessageTemplateComponent) {
   switch (component) {
   case MessageTemplateComponent.Welcome:
     return Welcome;
   case MessageTemplateComponent.NoPermission:
     return NoPermission;
-  case MessageTemplateComponent.SystemRequest:
-    return SystemRequest;
+  case MessageTemplateComponent.SystemMessage:
+    return SystemMessage;
   case MessageTemplateComponent.McpAuthenticationRequest:
     return McpAuthenticationRequest;
+  case MessageTemplateComponent.Planning:
+    return Planning;
   default:
     return null;
   }
@@ -250,6 +305,11 @@ onBeforeUnmount(() => {
     lastMessageObserver.value.disconnect();
     lastMessageObserver.value = null;
   }
+  // Cleanup event listeners
+  if (lastMessageContainer.value && animationEndListener.value) {
+    lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
+    lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
+  }
 });
 </script>
 
@@ -272,12 +332,16 @@ onBeforeUnmount(() => {
         }"
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
+        :agents="props.agents"
         :disabled="props.disabled"
         :pending-response="props.pendingResponse"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
         :message="message"
-        @update:message="emit('update:message', $event)"
+        @update:message="emit('update:message', $event); pauseObserverForAnimation()"
         @send:message="emit('send:message', $event)"
+        @confirm:message="emit('confirm:message', $event)"
+        @stop:message="emit('stop:message')"
+        @collapse="pauseObserverForAnimation"
       />
       <MessageComponent
         v-else
@@ -288,7 +352,7 @@ onBeforeUnmount(() => {
         :disabled="props.disabled"
         :pending-response="props.pendingResponse"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
-        @update:message="emit('update:message', $event)"
+        @update:message="emit('update:message', $event); pauseObserverForAnimation()"
         @confirm:message="emit('confirm:message', $event)"
         @send:message="emit('send:message', $event)"
       />
@@ -307,7 +371,7 @@ onBeforeUnmount(() => {
       class="chat-message-processing-label text-label"
       :class="{
         /* It avoids pushing the System messages up (Welcome template) */
-        'sticky-bottom': !props.activeChatId || formattedMessages.filter((m: Message) => m.role === Role.User).length > 0
+        'sticky-bottom': !props.activeChatId || hasUserMessages
       }"
       :phase="props.processingState?.phase"
       :label="props.processingState?.label"
