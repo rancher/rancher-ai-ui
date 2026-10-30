@@ -548,7 +548,6 @@ function unmount() {
 .chat-panel {
   width: 100%;
   background: var(--box-bg);
-  /* box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10); */
   display: flex;
   flex-direction: column;
   margin: 0 auto;

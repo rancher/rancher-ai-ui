@@ -115,12 +115,12 @@ function doAction(type: 'confirm' | 'cancel') {
   color: var(--body-text);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 2px 8px 0 var(--shadow);
   padding: 12px;
   line-height: 21px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-right: 40px;
 
   /* Hide actions by default, show on hover */
   &:hover .chat-system-request-msg-bubble-actions {
