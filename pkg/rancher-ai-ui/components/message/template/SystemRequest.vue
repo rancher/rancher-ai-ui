@@ -120,6 +120,7 @@ function doAction(type: 'confirm' | 'cancel') {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-right: 40px;
 
   /* Hide actions by default, show on hover */
   &:hover .chat-system-request-msg-bubble-actions {
