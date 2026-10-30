@@ -1237,7 +1237,7 @@ describe('Chat', () => {
       // Verify that the scroll position has not changed after collapsing the planning message
       chat.getMessages().last().should('not.be.visible');
 
-      cy.wait(400); // Wait for the pause scroll to settle
+      cy.wait(100); // Wait for the pause scroll to settle
 
       planningMessage.toggleCollapse();
 
