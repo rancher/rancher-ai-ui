@@ -108,7 +108,10 @@ const displayHeader = computed(() => {
   return planningHeader.value;
 });
 
-function toggleCollapse() {
+function toggleCollapse(event: Event) {
+  event.preventDefault();
+  event.stopPropagation();
+
   isCollapsed.value = !isCollapsed.value;
   emit('collapse', isCollapsed.value);
 }
@@ -160,20 +163,26 @@ onBeforeUnmount(() => {
     }"
     data-testid="rancher-ai-ui-planning-status-info-content"
   >
-    <div class="planning-state-header">
+    <div
+      class="planning-state-header"
+      @click="toggleCollapse"
+      @keydown.enter.space="toggleCollapse"
+    >
       <span>
         {{ displayHeader }}
       </span>
       <RcButton
         size="small"
         variant="ghost"
-        :aria-label="t(`ai.planning.actions.${ isCollapsed ? 'expand' : 'collapse' }`)"
-        :data-testid="'rancher-ai-ui-planning-status-info-toggle-collapse-button'"
         class="collapse-button"
         @click="toggleCollapse"
-        @keydown.enter.space.stop="toggleCollapse"
+        @keydown.enter.space="toggleCollapse"
       >
-        <i :class="['icon', isCollapsed ? 'icon-chevron-down' : 'icon-chevron-up']" />
+        <i
+          :aria-label="t(`ai.planning.actions.${ isCollapsed ? 'expand' : 'collapse' }`)"
+          :data-testid="'rancher-ai-ui-planning-status-info-toggle-collapse-button'"
+          :class="['icon', isCollapsed ? 'icon-chevron-down' : 'icon-chevron-up']"
+        />
       </RcButton>
     </div>
 
@@ -295,6 +304,7 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 8px;
     min-width: 0;
+    cursor: pointer;
 
     span {
       overflow: hidden;

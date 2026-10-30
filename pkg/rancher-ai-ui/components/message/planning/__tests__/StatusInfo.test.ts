@@ -705,7 +705,12 @@ describe('StatusInfo.vue', () => {
         ...requiredSetup()
       });
 
-      await (wrapper.vm as any).toggleCollapse();
+      const mockEvent = {
+        preventDefault:  jest.fn(),
+        stopPropagation: jest.fn()
+      };
+
+      await (wrapper.vm as any).toggleCollapse(mockEvent);
 
       expect(wrapper.emitted('collapse')).toBeTruthy();
       expect(wrapper.emitted('collapse')?.[0]).toEqual([true]);
@@ -726,7 +731,12 @@ describe('StatusInfo.vue', () => {
 
       expect((wrapper.vm as any).isCollapsed).toBe(false);
 
-      await (wrapper.vm as any).toggleCollapse();
+      const mockEvent = {
+        preventDefault:  jest.fn(),
+        stopPropagation: jest.fn()
+      };
+
+      await (wrapper.vm as any).toggleCollapse(mockEvent);
 
       expect((wrapper.vm as any).isCollapsed).toBe(true);
     });
@@ -744,9 +754,43 @@ describe('StatusInfo.vue', () => {
 
       expect((wrapper.vm as any).isCollapsed).toBe(true);
 
-      await (wrapper.vm as any).toggleCollapse();
+      const mockEvent = {
+        preventDefault:  jest.fn(),
+        stopPropagation: jest.fn()
+      };
+
+      await (wrapper.vm as any).toggleCollapse(mockEvent);
 
       expect((wrapper.vm as any).isCollapsed).toBe(false);
+    });
+
+    it('should collapse/expand when entire header is clicked', async() => {
+      const value = createMockMessagePlanning({ isCollapsed: false });
+
+      const wrapper = shallowMount(StatusInfo, {
+        props: {
+          value,
+          agents: [createMockAgent()]
+        },
+        ...requiredSetup()
+      });
+
+      expect((wrapper.vm as any).isCollapsed).toBe(false);
+
+      // Click on the header
+      const header = wrapper.find('.planning-state-header');
+
+      await header.trigger('click');
+
+      expect((wrapper.vm as any).isCollapsed).toBe(true);
+      expect(wrapper.emitted('collapse')).toBeTruthy();
+      expect(wrapper.emitted('collapse')?.[0]).toEqual([true]);
+
+      // Click again to expand
+      await header.trigger('click');
+
+      expect((wrapper.vm as any).isCollapsed).toBe(false);
+      expect(wrapper.emitted('collapse')?.[1]).toEqual([false]);
     });
   });
 
@@ -776,7 +820,13 @@ describe('StatusInfo.vue', () => {
         ...requiredSetup()
       });
 
-      const collapseButton = wrapper.find('[data-testid="rancher-ai-ui-planning-status-info-toggle-collapse-button"]');
+      // Verify the planning-state-header renders, which contains the collapse button
+      const header = wrapper.find('.planning-state-header');
+
+      expect(header.exists()).toBe(true);
+
+      // Verify the collapse button (RcButton) is present in the header
+      const collapseButton = header.findComponent({ name: 'RcButton' });
 
       expect(collapseButton.exists()).toBe(true);
     });
