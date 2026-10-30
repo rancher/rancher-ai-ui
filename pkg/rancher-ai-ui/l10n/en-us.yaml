@@ -216,7 +216,6 @@ ai:
       authenticationRequired: 'Awaiting authentication'
   planning:
     header:
-      executing: 'Executing: { task }'
       label:
         withoutApproval:
           expanded:
@@ -236,6 +235,7 @@ ai:
             failed: 'Plan execution has been stopped'
           collapsed:
             pending: 'Executing planned tasks'
+            in_progress: 'Executing planned tasks {completion}'
             completed: 'All tasks have been completed'
             cancelled: 'Plan execution has been canceled'
             failed: 'Plan execution has been stopped'
@@ -257,6 +257,7 @@ ai:
             failed: 'Plan execution has been stopped'
           collapsed:
             pending: 'Awaiting approval to execute planned tasks'
+            in_progress: 'Executing planned tasks {completion}'
             completed: 'All tasks have been completed'
             cancelled: 'Plan execution has been canceled'
             failed: 'Plan execution has been stopped'

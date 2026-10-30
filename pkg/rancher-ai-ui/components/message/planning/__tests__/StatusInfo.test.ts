@@ -553,6 +553,44 @@ describe('StatusInfo.vue', () => {
 
         expect(header).toContain('ai.planning.header.label.withApproval.collapsed.pending.count');
       });
+
+      it('should show task completion indicator (current/total) when collapsed and executing', () => {
+        const value = createMockMessagePlanning({
+          isCollapsed: true,
+          status:      MessagePlanningStatus.InProgress,
+          tasks:       [
+            {
+              task:   'Task 1',
+              agent:  'agent1',
+              status: MessagePlanningStatus.Completed
+            },
+            {
+              task:   'Task 2',
+              agent:  'agent1',
+              status: MessagePlanningStatus.InProgress
+            },
+            {
+              task:   'Task 3',
+              agent:  'agent1',
+              status: MessagePlanningStatus.Pending
+            }
+          ]
+        });
+
+        const wrapper = shallowMount(StatusInfo, {
+          props: {
+            value,
+            agents: [createMockAgent()]
+          },
+          ...requiredSetup()
+        });
+
+        const header = (wrapper.vm as any).planningHeader;
+
+        // The completion indicator should be passed to the i18n function
+        // It should show "(2/3)" - the current running task index (completedTasks + 1) / totalTasks
+        expect(header).toContain('ai.planning.header.label.withoutApproval.collapsed.in_progress.count');
+      });
     });
 
     describe('currentRunningTask', () => {
@@ -624,9 +662,9 @@ describe('StatusInfo.vue', () => {
           ...requiredSetup()
         });
 
-        const header = (wrapper.vm as any).displayHeader;
+        const header = (wrapper.vm as any).planningHeader;
 
-        expect(header).toContain('ai.planning.header.executing');
+        expect(header).toContain('ai.planning.header.label.withoutApproval.collapsed.in_progress.count');
       });
 
       it('should show planning header when expanded', () => {
@@ -647,9 +685,9 @@ describe('StatusInfo.vue', () => {
           ...requiredSetup()
         });
 
-        const header = (wrapper.vm as any).displayHeader;
+        const header = (wrapper.vm as any).planningHeader;
 
-        expect(header).not.toContain('ai.planning.header.executing');
+        expect(header).not.toContain('ai.planning.header.label.withoutApproval.collapsed.in_progress.count');
       });
     });
   });

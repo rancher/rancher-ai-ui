@@ -59,11 +59,11 @@ const spinningStatus = computed(() => props.value.status === MessagePlanningStat
   props.value.status === MessagePlanningStatus.Canceling);
 const inactiveStatus = computed(() => props.value.status === MessagePlanningStatus.Canceling || props.value.status === MessagePlanningStatus.Canceled);
 
-const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
-  const totalTasks = props.value.tasks?.length || 0;
+const totalTasks = computed(() => props.value.tasks?.length || 0);
+const completedTasks = computed(() => props.value.tasks?.filter((task) => task.status === MessagePlanningStatus.Completed).length || 0);
 
-  const completedTasks = props.value.tasks?.filter((task) => task.status === MessagePlanningStatus.Completed).length || 0;
-  const remainingTasks = totalTasks - completedTasks;
+const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
+  const remainingTasks = totalTasks.value - completedTasks.value;
 
   // Determine the colors for the active and empty segments based on the inactive status
   const fillColor = inactiveStatus.value ? 'disabled' : 'info';
@@ -71,8 +71,8 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
 
   // Initial progress bar segments, start with a minimal filled portion to indicate liveness
   // Otherwise, calculate the actual percentages based on completed and remaining tasks
-  const fillPercent = completedTasks > 0 ? completedTasks / totalTasks * 100 : 1;
-  const emptyPercent = completedTasks > 0 ? remainingTasks / totalTasks * 100 : 99;
+  const fillPercent = completedTasks.value > 0 ? completedTasks.value / totalTasks.value * 100 : 1;
+  const emptyPercent = completedTasks.value > 0 ? remainingTasks / totalTasks.value * 100 : 99;
 
   return [{
     color:   fillColor,
@@ -83,15 +83,6 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
   }] as Array<{ color: StateColor; percent: number }>;
 });
 
-const planningHeader = computed(() => {
-  const distinctAgents = Array.from(new Set((props.value.tasks || []).map(({ agent }) => agent)));
-
-  const approvalKey = props.value.approval ? 'withApproval' : 'withoutApproval';
-  const collapseKey = isCollapsed.value ? 'collapsed' : 'expanded';
-
-  return t(`ai.planning.header.label.${ approvalKey }.${ collapseKey }.${ props.value.status }`, { count: distinctAgents.length });
-});
-
 const currentRunningTask = computed(() => {
   if (props.value.status === MessagePlanningStatus.InProgress) {
     return items.value.find((item) => item.status === MessagePlanningStatus.InProgress)?.task;
@@ -100,12 +91,18 @@ const currentRunningTask = computed(() => {
   return null;
 });
 
-const displayHeader = computed(() => {
-  if (isCollapsed.value && currentRunningTask.value) {
-    return  t('ai.planning.header.executing', { task: currentRunningTask.value });
-  }
+const planningHeader = computed(() => {
+  const distinctAgents = Array.from(new Set((props.value.tasks || []).map(({ agent }) => agent)));
 
-  return planningHeader.value;
+  const approvalKey = props.value.approval ? 'withApproval' : 'withoutApproval';
+  const collapseKey = isCollapsed.value ? 'collapsed' : 'expanded';
+
+  const completion = isCollapsed.value && currentRunningTask.value ? `(${ completedTasks.value + 1 }/${ totalTasks.value })` : undefined;
+
+  return t(`ai.planning.header.label.${ approvalKey }.${ collapseKey }.${ props.value.status }`, {
+    count: distinctAgents.length,
+    completion
+  });
 });
 
 function toggleCollapse(event: Event) {
@@ -169,7 +166,7 @@ onBeforeUnmount(() => {
       @keydown.enter.space="toggleCollapse"
     >
       <span>
-        {{ displayHeader }}
+        {{ planningHeader }}
       </span>
       <RcButton
         size="small"
