@@ -390,7 +390,13 @@ onBeforeUnmount(() => {
   }
 
   &-item {
+    align-items: baseline;
     gap: 8px;
+
+    .icon {
+      align-self: flex-start;
+      margin-top: 8px;
+    }
   }
 
   &-actions, &-result {
