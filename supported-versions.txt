@@ -1,1 +1,2 @@
+rancher-ai-ui-1.1.0
 rancher-ai-ui-1.0.2
