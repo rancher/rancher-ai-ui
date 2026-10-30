@@ -90,6 +90,7 @@ function routeToSettings() {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-right: 40px;
 }
 
 .chat-planning-approval-info-msg-text, :deep() pre {
