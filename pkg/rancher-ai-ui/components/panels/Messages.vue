@@ -84,6 +84,8 @@ const messagesView = ref<HTMLDivElement | null>(null);
 const lastMessageContainer = ref<HTMLDivElement | null>(null);
 const lastUserMessageContainer = ref<HTMLDivElement | null>(null);
 const lastMessageObserver = ref<MutationObserver | null>(null);
+const observerPaused = ref(false);
+const animationEndListener = ref<((e: Event) => void) | null>(null); // eslint-disable-line no-unused-vars
 
 // Ref callback to assign the last message container for auto-scrolling for each message/error list
 const containerRef = (count: number, index: number) => {
@@ -105,7 +107,42 @@ const containerRef = (count: number, index: number) => {
 };
 
 /**
+ * Resumes the observer when animation completes
+ */
+function resumeObserver() {
+  observerPaused.value = false;
+  // Remove listeners to avoid memory leaks
+  if (lastMessageContainer.value && animationEndListener.value) {
+    lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
+    lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
+  }
+}
+
+/**
+ * Pauses the observer during animations
+ * Resumes automatically when animation events fire, rather than using a timeout.
+ */
+function pauseObserverForAnimation() {
+  // Mark observer as paused
+  observerPaused.value = true;
+
+  // Remove any previous listener
+  if (lastMessageContainer.value && animationEndListener.value) {
+    lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
+    lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
+  }
+
+  // Listen for animation/transition completion
+  if (lastMessageContainer.value) {
+    animationEndListener.value = () => resumeObserver();
+    lastMessageContainer.value.addEventListener('transitionend', animationEndListener.value, { once: true });
+    lastMessageContainer.value.addEventListener('animationend', animationEndListener.value, { once: true });
+  }
+}
+
+/**
  * Observes changes to the last message container to trigger auto-scrolling when content changes.
+ * Skips scroll handling if observer is paused.
  */
 function setupObserver(newContainer: HTMLDivElement | null) {
   // Clean up old observer
@@ -117,7 +154,10 @@ function setupObserver(newContainer: HTMLDivElement | null) {
   // Setup new observer on the last message container
   if (newContainer) {
     lastMessageObserver.value = new MutationObserver(() => {
-      handleMessageScroll();
+      // Skip scroll handling if observer is paused (during animation)
+      if (!observerPaused.value) {
+        handleMessageScroll();
+      }
     });
 
     lastMessageObserver.value.observe(newContainer, {
@@ -265,6 +305,11 @@ onBeforeUnmount(() => {
     lastMessageObserver.value.disconnect();
     lastMessageObserver.value = null;
   }
+  // Cleanup event listeners
+  if (lastMessageContainer.value && animationEndListener.value) {
+    lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
+    lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
+  }
 });
 </script>
 
@@ -292,10 +337,11 @@ onBeforeUnmount(() => {
         :pending-response="props.pendingResponse"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
         :message="message"
-        @update:message="emit('update:message', $event)"
+        @update:message="emit('update:message', $event); pauseObserverForAnimation()"
         @send:message="emit('send:message', $event)"
         @confirm:message="emit('confirm:message', $event)"
         @stop:message="emit('stop:message')"
+        @collapse="pauseObserverForAnimation"
       />
       <MessageComponent
         v-else
@@ -306,7 +352,7 @@ onBeforeUnmount(() => {
         :disabled="props.disabled"
         :pending-response="props.pendingResponse"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
-        @update:message="emit('update:message', $event)"
+        @update:message="emit('update:message', $event); pauseObserverForAnimation()"
         @confirm:message="emit('confirm:message', $event)"
         @send:message="emit('send:message', $event)"
       />

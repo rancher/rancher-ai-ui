@@ -1158,6 +1158,95 @@ describe('Chat', () => {
       chat.messagesPanel().scrollButton().checkExists();
     });
 
+    it('It should not scroll when interacting with actionable items on messages (expand/collapse of planning messages)', () => {
+      cy.updateAiAssistantConfigs({
+        PLAN_ENABLED:          'true',
+        PLAN_APPROVAL_ENABLED: 'true'
+      });
+
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      // Create a planning message
+      cy.enqueuePlanningResponse([
+        {
+          label:  'Create a new namespace in the cluster \'local\'.',
+          agent:  'rancher',
+          result: {
+            status:  'completed',
+            message: 'Namespace created'
+          }
+        },
+        {
+          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:  'fleet',
+          result: {
+            status:  'completed',
+            message: 'Pod created'
+          }
+        }
+      ]);
+
+      chat.sendMessage('Create a namespace and a Pod in it');
+
+      const planningMessage = chat.getMessage(3).planning();
+
+      planningMessage.approve();
+
+      planningMessage.status().contains('Completed');
+
+      const resultMessage = chat.getMessage(4);
+
+      resultMessage.isCompleted();
+
+      // cy.clearLLMResponses();
+
+      // Send multiple messages to expand the chat
+      for (let i = 0; i < 2; i++) {
+        cy.enqueuePlanningResponse([
+          {
+            label:  `Processing request ${ i + 1 }`,
+            agent:  'rancher',
+            result: {
+              status:  'completed',
+              message: `Response ${ i + 1 }`
+            }
+          },
+        ]);
+
+        chat.sendMessage(`Request ${ i + 1 }`);
+
+        const responseMessage = chat.getMessage(6 + (i * 2));
+
+        responseMessage.isCompleted();
+      }
+
+      planningMessage.toggleCollapseButton().scrollIntoView();
+
+      planningMessage.self().should('be.visible');
+
+      planningMessage.toggleCollapse();
+
+      planningMessage.item(0).self().should('not.exist');
+
+      // Verify that the scroll position has not changed after collapsing the planning message
+      chat.getMessages().last().should('not.be.visible');
+
+      cy.wait(400); // Wait for the pause scroll to settle
+
+      planningMessage.toggleCollapse();
+
+      planningMessage.item(0).self().should('be.visible');
+
+      // Verify that the scroll position has not changed after expanding the planning message
+      chat.getMessages().last().should('not.be.visible');
+    });
+
     it('it should scroll to bottom on System message', () => {
       HomePagePo.goTo();
 
@@ -1248,6 +1337,10 @@ describe('Chat', () => {
       cy.cleanChatHistory();
       cy.uninstallUIToolsDefinition();
       cy.clearLocalStorage('rancher-ai-ui*');
+      cy.updateAiAssistantConfigs({
+        PLAN_ENABLED:          'false',
+        PLAN_APPROVAL_ENABLED: 'false'
+      });
     });
   });
 
