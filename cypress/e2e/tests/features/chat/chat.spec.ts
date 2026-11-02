@@ -1159,11 +1159,6 @@ describe('Chat', () => {
     });
 
     it('It should not scroll when interacting with actionable items on messages (expand/collapse of planning messages)', () => {
-      cy.updateAiAssistantConfigs({
-        PLAN_ENABLED:          'true',
-        PLAN_APPROVAL_ENABLED: 'true'
-      });
-
       HomePagePo.goTo();
 
       chat.open();
@@ -1172,56 +1167,44 @@ describe('Chat', () => {
 
       welcomeMessage.isCompleted();
 
-      // Create a planning message
-      cy.enqueuePlanningResponse([
-        {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
-            status:  'completed',
-            message: 'Namespace created'
+      // Mock a planning message
+      const payload = JSON.stringify({
+        tasks: [
+          {
+            task:   'Planning Task',
+            agent:  'Agent 1',
+            status: 'completed'
+          },
+          {
+            task:   'Another Planning Task',
+            agent:  'Agent 2',
+            status: 'completed'
           }
-        },
-        {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
-            status:  'completed',
-            message: 'Pod created'
-          }
-        }
-      ]);
+        ],
+        status:   'completed',
+        approval: true
+      });
+
+      cy.enqueueLLMResponse({ text: `<plan>${ payload }</plan>` });
 
       chat.sendMessage('Create a namespace and a Pod in it');
 
       const planningMessage = chat.getMessage(3).planning();
 
-      planningMessage.approve();
+      planningMessage.header().contains('All tasks have been completed');
+      planningMessage.item(1).icon().should('have.class', 'icon-checkmark');
 
-      planningMessage.status().contains('Completed');
+      chat.console().sendButton().should('be.visible');
 
-      const resultMessage = chat.getMessage(4);
-
-      resultMessage.isCompleted();
-
-      // cy.clearLLMResponses();
+      cy.clearLLMResponses();
 
       // Send multiple messages to expand the chat
       for (let i = 0; i < 2; i++) {
-        cy.enqueuePlanningResponse([
-          {
-            label:  `Processing request ${ i + 1 }`,
-            agent:  'rancher',
-            result: {
-              status:  'completed',
-              message: `Response ${ i + 1 }`
-            }
-          },
-        ]);
+        cy.enqueueLLMResponse({ text: `Processing request ${ i + 1 }` });
 
         chat.sendMessage(`Request ${ i + 1 }`);
 
-        const responseMessage = chat.getMessage(6 + (i * 2));
+        const responseMessage = chat.getMessage(5 + (i * 2));
 
         responseMessage.isCompleted();
       }
@@ -1245,11 +1228,6 @@ describe('Chat', () => {
 
       // Verify that the scroll position has not changed after expanding the planning message
       chat.getMessages().last().should('not.be.visible');
-
-      cy.updateAiAssistantConfigs({
-        PLAN_ENABLED:          'false',
-        PLAN_APPROVAL_ENABLED: 'false'
-      });
     });
 
     it('it should scroll to bottom on System message', () => {

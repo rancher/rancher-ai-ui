@@ -588,6 +588,64 @@ describe('Hooks', () => {
         resultMessage.self().should('contain.text', 'long response');
       });
 
+      it('It should not send a message from the sliding badge when there is pending planning', () => {
+        const homePage = new HomePagePo();
+
+        HomePagePo.goTo();
+
+        chat.open();
+
+        const welcomeMessage = chat.getMessage(1);
+
+        welcomeMessage.isCompleted();
+
+        const payload = JSON.stringify({
+          tasks: [
+            {
+              task:   'Planning Task',
+              agent:  'Agent 1',
+              status: 'pending'
+            },
+            {
+              task:   'Another Planning Task',
+              agent:  'Agent 2',
+              status: 'pending'
+            }
+          ],
+          status:   'pending',
+          approval: true
+        });
+
+        cy.enqueueLLMResponse({ text: `<plan>${ payload }</plan>` });
+
+        chat.sendMessage('Create a namespace and a Pod in it');
+
+        const planningMessage = chat.getMessage(3).planning();
+
+        planningMessage.header().contains('Awaiting approval to execute the following tasks');
+
+        const homeClusterList = homePage.list();
+
+        const statusColumn = homeClusterList.resourceTable().sortableTable().row(0).column(0);
+
+        const slidingBadge = new SlidingBadgePo(statusColumn);
+
+        slidingBadge.click();
+
+        // The sliding badge click should not send a new message
+        chat.getMessage(4).checkNotExists();
+
+        chat.getMessages().last().should('not.contain.text', 'Please analyse the Cluster');
+
+        chat.console().textarea().then(($textarea) => {
+          const text = $textarea.val() as string;
+
+          // Check that the staged message contains all expected parts
+          expect(text).to.contain('Please analyse the Cluster');
+          expect(text).to.contain('Explain');
+        });
+      });
+
       afterEach(() => {
         cy.cleanChatHistory();
       });

@@ -22,6 +22,7 @@ import {
   MessageLabelKey,
   MessagePhase,
   MessagePlanning,
+  MessagePlanningStatus,
   MessageProcessingState,
   MessageStopType,
   MessageTag,
@@ -125,7 +126,26 @@ export function useChatMessageComposable(
   const error = computed(() => store.getters['rancher-ai-ui/chat/error'](chatId));
 
   const processingState = computed(() => store.getters['rancher-ai-ui/chat/processingState'](chatId));
-  const planningState = computed(() => store.getters['rancher-ai-ui/chat/planningState'](chatId));
+  const planningState = computed<MessagePlanning | null>(() => store.getters['rancher-ai-ui/chat/planningState'](chatId));
+
+  const pendingPlanning = computed(() => {
+    if (!planningState.value) {
+      return false;
+    }
+
+    const isPlanningAwaitingApproval = planningState.value.status === MessagePlanningStatus.Pending;
+    const isPlanningExecuting = planningState.value.status === MessagePlanningStatus.InProgress || planningState.value.status === MessagePlanningStatus.Canceling;
+
+    return isPlanningAwaitingApproval || isPlanningExecuting;
+  });
+
+  const pendingPlanningTask = computed(() => {
+    if (!pendingPlanning.value) {
+      return false;
+    }
+
+    return planningState.value?.tasks.some((task) => task.status === MessagePlanningStatus.InProgress);
+  });
 
   const setProcessingState = (processingState: MessageProcessingState) => {
     store.commit('rancher-ai-ui/chat/setProcessingState', {
@@ -754,7 +774,7 @@ export function useChatMessageComposable(
               ];
             }
 
-            if (planningState.value.messageId === messageId) {
+            if (planningState.value?.messageId === messageId) {
               // New planning state - bound to the current message
               currentMsg.value.templateContent = {
                 component: MessageTemplateComponent.Planning,
@@ -767,8 +787,8 @@ export function useChatMessageComposable(
             } else {
               // Update the planning state - bound to a previous message
               updateMessage({
-                id:              planningState.value.messageId,
-                planningContent: planningState.value,
+                id:              planningState.value?.messageId,
+                planningContent: planningState.value as MessagePlanning,
               });
             }
           }
@@ -882,6 +902,8 @@ export function useChatMessageComposable(
     messages,
     messageBox,
     pendingResponse,
+    pendingPlanning,
+    pendingPlanningTask,
     sendMessage,
     addMessage,
     updateMessage,
@@ -898,7 +920,6 @@ export function useChatMessageComposable(
     isChatInitialized,
     resetChatMetadata,
     processingState,
-    planningState,
     error,
     resetErrors: () => setErrors(null),
   };

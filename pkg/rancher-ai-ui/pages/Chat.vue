@@ -6,7 +6,7 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, MessagePlanningStatus, Preferences, Role, StorageKey, StorageType
+  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessageInternalSource, MessagePhase, Preferences, Role, StorageKey, StorageType
 } from '../types';
 import { extractMessageText } from '../utils/label';
 import Chat from '../handlers/chat';
@@ -55,6 +55,8 @@ const {
   messages,
   messageBox,
   pendingResponse,
+  pendingPlanning,
+  pendingPlanningTask,
   onopen,
   onmessage,
   onclose,
@@ -72,7 +74,6 @@ const {
   isChatInitialized,
   resetChatMetadata,
   processingState,
-  planningState,
   error: chatError,
   resetErrors: resetChatErrors
 } = useChatMessageComposable(
@@ -330,9 +331,18 @@ function ensureConnectionAndSendMessage(data: string | Message) {
 
     connect(chatMetadata.value.chatId);
   } else {
-    if (!!pendingResponse.value || planningState.value?.status === MessagePlanningStatus.InProgress || planningState.value?.status === MessagePlanningStatus.Pending || planningState.value?.status === MessagePlanningStatus.Canceling) {
-      // Stage the message to the console input because a response or planning is pending
-      // We do not want to stop the current response or planning process
+    const isFromHook = (data as Message)?.source === MessageInternalSource.MessageBox;
+
+    if (!!pendingResponse.value || !!pendingPlanningTask.value || (isFromHook && pendingPlanning.value)) {
+      /**
+       * Stage the message to the console input because
+       * - a response or planning is pending
+       * - a planning task is in progress
+       * - a planning is awaiting confirmation
+       *   note: in this case we allow the user to direct send a message from the console but block the messages from hook
+       *
+       * We do not want to stop the current response or accepted planning process
+       */
       stageMessageToConsoleInput(data);
 
       // We do not want to keep the old message around when not sending it immediately
