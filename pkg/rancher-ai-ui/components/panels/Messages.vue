@@ -107,26 +107,36 @@ const containerRef = (count: number, index: number) => {
 };
 
 /**
- * Resumes the observer when animation completes
+ * Clears scroll pause state and animation listeners
+ * Used when pausing period should end (animation complete, new chat, etc)
  */
-function resumeObserver() {
+function clearPauseScrollState() {
   observerPaused.value = false;
+
   // Remove listeners to avoid memory leaks
   if (lastMessageContainer.value && animationEndListener.value) {
     lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
     lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
   }
+  animationEndListener.value = null;
+}
+
+/**
+ * Resumes the observer when animation completes
+ */
+function resumeAnimationObserver() {
+  clearPauseScrollState();
 }
 
 /**
  * Pauses the observer during animations
- * Resumes automatically when animation events fire, rather than using a timeout.
+ * Resumes automatically when animation events fire (transitionend/animationend)
  */
 function pauseObserverForAnimation() {
   // Mark observer as paused
   observerPaused.value = true;
 
-  // Remove any previous listener
+  // Remove any previous listener before setting a new one
   if (lastMessageContainer.value && animationEndListener.value) {
     lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
     lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
@@ -134,7 +144,7 @@ function pauseObserverForAnimation() {
 
   // Listen for animation/transition completion
   if (lastMessageContainer.value) {
-    animationEndListener.value = () => resumeObserver();
+    animationEndListener.value = () => resumeAnimationObserver();
     lastMessageContainer.value.addEventListener('transitionend', animationEndListener.value, { once: true });
     lastMessageContainer.value.addEventListener('animationend', animationEndListener.value, { once: true });
   }
@@ -150,6 +160,10 @@ function setupObserver(newContainer: HTMLDivElement | null) {
     lastMessageObserver.value.disconnect();
     lastMessageObserver.value = null;
   }
+
+  // Reset pause state when container changes (new chat, new message context)
+  // This ensures scroll works properly for the new context
+  clearPauseScrollState();
 
   // Setup new observer on the last message container
   if (newContainer) {
@@ -279,6 +293,10 @@ watch(
   () => props.activeChatId,
   (newVal, oldVal) => {
     if (newVal !== oldVal) {
+      // Reset scroll pause state when switching to a new chat
+      // This ensures scroll behavior is active for the new conversation
+      clearPauseScrollState();
+
       // Wait for the DOM to update with the new messages before scrolling
       requestAnimationFrame(() => {
         // Update scroll state to show/hide scroll button based on new content height
@@ -305,11 +323,8 @@ onBeforeUnmount(() => {
     lastMessageObserver.value.disconnect();
     lastMessageObserver.value = null;
   }
-  // Cleanup event listeners
-  if (lastMessageContainer.value && animationEndListener.value) {
-    lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
-    lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
-  }
+  // Cleanup pause state and listeners
+  clearPauseScrollState();
 });
 </script>
 
