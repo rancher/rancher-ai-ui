@@ -1245,6 +1245,11 @@ describe('Chat', () => {
 
       // Verify that the scroll position has not changed after expanding the planning message
       chat.getMessages().last().should('not.be.visible');
+
+      cy.updateAiAssistantConfigs({
+        PLAN_ENABLED:          'false',
+        PLAN_APPROVAL_ENABLED: 'false'
+      });
     });
 
     it('it should scroll to bottom on System message', () => {
