@@ -186,6 +186,9 @@ ai:
                 null { I will <b>{op}</b> the value <code>{value}</code> in the path <code>{path}</code> to the <code>{name}</code> {kind} in the <code>{cluster}</code> cluster. }
                 other { I will <b>{op}</b> the value <code>{value}</code> in the path <code>{path}</code> to the <code>{name}</code> {kind} in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster. }
             }
+        external:
+          tool: 'Calling tool'
+          args: 'With args'
     confirm: Confirm
     cancel: Cancel
     confirmed: Confirmed

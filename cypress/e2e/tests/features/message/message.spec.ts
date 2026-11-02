@@ -376,6 +376,45 @@ describe('Messages', () => {
     confirmationRequestMessage.containsText('Canceled');
   });
 
+  it('Confirm external Tool action (Custom Agents)', () => {
+    chat.open();
+
+    const welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    const payload = JSON.stringify({
+      type: 'external',
+      name: 'externalTool',
+      args: {
+        id:          'my-id',
+        description: 'My description'
+      }
+    });
+
+    cy.enqueueLLMResponse({ text: `<confirmation-response>${ payload }</confirmation-response>` });
+
+    chat.sendMessage('Create a pod named my-pod in default namespace');
+
+    const userMessage = chat.getMessage(2);
+
+    userMessage.scrollIntoView();
+    userMessage.containsText('Create a pod named my-pod in default namespace');
+
+    const confirmationRequestMessage = chat.getMessage(3);
+
+    confirmationRequestMessage.scrollIntoView();
+
+    confirmationRequestMessage.containsText('Calling tool: externalTool');
+    confirmationRequestMessage.containsText('With args:');
+    confirmationRequestMessage.containsText('"id": "my-id"');
+    confirmationRequestMessage.containsText('"description": "My description"');
+
+    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
+    confirmationRequestMessage.confirmButton().click();
+    confirmationRequestMessage.isConfirmed();
+  });
+
   it('Stop message during send thinking phase', () => {
     chat.open();
 

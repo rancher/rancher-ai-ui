@@ -40,6 +40,21 @@ const confirmationText = computed(() => {
     props.message.confirmation?.actions?.forEach((action) => {
       const actionType = action?.type || ConfirmationActionType.Create;
 
+      // Handle custom agent tool actions separately
+      if (actionType === ConfirmationActionType.External) {
+        if (action.tool?.name && action.tool?.args !== undefined) {
+          const argsStr = typeof action.tool.args === 'string' ? action.tool.args : JSON.stringify(action.tool.args, null, 2);
+          const toolLabel = t('ai.confirmation.message.operation.external.tool', {}, true);
+          const argsLabel = t('ai.confirmation.message.operation.external.args', {}, true);
+
+          out += `${ toolLabel }: <code>${ action.tool.name }</code><br>`;
+          out += `${ argsLabel }:<br><code style="white-space: pre-wrap; display: block;">${ argsStr }</code><br>`;
+        }
+
+        return;
+      }
+
+      // Handle built-in agent resource-based actions (create/update/patch)
       const {
         kind, name, namespace, cluster
       } = action?.resource || {};

@@ -21,6 +21,7 @@ import {
   MessageStopType,
   MessagePlanning,
   PlanningStopType,
+  ConfirmationActionType,
 } from '../types';
 import { error } from '../utils/log';
 import { validateActionResource } from './validator';
@@ -218,6 +219,27 @@ export function formatConfirmationActions(value: string): MessageConfirmationAct
   if (value) {
     try {
       const parsed = JSON.parse(value);
+
+      // Handle custom agent's tool (no approval 'plan')
+      if (parsed.type === ConfirmationActionType.External && parsed.name && parsed.args !== undefined) {
+        return [{
+          type: parsed.type,
+          tool: {
+            name: parsed.name,
+            args: parsed.args,
+          }
+        }];
+      }
+
+      // Handle built-in agent's confirmation payload, (array of actions)
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+
+      // Handle built-in agent's confirmation payload, single action object if not an array
+      if (parsed && typeof parsed === 'object') {
+        return [parsed];
+      }
 
       return parsed;
     } catch (err) {
