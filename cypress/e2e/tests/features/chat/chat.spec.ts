@@ -1320,10 +1320,6 @@ describe('Chat', () => {
       cy.cleanChatHistory();
       cy.uninstallUIToolsDefinition();
       cy.clearLocalStorage('rancher-ai-ui*');
-      cy.updateAiAssistantConfigs({
-        PLAN_ENABLED:          'false',
-        PLAN_APPROVAL_ENABLED: 'false'
-      });
     });
   });
 
