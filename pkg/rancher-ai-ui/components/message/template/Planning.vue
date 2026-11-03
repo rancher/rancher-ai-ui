@@ -24,7 +24,18 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:message', 'confirm:message', 'send:message', 'stop:message']);
+const emit = defineEmits(['update:message', 'confirm:message', 'send:message', 'stop:message', 'collapse']);
+
+function handleCollapse(isCollapsed: boolean) {
+  emit('collapse');
+  emit('update:message', {
+    ...props.message,
+    planningContent: {
+      ...props.message.planningContent,
+      isCollapsed
+    }
+  });
+}
 
 </script>
 
@@ -40,13 +51,7 @@ const emit = defineEmits(['update:message', 'confirm:message', 'send:message', '
       :disabled="props.disabled"
       @confirm="emit('confirm:message', { result: $event })"
       @stop="emit('stop:message')"
-      @collapse="emit('update:message', {
-        ...props.message,
-        planningContent: {
-          ...props.message.planningContent,
-          isCollapsed: $event
-        }
-      })"
+      @collapse="handleCollapse"
     />
     <ApprovalInfo
       v-if="props.message.planningContent.approval"

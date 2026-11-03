@@ -84,8 +84,6 @@ const messagesView = ref<HTMLDivElement | null>(null);
 const lastMessageContainer = ref<HTMLDivElement | null>(null);
 const lastUserMessageContainer = ref<HTMLDivElement | null>(null);
 const lastMessageObserver = ref<MutationObserver | null>(null);
-const observerPaused = ref(false);
-const animationEndListener = ref<((e: Event) => void) | null>(null); // eslint-disable-line no-unused-vars
 
 // Ref callback to assign the last message container for auto-scrolling for each message/error list
 const containerRef = (count: number, index: number) => {
@@ -107,50 +105,6 @@ const containerRef = (count: number, index: number) => {
 };
 
 /**
- * Clears scroll pause state and animation listeners
- * Used when pausing period should end (animation complete, new chat, etc)
- */
-function clearPauseScrollState() {
-  observerPaused.value = false;
-
-  // Remove listeners to avoid memory leaks
-  if (lastMessageContainer.value && animationEndListener.value) {
-    lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
-    lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
-  }
-  animationEndListener.value = null;
-}
-
-/**
- * Resumes the observer when animation completes
- */
-function resumeAnimationObserver() {
-  clearPauseScrollState();
-}
-
-/**
- * Pauses the observer during animations
- * Resumes automatically when animation events fire (transitionend/animationend)
- */
-function pauseObserverForAnimation() {
-  // Mark observer as paused
-  observerPaused.value = true;
-
-  // Remove any previous listener before setting a new one
-  if (lastMessageContainer.value && animationEndListener.value) {
-    lastMessageContainer.value.removeEventListener('transitionend', animationEndListener.value);
-    lastMessageContainer.value.removeEventListener('animationend', animationEndListener.value);
-  }
-
-  // Listen for animation/transition completion
-  if (lastMessageContainer.value) {
-    animationEndListener.value = () => resumeAnimationObserver();
-    lastMessageContainer.value.addEventListener('transitionend', animationEndListener.value, { once: true });
-    lastMessageContainer.value.addEventListener('animationend', animationEndListener.value, { once: true });
-  }
-}
-
-/**
  * Observes changes to the last message container to trigger auto-scrolling when content changes.
  * Skips scroll handling if observer is paused.
  */
@@ -161,17 +115,10 @@ function setupObserver(newContainer: HTMLDivElement | null) {
     lastMessageObserver.value = null;
   }
 
-  // Reset pause state when container changes (new chat, new message context)
-  // This ensures scroll works properly for the new context
-  clearPauseScrollState();
-
   // Setup new observer on the last message container
   if (newContainer) {
     lastMessageObserver.value = new MutationObserver(() => {
-      // Skip scroll handling if observer is paused (during animation)
-      if (!observerPaused.value) {
-        handleMessageScroll();
-      }
+      handleMessageScroll();
     });
 
     lastMessageObserver.value.observe(newContainer, {
@@ -183,9 +130,9 @@ function setupObserver(newContainer: HTMLDivElement | null) {
 }
 
 /**
- * Handles changes in the message phase by triggering a scroll to the bottom.
+ * Continues scrolling to the bottom of the messages if the user has not touched the scroll manually.
  */
-function onPhaseChange() {
+function keepScrollingToBottom() {
   requestAnimationFrame(() => scrollToBottom());
 }
 
@@ -293,10 +240,6 @@ watch(
   () => props.activeChatId,
   (newVal, oldVal) => {
     if (newVal !== oldVal) {
-      // Reset scroll pause state when switching to a new chat
-      // This ensures scroll behavior is active for the new conversation
-      clearPauseScrollState();
-
       // Wait for the DOM to update with the new messages before scrolling
       requestAnimationFrame(() => {
         // Update scroll state to show/hide scroll button based on new content height
@@ -323,8 +266,6 @@ onBeforeUnmount(() => {
     lastMessageObserver.value.disconnect();
     lastMessageObserver.value = null;
   }
-  // Cleanup pause state and listeners
-  clearPauseScrollState();
 });
 </script>
 
@@ -352,11 +293,11 @@ onBeforeUnmount(() => {
         :pending-response="props.pendingResponse"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
         :message="message"
-        @update:message="emit('update:message', $event); pauseObserverForAnimation()"
+        @update:message="emit('update:message', $event)"
         @send:message="emit('send:message', $event)"
         @confirm:message="emit('confirm:message', $event)"
         @stop:message="emit('stop:message')"
-        @collapse="pauseObserverForAnimation"
+        @collapse="keepScrollingToBottom"
       />
       <MessageComponent
         v-else
@@ -367,7 +308,7 @@ onBeforeUnmount(() => {
         :disabled="props.disabled"
         :pending-response="props.pendingResponse"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
-        @update:message="emit('update:message', $event); pauseObserverForAnimation()"
+        @update:message="emit('update:message', $event)"
         @confirm:message="emit('confirm:message', $event)"
         @send:message="emit('send:message', $event)"
       />
@@ -390,7 +331,7 @@ onBeforeUnmount(() => {
       }"
       :phase="props.processingState?.phase"
       :label="props.processingState?.label"
-      @change:phase="onPhaseChange"
+      @change:phase="keepScrollingToBottom"
     />
     <ScrollButton
       v-if="fastScrollEnabled && !props.disabled"
