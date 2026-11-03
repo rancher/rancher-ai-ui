@@ -140,7 +140,8 @@ export function useChatMessageComposable(
   });
 
   const pendingPlanningTask = computed(() => {
-    if (!pendingPlanning.value) {
+    // No planning and no pending response related to a task in progress
+    if (!pendingPlanning.value || !pendingResponse.value) {
       return false;
     }
 

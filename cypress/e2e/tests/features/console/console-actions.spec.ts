@@ -246,6 +246,12 @@ describe('Console Actions', () => {
 
     cy.enqueueLLMResponse({ text: `<plan>${ payload }</plan>` });
 
+    // Mock the first task acceptance response for the agent
+    cy.enqueueLLMResponse({ text: 'yes' });
+
+    // Mock the long response for the first task
+    cy.enqueueLLMResponse({ text: ['Very ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'response for the first task'] });
+
     chat.sendMessage('User request');
 
     const planningMessage = chat.getMessage(3).planning();
@@ -253,9 +259,16 @@ describe('Console Actions', () => {
     planningMessage.header().contains('Using 2 agents to execute the following tasks');
     planningMessage.item(1).self().contains('Another Planning Task');
 
-    chat.sendMessage('Another long long long long long long long long long long long long long long long long long user request');
+    // Trigger the first task response
+    chat.sendMessage('Reply to the first request');
 
-    chat.getMessage(4).self().should('not.exist');
+    chat.getMessage(5).self().should('contain', 'Very long');
+
+    // While the first task responseis still being processed, send another user request
+    chat.sendMessage('Another user request');
+
+    // Verify that the second user request is not sent while the first task (+ its response) is still being processed
+    chat.getMessage(6).self().should('not.exist');
   });
 
   after(() => {
