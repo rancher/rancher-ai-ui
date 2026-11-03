@@ -146,6 +146,10 @@ onMounted(async() => {
 </template>
 
 <style scoped lang="scss">
+.rc-button.variant-tertiary {
+  background: transparent;
+}
+
 .open-console-logs-tool-label {
   display: flex;
   flex-direction: row;
