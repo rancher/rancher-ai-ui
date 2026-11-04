@@ -143,7 +143,7 @@ const confirmationText = computed(() => {
       >
         <RcButton
           small
-          variant="tertiary"
+          variant="link"
           data-testid="rancher-ai-ui-chat-message-confirmation-cancel-button"
           @click="emit('confirm', false)"
         >
