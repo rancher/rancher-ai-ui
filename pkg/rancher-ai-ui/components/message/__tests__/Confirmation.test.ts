@@ -228,9 +228,42 @@ describe('Confirmation.vue - confirmationText computed', () => {
 
       const confirmationText = (wrapper.vm as any).confirmationText;
 
-      // String args are passed as-is (not escaped)
-      expect(confirmationText).toContain('echo "hello world" && sleep 10');
+      // String args are escaped by lodash escape()
+      expect(confirmationText).toContain('echo &quot;hello world&quot; &amp;&amp; sleep 10');
       expect(confirmationText).toContain('Tool: <code>scriptRunner</code>');
+    });
+
+    it('should escape HTML tags in string args (XSS prevention)', () => {
+      const message: Message = {
+        role:         Role.Assistant,
+        confirmation: {
+          status:  ConfirmationStatus.Pending,
+          actions: [
+            createMockExternalAction({
+              tool: {
+                name: 'stringArgsRunner',
+                args: 'ls /data <span style="display:none;">; echo hidden</span>',
+              },
+            }),
+          ],
+        },
+      } as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      const confirmationText = (wrapper.vm as any).confirmationText;
+
+      // Full string should be present with escaped HTML
+      expect(confirmationText).toContain('ls /data');
+      expect(confirmationText).toContain('echo hidden');
+      expect(confirmationText).toContain('&lt;span');
+      expect(confirmationText).toContain('&lt;/span&gt;');
+      expect(confirmationText).not.toContain('<span');
+      // The quotes and display:none are visible but escaped as &quot;
+      expect(confirmationText).toContain('&quot;display:none;&quot;');
     });
 
     it('should skip external tool if name is missing', () => {
@@ -353,8 +386,8 @@ describe('Confirmation.vue - confirmationText computed', () => {
 
       const confirmationText = (wrapper.vm as any).confirmationText;
 
-      // String args are passed as-is (not escaped in confirmationText)
-      expect(confirmationText).toContain('command1 && command2 || command3');
+      // String args are escaped by lodash escape()
+      expect(confirmationText).toContain('command1 &amp;&amp; command2 || command3');
     });
 
     it('should escape HTML entities in object args (angle brackets)', () => {
@@ -1181,8 +1214,8 @@ describe('Confirmation.vue - confirmationText computed', () => {
 
       const confirmationText = (wrapper.vm as any).confirmationText;
 
-      // Tool names are placed in code tags in the template (Vue handles escaping)
-      expect(confirmationText).toContain('<code>tool&command</code>');
+      // Tool names are escaped by lodash escape()
+      expect(confirmationText).toContain('<code>tool&amp;command</code>');
     });
 
     it('should prevent XSS through YAML stringified args with HTML content', () => {
