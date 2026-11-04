@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
       >
         <RcButton
           small
-          variant="tertiary"
+          variant="link"
           :aria-label="t('ai.planning.actions.cancel')"
           class="cancel-button"
           @click="emit('confirm', false)"
@@ -304,7 +304,7 @@ onBeforeUnmount(() => {
       >
         <RcButton
           small
-          variant="tertiary"
+          variant="link"
           :aria-label="t('ai.planning.actions.cancelRunning')"
           class="cancel-button"
           @click="emit('stop')"
