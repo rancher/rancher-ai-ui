@@ -101,7 +101,7 @@ function doAction(type: 'confirm' | 'cancel') {
           <RcButton
             v-if="actions.cancel?.action"
             small
-            tertiary
+            variant="link"
             data-testid="rancher-ai-ui-chat-message-confirmation-cancel-button"
             @click="doAction('cancel')"
           >
