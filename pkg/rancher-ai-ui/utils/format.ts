@@ -241,7 +241,7 @@ export function formatConfirmationActions(value: string): MessageConfirmationAct
         return [parsed];
       }
 
-      return parsed;
+      return null;
     } catch (err) {
       error('Failed to parse confirmation response:', err);
     }

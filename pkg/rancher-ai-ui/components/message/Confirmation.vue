@@ -2,6 +2,7 @@
 import { computed, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import YAML from 'yaml';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { warn } from '../../utils/log';
 import { ConfirmationStatus, ConfirmationActionType, Message } from '../../types';
@@ -43,12 +44,23 @@ const confirmationText = computed(() => {
       // Handle custom agent tool actions separately
       if (actionType === ConfirmationActionType.External) {
         if (action.tool?.name && action.tool?.args !== undefined) {
-          const argsStr = typeof action.tool.args === 'string' ? action.tool.args : JSON.stringify(action.tool.args, null, 2);
           const toolLabel = t('ai.confirmation.message.operation.external.tool', {}, true);
           const argsLabel = t('ai.confirmation.message.operation.external.args', {}, true);
 
           out += `${ toolLabel }: <code>${ action.tool.name }</code><br>`;
-          out += `${ argsLabel }:<br><code style="white-space: pre-wrap; display: block;">${ argsStr }</code><br>`;
+
+          let argsStr: string;
+
+          if (typeof action.tool.args === 'string') {
+            argsStr = action.tool.args;
+          } else {
+            const yamlStr = YAML.stringify(action.tool.args, { indent: 2 }).trim();
+
+            // Escape HTML entities so v-clean-html doesn't strip tags
+            argsStr = yamlStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          }
+
+          out += `${ argsLabel }:<br><code class="external-args-code">${ argsStr }</code><br>`;
         }
 
         return;
@@ -189,6 +201,11 @@ const confirmationText = computed(() => {
     border-radius: initial;
     background-color: transparent;
     color: #025937;
+  }
+
+  &:deep(code.external-args-code) {
+    white-space: pre-wrap;
+    display: block;
   }
 
   &:deep(ul) {

@@ -208,7 +208,7 @@ export interface MessageConfirmationAction {
   // optional for external type
   tool?: {
     name: string;
-    args: Record<string, string>;
+    args: Record<string, unknown> | string;
   }
 }
 
