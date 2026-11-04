@@ -15,8 +15,6 @@ export interface SettingsPermissions {
 }
 
 export enum Settings {
-  // EMBEDDINGS_MODEL = 'EMBEDDINGS_MODEL',
-  // ENABLE_RAG = 'ENABLE_RAG',
   ACTIVE_CHATBOT = 'ACTIVE_LLM',
   GOOGLE_API_KEY = 'GOOGLE_API_KEY',
   LANGFUSE_HOST = 'LANGFUSE_HOST',
@@ -34,6 +32,8 @@ export enum Settings {
   AWS_BEARER_TOKEN_BEDROCK= 'AWS_BEARER_TOKEN_BEDROCK',
   GENERIC_OPENAI_URL = 'GENERIC_OPENAI_URL',
   GENERIC_OPENAI_API_KEY = 'GENERIC_OPENAI_API_KEY',
+  PLAN_ENABLED = 'PLAN_ENABLED',
+  PLAN_APPROVAL_ENABLED = 'PLAN_APPROVAL_ENABLED'
 }
 
 export type SettingsFormData = Record<Partial<Settings>, string>;

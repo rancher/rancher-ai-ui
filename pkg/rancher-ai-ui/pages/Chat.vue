@@ -6,7 +6,7 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessagePhase, Preferences, Role, StorageKey, StorageType
+  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessageInternalSource, MessagePhase, Preferences, Role, StorageKey, StorageType
 } from '../types';
 import { extractMessageText } from '../utils/label';
 import Chat from '../handlers/chat';
@@ -55,17 +55,20 @@ const {
   messages,
   messageBox,
   pendingResponse,
+  pendingPlanning,
+  pendingPlanningTask,
   onopen,
   onmessage,
   onclose,
   sendMessage,
   updateMessage,
-  confirmMessage,
   stopMessage,
+  confirmMessage,
   downloadMessages,
   loadMessages,
   selectContext,
   clearMessageBox,
+  clearPendingConfirmations,
   notifyPreferencesUpdate,
   chatMetadata,
   isChatInitialized,
@@ -328,8 +331,18 @@ function ensureConnectionAndSendMessage(data: string | Message) {
 
     connect(chatMetadata.value.chatId);
   } else {
-    if (!!pendingResponse.value) {
-      // Stage the message to the console input because a response is pending; we do not want to stop the current response
+    const isFromHook = (data as Message)?.source === MessageInternalSource.MessageBox;
+
+    if (!!pendingResponse.value || !!pendingPlanningTask.value || (isFromHook && pendingPlanning.value)) {
+      /**
+       * Stage the message to the console input because
+       * - a response or planning is pending
+       * - a planning task is in progress
+       * - a planning is awaiting confirmation
+       *   note: in this case we allow the user to direct send a message from the console but block the messages from hook
+       *
+       * We do not want to stop the current response or accepted planning process
+       */
       stageMessageToConsoleInput(data);
 
       // We do not want to keep the old message around when not sending it immediately
@@ -411,6 +424,10 @@ watch(() => [
   if (!newDisabled && newIsChatInitialized && newMessage) {
     ensureConnectionAndSendMessage(newMessage);
   }
+
+  if (newDisabled && systemErrors.value.length > 0) {
+    clearPendingConfirmations();
+  }
 }, {
   immediate: true,
   deep:      true,
@@ -466,6 +483,7 @@ function unmount() {
         :active-chat-id="chatMetadata.chatId"
         :messages="messages"
         :pending-response="pendingResponse"
+        :agents="chatAgents"
         :system-errors="systemErrors"
         :disabled="hasPermissions && (systemErrors?.length > 0 || !isChatInitialized || aiAgentDeploymentState !== AIServiceState.Active)"
         :processing-state="processingMessageState"
@@ -473,6 +491,7 @@ function unmount() {
         @update:message="updateMessage"
         @confirm:message="confirmMessage($event, ws)"
         @send:message="sendMessage($event, ws)"
+        @stop:message="stopMessage(ws)"
       />
       <Processing
         class="connection-processing-label text-label"

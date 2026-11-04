@@ -1158,6 +1158,78 @@ describe('Chat', () => {
       chat.messagesPanel().scrollButton().checkExists();
     });
 
+    it('It should not scroll when interacting with actionable items on messages (expand/collapse of planning messages)', () => {
+      HomePagePo.goTo();
+
+      chat.open();
+
+      const welcomeMessage = chat.getMessage(1);
+
+      welcomeMessage.isCompleted();
+
+      // Mock a planning message
+      const payload = JSON.stringify({
+        tasks: [
+          {
+            task:   'Planning Task',
+            agent:  'Agent 1',
+            status: 'completed'
+          },
+          {
+            task:   'Another Planning Task',
+            agent:  'Agent 2',
+            status: 'completed'
+          }
+        ],
+        status:   'completed',
+        approval: true
+      });
+
+      cy.enqueueLLMResponse({ text: `<plan>${ payload }</plan>` });
+
+      chat.sendMessage('Create a namespace and a Pod in it');
+
+      const planningMessage = chat.getMessage(3).planning();
+
+      planningMessage.header().contains('All tasks have been completed');
+      planningMessage.item(1).icon().should('have.class', 'icon-checkmark');
+
+      chat.console().sendButton().should('be.visible');
+
+      cy.clearLLMResponses();
+
+      // Send multiple messages to expand the chat
+      for (let i = 0; i < 2; i++) {
+        cy.enqueueLLMResponse({ text: `Processing request ${ i + 1 }` });
+
+        chat.sendMessage(`Request ${ i + 1 }`);
+
+        const responseMessage = chat.getMessage(5 + (i * 2));
+
+        responseMessage.isCompleted();
+      }
+
+      planningMessage.toggleCollapseButton().scrollIntoView();
+
+      planningMessage.self().should('be.visible');
+
+      planningMessage.toggleCollapse();
+
+      planningMessage.item(0).self().should('not.exist');
+
+      // Verify that the scroll position has not changed after collapsing the planning message
+      chat.getMessages().last().should('not.be.visible');
+
+      cy.wait(100); // Wait for the pause scroll to settle
+
+      planningMessage.toggleCollapse();
+
+      planningMessage.item(0).self().should('be.visible');
+
+      // Verify that the scroll position has not changed after expanding the planning message
+      chat.getMessages().last().should('not.be.visible');
+    });
+
     it('it should scroll to bottom on System message', () => {
       HomePagePo.goTo();
 

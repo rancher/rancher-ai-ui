@@ -25,6 +25,10 @@ export default class MessagesPo extends ComponentPo {
     });
   }
 
+  getMessages() {
+    return this.self().find('[data-testid^="rancher-ai-ui-chat-message-box-"]');
+  }
+
   getMessage(id: string | number) {
     return new MessagePo(id.toString());
   }

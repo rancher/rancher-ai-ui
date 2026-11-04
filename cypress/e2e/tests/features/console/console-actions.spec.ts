@@ -80,11 +80,11 @@ describe('Console Actions', () => {
   before(() => {
     cy.login();
     cy.installUIToolsDefinition();
-    cy.clearLLMResponses();
   });
 
   beforeEach(() => {
     cy.login();
+    cy.clearLLMResponses();
 
     HomePagePo.goTo();
 
@@ -190,6 +190,85 @@ describe('Console Actions', () => {
     chat.console().sendButton().should('exist');
     chat.console().textarea().should('have.value', 'New user request');
     chat.getMessage(5).self().should('not.exist');
+  });
+
+  it('It should be possible to send a message when a planning is awaiting approval', () => {
+    // Mock a planning to simulate awaiting approval condition
+    const payload = JSON.stringify({
+      tasks: [
+        {
+          task:   'Planning Task',
+          agent:  'Agent 1',
+          status: 'pending'
+        },
+        {
+          task:   'Another Planning Task',
+          agent:  'Agent 2',
+          status: 'pending'
+        }
+      ],
+      status:   'pending',
+      approval: true
+    });
+
+    cy.enqueueLLMResponse({ text: `<plan>${ payload }</plan>` });
+
+    chat.sendMessage('User request');
+
+    const planningMessage = chat.getMessage(3).planning();
+
+    planningMessage.header().contains('Awaiting approval to execute the following tasks');
+    planningMessage.item(1).self().contains('Another Planning Task');
+
+    chat.sendMessage('Another long long long long long long long long long long long long long long long long long user request');
+
+    chat.getMessage(4).self().should('contain.text', 'user request');
+  });
+
+  it('It should not send a message when a planning is executing', () => {
+    // Mock a planning to simulate executing condition
+    const payload = JSON.stringify({
+      tasks: [
+        {
+          task:   'Planning Task',
+          agent:  'Agent 1',
+          status: 'in_progress'
+        },
+        {
+          task:   'Another Planning Task',
+          agent:  'Agent 2',
+          status: 'pending'
+        }
+      ],
+      status:   'in_progress',
+      approval: false
+    });
+
+    cy.enqueueLLMResponse({ text: `<plan>${ payload }</plan>` });
+
+    // Mock the first task acceptance response for the agent
+    cy.enqueueLLMResponse({ text: 'yes' });
+
+    // Mock the long response for the first task
+    cy.enqueueLLMResponse({ text: ['Very ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'long ', 'response for the first task'] });
+
+    chat.sendMessage('User request');
+
+    const planningMessage = chat.getMessage(3).planning();
+
+    planningMessage.header().contains('Using 2 agents to execute the following tasks');
+    planningMessage.item(1).self().contains('Another Planning Task');
+
+    // Trigger the first task response
+    chat.sendMessage('Reply to the first request');
+
+    chat.getMessage(5).self().should('contain', 'Very long');
+
+    // While the first task responseis still being processed, send another user request
+    chat.sendMessage('Another user request');
+
+    // Verify that the second user request is not sent while the first task (+ its response) is still being processed
+    chat.getMessage(6).self().should('not.exist');
   });
 
   after(() => {

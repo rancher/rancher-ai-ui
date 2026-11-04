@@ -1,6 +1,7 @@
 import { defineAsyncComponent } from 'vue';
 import { importTypes } from '@rancher/auto-import';
 import { ActionLocation, IExtension } from '@shell/core/types';
+import { NotificationLevel } from '@shell/types/notifications';
 import { warn } from './utils/log';
 import extensionRouting from './routing/extension-routing';
 import connectionStore from './store/connection';
@@ -13,7 +14,6 @@ import Chat from './handlers/chat';
 import Hooks from './handlers/hooks/index';
 import BadgeSlidingOverlay from './handlers/hooks/overlay/badge-sliding';
 import BannerButtonOverlay from  './handlers/hooks/overlay/banner-button';
-import { NotificationLevel } from '@shell/types/notifications';
 
 // Init the package
 export default function(extension: IExtension, { store }: any): void {

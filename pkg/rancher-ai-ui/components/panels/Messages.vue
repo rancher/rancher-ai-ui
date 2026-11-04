@@ -8,14 +8,16 @@ import {
   Message, FormattedMessage, Role, ChatError, MessageTemplateComponent, MessagePhase,
   MessageInternalSource,
   MessageProcessingState,
-  StorageKey
+  StorageKey,
+  Agent
 } from '../../types';
 import { formatMessageContent } from '../../utils/format';
 import MessageComponent from '../message/index.vue';
 import Welcome from '../message/template/Welcome.vue';
 import NoPermission from '../message/template/NoPermissions.vue';
-import SystemRequest from '../message/template/SystemRequest.vue';
+import SystemMessage from '../message/template/SystemMessage.vue';
 import McpAuthenticationRequest from '../message/template/McpAuthenticationRequest.vue';
+import Planning from '../message/template/Planning.vue';
 import ScrollButton from '../ScrollButton.vue';
 import Processing from '../Processing.vue';
 import { useScrollComposable } from '../../composables/useScrollComposable';
@@ -46,6 +48,10 @@ const props = defineProps({
     type:    Object as PropType<Message | null>,
     default: null,
   },
+  agents: {
+    type:     Array as PropType<Agent[]>,
+    default:  () => [],
+  },
   systemErrors: {
     type:    Array as PropType<ChatError[]>,
     default: () => [],
@@ -64,7 +70,12 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:message', 'confirm:message', 'send:message']);
+const emit = defineEmits([
+  'update:message',
+  'confirm:message',
+  'send:message',
+  'stop:message'
+]);
 
 const storage = useLocalStorageComposable();
 
@@ -95,6 +106,7 @@ const containerRef = (count: number, index: number) => {
 
 /**
  * Observes changes to the last message container to trigger auto-scrolling when content changes.
+ * Skips scroll handling if observer is paused.
  */
 function setupObserver(newContainer: HTMLDivElement | null) {
   // Clean up old observer
@@ -118,9 +130,9 @@ function setupObserver(newContainer: HTMLDivElement | null) {
 }
 
 /**
- * Handles changes in the message phase by triggering a scroll to the bottom.
+ * Continues scrolling to the bottom of the messages if the user has not touched the scroll manually.
  */
-function onPhaseChange() {
+function keepScrollingToBottom() {
   requestAnimationFrame(() => scrollToBottom());
 }
 
@@ -204,16 +216,20 @@ const systemErrorMessages = computed<FormattedMessage[]>(() => {
   }));
 });
 
+const hasUserMessages = computed(() => formattedMessages.value.some((message) => message.role === Role.User));
+
 function getMessageTemplate(component: MessageTemplateComponent) {
   switch (component) {
   case MessageTemplateComponent.Welcome:
     return Welcome;
   case MessageTemplateComponent.NoPermission:
     return NoPermission;
-  case MessageTemplateComponent.SystemRequest:
-    return SystemRequest;
+  case MessageTemplateComponent.SystemMessage:
+    return SystemMessage;
   case MessageTemplateComponent.McpAuthenticationRequest:
     return McpAuthenticationRequest;
+  case MessageTemplateComponent.Planning:
+    return Planning;
   default:
     return null;
   }
@@ -272,12 +288,16 @@ onBeforeUnmount(() => {
         }"
         :data-testid="`rancher-ai-ui-chat-message-box-${ message.id }`"
         :data-teststatus="`rancher-ai-ui-chat-message-status-${ message.id }-${ message.completed ? 'completed' : 'inprogress' }`"
+        :agents="props.agents"
         :disabled="props.disabled"
         :pending-response="props.pendingResponse"
         :pending-confirmation="props.processingState?.phase === MessagePhase.AwaitingConfirmation"
         :message="message"
         @update:message="emit('update:message', $event)"
         @send:message="emit('send:message', $event)"
+        @confirm:message="emit('confirm:message', $event)"
+        @stop:message="emit('stop:message')"
+        @collapse="keepScrollingToBottom"
       />
       <MessageComponent
         v-else
@@ -307,11 +327,11 @@ onBeforeUnmount(() => {
       class="chat-message-processing-label text-label"
       :class="{
         /* It avoids pushing the System messages up (Welcome template) */
-        'sticky-bottom': !props.activeChatId || formattedMessages.filter((m: Message) => m.role === Role.User).length > 0
+        'sticky-bottom': !props.activeChatId || hasUserMessages
       }"
       :phase="props.processingState?.phase"
       :label="props.processingState?.label"
-      @change:phase="onPhaseChange"
+      @change:phase="keepScrollingToBottom"
     />
     <ScrollButton
       v-if="fastScrollEnabled && !props.disabled"

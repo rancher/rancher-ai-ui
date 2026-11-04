@@ -77,6 +77,10 @@ export default class ChatPo extends ComponentPo {
     this.isClosed();
   }
 
+  getMessages() {
+    return this.messagesPanel().getMessages();
+  }
+
   getMessage(id: string | number) {
     return this.messagesPanel().getMessage(id);
   }

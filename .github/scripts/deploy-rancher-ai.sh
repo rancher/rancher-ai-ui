@@ -70,6 +70,8 @@ helm upgrade --install ai-agent ./rancher-ai-agent/chart/agent \
   --set llmMock.url=http://llm-mock \
   --set insecureSkipTls=true \
   --set log.level=debug \
+  --set plan.enabled=false \
+  --set planApproval.enabled=false \
   $HELM_WAIT_FLAGS
 
 if [ "$WAIT_FOR_AI_SERVICE_READY" = "true" ]; then

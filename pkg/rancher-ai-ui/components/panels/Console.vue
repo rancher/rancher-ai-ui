@@ -472,7 +472,7 @@ onMounted(() => {
   .rc-button.stop-button {
     color: var(--primary);
     background: var(--tertiary, var(--accent-btn));
-    padding: var(--rc-button-padding, 0 10px);
+    padding: var(--rc-button-padding, 0 9px);
 
     &:disabled {
       background-color: transparent;
