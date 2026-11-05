@@ -37,17 +37,17 @@ describe('Message Planning', () => {
     it('Execution succeeds', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'completed',
             message: 'Pod created'
           }
@@ -76,17 +76,17 @@ describe('Message Planning', () => {
     it('Execution fails', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'failed',
             message: 'Failed to create Pod'
           }
@@ -156,17 +156,17 @@ describe('Message Planning', () => {
     it('Execution succeeds', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'completed',
             message: 'Pod created'
           }
@@ -200,17 +200,17 @@ describe('Message Planning', () => {
     it('Execution fails', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'failed',
             message: 'Failed to create Pod'
           }
@@ -256,17 +256,17 @@ describe('Message Planning', () => {
     it('Execution cancelled', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'completed',
             message: 'Pod created'
           }
@@ -305,17 +305,17 @@ describe('Message Planning', () => {
     it('Execution stopped', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'completed',
             message: 'Pod created'
           }
@@ -385,17 +385,17 @@ describe('Message Planning', () => {
     it('It should collapse and expand the status panel', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'completed',
             message: 'Pod created'
           }
@@ -446,6 +446,54 @@ describe('Message Planning', () => {
       planningMessage.header().should('be.visible');
       planningMessage.item(0).self().should('not.exist');
       planningMessage.item(1).self().should('not.exist');
+    });
+
+    it('It should show/hide the additional info on single task', () => {
+      cy.enqueuePlanningResponse([
+        {
+          summary:        'Create a new namespace in the cluster \'local\'.',
+          additionalInfo: 'Use kubectl to create the namespace \'my-namespace\'.',
+          agent:          'rancher',
+          result:         {
+            status:  'completed',
+            message: 'Namespace created'
+          }
+        },
+        {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
+            status:  'completed',
+            message: 'Pod created'
+          }
+        }
+      ]);
+
+      chat.sendMessage('Create a namespace and a Pod in it');
+
+      const planningMessage = chat.getMessage(3).planning();
+      const taskWithInfo = planningMessage.item(0);
+      const taskWithoutInfo = planningMessage.item(1);
+
+      taskWithInfo.label().contains('Create a new namespace in the cluster \'local\'.');
+
+      // Collapsed by default
+      taskWithInfo.additionalInfo().should('not.exist');
+      taskWithInfo.toggleAdditionalInfoButton().should('be.visible').and('contain.text', 'Show more');
+
+      taskWithInfo.toggleAdditionalInfo();
+
+      taskWithInfo.additionalInfo().should('be.visible').and('contain.text', 'Use kubectl to create the namespace \'my-namespace\'.');
+      taskWithInfo.toggleAdditionalInfoButton().should('be.visible').and('contain.text', 'Show less');
+
+      taskWithInfo.toggleAdditionalInfo();
+
+      taskWithInfo.additionalInfo().should('not.exist');
+      taskWithInfo.toggleAdditionalInfoButton().should('contain.text', 'Show more');
+
+      // Tasks without additional info have no toggle
+      taskWithoutInfo.toggleAdditionalInfoButton().should('not.exist');
+      taskWithoutInfo.additionalInfo().should('not.exist');
     });
   });
 

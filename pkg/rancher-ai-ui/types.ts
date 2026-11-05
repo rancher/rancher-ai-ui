@@ -234,7 +234,8 @@ export const enum MessagePlanningStatus {
 }
 
 export interface MessagePlanningTask {
-  task: string;
+  summary: string;
+  additionalInfo?: string;
   status?: MessagePlanningStatus;
   agent?: string;
   tools?: ToolCall[];

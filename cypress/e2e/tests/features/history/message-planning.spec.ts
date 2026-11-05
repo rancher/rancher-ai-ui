@@ -37,17 +37,17 @@ describe('Message Planning', () => {
     it('It should properly parse successful planning execution from history chats', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'completed',
             message: 'Pod created'
           }
@@ -88,17 +88,17 @@ describe('Message Planning', () => {
     it('It should properly parse failed planning execution from history chats', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'failed',
             message: 'Failed to create Pod'
           }
@@ -170,17 +170,17 @@ describe('Message Planning', () => {
     it('It should properly parse successful planning execution from history chats', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'completed',
             message: 'Pod created'
           }
@@ -223,17 +223,17 @@ describe('Message Planning', () => {
     it('It should properly parse failed planning execution from history chats', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'failed',
             message: 'Failed to create Pod'
           }
@@ -277,17 +277,17 @@ describe('Message Planning', () => {
     it('It should properly parse canceled planning execution from history chats', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'completed',
             message: 'Pod created'
           }
@@ -333,17 +333,17 @@ describe('Message Planning', () => {
     it('It should properly parse stopped planning execution from history chats', () => {
       cy.enqueuePlanningResponse([
         {
-          label:  'Create a new namespace in the cluster \'local\'.',
-          agent:  'rancher',
-          result: {
+          summary: 'Create a new namespace in the cluster \'local\'.',
+          agent:   'rancher',
+          result:  {
             status:  'completed',
             message: 'Namespace created'
           }
         },
         {
-          label:  'Create a pod inside the newly created namespace in cluster \'local\'.',
-          agent:  'fleet',
-          result: {
+          summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+          agent:   'fleet',
+          result:  {
             status:  'completed',
             message: 'Pod created'
           }

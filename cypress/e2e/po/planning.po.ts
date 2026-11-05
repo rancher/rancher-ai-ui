@@ -13,8 +13,20 @@ class PlanningItemPo extends ComponentPo {
     return this.self().get('.icon');
   }
 
+  additionalInfo() {
+    return this.self().find('.additional-info');
+  }
+
   agent() {
     return this.self().get('[data-testid^="rancher-ai-ui-context-tag"]');
+  }
+
+  toggleAdditionalInfoButton() {
+    return this.self().find('.inline-button');
+  }
+
+  toggleAdditionalInfo() {
+    return this.toggleAdditionalInfoButton().click();
   }
 }
 

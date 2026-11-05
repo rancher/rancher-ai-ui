@@ -272,6 +272,9 @@ ai:
       canceling: 'Canceling Execution...'
       cancelled: 'Canceled'
       failed: 'Execution failed'
+    task:
+      showMore: 'Show more'
+      showLess: 'Show less'
     notification:
       approvalInfo:
         action: 'Go to Chat settings'

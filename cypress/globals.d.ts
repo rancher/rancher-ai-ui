@@ -19,7 +19,8 @@ export interface InstallRancherAIServiceArgs {
 }
 
 export interface PlanningTaskResponse {
-  label: string;
+  summary: string;
+  additionalInfo?: string;
   agent: string;
   result?: {
     status: 'completed' | 'error' | 'failed' | 'pending' | 'in_progress' | 'canceled' | 'unknown';
