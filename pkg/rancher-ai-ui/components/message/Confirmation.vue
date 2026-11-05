@@ -203,6 +203,10 @@ const confirmationText = computed(() => {
     color: #025937;
   }
 
+  &:deep(code.external-args-code) {
+    white-space: pre-wrap;
+  }
+
   &:deep(ul) {
     white-space: normal;
     margin: 0;
