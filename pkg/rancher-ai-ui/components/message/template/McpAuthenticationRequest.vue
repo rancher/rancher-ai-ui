@@ -101,7 +101,7 @@ function doAction(type: 'confirm' | 'cancel') {
           <RcButton
             v-if="actions.cancel?.action"
             small
-            tertiary
+            variant="link"
             data-testid="rancher-ai-ui-chat-message-confirmation-cancel-button"
             @click="doAction('cancel')"
           >
@@ -138,12 +138,12 @@ function doAction(type: 'confirm' | 'cancel') {
   color: var(--body-text);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
   padding: 12px;
   line-height: 21px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-right: 40px;
 
   /* Hide actions by default, show on hover */
   &:hover .chat-system-mcp-request-request-msg-bubble-actions {

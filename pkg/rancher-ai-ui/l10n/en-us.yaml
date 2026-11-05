@@ -393,7 +393,12 @@ ai:
   tools:
     label: Tools
     show-yaml:
-      name: Show YAML
+      name: |-
+        {
+          name, select,
+            null { View YAML }
+            other { View YAML for {name} }
+        }
       tooltip: |-
         {
           namespace, select,
@@ -401,14 +406,24 @@ ai:
             other { View the YAML configuration for the {name} {kind} in {namespace} namespace }
         }
     show-yaml-diff:
-      name: Show YAML Diff
+      name: |-
+        {
+          name, select,
+            null { View YAML Diff }
+            other { View YAML Diff for {name} }
+        }
       tooltip: View the differences between the current and previous YAML configurations for the {name} {kind} in {namespace} namespace
     explore:
       name: Explore
-      tooltip: '{label} in {cluster} cluster'
+      tooltip: |-
+        {
+          cluster, select,
+            null { {label} }
+            other { {label} in {cluster} cluster }
+        }
     open-console-logs:
-      name: Console Logs
-      tooltip: Open the console logs for the {name} Pod in {namespace} namespace
+      name: View Console Logs
+      tooltip: Open the console logs window for the {name} Pod in {namespace} namespace
     download-logs:
       name: Download Logs
     select-option:

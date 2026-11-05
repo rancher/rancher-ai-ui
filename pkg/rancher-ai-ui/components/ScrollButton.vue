@@ -26,12 +26,13 @@ const emit = defineEmits(['scroll']);
 
 <style scoped lang="scss">
 .scroll-button-btn {
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   min-height: 0;
   padding: 0;
   border: 1px solid #9fabc6;
   border-radius: 50%;
+  box-shadow: 0 2px 8px 0 var(--shadow);
   display: inline-flex;
   align-items: center;
   justify-content: center;
