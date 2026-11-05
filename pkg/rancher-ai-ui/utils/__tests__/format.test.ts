@@ -3,10 +3,12 @@ import {
   formatStopMessage,
   buildMessageFromHistoryMessage,
   formatPlanning,
+  formatConfirmationActions,
 } from '../format';
 import {
   Role, HistoryChatMessage, MessageStopType, Agent,
-  AgentSelectionMode, Tag, MessageLabelKey, PlanningStopType
+  AgentSelectionMode, Tag, MessageLabelKey, PlanningStopType,
+  ConfirmationActionType
 } from '../../types';
 
 // Mock i18n for testing
@@ -398,5 +400,29 @@ describe('buildMessageFromHistoryMessage', () => {
     expect(result.messageContent).toBe('ai.message.system.planning-manual-stop.info');
     expect(result.role).toBe(Role.System);
     expect(result.stopType).toBe(PlanningStopType.Manual);
+  });
+});
+
+describe('formatConfirmationActions', () => {
+  it('should parse external tool confirmation action', () => {
+    const payload = JSON.stringify({
+      type: 'external',
+      name: 'externalTool',
+      args: {
+        id:          'my-id',
+        description: 'My description'
+      }
+    });
+    const data = `${ Tag.ConfirmationStart }${ payload }${ Tag.ConfirmationEnd }`;
+
+    const result = formatConfirmationActions(data);
+
+    expect(result).toHaveLength(1);
+    expect(result?.[0].type).toBe(ConfirmationActionType.External);
+    expect(result?.[0].tool?.name).toBe('externalTool');
+    expect(result?.[0].tool?.args).toEqual({
+      id:          'my-id',
+      description: 'My description'
+    });
   });
 });

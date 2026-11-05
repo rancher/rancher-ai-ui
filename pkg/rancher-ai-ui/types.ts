@@ -164,6 +164,7 @@ export const enum ConfirmationActionType {
   Create = 'create',
   Update = 'update',
   Delete = 'delete',
+  External = 'external',
 }
 
 export const enum ConfirmationStatus {
@@ -203,7 +204,12 @@ export interface MessageConfirmation {
 export interface MessageConfirmationAction {
   type: ConfirmationActionType | string;
   payload?: ConfirmationOperationPayload;
-  resource: ActionResource;
+  resource?: ActionResource;
+  // optional for external type
+  tool?: {
+    name: string;
+    args: Record<string, unknown> | string;
+  }
 }
 
 export const enum MessageTemplateComponent {

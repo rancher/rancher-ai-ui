@@ -2,6 +2,8 @@
 import { computed, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+import * as jsyaml from 'js-yaml';
+import { escape } from 'lodash';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { warn } from '../../utils/log';
 import { ConfirmationStatus, ConfirmationActionType, Message } from '../../types';
@@ -40,6 +42,31 @@ const confirmationText = computed(() => {
     props.message.confirmation?.actions?.forEach((action) => {
       const actionType = action?.type || ConfirmationActionType.Create;
 
+      // Handle custom agent tool actions separately
+      if (actionType === ConfirmationActionType.External) {
+        if (action.tool?.name && action.tool?.args !== undefined) {
+          const toolLabel = t('ai.confirmation.message.operation.external.tool', {}, true);
+          const argsLabel = t('ai.confirmation.message.operation.external.args', {}, true);
+
+          out += `${ toolLabel }: <code>${ escape(action.tool.name) }</code><br>`;
+
+          let argsStr: string;
+
+          if (typeof action.tool.args === 'string') {
+            argsStr = escape(action.tool.args);
+          } else {
+            const yamlStr = jsyaml.dump(action.tool.args, { lineWidth: -1 });
+
+            argsStr = escape(yamlStr);
+          }
+
+          out += `${ argsLabel }:<br><code class="external-args-code">${ argsStr }</code><br><br>`;
+        }
+
+        return;
+      }
+
+      // Handle built-in agent resource-based actions (create/update/patch)
       const {
         kind, name, namespace, cluster
       } = action?.resource || {};
@@ -174,6 +201,10 @@ const confirmationText = computed(() => {
     border-radius: initial;
     background-color: transparent;
     color: #025937;
+  }
+
+  &:deep(code.external-args-code) {
+    white-space: pre-wrap;
   }
 
   &:deep(ul) {
