@@ -224,36 +224,20 @@ onBeforeUnmount(() => {
         />
         <div class="task-content">
           <div class="task-header">
-            <span class="label">
-              {{ item.summary }}
-            </span>
+            <span class="label">{{ item.summary }}</span>
+            <span
+              v-if="isTaskExpanded[index] && item.additionalInfo"
+              class="additional-info"
+            >{{ item.additionalInfo }}</span>
             <RcButton
-              v-if="item.additionalInfo && !isTaskExpanded[index]"
+              v-if="item.additionalInfo"
               class="inline-button"
               small
               variant="ghost"
-              :aria-label="t('ai.planning.task.showMore')"
+              :aria-label="isTaskExpanded[index] ? t('ai.planning.task.showLess') : t('ai.planning.task.showMore')"
               @click="toggleTask(index)"
             >
               <a>{{ isTaskExpanded[index] ? t('ai.planning.task.showLess') : t('ai.planning.task.showMore') }}</a>
-            </RcButton>
-          </div>
-          <div v-if="isTaskExpanded[index] && item.additionalInfo">
-            <span
-              class="additional-info"
-            >
-              {{ item.additionalInfo }}
-            </span>
-          </div>
-          <div v-if="isTaskExpanded[index] && item.additionalInfo">
-            <RcButton
-              class="inline-button"
-              small
-              variant="ghost"
-              :aria-label="t('ai.planning.task.showLess')"
-              @click="toggleTask(index)"
-            >
-              <a>{{ t('ai.planning.task.showLess') }}</a>
             </RcButton>
           </div>
         </div>
@@ -450,8 +434,9 @@ onBeforeUnmount(() => {
 
     .task-header {
       display: block;
+      word-break: break-word;
 
-      .label {
+      .label, .additional-info {
         margin-right: 4px;
       }
     }
@@ -476,10 +461,10 @@ onBeforeUnmount(() => {
       &:hover, &:focus {
         color: inherit;
         background: transparent;
+      }
 
-        a {
-          text-decoration: none;
-        }
+      &:hover a {
+        text-decoration: none;
       }
     }
   }
