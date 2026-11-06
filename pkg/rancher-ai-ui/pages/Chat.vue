@@ -10,6 +10,7 @@ import {
 } from '../types';
 import { extractMessageText } from '../utils/label';
 import Chat from '../handlers/chat';
+import Notifications from '../handlers/notification/index';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
 import { useContextComposable } from '../composables/useContextComposable';
@@ -132,7 +133,10 @@ const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
 const deletingChat = ref<HistoryChat | null>(null);
 
-const preferences = computed<Preferences>(() => ({ [StorageKey.ENABLE_AUTO_SCROLL]: storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true }));
+const preferences = computed<Preferences>(() => ({
+  [StorageKey.ENABLE_AUTO_SCROLL]:           storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true,
+  [StorageKey.ENABLE_DESKTOP_NOTIFICATIONS]: storage.get(StorageKey.ENABLE_DESKTOP_NOTIFICATIONS) === 'true' || storage.get(StorageKey.ENABLE_DESKTOP_NOTIFICATIONS) === true,
+}));
 
 const chatAgents = computed<Agent[]>(() => {
   return agents.value.map((agent) => {
@@ -434,21 +438,32 @@ watch(() => [
 });
 
 onMounted(() => {
-  // Ensure disconnection on browser refresh/close
-  window.addEventListener('beforeunload', unmount);
+  window.addEventListener('beforeunload', clearBeforeUnload);
+
+  clearOnFocus();
+  window.addEventListener('focus', clearOnFocus);
 });
 
 onBeforeUnmount(() => {
-  unmount();
-  window.removeEventListener('beforeunload', unmount);
+  clearBeforeUnload();
+  window.removeEventListener('beforeunload', clearBeforeUnload);
+
+  clearOnFocus();
+  window.removeEventListener('focus', clearOnFocus);
 });
 
-function unmount() {
+function clearBeforeUnload() {
   // Clear connection when websocket is disconnected and chat is manually closed
   if ((!Chat.isOpen(store) && !isChatInitialized.value)) {
     disconnect();
   }
+  // Restore the panel to its default position when the chat is closed or the page is refreshed
   restorePanel();
+}
+
+function clearOnFocus() {
+  // Clear notifications
+  Notifications.message().clear(store);
 }
 </script>
 
