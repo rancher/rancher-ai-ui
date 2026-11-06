@@ -10,7 +10,8 @@
   },
   "resolutions": {
     "@types/node": "25.3.3",
-    "@types/lodash": "4.17.5"
+    "@types/lodash": "4.17.5",
+    "dompurify": "3.4.17"
   },
   "scripts": {
     "dev": "NODE_ENV=dev ./node_modules/.bin/vue-cli-service serve",
