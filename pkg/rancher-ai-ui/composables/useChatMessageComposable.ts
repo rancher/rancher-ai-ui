@@ -54,7 +54,9 @@ import { downloadFile } from '@shell/utils/download';
 import { useContextComposable } from './useContextComposable';
 import { useAIAgentApiComposable } from './useAIAgentApiComposable';
 import { useToolsComposable } from './useToolsComposable';
+import { useLocalStorageComposable } from './useLocalStorageComposable';
 import AuthenticationHandler from '../handlers/authentication';
+import Notifications from '../handlers/notification';
 
 const EXPAND_THINKING = false;
 
@@ -84,6 +86,7 @@ export function useChatMessageComposable(
   const store = useStore();
   const { t } = useI18n(store);
 
+  const storage = useLocalStorageComposable();
   const { selectContext, selectedContext } = useContextComposable();
   const { toolsSelector } = useToolsComposable();
   const { refreshMcpAuthenticationToken, fetchUIToolsCalls, fetchChatUsage } = useAIAgentApiComposable();
@@ -627,6 +630,8 @@ export function useChatMessageComposable(
       }
 
       fetchUsage();
+
+      Notifications.message().send(store, storage, currentMsg.value);
 
       break;
     default:
