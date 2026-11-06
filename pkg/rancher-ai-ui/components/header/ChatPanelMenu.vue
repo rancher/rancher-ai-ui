@@ -34,6 +34,7 @@ const emit = defineEmits([
 
 const options = computed(() => {
   const isAutoScrollEnabled = props.preferences[StorageKey.ENABLE_AUTO_SCROLL];
+  const isDesktopNotificationsEnabled = props.preferences[StorageKey.ENABLE_DESKTOP_NOTIFICATIONS];
 
   return [
     {
@@ -54,6 +55,17 @@ const options = computed(() => {
           value: !isAutoScrollEnabled
         });
       },
+    },
+    {
+      label:       t(`ai.menu.options.chat.desktopNotifications.label.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
+      description: t(`ai.menu.options.chat.desktopNotifications.description.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
+      icon:        isDesktopNotificationsEnabled ? 'icon-notify-bell-off' : 'icon-notify-bell',
+      action:      () => {
+        emit('update:preferences', {
+          key:   StorageKey.ENABLE_DESKTOP_NOTIFICATIONS,
+          value: !isDesktopNotificationsEnabled
+        });
+      }
     },
     {
       label:       t('ai.menu.options.chat.shortcuts.label'),

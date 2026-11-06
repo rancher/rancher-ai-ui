@@ -512,9 +512,15 @@ export const enum LLMProvider {
 }
 
 export const enum StorageKey {
-  ENABLE_AUTO_SCROLL = 'enable_auto_scroll'
+  ENABLE_AUTO_SCROLL = 'enable_auto_scroll',
+  ENABLE_DESKTOP_NOTIFICATIONS = 'enable_desktop_notifications',
 }
 
 export interface Preferences {
   [StorageKey.ENABLE_AUTO_SCROLL]?: boolean;
+  [StorageKey.ENABLE_DESKTOP_NOTIFICATIONS]?: boolean;
+}
+
+export const enum NotificationType {
+  MESSAGE = 'message'
 }
