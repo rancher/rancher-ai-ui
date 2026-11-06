@@ -51,14 +51,14 @@ const createMockMessagePlanning = (overrides?: Partial<MessagePlanning>): Messag
   approval:  false,
   tasks:     [
     {
-      task:   'Task 1',
-      agent:  'agent1',
-      status: MessagePlanningStatus.Pending
+      summary: 'Task 1',
+      agent:   'agent1',
+      status:  MessagePlanningStatus.Pending
     },
     {
-      task:   'Task 2',
-      agent:  'agent2',
-      status: MessagePlanningStatus.Completed
+      summary: 'Task 2',
+      agent:   'agent2',
+      status:  MessagePlanningStatus.Completed
     }
   ],
   status:       MessagePlanningStatus.Pending,
@@ -81,9 +81,9 @@ describe('StatusInfo.vue', () => {
       const value = createMockMessagePlanning({
         tasks: [
           {
-            task:   'Task 1',
-            agent:  'agent1',
-            status: MessagePlanningStatus.Pending
+            summary: 'Task 1',
+            agent:   'agent1',
+            status:  MessagePlanningStatus.Pending
           }
         ]
       });
@@ -125,7 +125,7 @@ describe('StatusInfo.vue', () => {
         ...requiredSetup()
       });
 
-      expect((wrapper.vm as any).isCollapsed).toBe(true);
+      expect((wrapper.vm as any).isPlanCollapsed).toBe(true);
       expect(wrapper.find('.planning-state-container.collapsed').exists()).toBe(true);
     });
   });
@@ -189,14 +189,14 @@ describe('StatusInfo.vue', () => {
         const value = createMockMessagePlanning({
           tasks: [
             {
-              task:   'Task 1',
-              agent:  'agent1',
-              status: MessagePlanningStatus.Pending
+              summary: 'Task 1',
+              agent:   'agent1',
+              status:  MessagePlanningStatus.Pending
             },
             {
-              task:   'Task 2',
-              agent:  'agent2',
-              status: MessagePlanningStatus.Completed
+              summary: 'Task 2',
+              agent:   'agent2',
+              status:  MessagePlanningStatus.Completed
             }
           ]
         });
@@ -223,22 +223,24 @@ describe('StatusInfo.vue', () => {
 
         expect(items).toHaveLength(2);
         expect(items[0]).toEqual({
-          task:   'Task 1',
-          agent:  'Agent One',
-          status: MessagePlanningStatus.Pending
+          summary:        'Task 1',
+          additionalInfo: undefined,
+          agent:          'Agent One',
+          status:         MessagePlanningStatus.Pending
         });
         expect(items[1]).toEqual({
-          task:   'Task 2',
-          agent:  'Agent Two',
-          status: MessagePlanningStatus.Completed
+          summary:        'Task 2',
+          additionalInfo: undefined,
+          agent:          'Agent Two',
+          status:         MessagePlanningStatus.Completed
         });
       });
 
       it('should use agent name when displayName is not available', () => {
         const value = createMockMessagePlanning({
           tasks: [{
-            task:  'Task 1',
-            agent: 'agent1'
+            summary: 'Task 1',
+            agent:   'agent1'
           }]
         });
         const agents = [createMockAgent({
@@ -262,8 +264,8 @@ describe('StatusInfo.vue', () => {
       it('should use agent name when agent is not found in list', () => {
         const value = createMockMessagePlanning({
           tasks: [{
-            task:  'Task 1',
-            agent: 'unknown-agent'
+            summary: 'Task 1',
+            agent:   'unknown-agent'
           }]
         });
         const agents = [createMockAgent({ name: 'agent1' })];
@@ -389,16 +391,16 @@ describe('StatusInfo.vue', () => {
         const value = createMockMessagePlanning({
           tasks: [
             {
-              task:   'Task 1',
-              status: MessagePlanningStatus.Completed
+              summary: 'Task 1',
+              status:  MessagePlanningStatus.Completed
             },
             {
-              task:   'Task 2',
-              status: MessagePlanningStatus.Completed
+              summary: 'Task 2',
+              status:  MessagePlanningStatus.Completed
             },
             {
-              task:   'Task 3',
-              status: MessagePlanningStatus.Pending
+              summary: 'Task 3',
+              status:  MessagePlanningStatus.Pending
             }
           ]
         });
@@ -422,12 +424,12 @@ describe('StatusInfo.vue', () => {
         const value = createMockMessagePlanning({
           tasks: [
             {
-              task:   'Task 1',
-              status: MessagePlanningStatus.Pending
+              summary: 'Task 1',
+              status:  MessagePlanningStatus.Pending
             },
             {
-              task:   'Task 2',
-              status: MessagePlanningStatus.Pending
+              summary: 'Task 2',
+              status:  MessagePlanningStatus.Pending
             }
           ]
         });
@@ -450,8 +452,8 @@ describe('StatusInfo.vue', () => {
         const value = createMockMessagePlanning({
           status: MessagePlanningStatus.Canceled,
           tasks:  [{
-            task:   'Task 1',
-            status: MessagePlanningStatus.Completed
+            summary: 'Task 1',
+            status:  MessagePlanningStatus.Completed
           }]
         });
 
@@ -473,8 +475,8 @@ describe('StatusInfo.vue', () => {
         const value = createMockMessagePlanning({
           status: MessagePlanningStatus.InProgress,
           tasks:  [{
-            task:   'Task 1',
-            status: MessagePlanningStatus.Completed
+            summary: 'Task 1',
+            status:  MessagePlanningStatus.Completed
           }]
         });
 
@@ -501,12 +503,12 @@ describe('StatusInfo.vue', () => {
           status:      MessagePlanningStatus.InProgress,
           tasks:       [
             {
-              task:  'Task 1',
-              agent: 'agent1'
+              summary: 'Task 1',
+              agent:   'agent1'
             },
             {
-              task:  'Task 2',
-              agent: 'agent1'
+              summary: 'Task 2',
+              agent:   'agent1'
             }
           ]
         });
@@ -531,12 +533,12 @@ describe('StatusInfo.vue', () => {
           status:      MessagePlanningStatus.Pending,
           tasks:       [
             {
-              task:  'Task 1',
-              agent: 'agent1'
+              summary: 'Task 1',
+              agent:   'agent1'
             },
             {
-              task:  'Task 2',
-              agent: 'agent2'
+              summary: 'Task 2',
+              agent:   'agent2'
             }
           ]
         });
@@ -560,19 +562,19 @@ describe('StatusInfo.vue', () => {
           status:      MessagePlanningStatus.InProgress,
           tasks:       [
             {
-              task:   'Task 1',
-              agent:  'agent1',
-              status: MessagePlanningStatus.Completed
+              summary: 'Task 1',
+              agent:   'agent1',
+              status:  MessagePlanningStatus.Completed
             },
             {
-              task:   'Task 2',
-              agent:  'agent1',
-              status: MessagePlanningStatus.InProgress
+              summary: 'Task 2',
+              agent:   'agent1',
+              status:  MessagePlanningStatus.InProgress
             },
             {
-              task:   'Task 3',
-              agent:  'agent1',
-              status: MessagePlanningStatus.Pending
+              summary: 'Task 3',
+              agent:   'agent1',
+              status:  MessagePlanningStatus.Pending
             }
           ]
         });
@@ -599,12 +601,12 @@ describe('StatusInfo.vue', () => {
           status: MessagePlanningStatus.InProgress,
           tasks:  [
             {
-              task:   'Task 1',
-              status: MessagePlanningStatus.Completed
+              summary: 'Task 1',
+              status:  MessagePlanningStatus.Completed
             },
             {
-              task:   'Task 2',
-              status: MessagePlanningStatus.InProgress
+              summary: 'Task 2',
+              status:  MessagePlanningStatus.InProgress
             }
           ]
         });
@@ -625,8 +627,8 @@ describe('StatusInfo.vue', () => {
           status: MessagePlanningStatus.Completed,
           tasks:  [
             {
-              task:   'Task 1',
-              status: MessagePlanningStatus.Completed
+              summary: 'Task 1',
+              status:  MessagePlanningStatus.Completed
             }
           ]
         });
@@ -649,8 +651,8 @@ describe('StatusInfo.vue', () => {
           isCollapsed: true,
           status:      MessagePlanningStatus.InProgress,
           tasks:       [{
-            task:   'Current Task',
-            status: MessagePlanningStatus.InProgress
+            summary: 'Current Task',
+            status:  MessagePlanningStatus.InProgress
           }]
         });
 
@@ -672,8 +674,8 @@ describe('StatusInfo.vue', () => {
           isCollapsed: false,
           status:      MessagePlanningStatus.Pending,
           tasks:       [{
-            task:  'Task 1',
-            agent: 'agent1'
+            summary: 'Task 1',
+            agent:   'agent1'
           }]
         });
 
@@ -748,7 +750,7 @@ describe('StatusInfo.vue', () => {
         stopPropagation: jest.fn()
       };
 
-      await (wrapper.vm as any).toggleCollapse(mockEvent);
+      await (wrapper.vm as any).togglePlan(mockEvent);
 
       expect(wrapper.emitted('collapse')).toBeTruthy();
       expect(wrapper.emitted('collapse')?.[0]).toEqual([true]);
@@ -767,16 +769,16 @@ describe('StatusInfo.vue', () => {
         ...requiredSetup()
       });
 
-      expect((wrapper.vm as any).isCollapsed).toBe(false);
+      expect((wrapper.vm as any).isPlanCollapsed).toBe(false);
 
       const mockEvent = {
         preventDefault:  jest.fn(),
         stopPropagation: jest.fn()
       };
 
-      await (wrapper.vm as any).toggleCollapse(mockEvent);
+      await (wrapper.vm as any).togglePlan(mockEvent);
 
-      expect((wrapper.vm as any).isCollapsed).toBe(true);
+      expect((wrapper.vm as any).isPlanCollapsed).toBe(true);
     });
 
     it('should toggle collapse state back to expanded', async() => {
@@ -790,16 +792,16 @@ describe('StatusInfo.vue', () => {
         ...requiredSetup()
       });
 
-      expect((wrapper.vm as any).isCollapsed).toBe(true);
+      expect((wrapper.vm as any).isPlanCollapsed).toBe(true);
 
       const mockEvent = {
         preventDefault:  jest.fn(),
         stopPropagation: jest.fn()
       };
 
-      await (wrapper.vm as any).toggleCollapse(mockEvent);
+      await (wrapper.vm as any).togglePlan(mockEvent);
 
-      expect((wrapper.vm as any).isCollapsed).toBe(false);
+      expect((wrapper.vm as any).isPlanCollapsed).toBe(false);
     });
 
     it('should collapse/expand when entire header is clicked', async() => {
@@ -813,21 +815,21 @@ describe('StatusInfo.vue', () => {
         ...requiredSetup()
       });
 
-      expect((wrapper.vm as any).isCollapsed).toBe(false);
+      expect((wrapper.vm as any).isPlanCollapsed).toBe(false);
 
       // Click on the header
       const header = wrapper.find('.planning-state-header');
 
       await header.trigger('click');
 
-      expect((wrapper.vm as any).isCollapsed).toBe(true);
+      expect((wrapper.vm as any).isPlanCollapsed).toBe(true);
       expect(wrapper.emitted('collapse')).toBeTruthy();
       expect(wrapper.emitted('collapse')?.[0]).toEqual([true]);
 
       // Click again to expand
       await header.trigger('click');
 
-      expect((wrapper.vm as any).isCollapsed).toBe(false);
+      expect((wrapper.vm as any).isPlanCollapsed).toBe(false);
       expect(wrapper.emitted('collapse')?.[1]).toEqual([false]);
     });
   });
@@ -916,12 +918,12 @@ describe('StatusInfo.vue', () => {
         isCollapsed: false,
         tasks:       [
           {
-            task:  'Task 1',
-            agent: 'agent1'
+            summary:  'Task 1',
+            agent:   'agent1'
           },
           {
-            task:  'Task 2',
-            agent: 'agent2'
+            summary:  'Task 2',
+            agent:   'agent2'
           }
         ]
       });
@@ -994,8 +996,8 @@ describe('StatusInfo.vue', () => {
       const value = createMockMessagePlanning({
         isCollapsed: false,
         tasks:       [{
-          task:  'Task 1',
-          agent: 'agent1'
+          summary:  'Task 1',
+          agent:   'agent1'
         }]
       });
 
@@ -1046,14 +1048,14 @@ describe('StatusInfo.vue', () => {
         isCollapsed: false,
         tasks:       [
           {
-            task:   'Task 1',
-            agent:  'agent1',
-            status: MessagePlanningStatus.Completed
+            summary:   'Task 1',
+            agent:   'agent1',
+            status:  MessagePlanningStatus.Completed
           },
           {
-            task:   'Task 2',
-            agent:  'agent2',
-            status: MessagePlanningStatus.Pending
+            summary:   'Task 2',
+            agent:   'agent2',
+            status:  MessagePlanningStatus.Pending
           }
         ]
       });

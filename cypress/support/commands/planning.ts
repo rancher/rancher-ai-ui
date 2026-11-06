@@ -7,9 +7,10 @@ import { PlanningTaskResponse } from '@/cypress/globals';
 Cypress.Commands.add('enqueuePlanningResponse', (tasks: PlanningTaskResponse[]): void => {
   const subtasks = [];
 
-  for (const { label: task, agent } of tasks) {
+  for (const { summary: task, additionalInfo: additional_info, agent } of tasks) {
     subtasks.push({
       task,
+      additional_info,
       agent,
       status: 'pending'
     });

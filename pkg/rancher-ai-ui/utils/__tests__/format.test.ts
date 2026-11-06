@@ -60,19 +60,21 @@ describe('formatPlanning', () => {
       principal: 'user',
       tasks:     [
         {
-          label:  'Create namespace',
-          agent:  'rancher',
-          status: 'pending',
-          tools:  [{
+          task:           'Create namespace',
+          additionalInfo: 'Create the namespace using kubectl',
+          agent:          'rancher',
+          status:         'pending',
+          tools:          [{
             name:        'kubectl',
             description: 'Kubernetes CLI'
           }]
         },
         {
-          label:  'Deploy application',
-          agent:  'fleet',
-          status: 'pending',
-          tools:  [{
+          task:           'Deploy application',
+          additionalInfo: 'Deploy the application with helm',
+          agent:          'fleet',
+          status:         'pending',
+          tools:          [{
             name:        'helm',
             description: 'Helm package manager'
           }]
@@ -83,7 +85,14 @@ describe('formatPlanning', () => {
     const data = `${ Tag.PlanningStart }${ JSON.stringify(planningData) }${ Tag.PlanningEnd }`;
     const result = formatPlanning(data);
 
-    expect(result).toEqual(planningData);
+    expect(result).toEqual({
+      ...planningData,
+      tasks: planningData.tasks.map((task) => ({
+        ...task,
+        summary:        task.task,
+        additionalInfo: task.additionalInfo
+      }))
+    });
     expect(result?.tasks).toHaveLength(2);
     expect(result?.tasks[0].tools).toHaveLength(1);
     expect(result?.tasks[1].tools).toHaveLength(1);
@@ -96,7 +105,7 @@ describe('formatPlanning', () => {
       principal: 'user',
       tasks:     [
         {
-          label:  'Information gathering',
+          task:   'Information gathering',
           agent:  'rancher',
           status: 'pending'
         }
@@ -106,7 +115,14 @@ describe('formatPlanning', () => {
     const data = `${ Tag.PlanningStart }${ JSON.stringify(planningData) }${ Tag.PlanningEnd }`;
     const result = formatPlanning(data);
 
-    expect(result).toEqual(planningData);
+    expect(result).toEqual({
+      ...planningData,
+      tasks: [{
+        ...planningData.tasks[0],
+        summary:        'Information gathering',
+        additionalInfo: undefined
+      }]
+    });
     expect(result?.tasks[0].tools).toBeUndefined();
   });
 

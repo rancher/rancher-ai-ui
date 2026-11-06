@@ -285,6 +285,16 @@ export function formatPlanning(value: string): MessagePlanning | null {
   try {
     const parsed = JSON.parse(value);
 
+    if (parsed) {
+      return {
+        ...parsed,
+        tasks: parsed.tasks?.map((task: { task: string }) => ({
+          ...task,
+          summary: task.task
+        })) || []
+      };
+    }
+
     return parsed;
   } catch (err) {
     error('Failed to parse planning items:', err);

@@ -40,15 +40,20 @@ const props = defineProps({
 
 const emit = defineEmits(['confirm', 'stop', 'collapse']);
 
-const isCollapsed = ref(props.value.isCollapsed);
+const isPlanCollapsed = ref<boolean>(props.value.isCollapsed || false);
+const isTaskExpanded = ref<Record<number, boolean>>({});
+
 const stickyWithDelay = ref(false);
 let timeout: NodeJS.Timeout | null = null; // eslint-disable-line no-undef
 
-const items = computed(() => (props.value.tasks || []).map(({ task, agent: agentName, status }) => {
+const items = computed(() => (props.value.tasks || []).map(({
+  summary, additionalInfo, agent: agentName, status
+}) => {
   const agent = props.agents.find((a) => a.name === agentName);
 
   return {
-    task,
+    summary,
+    additionalInfo,
     agent:  agent?.displayName || agent?.name || agentName,
     status: status || MessagePlanningStatus.Pending,
   };
@@ -85,7 +90,7 @@ const segments = computed<Array<{ color: StateColor; percent: number }>>(() => {
 
 const currentRunningTask = computed(() => {
   if (props.value.status === MessagePlanningStatus.InProgress) {
-    return items.value.find((item) => item.status === MessagePlanningStatus.InProgress)?.task;
+    return items.value.find((item) => item.status === MessagePlanningStatus.InProgress)?.summary;
   }
 
   return null;
@@ -95,9 +100,9 @@ const planningHeader = computed(() => {
   const distinctAgents = Array.from(new Set((props.value.tasks || []).map(({ agent }) => agent)));
 
   const approvalKey = props.value.approval ? 'withApproval' : 'withoutApproval';
-  const collapseKey = isCollapsed.value ? 'collapsed' : 'expanded';
+  const collapseKey = isPlanCollapsed.value ? 'collapsed' : 'expanded';
 
-  const completion = isCollapsed.value && currentRunningTask.value ? `(${ completedTasks.value + 1 }/${ totalTasks.value })` : undefined;
+  const completion = isPlanCollapsed.value && currentRunningTask.value ? `(${ completedTasks.value + 1 }/${ totalTasks.value })` : undefined;
 
   return t(`ai.planning.header.label.${ approvalKey }.${ collapseKey }.${ props.value.status }`, {
     count: distinctAgents.length,
@@ -105,12 +110,17 @@ const planningHeader = computed(() => {
   });
 });
 
-function toggleCollapse(event: Event) {
+function togglePlan(event: Event) {
   event.preventDefault();
   event.stopPropagation();
 
-  isCollapsed.value = !isCollapsed.value;
-  emit('collapse', isCollapsed.value);
+  isTaskExpanded.value = {};
+  isPlanCollapsed.value = !isPlanCollapsed.value;
+  emit('collapse', isPlanCollapsed.value);
+}
+
+function toggleTask(index: number) {
+  isTaskExpanded.value[index] = !isTaskExpanded.value[index];
 }
 
 watch(() => props.value.status, (newStatus) => {
@@ -156,14 +166,14 @@ onBeforeUnmount(() => {
     :class="{
       'disabled-panel': props.disabled,
       'sticky': !props.disabled && stickyWithDelay,
-      'collapsed': isCollapsed
+      'collapsed': isPlanCollapsed
     }"
     data-testid="rancher-ai-ui-planning-status-info-content"
   >
     <div
       class="planning-state-header"
-      @click="toggleCollapse"
-      @keydown.enter.space="toggleCollapse"
+      @click="togglePlan"
+      @keydown.enter.space="togglePlan"
     >
       <span>
         {{ planningHeader }}
@@ -172,13 +182,13 @@ onBeforeUnmount(() => {
         size="small"
         variant="ghost"
         class="collapse-button"
-        @click="toggleCollapse"
-        @keydown.enter.space="toggleCollapse"
+        @click="togglePlan"
+        @keydown.enter.space="togglePlan"
       >
         <i
-          :aria-label="t(`ai.planning.actions.${ isCollapsed ? 'expand' : 'collapse' }`)"
+          :aria-label="t(`ai.planning.actions.${ isPlanCollapsed ? 'expand' : 'collapse' }`)"
           :data-testid="'rancher-ai-ui-planning-status-info-toggle-collapse-button'"
-          :class="['icon', isCollapsed ? 'icon-chevron-down' : 'icon-chevron-up']"
+          :class="['icon', isPlanCollapsed ? 'icon-chevron-down' : 'icon-chevron-up']"
         />
       </RcButton>
     </div>
@@ -192,7 +202,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div
-      v-if="!isCollapsed"
+      v-if="!isPlanCollapsed"
       class="planning-state-content"
     >
       <div
@@ -212,9 +222,41 @@ onBeforeUnmount(() => {
             [STATUS_ICON[item.status]]: true,
           }"
         />
-        <span class="label">
-          {{ item.task }}
-        </span>
+        <div class="task-content">
+          <div class="task-header">
+            <span class="label">
+              {{ item.summary }}
+            </span>
+            <RcButton
+              v-if="item.additionalInfo && !isTaskExpanded[index]"
+              class="inline-button"
+              small
+              variant="ghost"
+              :aria-label="t('ai.planning.task.showMore')"
+              @click="toggleTask(index)"
+            >
+              <a>{{ isTaskExpanded[index] ? t('ai.planning.task.showLess') : t('ai.planning.task.showMore') }}</a>
+            </RcButton>
+          </div>
+          <div v-if="isTaskExpanded[index] && item.additionalInfo">
+            <span
+              class="additional-info"
+            >
+              {{ item.additionalInfo }}
+            </span>
+          </div>
+          <div v-if="isTaskExpanded[index] && item.additionalInfo">
+            <RcButton
+              class="inline-button"
+              small
+              variant="ghost"
+              :aria-label="t('ai.planning.task.showLess')"
+              @click="toggleTask(index)"
+            >
+              <a>{{ t('ai.planning.task.showLess') }}</a>
+            </RcButton>
+          </div>
+        </div>
         <ContextTag
           v-if="item.agent"
           :item="{
@@ -276,7 +318,7 @@ onBeforeUnmount(() => {
         v-else
         :class="[
           'planning-state-result',
-          `planning-state-result-${ isCollapsed ? 'collapsed' : 'expanded' }`,
+          `planning-state-result-${ isPlanCollapsed ? 'collapsed' : 'expanded' }`,
           `planning-state-status-${ props.value.status }`
         ]"
       >
@@ -355,7 +397,7 @@ onBeforeUnmount(() => {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 50vh;
+    max-height: 40vh;
     overflow-y: auto;
     animation: slideDown 0.3s ease-out;
 
@@ -399,6 +441,47 @@ onBeforeUnmount(() => {
     .agent {
       margin-left: 8px;
     }
+
+    .task-content {
+      flex: 1;
+      min-width: 0;
+      margin-right: auto;
+    }
+
+    .task-header {
+      display: block;
+
+      .label {
+        margin-right: 4px;
+      }
+    }
+
+    .inline-button {
+      display: inline;
+      height: auto;
+      min-height: 0;
+      padding: 0;
+      border: none;
+      line-height: inherit;
+      font-size: inherit;
+      color: inherit;
+      background: transparent;
+      vertical-align: baseline;
+
+      a {
+        color: inherit;
+        text-decoration: underline;
+      }
+
+      &:hover, &:focus {
+        color: inherit;
+        background: transparent;
+
+        a {
+          text-decoration: none;
+        }
+      }
+    }
   }
 
   &-actions, &-result {
@@ -438,7 +521,7 @@ onBeforeUnmount(() => {
       }
     }
     &-canceling {
-      .icon, .label {
+      .icon, .label, .additional-info {
         opacity: 0.5;
       }
     }
