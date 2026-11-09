@@ -1217,16 +1217,20 @@ describe('Chat', () => {
 
       planningMessage.toggleCollapse();
 
+      // Collapse the planning message and verify that its items are hidden
       planningMessage.item(0).self().should('not.exist');
+      planningMessage.item(1).self().should('not.exist');
 
       // Verify that the scroll position has not changed after collapsing the planning message
       chat.getMessages().last().should('not.be.visible');
 
-      cy.wait(100); // Wait for the pause scroll to settle
+      cy.wait(500); // Wait for the pause scroll to settle
 
       planningMessage.toggleCollapse();
 
+      // Expand the planning message and verify that its items are visible
       planningMessage.item(0).self().should('be.visible');
+      planningMessage.item(1).self().should('be.visible');
 
       // Verify that the scroll position has not changed after expanding the planning message
       chat.getMessages().last().should('not.be.visible');
