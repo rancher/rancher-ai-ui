@@ -527,6 +527,13 @@ onBeforeUnmount(() => {
   max-height: 16px;
   color: var(--on-tertiary, var(--primary));
 }
+
+.rc-button-label {
+  word-break: break-word;
+  white-space: pre-line;
+  list-style-position: inside;
+}
+
 // TODO remove when variant-link is properly styled in the future (same color as the theme)
 .rc-button.variant-link, .rc-button.variant-link:hover {
   color: var(--on-tertiary, var(--primary));
