@@ -182,6 +182,7 @@ onBeforeUnmount(() => {
         size="small"
         variant="ghost"
         class="collapse-button"
+        :aria-expanded="!isPlanCollapsed"
         @click="togglePlan"
         @keydown.enter.space="togglePlan"
       >
@@ -235,6 +236,7 @@ onBeforeUnmount(() => {
               small
               variant="ghost"
               :aria-label="isTaskExpanded[index] ? t('ai.planning.task.showLess') : t('ai.planning.task.showMore')"
+              :aria-expanded="isTaskExpanded[index]"
               @click="toggleTask(index)"
             >
               <a>{{ isTaskExpanded[index] ? t('ai.planning.task.showLess') : t('ai.planning.task.showMore') }}</a>
