@@ -186,10 +186,18 @@ ai:
                 null { I will <b>{op}</b> the value <code>{value}</code> in the path <code>{path}</code> to the <code>{name}</code> {kind} in the <code>{cluster}</code> cluster. }
                 other { I will <b>{op}</b> the value <code>{value}</code> in the path <code>{path}</code> to the <code>{name}</code> {kind} in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster. }
             }
+        delete:
+          description: |-
+            {
+              namespace, select,
+                null { I will delete the {kind} <code>{name}</code> in the <code>{cluster}</code> cluster.<br> }
+                other { I will delete the {kind} <code>{name}</code> in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster.<br> }
+            }
         external:
           tool: 'Calling tool'
           args: 'With args'
     confirm: Confirm
+    delete: Delete
     cancel: Cancel
     confirmed: Confirmed
     canceled: Canceled
