@@ -258,9 +258,8 @@ const confirmationText = computed(() => {
 }
 
 .rc-button-label {
-  word-break: break-word;
+  overflow-wrap: break-word;
   white-space: pre-line;
-  list-style-position: inside;
 }
 
 // TODO remove when variant-link is properly styled in the future (same color as the theme)
