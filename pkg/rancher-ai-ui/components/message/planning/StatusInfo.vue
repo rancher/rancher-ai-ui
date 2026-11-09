@@ -495,10 +495,6 @@ onBeforeUnmount(() => {
         margin-right: 8px;
       }
     }
-
-    .cancel-button {
-      background: transparent;
-    }
   }
 
   &-status {
