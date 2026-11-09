@@ -1191,6 +1191,11 @@ describe('Chat', () => {
 
       const planningMessage = chat.getMessage(3).planning();
 
+      planningMessage.self().should('exist');
+
+      // Wait for the processing state to disappear before continuing
+      chat.messagesPanel().processingState().should('not.exist');
+
       planningMessage.header().contains('All tasks have been completed');
       planningMessage.item(1).icon().should('have.class', 'icon-checkmark');
 
