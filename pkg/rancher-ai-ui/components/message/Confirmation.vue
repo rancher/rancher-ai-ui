@@ -262,4 +262,9 @@ const confirmationText = computed(() => {
   white-space: pre-line;
   list-style-position: inside;
 }
+
+// TODO remove when variant-link is properly styled in the future (same color as the theme)
+.rc-button.variant-link, .rc-button.variant-link:hover {
+  color: var(--on-tertiary, var(--primary));
+}
 </style>
