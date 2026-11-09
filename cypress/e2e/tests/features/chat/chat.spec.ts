@@ -1207,6 +1207,8 @@ describe('Chat', () => {
         const responseMessage = chat.getMessage(5 + (i * 2));
 
         responseMessage.isCompleted();
+
+        chat.messagesPanel().processingState().should('not.exist');
       }
 
       planningMessage.toggleCollapseButton().scrollIntoView();
