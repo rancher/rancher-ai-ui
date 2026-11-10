@@ -24,6 +24,20 @@ jest.mock('@shell/composables/useI18n', () => ({
       if (key === 'ai.confirmation.message.operation.update.description') {
         return `Updating ${ (args as any)?.path } to ${ (args as any)?.value }`;
       }
+      if (key === 'ai.confirmation.message.operation.delete.description') {
+        const { kind, name, namespace } = (args as any) || {};
+
+        return namespace ? `Deleting ${ kind } named ${ name } in ${ namespace }` : `Deleting ${ kind } named ${ name }`;
+      }
+      if (key === 'ai.confirmation.delete') {
+        return 'Delete';
+      }
+      if (key === 'ai.confirmation.confirm') {
+        return 'Confirm';
+      }
+      if (key === 'ai.confirmation.cancel') {
+        return 'Cancel';
+      }
 
       return key;
     },
@@ -92,6 +106,17 @@ const createMockUpdateAction = (overrides = {}) => ({
       },
     ],
     patched: 'kind: Deployment\nspec:\n  replicas: 3',
+  },
+  ...overrides,
+});
+
+const createMockDeleteAction = (overrides = {}) => ({
+  type:     ConfirmationActionType.Delete,
+  resource: {
+    kind:      'Pod',
+    name:      'test-pod',
+    namespace: 'default',
+    cluster:   'cluster-1',
   },
   ...overrides,
 });
@@ -936,6 +961,135 @@ describe('Confirmation.vue - confirmationText computed', () => {
       expect(confirmationText).toContain('Updating /spec/replicas to 3');
       expect(confirmationText).toContain('Updating /spec/image to nginx:latest');
       expect(confirmationText).toContain('Updating /spec/config');
+    });
+  });
+
+  describe('Delete resource action rendering', () => {
+    it('should render Delete action with namespace', () => {
+      const message: Message = {
+        role:         Role.Assistant,
+        confirmation: {
+          status:  ConfirmationStatus.Pending,
+          actions: [createMockDeleteAction()],
+        },
+      } as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      const confirmationText = (wrapper.vm as any).confirmationText;
+
+      expect(confirmationText).toBe('Deleting Pod named test-pod in default<br>Do you confirm this action?');
+    });
+
+    it('should render Delete action for cluster-scoped resources', () => {
+      const message: Message = {
+        role:         Role.Assistant,
+        confirmation: {
+          status:  ConfirmationStatus.Pending,
+          actions: [
+            createMockDeleteAction({
+              resource: {
+                kind:      'Namespace',
+                name:      'test',
+                namespace: '',
+                cluster:   'local',
+              },
+            }),
+          ],
+        },
+      } as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      const confirmationText = (wrapper.vm as any).confirmationText;
+
+      expect(confirmationText).toContain('Deleting Namespace named test<br>');
+      expect(confirmationText).not.toContain(' in ');
+    });
+
+    it('should skip Delete action if any required resource field is missing', () => {
+      const message: Message = {
+        role:         Role.Assistant,
+        confirmation: {
+          status:  ConfirmationStatus.Pending,
+          actions: [
+            createMockDeleteAction({
+              resource: {
+                kind: 'Pod',
+                name: 'test-pod',
+              } as any,
+            }),
+          ],
+        },
+      } as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      const confirmationText = (wrapper.vm as any).confirmationText;
+
+      expect(confirmationText).toBe('Do you confirm this action?');
+    });
+  });
+
+  describe('Button labels', () => {
+    it('should use the Delete label for the confirm button when there is a Delete action', () => {
+      const message: Message = {
+        role:         Role.Assistant,
+        confirmation: {
+          status:  ConfirmationStatus.Pending,
+          actions: [createMockDeleteAction()],
+        },
+      } as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      expect((wrapper.vm as any).buttonLabels).toEqual({
+        confirm: 'Delete',
+        cancel:  'Cancel',
+      });
+    });
+
+    it('should use the Confirm label for the confirm button for non-Delete actions', () => {
+      const message: Message = {
+        role:         Role.Assistant,
+        confirmation: {
+          status:  ConfirmationStatus.Pending,
+          actions: [createMockUpdateAction()],
+        },
+      } as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      expect((wrapper.vm as any).buttonLabels).toEqual({
+        confirm: 'Confirm',
+        cancel:  'Cancel',
+      });
+    });
+
+    it('should use the Confirm label when there are no actions', () => {
+      const message: Message = {} as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      expect((wrapper.vm as any).buttonLabels.confirm).toBe('Confirm');
     });
   });
 

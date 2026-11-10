@@ -2,6 +2,7 @@ import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import { WorkloadsDeploymentsDetailsPagePo, WorkloadsDeploymentsListPagePo } from '@rancher/cypress/e2e/po/pages/explorer/workloads/workloads-deployments.po';
 
 import ChatPo from '@/cypress/e2e/po/chat.po';
+import { globalRole } from '@/cypress/e2e/blueprints/globalRole';
 
 describe('Messages', () => {
   const chat = new ChatPo();
@@ -10,6 +11,7 @@ describe('Messages', () => {
     cy.login();
     cy.installUIToolsDefinition();
     cy.clearLLMResponses();
+    cy.createRancherResource('v1', 'management.cattle.io.globalroles', JSON.stringify(globalRole), false);
   });
 
   beforeEach(() => {
@@ -215,7 +217,7 @@ describe('Messages', () => {
     });
   });
 
-  it('Confirm single-resource action', () => {
+  it('Confirm single-resource create action', () => {
     chat.open();
 
     const welcomeMessage = chat.getMessage(1);
@@ -329,7 +331,45 @@ describe('Messages', () => {
     resultMessage.containsText('Pod created successfully.');
   });
 
-  it('Cancel single-resource action', () => {
+  it('Confirm single-resource delete action', () => {
+    chat.open();
+
+    const welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    cy.enqueueLLMResponse({
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'deleteGlobalRole',
+          args: { name: 'my-role' }
+        },
+      }],
+      text: 'GlobalRole my-role deleted.'
+    });
+
+    chat.sendMessage('Delete the GlobalRole my-role');
+
+    const userMessage = chat.getMessage(2);
+
+    userMessage.scrollIntoView();
+    userMessage.containsText('Delete the GlobalRole my-role');
+
+    const confirmationRequestMessage = chat.getMessage(3);
+
+    confirmationRequestMessage.scrollIntoView();
+    confirmationRequestMessage.containsText('I will delete the GlobalRole my-role in the local cluster.');
+    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
+
+    confirmationRequestMessage.confirmButton().should('contain.text', 'Delete');
+    confirmationRequestMessage.cancelButton().should('contain.text', 'Cancel');
+
+    confirmationRequestMessage.confirmButton().click();
+    confirmationRequestMessage.isConfirmed();
+  });
+
+  it('Cancel single-resource create action', () => {
     chat.open();
 
     const welcomeMessage = chat.getMessage(1);
@@ -524,6 +564,7 @@ describe('Messages', () => {
 
   after(() => {
     cy.deleteRancherResource('v1', 'pods', 'default/my-pod', false);
+    cy.deleteRancherResource('v1', 'management.cattle.io.globalroles', 'my-role', false);
 
     cy.clearLLMResponses();
     cy.uninstallUIToolsDefinition();
