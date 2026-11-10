@@ -182,6 +182,7 @@ onBeforeUnmount(() => {
         size="small"
         variant="ghost"
         class="collapse-button"
+        :aria-expanded="!isPlanCollapsed"
         @click="togglePlan"
         @keydown.enter.space="togglePlan"
       >
@@ -224,36 +225,21 @@ onBeforeUnmount(() => {
         />
         <div class="task-content">
           <div class="task-header">
-            <span class="label">
-              {{ item.summary }}
-            </span>
+            <span class="label">{{ item.summary }}</span>
+            <span
+              v-if="isTaskExpanded[index] && item.additionalInfo"
+              class="additional-info"
+            >{{ item.additionalInfo }}</span>
             <RcButton
-              v-if="item.additionalInfo && !isTaskExpanded[index]"
+              v-if="item.additionalInfo"
               class="inline-button"
               small
               variant="ghost"
-              :aria-label="t('ai.planning.task.showMore')"
+              :aria-label="isTaskExpanded[index] ? t('ai.planning.task.showLess') : t('ai.planning.task.showMore')"
+              :aria-expanded="isTaskExpanded[index]"
               @click="toggleTask(index)"
             >
               <a>{{ isTaskExpanded[index] ? t('ai.planning.task.showLess') : t('ai.planning.task.showMore') }}</a>
-            </RcButton>
-          </div>
-          <div v-if="isTaskExpanded[index] && item.additionalInfo">
-            <span
-              class="additional-info"
-            >
-              {{ item.additionalInfo }}
-            </span>
-          </div>
-          <div v-if="isTaskExpanded[index] && item.additionalInfo">
-            <RcButton
-              class="inline-button"
-              small
-              variant="ghost"
-              :aria-label="t('ai.planning.task.showLess')"
-              @click="toggleTask(index)"
-            >
-              <a>{{ t('ai.planning.task.showLess') }}</a>
             </RcButton>
           </div>
         </div>
@@ -276,7 +262,7 @@ onBeforeUnmount(() => {
       >
         <RcButton
           small
-          variant="tertiary"
+          variant="link"
           :aria-label="t('ai.planning.actions.cancel')"
           class="cancel-button"
           @click="emit('confirm', false)"
@@ -304,7 +290,7 @@ onBeforeUnmount(() => {
       >
         <RcButton
           small
-          variant="tertiary"
+          variant="link"
           :aria-label="t('ai.planning.actions.cancelRunning')"
           class="cancel-button"
           @click="emit('stop')"
@@ -450,8 +436,9 @@ onBeforeUnmount(() => {
 
     .task-header {
       display: block;
+      word-break: break-word;
 
-      .label {
+      .label, .additional-info {
         margin-right: 4px;
       }
     }
@@ -476,10 +463,10 @@ onBeforeUnmount(() => {
       &:hover, &:focus {
         color: inherit;
         background: transparent;
+      }
 
-        a {
-          text-decoration: none;
-        }
+      &:hover a {
+        text-decoration: none;
       }
     }
   }
@@ -507,10 +494,6 @@ onBeforeUnmount(() => {
       .icon {
         margin-right: 8px;
       }
-    }
-
-    .cancel-button {
-      background: transparent;
     }
   }
 
@@ -542,4 +525,19 @@ onBeforeUnmount(() => {
   max-height: 16px;
   color: var(--on-tertiary, var(--primary));
 }
+
+.rc-button-label {
+  overflow-wrap: break-word;
+  white-space: pre-line;
+}
+
+// -- TODO Start
+// Remove when variant-link is properly styled in the future (same color as the theme)
+.rc-button.variant-link, .rc-button.variant-link:hover {
+  color: var(--on-tertiary, var(--primary));
+}
+.rc-button.variant-link:hover {
+  background: var(--tertiary-hover, var(--accent-btn));
+}
+// -- TODO End
 </style>

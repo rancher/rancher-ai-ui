@@ -143,7 +143,7 @@ const confirmationText = computed(() => {
       >
         <RcButton
           small
-          variant="tertiary"
+          variant="link"
           data-testid="rancher-ai-ui-chat-message-confirmation-cancel-button"
           @click="emit('confirm', false)"
         >
@@ -258,8 +258,17 @@ const confirmationText = computed(() => {
 }
 
 .rc-button-label {
-  word-break: break-word;
+  overflow-wrap: break-word;
   white-space: pre-line;
-  list-style-position: inside;
 }
+
+// -- TODO Start
+// Remove when variant-link is properly styled in the future (same color as the theme)
+.rc-button.variant-link, .rc-button.variant-link:hover {
+  color: var(--on-tertiary, var(--primary));
+}
+.rc-button.variant-link:hover {
+  background: var(--tertiary-hover, var(--accent-btn));
+}
+// -- TODO End
 </style>

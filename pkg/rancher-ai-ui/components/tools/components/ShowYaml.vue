@@ -52,10 +52,20 @@ const label = computed(() => {
     return props.label;
   }
 
-  return props.tool.input.resourceName || t(`ai.tools.${ props.tool.toolName }.name`, { }, true);
+  if (!props.tool?.toolName) {
+    return '';
+  }
+
+  const resourceName = props.tool.input?.resourceName;
+
+  return t(`ai.tools.${ props.tool.toolName }.name`, { name: resourceName ?? null }, true);
 });
 
 const tooltip = computed(() => {
+  if (!props.tool?.toolName || !props.tool?.input) {
+    return '';
+  }
+
   const {
     resourceKind: kind,
     resourceNamespace: namespace,
@@ -152,6 +162,10 @@ function emitConfirmationAction(value: boolean) {
 </template>
 
 <style scoped lang="scss">
+.rc-button.variant-tertiary {
+  background: transparent;
+}
+
 .show-yaml-tool-label {
   display: flex;
   flex-direction: row;

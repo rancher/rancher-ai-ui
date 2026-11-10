@@ -340,7 +340,6 @@ function handleToolAction(event: ToolActionEvent) {
   color: var(--body-text);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 2px 8px 0 var(--shadow);
   padding: 12px;
   line-height: 21px;
   display: flex;
