@@ -37,6 +37,9 @@ ai:
           enable_auto_scroll:
             true: 'The <code>auto-scroll</code> of the chat window is now turned <b>ON</b>&ensp;'
             false: 'The <code>auto-scroll</code> of the chat window is now turned <b>OFF</b>'
+          enable_desktop_notifications:
+            true: 'Desktop Notifications are now turned <b>ON</b>'
+            false: 'Desktop Notifications are now turned <b>OFF</b>'
       message-manual-stop:
         info: 'You stopped the previous response.'
       planning-manual-stop:
@@ -120,6 +123,13 @@ ai:
     resources:
       cluster: Cluster
       namespace: Namespace
+  notifications:
+    message:
+      title: Rancher AI Assistant
+      summary:
+        message: 'You have unread messages'
+        planning: 'Planning message ready: {count} tasks'
+        idle: 'Response complete'
   configurations:
     label: Uses AI, running {name} ({model}).
     verifyResults:
@@ -346,6 +356,13 @@ ai:
           description:
             enable: Automatically scroll to the bottom of the chat when new messages arrive
             disable: Stop automatically scrolling to the bottom of the chat when new messages arrive
+        desktopNotifications:
+          label:
+            enable: Enable Desktop Notifications
+            disable: Disable Desktop Notifications
+          description:
+            enable: Turn on Desktop Notifications
+            disable: Turn off Desktop Notifications
   history:
     chat:
       create: Start a New Chat
