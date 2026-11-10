@@ -160,4 +160,8 @@ const hoveredIndex = ref<number | null>(null);
   opacity: 0.5;
   pointer-events: none;
 }
+
+.rc-button.variant-tertiary {
+  background: transparent;
+}
 </style>

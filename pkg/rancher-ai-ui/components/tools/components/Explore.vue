@@ -152,7 +152,7 @@ function navigateToRoute() {
 const tooltip = computed(() => {
   return t(`ai.tools.${ props.tool.toolName }.tooltip`, {
     label:   label.value,
-    cluster: cluster.value?.name
+    cluster: cluster.value?.name || null
   }, true);
 });
 
@@ -188,6 +188,10 @@ onMounted(async() => {
 </template>
 
 <style scoped lang="scss">
+.rc-button.variant-tertiary {
+  background: transparent;
+}
+
 .explore-tool-label {
   display: flex;
   flex-direction: row;

@@ -78,7 +78,7 @@ const tools = computed(() => {
         :key="tool.key"
         :tool="tool"
         :message="props.message"
-        :label="props.showDefaultLabels ? t(`ai.tools.${ tool.toolName }.name`, { }, true) : ''"
+        :label="props.showDefaultLabels ? t(`ai.tools.${ tool.toolName }.name`, { name: null }, true) : ''"
         :disabled="props.disabled"
         @action="emit('action', $event.value)"
       />
