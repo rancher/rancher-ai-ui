@@ -10,7 +10,10 @@ let mockStore: any;
 let mockComponent: any;
 
 jest.mock('vuex', () => ({ useStore: () => mockStore }));
-jest.mock('../../utils/log', () => ({ warn: jest.fn() }));
+jest.mock('../../utils/log', () => ({
+  warn:  jest.fn(),
+  error: jest.fn()
+}));
 jest.mock('@shell/composables/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 
 // Helper: Create a real Vue component that uses the composable

@@ -71,6 +71,7 @@ const {
   clearPendingConfirmations,
   notifyPreferencesUpdate,
   chatMetadata,
+  chatUsage,
   isChatInitialized,
   resetChatMetadata,
   processingState,
@@ -517,6 +518,7 @@ function unmount() {
         :messages="messages"
         :pending-response="pendingResponse"
         :has-permissions="hasPermissions"
+        :chat-usage="chatUsage"
         @input:content="ensureConnectionAndSendMessage($event)"
         @stop:content="stopMessage(ws)"
         @select:agent="selectAgent"
