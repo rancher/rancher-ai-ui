@@ -464,6 +464,24 @@ export interface HistoryChat {
   createdAt: Date;
 }
 
+export interface UsageTotals {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  llmCalls: number;
+}
+
+export interface UsageBreakdown extends UsageTotals {
+  byAgent: Record<string, UsageTotals>;
+  bySource: Record<string, UsageTotals>;
+}
+
+export interface ChatUsage extends UsageBreakdown {
+  chatId: string;
+}
+
 export interface HistoryChatMessage {
   chatId: string;
   role: string | Role;

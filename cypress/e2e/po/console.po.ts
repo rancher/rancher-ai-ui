@@ -88,4 +88,16 @@ export class ConsolePo extends ComponentPo {
   verifyResultsLink() {
     return this.self().contains('Verify the results.');
   }
+
+  tokenUsage() {
+    return this.self().find('[data-testid="rancher-ai-ui-chat-console-token-usage"]');
+  }
+
+  tokenUsageLink() {
+    return this.tokenUsage().find('.inline-button');
+  }
+
+  tokenUsageContent() {
+    return this.self().find('[data-testid="rancher-ai-ui-chat-console-token-usage-content"]');
+  }
 }

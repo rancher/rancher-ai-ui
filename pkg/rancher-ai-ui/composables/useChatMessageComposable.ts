@@ -11,6 +11,7 @@ import {
   AgentSelectionMode,
   ChatError,
   ChatMetadata,
+  ChatUsage,
   ConfirmationResponse,
   ConfirmationStatus,
   McpAuthenticationRequest,
@@ -82,11 +83,12 @@ export function useChatMessageComposable(
 
   const { selectContext, selectedContext } = useContextComposable();
   const { toolsSelector } = useToolsComposable();
-  const { refreshMcpAuthenticationToken, fetchUIToolsCalls } = useAIAgentApiComposable();
+  const { refreshMcpAuthenticationToken, fetchUIToolsCalls, fetchChatUsage } = useAIAgentApiComposable();
 
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};
 
   const currentMsg = ref<Message>({} as Message);
+  const chatUsage = ref<ChatUsage | null>(null);
 
   const chatMetadata = computed<ChatMetadata>(() => store.getters['rancher-ai-ui/chat/metadata'] || {});
   const isChatInitialized = computed(() => !!chatMetadata.value.chatId);
@@ -478,6 +480,8 @@ export function useChatMessageComposable(
         processChatMetadata(data);
 
         await ensureWelcomeMessage();
+
+        fetchUsage({ reset: true });
       } catch (err) {
         setErrors({
           message: (err as Error)?.message || t('ai.error.chat.generic'),
@@ -565,6 +569,7 @@ export function useChatMessageComposable(
 
     try {
       welcomeMessage.tools = await fetchUIToolsCalls({
+        chatId:  chatMetadata.value.chatId,
         prompt,
         context: selectedContext.value,
         tools:   {
@@ -618,6 +623,8 @@ export function useChatMessageComposable(
       } else {
         await ensureSwitchAgentSuggestion(currentMsg.value.agentMetadata?.recommended);
       }
+
+      fetchUsage();
 
       break;
     default:
@@ -868,6 +875,8 @@ export function useChatMessageComposable(
       agents:      null,
       storageType: null
     });
+
+    fetchUsage({ reset: true });
   }
 
   function setErrors(error: ChatError | null = null) {
@@ -885,11 +894,32 @@ export function useChatMessageComposable(
     store.commit('rancher-ai-ui/chat/clearPendingConfirmations', chatId);
   }
 
+  async function fetchUsage({ reset }: { reset?: boolean } = {}) {
+    if (reset) {
+      chatUsage.value = null;
+    }
+
+    if (!chatMetadata.value.chatId) {
+      return;
+    }
+
+    const activeChatId = chatMetadata.value.chatId;
+
+    const usage = await fetchChatUsage(activeChatId);
+
+    // Ignore the response if the user switched chat in the meantime
+    if (activeChatId === chatMetadata.value.chatId) {
+      chatUsage.value = usage;
+    }
+  }
+
   onMounted(() => {
     store.dispatch('rancher-ai-ui/chat/init', {
       chatId,
       messages: hasPermissions.value ? [] : [buildNoPermissionMessage()]
     });
+
+    fetchUsage();
   });
 
   onBeforeUnmount(() => {
@@ -918,6 +948,7 @@ export function useChatMessageComposable(
     clearPendingConfirmations,
     notifyPreferencesUpdate,
     chatMetadata,
+    chatUsage,
     isChatInitialized,
     resetChatMetadata,
     processingState,

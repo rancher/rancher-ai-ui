@@ -112,6 +112,19 @@ ai:
     actions:
       stop: Stop message
       send: Send message
+    tokenUsage:
+      title: Overall Usage
+      label: 'Tokens used:'
+      inTotal: |-
+        {total, plural,
+          =0 { {total} }
+          other { {total} in total }
+        }
+      total: 'Total'
+      input: Input
+      output: Output
+      byAgent: By Agent
+      bySource: By Source
   context:
     label: CONTEXT
     add: Context

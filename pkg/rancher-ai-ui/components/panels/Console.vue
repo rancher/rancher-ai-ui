@@ -10,10 +10,11 @@ import { useI18n } from '@shell/composables/useI18n';
 import { isMac } from '@shell/utils/platform';
 import RcButton from '@components/RcButton/RcButton.vue';
 import {
-  Agent, FormattedMessage, LLMConfig, Message, Role
+  Agent, ChatUsage, FormattedMessage, LLMConfig, Message, Role
 } from '../../types';
 import SelectAgent from '../agent/SelectAgent.vue';
 import LlmModelLabel from '../console/LlmModelLabel.vue';
+import TokenUsage from '../console/TokenUsage.vue';
 import VerifyResultsDisclaimer from '../console/VerifyResultsDisclaimer.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
 import { extractMessageText } from '../../utils/label';
@@ -59,6 +60,10 @@ const props = defineProps({
   hasPermissions: {
     type:    Boolean,
     default: true,
+  },
+  chatUsage: {
+    type:    Object as PropType<ChatUsage | null>,
+    default: null,
   }
 });
 
@@ -67,7 +72,8 @@ defineExpose({ focusInput });
 const emit = defineEmits([
   'input:content',
   'stop:content',
-  'select:agent'
+  'select:agent',
+  'fetch:usage'
 ]);
 
 const {
@@ -347,6 +353,15 @@ onMounted(() => {
         :llm-config="props.llmConfig"
       />
       <VerifyResultsDisclaimer />
+    </div>
+    <div
+      v-if="props.hasPermissions"
+      class="chat-console-row chat-console-chat-text-info"
+    >
+      <TokenUsage
+        :usage="props.chatUsage"
+        :agents="props.agents"
+      />
     </div>
   </div>
 </template>
