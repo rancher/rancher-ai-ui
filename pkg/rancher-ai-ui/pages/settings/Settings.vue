@@ -52,7 +52,7 @@ const { t } = useI18n(store);
 // const shellApi = useShell();
 
 // TODO: All settings will be fetched through the API in the future.
-const { fetchSettings, saveSettings } = useAIAgentApiComposable();
+const { fetchChats, fetchSettings, saveSettings } = useAIAgentApiComposable();
 
 const {
   toolsRequiredAction,
@@ -91,6 +91,8 @@ const buttonProps = ref({
 const toolsActionResultBanner = ref<{ color: string; label: string } | null>(null);
 
 const isAiAgentSettingsTouched = ref<boolean | null>(false);
+
+const hasChats = ref<boolean>(false);
 
 /**
  * Fetches the rancher-ai-agent deployment.
@@ -638,6 +640,15 @@ async function publishToolsDefinitionAndRefetch() {
   fetchUIToolsConfigSettings();
 }
 
+async function showApplySettingsModal(cb: AsyncButtonCallback) {
+  applySettingsCb.value = cb;
+
+  const allChats = await fetchChats();
+
+  hasChats.value = allChats?.length > 0;
+  isSaving.value = true;
+}
+
 function fetchPermissions() {
   const canListConfigMaps = store.getters['management/canList'](CONFIG_MAP);
   const canListSecrets = store.getters['management/canList'](SECRET);
@@ -823,7 +834,7 @@ onMounted(async() => {
             :success-label="buttonProps.successLabel"
             :success-color="buttonProps.successColor"
             :disabled="hasAiAgentSettingsValidationErrors || hasAiAgentConfigsValidationErrors"
-            @click="applySettingsCb = $event; isSaving = true"
+            @click="showApplySettingsModal"
           />
         </div>
       </template>
@@ -836,6 +847,7 @@ onMounted(async() => {
     >
       <ApplySettings
         :storage-type="chatSettings?.storageType || ''"
+        :has-chats="hasChats"
         @confirm="applySettings"
         @cancel="discardSettings"
       />
