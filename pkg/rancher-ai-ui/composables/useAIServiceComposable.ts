@@ -3,9 +3,11 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { warn } from '../utils/log';
 import { decodeModelKey } from '../utils/settings';
-import { AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME, PERMISSIONS_DOCS_URL } from '../product';
+import {
+  AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME, PERMISSIONS_DOCS_URL, PRODUCT_NAME
+} from '../product';
 import { CONFIG_MAP, WORKLOAD_TYPES } from '@shell/config/types';
-import { AIServiceState, ChatError, LLMConfig } from '../types';
+import { ActionType, AIServiceState, ChatError, LLMConfig } from '../types';
 
 /**
  * Composable for fetching AI service configuration and monitoring the AI agent state.
@@ -112,7 +114,19 @@ export function useAIServiceComposable() {
     const config = decodeLLMConfig(configMap.data || {});
 
     if (!config.name) {
-      error.value = { key: 'ai.error.services.settings.missingActiveLLM' };
+      error.value = {
+        key:    'ai.error.services.settings.missingActiveLLM',
+        action: {
+          label:    t('ai.error.services.action.goToSettings'),
+          type:     ActionType.Button,
+          resource: {
+            detailLocation: {
+              name:   `c-cluster-settings-${ PRODUCT_NAME }`,
+              params: { cluster: store.state.$route.params.cluster || 'local' },
+            }
+          }
+        }
+      };
 
       return;
     }
@@ -142,7 +156,23 @@ export function useAIServiceComposable() {
 
   watch(() => aiAgentDeploymentState.value, (newState) => {
     if (newState === AIServiceState.NotFound) {
-      error.value = { key: 'ai.error.services.deployment.notFound' };
+      error.value = {
+        key:    'ai.error.services.deployment.notFound',
+        action: {
+          label:    t('ai.error.services.action.goToDeployment'),
+          type:     ActionType.Button,
+          resource: {
+            detailLocation: {
+              name:   'c-cluster-product-resource',
+              params: {
+                cluster:  'local',
+                product:  'explorer',
+                resource: WORKLOAD_TYPES.DEPLOYMENT,
+              },
+            }
+          }
+        }
+      };
     } else {
       error.value = null;
 
