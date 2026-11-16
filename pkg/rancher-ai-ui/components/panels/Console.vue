@@ -276,7 +276,7 @@ onMounted(() => {
     data-testid="rancher-ai-ui-chat-console"
   >
     <div
-      class="chat-input-wrapper"
+      class="chat-input-body"
       :class="{
         focused: isFocused,
         'disabled-panel': props.disabled
@@ -346,22 +346,25 @@ onMounted(() => {
     </div>
     <div
       v-if="props.hasPermissions"
-      class="chat-console-row chat-console-chat-text-info"
-      data-testid="rancher-ai-ui-chat-console-llm-info"
+      class="chat-input-footer"
     >
-      <LlmModelLabel
-        :llm-config="props.llmConfig"
-      />
-      <VerifyResultsDisclaimer />
-    </div>
-    <div
-      v-if="props.hasPermissions"
-      class="chat-console-row chat-console-chat-text-info"
-    >
-      <TokenUsage
-        :usage="props.chatUsage"
-        :agents="props.agents"
-      />
+      <div
+        class="chat-console-row chat-console-chat-text-info"
+        data-testid="rancher-ai-ui-chat-console-llm-info"
+      >
+        <LlmModelLabel
+          :llm-config="props.llmConfig"
+        />
+        <VerifyResultsDisclaimer />
+      </div>
+      <div
+        class="chat-console-row chat-console-chat-text-info"
+      >
+        <TokenUsage
+          :usage="props.chatUsage"
+          :agents="props.agents"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -375,7 +378,7 @@ onMounted(() => {
   height: auto;
 }
 
-.chat-input-wrapper {
+.chat-input-body {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
@@ -394,6 +397,12 @@ onMounted(() => {
   &.disabled {
     background-color: var(--disabled-bg);
   }
+}
+
+.chat-input-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .chat-input-complete {
