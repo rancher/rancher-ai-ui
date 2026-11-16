@@ -539,3 +539,19 @@ export const enum StorageKey {
 export interface Preferences {
   [StorageKey.ENABLE_AUTO_SCROLL]?: boolean;
 }
+
+/**
+ * Steps and their statuses in the installation process of the AI agent.
+ */
+export const enum InstallStep {
+  Repository = 'repository',
+  Agent = 'agent',
+  Configure = 'configure',
+}
+
+export const enum InstallStepStatus {
+  Pending = 'pending',
+  InProgress = 'inProgress',
+  Done = 'done',
+  Error = 'error',
+}

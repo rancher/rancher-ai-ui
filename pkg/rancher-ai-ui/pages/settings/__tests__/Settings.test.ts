@@ -56,6 +56,20 @@ jest.mock('vuex', () => {
 });
 jest.mock('@shell/apis', () => ({ useShell: jest.fn(() => ({ modal: { open: jest.fn() } })) }));
 
+const mockMarkConfigApplied = jest.fn();
+
+jest.mock('../../../composables/useAiAgentInstallerComposable', () => {
+  const actual = jest.requireActual('../../../composables/useAiAgentInstallerComposable');
+
+  return {
+    ...actual,
+    useAiAgentInstallerComposable: () => ({
+      ...actual.useAiAgentInstallerComposable(),
+      markConfigApplied: mockMarkConfigApplied
+    })
+  };
+});
+
 // Mock global fetch for all tests
 globalThis.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve() })) as jest.Mock;
 
@@ -645,6 +659,19 @@ describe('Settings.vue', () => {
       await vm.save(callback);
 
       expect(callback).toHaveBeenCalled();
+    });
+
+    it('should notify the installer that the configuration has been applied', async() => {
+      const wrapper = shallowMount(Settings, initSettings());
+
+      await flushPromises();
+
+      const vm = wrapper.vm as any;
+
+      vm.aiAgentSettings = { [SettingsEnum.OPENAI_MODEL]: 'gpt-4' };
+      await vm.save(jest.fn());
+
+      expect(mockMarkConfigApplied).toHaveBeenCalledTimes(1);
     });
 
     it.skip('should call save function when openApplySettingsDialog onConfirm is triggered', async() => { // eslint-disable-line jest/no-disabled-tests
@@ -2919,4 +2946,4 @@ describe('Settings.vue', () => {
       expect(vm.modelOptions).toEqual(newModels);
     });
   });
-});;
+});

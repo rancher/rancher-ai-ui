@@ -26,6 +26,7 @@ import AsyncButton, { AsyncButtonCallback } from '@shell/components/AsyncButton.
 import Loading from '@shell/components/Loading.vue';
 import RichTranslation from '@shell/components/RichTranslation.vue';
 import AppModal from '@shell/components/AppModal.vue';
+import RcButton from '@components/RcButton/RcButton.vue';
 import {
   SettingsFormData, Settings, Workload, AiAgentConfigBasicSecretPayload, AIAgentConfigAuthType,
   SettingsPermissions,
@@ -42,6 +43,7 @@ import UIToolsConfig from './sections/ui-tools-config/index.vue';
 import ApplySettings from '../../dialog/ApplySettingsCard.vue';
 import { useAIAgentApiComposable } from '../../composables/useAIAgentApiComposable';
 import { useToolsComposable } from '../../composables/useToolsComposable';
+import { useAiAgentInstallerComposable } from '../../composables/useAiAgentInstallerComposable';
 
 /**
  * Settings page for configuring Rancher AI assistant.
@@ -53,6 +55,10 @@ const { t } = useI18n(store);
 
 // TODO: All settings will be fetched through the API in the future.
 const { fetchChats, fetchSettings, saveSettings } = useAIAgentApiComposable();
+
+const {
+  isAgentNotInstalled, canOpenChatAndInstall, markConfigApplied, loadAiAgentApp, openChatAndInstall
+} = useAiAgentInstallerComposable();
 
 const {
   toolsRequiredAction,
@@ -597,6 +603,8 @@ const save = async(btnCB: (arg: boolean) => void) => { // eslint-disable-line no
 
     apiError.value = '';
     btnCB(true);
+
+    markConfigApplied();
   } catch (err) {
     apiError.value = t('aiConfig.form.save.apiError', { error: err }, true);
     btnCB(false);
@@ -653,7 +661,8 @@ function fetchPermissions() {
   const canListConfigMaps = store.getters['management/canList'](CONFIG_MAP);
   const canListSecrets = store.getters['management/canList'](SECRET);
   const canListDeployments = store.getters['management/canList'](WORKLOAD_TYPES.DEPLOYMENT);
-  const canListAiAgentCRDS = canListSecrets && store.getters['management/canList'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG);
+  const hasAiAgentCRDS = !!store.getters['management/schemaFor'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG);
+  const canListAiAgentCRDS = canListSecrets && (!hasAiAgentCRDS || store.getters['management/canList'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG));
 
   let schema = store.getters['management/schemaFor'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG);
   const canCreateAiAgentCRDS = !!schema?.resourceMethods?.find((verb: any) => 'PUT' === verb);
@@ -679,12 +688,14 @@ function fetchPermissions() {
   };
 }
 
-onMounted(async() => {
+async function loadSettings() {
+  isLoading.value = true;
+
   fetchPermissions();
 
-  await fetchAiAgentDeployment();
+  await Promise.all([fetchAiAgentDeployment(), loadAiAgentApp()]);
 
-  if (!!aiAgentDeployment.value) {
+  if (!!aiAgentDeployment.value && !isAgentNotInstalled.value) {
     await fetchChatSettings();
 
     await fetchAiAgentSettings();
@@ -701,6 +712,17 @@ onMounted(async() => {
   }
 
   isLoading.value = false;
+}
+
+// The page can be already open while the installer deploys the agent, or reinstalls it
+watch(isAgentNotInstalled, async(notInstalled) => {
+  if (!notInstalled && !isLoading.value) {
+    await loadSettings();
+  }
+});
+
+onMounted(() => {
+  loadSettings();
 });
 </script>
 
@@ -716,8 +738,29 @@ onMounted(async() => {
         {{ t('aiConfig.form.header') }}
       </h1>
 
+      <!-- Checked before the permissions: the AI agent CRDs don't exist until the agent is installed -->
+      <div
+        v-if="isAgentNotInstalled"
+        class="agent-not-installed-state"
+        data-testid="rancher-ai-ui-settings-agent-not-installed-state"
+      >
+        <i class="icon icon-ai icon-4x" />
+        <h2>{{ t('aiConfig.form.agentNotInstalledState.title') }}</h2>
+        <p class="text-muted">
+          {{ t('aiConfig.form.agentNotInstalledState.description') }}
+        </p>
+        <RcButton
+          v-if="canOpenChatAndInstall"
+          variant="primary"
+          data-testid="rancher-ai-ui-settings-agent-not-installed-state-open-chat"
+          @click="openChatAndInstall()"
+        >
+          {{ t('aiConfig.form.agentNotInstalledState.action') }}
+        </RcButton>
+      </div>
+
       <Banner
-        v-if="!permissions?.list?.canListDeployments || !permissions?.list?.canListConfigMaps || !permissions?.list?.canListAiAgentCRDS"
+        v-else-if="!permissions?.list?.canListDeployments || !permissions?.list?.canListConfigMaps || !permissions?.list?.canListAiAgentCRDS"
         class="m-0"
         color="warning"
       >
@@ -865,6 +908,19 @@ onMounted(async() => {
   flex-direction: column;
   gap: 24px;
   padding: 24px;
+}
+
+.agent-not-installed-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 24px;
+  text-align: center;
+
+  h2, p {
+    margin: 0;
+  }
 }
 
 .form-footer {
