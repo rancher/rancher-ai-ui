@@ -554,3 +554,19 @@ export interface Preferences {
 export const enum NotificationType {
   MESSAGE = 'message'
 }
+
+/**
+ * Steps and their statuses in the installation process of the AI agent.
+ */
+export const enum InstallStep {
+  Repository = 'repository',
+  Agent = 'agent',
+  Configure = 'configure',
+}
+
+export const enum InstallStepStatus {
+  Pending = 'pending',
+  InProgress = 'inProgress',
+  Done = 'done',
+  Error = 'error',
+}

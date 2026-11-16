@@ -17,13 +17,13 @@ const { t } = useI18n(store);
 type Props = {
   preferences?: Preferences;
   disabled?: boolean;
-  hasPermissions?: boolean;
+  readonly?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  preferences:    () => ({}),
-  disabled:       false,
-  hasPermissions: true
+  preferences: () => ({}),
+  disabled:    false,
+  readonly:    false,
 });
 
 const emit = defineEmits([
@@ -52,7 +52,7 @@ function toggleHistory() {
     <div class="chat-title">
       <div class="chat-name">
         <div
-          v-if="props.hasPermissions"
+          v-if="!props.readonly"
           class="chat-history-btn"
           :class="{ disabled }"
         >
@@ -81,7 +81,7 @@ function toggleHistory() {
       </div>
     </div>
     <div
-      v-if="props.hasPermissions"
+      v-if="!props.readonly"
       class="chat-menu"
     >
       <ChatPanelMenu

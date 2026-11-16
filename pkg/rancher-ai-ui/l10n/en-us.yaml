@@ -6,6 +6,49 @@ ai:
     message: The Rancher AI Assistant requires a Rancher Prime subscription. Please upgrade to Prime or uninstall this extension.
   header:
     title: Liz
+  install:
+    title: Set up the AI Assistant
+    notInstalled: The AI Agent is not installed yet. I can install it for you, then you'll only need to configure the AI Assistant in the Settings page.
+    applied: The AI Assistant is configured and the AI Agent is up and running.
+    verifying: Checking the configuration and waiting for the AI Agent to restart...
+    viewingSettings: You are viewing the AI Assistant settings page.
+    actions:
+      install: Install AI Agent
+      configure: Configure AI Assistant
+      retry: Retry
+      reload: Start chatting
+      installChart: Install
+      editValues: Edit Values
+      editedValues: Edit Values (customized)
+    values:
+      title: AI Agent Helm values
+      description: These values are used to install the AI Agent chart.
+      restore: Restore defaults
+      invalid: 'Invalid YAML: {error}'
+      notAnObject: the values must be a YAML object
+      ariaLabel:
+        restore: Restore the default AI Agent Helm values
+        cancel: Close the AI Agent Helm values editor without saving
+        save: Save the AI Agent Helm values
+    status:
+      pending: Not started
+      inProgress: In progress
+      done: Completed
+      error: Failed
+    steps:
+      repository:
+        label: Add the Rancher AI repository
+        description: The Helm repository containing the AI Agent chart
+      agent:
+        label: Install the AI Agent
+        description: The Helm chart used to deploy the AI Agent
+      configure:
+        label: Configure the AI Assistant
+        description: |-
+          {disabled, select,
+            true { Set up the AI provider in the AI Assistant Configuration page and click Apply. }
+            other { Set up the <b>AI provider</b> in the AI Assistant Configuration page and click <b>Apply</b>. }
+          }
   message:
     system:
       welcome:
@@ -512,6 +555,10 @@ aiConfig:
   form:
     header: AI Assistant Configuration
     description: Configure the AI model and provider for your assistant
+    agentNotInstalledState:
+      title: The AI Assistant configuration is not ready yet
+      description: The AI Agent is not installed. Let Liz take care of this.
+      action: Install AI Agent
     warning:
       inMemoryStorage: 'The AI Assistant uses in-memory storage, all messages will be lost after applying the new settings.'
       noDeployment: 'The AI Assistant settings are not available. The AI Agent deployment is not available. Please make sure the deployment is up and running or contact your administrator.'

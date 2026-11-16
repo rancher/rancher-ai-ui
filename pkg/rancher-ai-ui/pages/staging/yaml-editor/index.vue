@@ -1,8 +1,10 @@
 <script setup lang="ts">
+// @ts-expect-error FIXME: no type declarations for js-yaml
 import jsyaml from 'js-yaml';
 import { computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+// @ts-expect-error FIXME: no shell type declarations for YamlEditor
 import YamlEditor from '@shell/components/YamlEditor';
 import RcButton from '@components/RcButton/RcButton.vue';
 import { EditorMode } from './types';
