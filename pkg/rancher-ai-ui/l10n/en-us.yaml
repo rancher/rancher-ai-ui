@@ -348,12 +348,15 @@ ai:
       settings:
         noPermission: You do not have permission to access to Rancher AI Assistant. Please contact your administrator or refer to our documentation.
         missingConfig: Rancher AI Agent configuration is missing, llm-config ConfigMap not found. Please ensure the Rancher AI assistant services are correctly installed.
-        missingActiveLLM: Rancher AI Agent configuration error, active LLM not specified. Please ensure the Rancher AI assistant services are correctly installed and configured.
-        missingModel: Rancher AI Agent configuration error, LLM model not specified. Please ensure the Rancher AI assistant services are correctly installed and configured.
+        missingActiveLLM: Configuration error, AI Provider not specified. Please ensure the Rancher AI assistant services are correctly installed and configured.
+        missingModel: Configuration error, AI model not specified. Please ensure the Rancher AI assistant services are correctly installed and configured.
       deployment:
         noPermission: You do not have permission to access to Rancher AI Assistant. Please contact your administrator or refer to our documentation.
         notFound: Rancher AI Agent pod not found. Please ensure the Rancher AI assistant services are correctly installed and you have the necessary permissions to access it.
       docsLinkLabel: 'AI Assistant Docs'
+      action:
+        goToSettings: 'Configure AI Assistant'
+        goToDeployment: 'View Deployments'
     agent:
       unavailable:
         label: 'This AI agent is currently unavailable.<br>{message}'
