@@ -814,5 +814,7 @@ aiConfig:
       cancel: Cancel
       confirm: Confirm
       warning:
-        unknownStorage: 'If the AI Agent is using in-memory storage, <b>all messages might be lost</b> after applying the new settings.<br>Do you want to continue?'
-        inMemory: 'The AI agent is using in-memory storage, <b>all messages will be lost</b> after applying the new settings.<br>Do you want to continue?'
+        redeploy: 'Applying new settings will redeploy the AI agent.'
+        unknownStorage: 'If the AI Agent is using in-memory storage, <b>all messages might be lost</b> after applying the new settings.'
+        inMemory: 'The AI agent is using in-memory storage, <b>all messages will be lost</b> after applying the new settings.'
+        continue: 'Do you want to continue?'
