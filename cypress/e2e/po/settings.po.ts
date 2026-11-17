@@ -18,6 +18,20 @@ export class SettingsPagePo extends PagePo {
   settings() {
     return new SettingsPo(this.self());
   }
+
+  agentNotInstalledState() {
+    return new AgentNotInstalledStatePo(this.self());
+  }
+}
+
+export class AgentNotInstalledStatePo extends ComponentPo {
+  constructor(self: Cypress.Chainable) {
+    super('[data-testid="rancher-ai-ui-settings-agent-not-installed-state"]', self);
+  }
+
+  actionButton() {
+    return this.self().find('[data-testid="rancher-ai-ui-settings-agent-not-installed-state-open-chat"]');
+  }
 }
 
 export class SettingsPo extends ComponentPo {

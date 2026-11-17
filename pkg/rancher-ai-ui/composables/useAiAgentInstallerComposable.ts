@@ -184,11 +184,11 @@ export function useAiAgentInstallerComposable() {
       return false;
     }
 
-    if (isAgentAppMissing.value) {
-      return true;
+    if (state.started) {
+      return state.steps[InstallStep.Agent].status !== InstallStepStatus.Done;
     }
 
-    if (state.started && state.steps[InstallStep.Agent].status !== InstallStepStatus.Done) {
+    if (isAgentAppMissing.value) {
       return true;
     }
 
