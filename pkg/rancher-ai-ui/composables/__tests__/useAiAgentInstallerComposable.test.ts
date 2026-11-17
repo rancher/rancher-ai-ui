@@ -537,8 +537,8 @@ describe('useAiAgentInstallerComposable', () => {
       await flushPromises();
 
       expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Done);
+      expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Done);
       expect(installer.state.configApplied).toBe(true);
-      expect(installer.state.verifyingConfig).toBe(false);
       expect(Chat.open).toHaveBeenCalledTimes(1);
     });
 
@@ -550,6 +550,7 @@ describe('useAiAgentInstallerComposable', () => {
 
       expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Error);
       expect(stepStatus(installer, InstallStep.Configure).error).toBe('The LLM provider is not configured');
+      expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Pending);
       expect(installer.state.configApplied).toBe(false);
     });
 
@@ -561,6 +562,73 @@ describe('useAiAgentInstallerComposable', () => {
 
       expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Pending);
       expect(Chat.open).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Apply step', () => {
+    const failPod = () => {
+      Object.assign(mockResources[POD][`${ AGENT_NAMESPACE }/rancher-ai-agent-abc`].status, {
+        phase:             'Running',
+        containerStatuses: [{
+          ready: false,
+          state: {
+            waiting: {
+              reason:  'CrashLoopBackOff',
+              message: 'back-off restarting failed container'
+            }
+          }
+        }],
+      });
+    };
+
+    beforeEach(async() => {
+      addRepository();
+      deployAgent();
+      await installer.install();
+    });
+
+    it('should fail when the redeployed agent pod cannot start', async() => {
+      failPod();
+
+      installer.markConfigApplied();
+      await flushPromises();
+
+      expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Done);
+      expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Error);
+      expect(stepStatus(installer, InstallStep.Apply).error).toContain('CrashLoopBackOff');
+      expect(installer.state.configApplied).toBe(false);
+    });
+
+    it('should apply the saved configuration again after a failure', async() => {
+      failPod();
+      installer.markConfigApplied();
+      await flushPromises();
+
+      mockResources[POD][`${ AGENT_NAMESPACE }/rancher-ai-agent-abc`].status.containerStatuses = [{ ready: true }];
+      installer.markConfigApplied();
+      await flushPromises();
+
+      expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Done);
+      expect(installer.state.configApplied).toBe(true);
+    });
+
+    it('should redeploy the agent on retry', async() => {
+      const deployment = mockResources[WORKLOAD_TYPES.DEPLOYMENT][DEPLOYMENT_ID];
+
+      deployment.spec.template = {};
+      deployment.save = jest.fn();
+
+      failPod();
+      installer.markConfigApplied();
+      await flushPromises();
+
+      mockResources[POD][`${ AGENT_NAMESPACE }/rancher-ai-agent-abc`].status.containerStatuses = [{ ready: true }];
+      await installer.retryApply();
+
+      expect(deployment.save).toHaveBeenCalledTimes(1);
+      expect(deployment.spec.template.metadata.annotations['cattle.io/timestamp']).toBeDefined();
+      expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Done);
+      expect(installer.state.configApplied).toBe(true);
     });
   });
 
