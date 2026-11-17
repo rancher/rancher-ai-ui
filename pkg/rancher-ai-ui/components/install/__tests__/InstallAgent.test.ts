@@ -64,19 +64,20 @@ function createInstaller(state: Record<string, any> = {}, steps: Partial<Record<
 
   return {
     state: reactive({
-      started:         true,
-      verifyingConfig: false,
-      configApplied:   false,
-      values:          null,
+      started:       true,
+      configApplied: false,
+      values:        null,
       ...state,
-      steps:           {
+      steps:         {
         [InstallStep.Repository]: stepState(InstallStep.Repository),
         [InstallStep.Agent]:      stepState(InstallStep.Agent),
         [InstallStep.Configure]:  stepState(InstallStep.Configure),
+        [InstallStep.Apply]:      stepState(InstallStep.Apply),
       },
     }),
     install:      jest.fn(),
     installChart: jest.fn(),
+    retryApply:   jest.fn(),
     loadValues:   jest.fn().mockResolvedValue({ plan: { enabled: true } }),
     setValues:    jest.fn(),
     agentApp:     ref(null),
@@ -288,23 +289,51 @@ describe('InstallAgent.vue', () => {
       expect(findButton(wrapper, 'rancher-ai-ui-install-agent-configure')).toBeUndefined();
     });
 
-    it('should show the verifying message while the configuration is checked', () => {
-      mockInstaller = createInstaller({ verifyingConfig: true }, agentInstalled);
+    it('should show a spinner while waiting for the configuration', () => {
+      mockInstaller = createInstaller({}, agentInstalled);
       wrapper = mountComponent();
 
       const configure = byTestId(wrapper, 'rancher-ai-ui-install-agent-step-configure');
+      const apply = byTestId(wrapper, 'rancher-ai-ui-install-agent-step-apply');
 
-      expect(configure.text()).toContain('ai.install.verifying');
       expect(configure.find('.icon-spinner').exists()).toBe(true);
-      expect(findButton(wrapper, 'rancher-ai-ui-install-agent-configure')).toBeUndefined();
+      expect(apply.classes()).toContain('disabled');
+      expect(apply.find('.install-agent-step-number').text()).toBe('4');
+    });
+  });
+
+  describe('Apply step', () => {
+    const configured = {
+      [InstallStep.Repository]: InstallStepStatus.Done,
+      [InstallStep.Agent]:      InstallStepStatus.Done,
+      [InstallStep.Configure]:  InstallStepStatus.Done,
+    };
+
+    it('should show the error and redeploy the agent on retry', async() => {
+      mockInstaller = createInstaller({}, {
+        ...configured,
+        [InstallStep.Apply]: InstallStepStatus.Error,
+      }, { [InstallStep.Apply]: 'CrashLoopBackOff' });
+      wrapper = mountComponent();
+
+      const apply = byTestId(wrapper, 'rancher-ai-ui-install-agent-step-apply');
+
+      expect(apply.find('.icon-error').exists()).toBe(true);
+      expect(apply.find('.install-agent-step-error').text()).toBe('CrashLoopBackOff');
+
+      await clickButton(wrapper, 'rancher-ai-ui-install-agent-retry-apply');
+
+      expect(mockInstaller.retryApply).toHaveBeenCalledTimes(1);
     });
 
-    it('should emit reload once the configuration is applied', async() => {
+    it('should show the applied message and emit reload once the configuration is applied', async() => {
       mockInstaller = createInstaller({ configApplied: true }, {
-        ...agentInstalled,
-        [InstallStep.Configure]: InstallStepStatus.Done,
+        ...configured,
+        [InstallStep.Apply]: InstallStepStatus.Done,
       });
       wrapper = mountComponent();
+
+      expect(byTestId(wrapper, 'rancher-ai-ui-install-agent-step-apply').text()).toContain('ai.install.applied');
 
       await clickButton(wrapper, 'rancher-ai-ui-install-agent-reload');
 

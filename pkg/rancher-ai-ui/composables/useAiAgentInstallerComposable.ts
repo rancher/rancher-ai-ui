@@ -84,7 +84,6 @@ const state = reactive({
   appsLoaded:       false,
   // The Apps request completed, successfully or not
   appsChecked:      false,
-  verifyingConfig:  false,
   configApplied:    false,
   repositoryName:   AGENT_REPO_NAME,
   repositoryExists: false,
@@ -98,6 +97,7 @@ const state = reactive({
     [InstallStep.Repository]: { status: InstallStepStatus.Pending },
     [InstallStep.Agent]:      { status: InstallStepStatus.Pending },
     [InstallStep.Configure]:  { status: InstallStepStatus.Pending },
+    [InstallStep.Apply]:      { status: InstallStepStatus.Pending },
   } as Record<InstallStep, InstallStepState>,
 });
 
@@ -562,9 +562,8 @@ export function useAiAgentInstallerComposable() {
 
     state.started = true;
     state.configApplied = false;
-    state.verifyingConfig = false;
     setStep(InstallStep.Repository, InstallStepStatus.InProgress);
-    [InstallStep.Agent, InstallStep.Configure].forEach((step) => setStep(step, InstallStepStatus.Pending));
+    [InstallStep.Agent, InstallStep.Configure, InstallStep.Apply].forEach((step) => setStep(step, InstallStepStatus.Pending));
     startValidation();
 
     try {
@@ -625,9 +624,8 @@ export function useAiAgentInstallerComposable() {
    */
   function invalidate(step: InstallStep, error: string) {
     currentRun.value++;
-    state.verifyingConfig = false;
 
-    const steps = [InstallStep.Repository, InstallStep.Agent, InstallStep.Configure];
+    const steps = [InstallStep.Repository, InstallStep.Agent, InstallStep.Configure, InstallStep.Apply];
 
     steps.slice(steps.indexOf(step) + 1).forEach((s) => setStep(s, InstallStepStatus.Pending));
     setStep(step, InstallStepStatus.Error, error);
@@ -686,40 +684,95 @@ export function useAiAgentInstallerComposable() {
   }
 
   /**
-   * Step 3: completes once the saved configuration is valid and the redeployed agent is up and running.
+   * Step 4: completes once the redeployed agent is up and running with the new configuration.
+   */
+  async function runApplyStep(run: number) {
+    setStep(InstallStep.Apply, InstallStepStatus.InProgress);
+
+    try {
+      await waitForAgentReady(run);
+    } catch (err) {
+      if (!(err instanceof CancelledError) && run === currentRun.value) {
+        warn('Unable to apply the AI assistant configuration:', err);
+        setStep(InstallStep.Apply, InstallStepStatus.Error, errorMessage(err));
+      }
+
+      return;
+    }
+
+    if (run === currentRun.value) {
+      setStep(InstallStep.Apply, InstallStepStatus.Done);
+      state.configApplied = true;
+      endValidation();
+    }
+  }
+
+  /**
+   * Step 3: completes once the saved configuration is valid, then step 4 waits for the redeployed agent.
    */
   async function verifyConfigApplied() {
     const run = ++currentRun.value;
 
-    setStep(InstallStep.Configure, InstallStepStatus.InProgress);
-    state.verifyingConfig = true;
+    setStep(InstallStep.Apply, InstallStepStatus.Pending);
 
     try {
       await checkAgentConfig();
-      await waitForAgentReady(run);
-
-      setStep(InstallStep.Configure, InstallStepStatus.Done);
-      state.configApplied = true;
-      endValidation();
     } catch (err) {
-      if (!(err instanceof CancelledError) && run === currentRun.value) {
-        warn('Unable to apply the AI assistant configuration:', err);
+      if (run === currentRun.value) {
         setStep(InstallStep.Configure, InstallStepStatus.Error, errorMessage(err));
       }
-    } finally {
-      if (run === currentRun.value) {
-        state.verifyingConfig = false;
-      }
+
+      return;
     }
+
+    if (run === currentRun.value) {
+      setStep(InstallStep.Configure, InstallStepStatus.Done);
+      await runApplyStep(run);
+    }
+  }
+
+  /**
+   * Redeploys the agent, as applying the settings does, and waits for it again.
+   */
+  async function retryApply() {
+    const run = ++currentRun.value;
+
+    setStep(InstallStep.Apply, InstallStepStatus.InProgress);
+
+    try {
+      const deployment = await store.dispatch('management/find', {
+        type: WORKLOAD_TYPES.DEPLOYMENT,
+        id:   AGENT_DEPLOYMENT_ID,
+      });
+      const template = deployment.spec.template;
+
+      template.metadata = {
+        ...template.metadata,
+        annotations: {
+          ...template.metadata?.annotations,
+          'cattle.io/timestamp': new Date().toISOString(),
+        },
+      };
+      await deployment.save();
+    } catch (err) {
+      if (run === currentRun.value) {
+        setStep(InstallStep.Apply, InstallStepStatus.Error, errorMessage(err));
+      }
+
+      return;
+    }
+
+    await runApplyStep(run);
   }
 
   /**
    * Called by the settings page once the AI assistant configuration has been saved.
    */
   function markConfigApplied() {
-    const status = state.steps[InstallStep.Configure].status;
+    const configure = state.steps[InstallStep.Configure].status;
+    const apply = state.steps[InstallStep.Apply].status;
 
-    if (status !== InstallStepStatus.InProgress && status !== InstallStepStatus.Error) {
+    if (configure !== InstallStepStatus.InProgress && configure !== InstallStepStatus.Error && apply !== InstallStepStatus.Error) {
       return;
     }
 
@@ -745,14 +798,13 @@ export function useAiAgentInstallerComposable() {
     currentRun.value++;
     endValidation();
     state.started = false;
-    state.verifyingConfig = false;
     state.configApplied = false;
     state.repositoryExists = false;
     state.appExists = false;
     state.agentResources = [];
     state.agentCrdExists = false;
     state.values = null;
-    [InstallStep.Repository, InstallStep.Agent, InstallStep.Configure].forEach((step) => setStep(step, InstallStepStatus.Pending));
+    [InstallStep.Repository, InstallStep.Agent, InstallStep.Configure, InstallStep.Apply].forEach((step) => setStep(step, InstallStepStatus.Pending));
   }
 
   return {
@@ -772,6 +824,7 @@ export function useAiAgentInstallerComposable() {
     repository,
     loadAiAgentApp,
     markConfigApplied,
+    retryApply,
     reset,
   };
 }

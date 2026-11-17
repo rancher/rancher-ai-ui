@@ -10,7 +10,6 @@ ai:
     title: Set up the AI Assistant
     notInstalled: The AI Agent is not installed yet. I can install it for you, then you'll only need to configure the AI Assistant in the Settings page.
     applied: The AI Assistant is configured and the AI Agent is up and running.
-    verifying: Checking the configuration and waiting for the AI Agent to restart...
     viewingSettings: You are viewing the AI Assistant settings page.
     actions:
       install: Install AI Agent
@@ -49,6 +48,9 @@ ai:
             true { Set up the AI provider in the AI Assistant Configuration page and click Apply. }
             other { Set up the <b>AI provider</b> in the AI Assistant Configuration page and click <b>Apply</b>. }
           }
+      apply:
+        label: Apply Configurations
+        description: Redeploy the AI Agent pod to load the new configuration
   message:
     system:
       welcome:

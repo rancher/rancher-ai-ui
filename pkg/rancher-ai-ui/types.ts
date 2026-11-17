@@ -547,6 +547,7 @@ export const enum InstallStep {
   Repository = 'repository',
   Agent = 'agent',
   Configure = 'configure',
+  Apply = 'apply',
 }
 
 export const enum InstallStepStatus {

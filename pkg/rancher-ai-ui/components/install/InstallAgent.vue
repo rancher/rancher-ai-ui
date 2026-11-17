@@ -27,7 +27,7 @@ const { t } = useI18n(store);
 const emit = defineEmits(['reload']);
 
 const {
-  state, install, installChart, agentApp, repository, loadValues, setValues
+  state, install, installChart, retryApply, agentApp, repository, loadValues, setValues
 } = useAiAgentInstallerComposable();
 
 const userName = computed(() => {
@@ -64,23 +64,24 @@ const steps = computed(() => [
   },
   {
     key:  InstallStep.Configure,
-    link: state.configApplied ? {
+    link: state.steps[InstallStep.Configure].status === InstallStepStatus.Done ? {
       name:   `c-cluster-settings-${ PRODUCT_NAME }`,
       params: { cluster: store.state.$route?.params?.cluster || 'local' },
       query:  { section: 'ai-agent-settings' },
     } : null,
   },
+  {
+    key:  InstallStep.Apply,
+    link: null,
+  },
 ].map((step, index, all) => {
   const status = state.steps[step.key].status;
 
-  // The configuration step is in progress while waiting for the user to save the settings, it only runs once they're saved
-  const isWaitingForUser = (s: InstallStep) => s === InstallStep.Configure && state.steps[s].status === InstallStepStatus.InProgress && !state.verifyingConfig;
-
-  // A pending step is next only when it's waiting for the user: no step is running or has failed
-  const isBlocked = all.some((s) => !isWaitingForUser(s.key) && [InstallStepStatus.InProgress, InstallStepStatus.Error].includes(state.steps[s.key].status));
+  // A pending step is next when no step is running or has failed
+  const isBlocked = all.some((s) => [InstallStepStatus.InProgress, InstallStepStatus.Error].includes(state.steps[s.key].status));
   const isNext = !isBlocked && status === InstallStepStatus.Pending && all.findIndex((s) => state.steps[s.key].status === InstallStepStatus.Pending) === index;
-  const disabled = !isWaitingForUser(step.key) && status === InstallStepStatus.Pending && !isNext;
-  const icon = isWaitingForUser(step.key) ? 'icon-chevron-right' : STATUS_ICON[status];
+  const disabled = status === InstallStepStatus.Pending && !isNext;
+  const icon = STATUS_ICON[status];
 
   return {
     ...step,
@@ -280,20 +281,8 @@ function routeToSettings() {
                   {{ t('ai.install.actions.installChart') }}
                 </RcButton>
               </div>
-              <span
-                v-if="step.key === InstallStep.Configure && state.verifyingConfig"
-                class="install-agent-step-description"
-              >
-                {{ t('ai.install.verifying') }}
-              </span>
-              <span
-                v-else-if="step.key === InstallStep.Configure && state.configApplied"
-                class="install-agent-step-description"
-              >
-                {{ t('ai.install.applied') }}
-              </span>
               <div
-                v-else-if="step.key === InstallStep.Configure && (step.status === InstallStepStatus.InProgress || step.status === InstallStepStatus.Error) && $route.name !== `c-cluster-settings-${ PRODUCT_NAME }`"
+                v-if="step.key === InstallStep.Configure && (step.status === InstallStepStatus.InProgress || step.status === InstallStepStatus.Error) && $route.name !== `c-cluster-settings-${ PRODUCT_NAME }`"
                 class="install-agent-actions"
               >
                 <RcButton
@@ -305,6 +294,25 @@ function routeToSettings() {
                   {{ t('ai.install.actions.configure') }}
                 </RcButton>
               </div>
+              <div
+                v-if="step.key === InstallStep.Apply && step.status === InstallStepStatus.Error"
+                class="install-agent-actions"
+              >
+                <RcButton
+                  small
+                  variant="secondary"
+                  data-testid="rancher-ai-ui-install-agent-retry-apply"
+                  @click="retryApply"
+                >
+                  {{ t('ai.install.actions.retry') }}
+                </RcButton>
+              </div>
+              <span
+                v-if="step.key === InstallStep.Apply && state.configApplied"
+                class="install-agent-step-description"
+              >
+                {{ t('ai.install.applied') }}
+              </span>
             </div>
           </li>
         </ol>
