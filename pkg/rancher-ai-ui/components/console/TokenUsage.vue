@@ -114,22 +114,30 @@ const sections = computed(() => [
         data-testid="rancher-ai-ui-chat-console-token-usage-loading"
       />
     </template>
-    <span
-      v-else-if="props.usage.unavailable"
-      v-clean-tooltip="t('ai.console.tokenUsage.warning.notFound.tooltip')"
-      class="token-usage-label has-tooltip"
-      data-testid="rancher-ai-ui-chat-console-token-usage-not-found"
-    >
-      {{ t('ai.console.tokenUsage.warning.notFound.label') }}
-    </span>
-    <span
-      v-else-if="reporting.none"
-      v-clean-tooltip="t('ai.console.tokenUsage.warning.notAvailable.tooltip')"
-      class="token-usage-label has-tooltip"
-      data-testid="rancher-ai-ui-chat-console-token-usage-not-available"
-    >
-      {{ t('ai.console.tokenUsage.warning.notAvailable.label') }}
-    </span>
+    <template v-else-if="props.usage.unavailable">
+      <span
+        class="token-usage-label"
+        data-testid="rancher-ai-ui-chat-console-token-usage-not-found"
+      >
+        {{ t('ai.console.tokenUsage.warning.notFound.label') }}
+      </span>
+      <i
+        v-clean-tooltip="t('ai.console.tokenUsage.warning.notFound.tooltip')"
+        class="icon icon-alert-alt"
+      />
+    </template>
+    <template v-else-if="reporting.none">
+      <span
+        class="token-usage-label"
+        data-testid="rancher-ai-ui-chat-console-token-usage-not-available"
+      >
+        {{ t('ai.console.tokenUsage.warning.notAvailable.label') }}
+      </span>
+      <i
+        v-clean-tooltip="t('ai.console.tokenUsage.warning.notAvailable.tooltip')"
+        class="icon icon-alert-alt"
+      />
+    </template>
     <template v-else>
       <span class="token-usage-label">{{ t('ai.console.tokenUsage.label') }}</span>
       <TextLabelPopover
@@ -169,7 +177,7 @@ const sections = computed(() => [
       </TextLabelPopover>
       <i
         v-if="reporting.partial"
-        v-clean-tooltip="t('ai.console.tokenUsage.warning.partial')"
+        v-clean-tooltip="t('ai.console.tokenUsage.warning.partial', {}, true)"
         class="icon icon-alert-alt"
         data-testid="rancher-ai-ui-chat-console-token-usage-partial"
       />
@@ -189,10 +197,6 @@ const sections = computed(() => [
   .token-usage-label {
     flex-shrink: 0;
     white-space: nowrap;
-
-    &.has-tooltip {
-      cursor: pointer;
-    }
   }
 
   // Truncate the clickable count instead of overflowing the panel; the popover itself must not be clipped

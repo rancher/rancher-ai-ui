@@ -132,7 +132,7 @@ ai:
         notAvailable:
           label: Token usage not available
           tooltip: The LLM model does not provide usage data.
-        partial: The usage data might be partial or incomplete due to the LLM limited reporting.
+        partial: 'The usage data might be incomplete due to the LLM’s limited reporting.'
   context:
     label: CONTEXT
     add: Context
