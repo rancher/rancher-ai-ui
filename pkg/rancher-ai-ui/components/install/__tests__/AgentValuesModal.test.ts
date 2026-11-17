@@ -35,7 +35,7 @@ jest.mock('@components/Banner/Banner.vue', () => ({
 
 const YAML = 'plan:\n  enabled: true\n';
 
-function mountComponent(props: Record<string, unknown> = {}) {
+function mountComponent(props: Record<string, unknown> = {}): VueWrapper<any> {
   return mount(AgentValuesModal, {
     props: {
       value:   YAML,
