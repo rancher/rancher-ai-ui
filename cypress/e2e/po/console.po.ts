@@ -89,6 +89,10 @@ export class ConsolePo extends ComponentPo {
     return this.self().contains('Verify the results.');
   }
 
+  tokenUsageLoading() {
+    return this.self().find('[data-testid="rancher-ai-ui-chat-console-token-usage-loading"]');
+  }
+
   tokenUsage() {
     return this.self().find('[data-testid="rancher-ai-ui-chat-console-token-usage"]');
   }
@@ -99,5 +103,13 @@ export class ConsolePo extends ComponentPo {
 
   tokenUsageContent() {
     return this.self().find('[data-testid="rancher-ai-ui-chat-console-token-usage-content"]');
+  }
+
+  tokenUsageNotAvailable() {
+    return this.self().find('[data-testid="rancher-ai-ui-chat-console-token-usage-not-available"]');
+  }
+
+  tokenUsagePartial() {
+    return this.self().find('[data-testid="rancher-ai-ui-chat-console-token-usage-partial"]');
   }
 }

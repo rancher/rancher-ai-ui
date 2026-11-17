@@ -31,6 +31,16 @@ const compactFormat = new Intl.NumberFormat(undefined, {
 
 const totalLabel = computed(() => t('ai.console.tokenUsage.inTotal', { total: compactFormat.format(props.usage?.totalTokens || 0) }));
 
+const reporting = computed(() => {
+  const llmCalls = props.usage?.llmCalls || 0;
+  const unreportedCalls = props.usage?.unreportedCalls || 0;
+
+  return {
+    none:    llmCalls > 0 && llmCalls === unreportedCalls,
+    partial: unreportedCalls > 0 && llmCalls > unreportedCalls,
+  };
+});
+
 const overallRows = computed(() => [
   {
     key:   'inputTokens',
@@ -97,41 +107,72 @@ const sections = computed(() => [
     class="token-usage label text-deemphasized"
     data-testid="rancher-ai-ui-chat-console-token-usage"
   >
-    <span class="token-usage-label">{{ t('ai.console.tokenUsage.label') }}</span>
-    <TextLabelPopover
-      :label="totalLabel"
-      :disabled="props.disabled || !props.usage?.totalTokens"
-      data-testid="rancher-ai-ui-chat-console-token-usage-button"
+    <template v-if="!props.usage">
+      <span class="token-usage-label">{{ t('ai.console.tokenUsage.label') }}</span>
+      <i
+        class="icon icon-spinner icon-spin"
+        data-testid="rancher-ai-ui-chat-console-token-usage-loading"
+      />
+    </template>
+    <span
+      v-else-if="props.usage.unavailable"
+      v-clean-tooltip="t('ai.console.tokenUsage.warning.notFound.tooltip')"
+      class="token-usage-label has-tooltip"
+      data-testid="rancher-ai-ui-chat-console-token-usage-not-found"
     >
-      <div
-        class="token-usage-content"
-        data-testid="rancher-ai-ui-chat-console-token-usage-content"
+      {{ t('ai.console.tokenUsage.warning.notFound.label') }}
+    </span>
+    <span
+      v-else-if="reporting.none"
+      v-clean-tooltip="t('ai.console.tokenUsage.warning.notAvailable.tooltip')"
+      class="token-usage-label has-tooltip"
+      data-testid="rancher-ai-ui-chat-console-token-usage-not-available"
+    >
+      {{ t('ai.console.tokenUsage.warning.notAvailable.label') }}
+    </span>
+    <template v-else>
+      <span class="token-usage-label">{{ t('ai.console.tokenUsage.label') }}</span>
+      <TextLabelPopover
+        :label="totalLabel"
+        :disabled="props.disabled || !props.usage?.totalTokens"
+        data-testid="rancher-ai-ui-chat-console-token-usage-button"
       >
         <div
-          v-for="section in sections"
-          :key="section.key"
-          class="token-usage-section"
-          :data-testid="`rancher-ai-ui-chat-console-token-usage-${ section.key }`"
+          class="token-usage-content"
+          data-testid="rancher-ai-ui-chat-console-token-usage-content"
         >
-          <span class="token-usage-section-title">{{ section.title }}</span>
           <div
-            v-for="row in section.rows"
-            :key="row.key"
-            class="token-usage-row"
-            :data-testid="`rancher-ai-ui-chat-console-token-usage-${ section.key }-${ row.key }`"
+            v-for="section in sections"
+            :key="section.key"
+            class="token-usage-section"
+            :data-testid="`rancher-ai-ui-chat-console-token-usage-${ section.key }`"
           >
-            <span
-              class="token-usage-row-label"
-              :title="row.label"
-            >{{ row.label }}</span>
-            <span
-              class="token-usage-row-value"
-              :title="row.value"
-            >{{ row.value }}</span>
+            <span class="token-usage-section-title">{{ section.title }}</span>
+            <div
+              v-for="row in section.rows"
+              :key="row.key"
+              class="token-usage-row"
+              :data-testid="`rancher-ai-ui-chat-console-token-usage-${ section.key }-${ row.key }`"
+            >
+              <span
+                class="token-usage-row-label"
+                :title="row.label"
+              >{{ row.label }}</span>
+              <span
+                class="token-usage-row-value"
+                :title="row.value"
+              >{{ row.value }}</span>
+            </div>
           </div>
         </div>
-      </div>
-    </TextLabelPopover>
+      </TextLabelPopover>
+      <i
+        v-if="reporting.partial"
+        v-clean-tooltip="t('ai.console.tokenUsage.warning.partial')"
+        class="icon icon-alert-alt"
+        data-testid="rancher-ai-ui-chat-console-token-usage-partial"
+      />
+    </template>
   </div>
 </template>
 
@@ -147,6 +188,10 @@ const sections = computed(() => [
   .token-usage-label {
     flex-shrink: 0;
     white-space: nowrap;
+
+    &.has-tooltip {
+      cursor: pointer;
+    }
   }
 
   // Truncate the clickable count instead of overflowing the panel; the popover itself must not be clipped

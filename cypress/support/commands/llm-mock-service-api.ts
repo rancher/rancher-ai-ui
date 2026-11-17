@@ -21,6 +21,10 @@ import { rancherApiUrl } from '../utils/rancher-url';
  * arg.uiTools (Optional)
  *  The UI tools to be rendered in the UI. It can be used to simulate the rendering of UI tools and verify their behavior during tests.
  *
+ * arg.trackUsage (Optional)
+ *   Whether to track token usage for this response.
+ *   If not provided, token usage will be tracked by default.
+ *
  *  Usage example:
  *
  *    - Suggestions:
@@ -133,6 +137,7 @@ Cypress.Commands.add('enqueueLLMResponse', (args: LlmResponseArgs) => {
   const agentResponses = args.agentResponses || [];
   const text = chunks.length > 0 ? { chunks } : undefined;
   const uiTools = args.uiTools || [];
+  const trackUsage = args.trackUsage === false ? false : undefined;
 
   return cy.getCookie('R_SESS').then((token) => {
     cy.request({
@@ -145,7 +150,8 @@ Cypress.Commands.add('enqueueLLMResponse', (args: LlmResponseArgs) => {
       body: {
         agentResponses,
         text,
-        uiTools
+        uiTools,
+        trackUsage,
       },
     })
       .then((resp) => {

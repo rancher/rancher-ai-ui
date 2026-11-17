@@ -471,6 +471,7 @@ export interface UsageTotals {
   cacheReadTokens: number;
   cacheCreationTokens: number;
   llmCalls: number;
+  unreportedCalls: number;
 }
 
 export interface UsageBreakdown extends UsageTotals {
@@ -480,6 +481,7 @@ export interface UsageBreakdown extends UsageTotals {
 
 export interface ChatUsage extends UsageBreakdown {
   chatId: string;
+  unavailable?: boolean;
 }
 
 export interface HistoryChatMessage {

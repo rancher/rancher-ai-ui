@@ -19,7 +19,7 @@ describe('Feature: Chat token usage', () => {
     HomePagePo.goTo();
   });
 
-  it('Calculates token usage, including welcome message and subagent responses', () => {
+  it('It should track token usage, including welcome message and subagent responses', () => {
     // This enqueues a response for the welcome message http request.
     cy.enqueueLLMResponse({
       uiTools:   [
@@ -35,6 +35,8 @@ describe('Feature: Chat token usage', () => {
     });
 
     chat.open();
+
+    console.tokenUsageLoading().should('exist');
 
     const welcomeMessage = chat.getMessage(1);
 
@@ -197,6 +199,73 @@ describe('Feature: Chat token usage', () => {
       .and('contain.text', '25,257')
       .and('contain.text', 'ui-tools')
       .and('contain.text', '16,780');
+  });
+
+  it('It should not track token usage when the LLM response does not provide usage data', () => {
+    // This enqueues a response for the welcome message http request.
+    cy.enqueueLLMResponse({
+      uiTools: [
+        {
+          name: 'suggestions',
+          args: {
+            suggestion1: 'View resources',
+            suggestion2: 'Analyze logs',
+            suggestion3: 'Do action',
+          }
+        }
+      ],
+      trackUsage: false
+    });
+
+    chat.open();
+
+    console.tokenUsageLoading().should('not.exist');
+
+    const welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    console.tokenUsageNotAvailable().should('exist');
+  });
+
+  it('It should track partial token usage when the LLM response provide partial usage data', () => {
+    // This enqueues a response for the welcome message http request.
+    cy.enqueueLLMResponse({
+      uiTools: [
+        {
+          name: 'suggestions',
+          args: {
+            suggestion1: 'View resources',
+            suggestion2: 'Analyze logs',
+            suggestion3: 'Do action',
+          }
+        }
+      ]
+    });
+
+    chat.open();
+
+    const welcomeMessage = chat.getMessage(1);
+
+    welcomeMessage.isCompleted();
+
+    // Add a new message to trigger partial token usage tracking
+    cy.enqueueLLMResponse({
+      text:       'text text text',
+      trackUsage: false
+    });
+
+    chat.sendMessage('First prompt');
+
+    chat.getMessage(3).isCompleted();
+
+    console.tokenUsage()
+      .should('be.visible')
+      .and('contain.text', 'Tokens used:');
+    console.tokenUsageLink()
+      .should('contain.text', '6K in total');
+
+    console.tokenUsagePartial().should('exist');
   });
 
   after(() => {

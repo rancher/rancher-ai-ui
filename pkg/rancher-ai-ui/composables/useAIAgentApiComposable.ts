@@ -409,15 +409,21 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
     try {
       const data = await fetch(`${ apiPath }/chats/${ chatId }/usage`);
 
+      const res = await data.json();
+
+      if (data.status === 404 && res?.detail === 'Not Found') {
+        return { unavailable: true } as ChatUsage;
+      }
+
       if (!data.ok) {
         throw new Error(await data.text());
       }
 
-      return await data.json() as ChatUsage;
+      return res as ChatUsage;
     } catch (err) {
       error('Failed to fetch chat usage:', err);
 
-      return null;
+      return {} as ChatUsage;
     }
   }
 
