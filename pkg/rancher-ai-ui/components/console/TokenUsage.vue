@@ -134,6 +134,7 @@ const sections = computed(() => [
       <span class="token-usage-label">{{ t('ai.console.tokenUsage.label') }}</span>
       <TextLabelPopover
         :label="totalLabel"
+        :aria-label="`${ t('ai.console.tokenUsage.label') } ${ totalLabel }`"
         :disabled="props.disabled || !props.usage?.totalTokens"
         data-testid="rancher-ai-ui-chat-console-token-usage-button"
       >
