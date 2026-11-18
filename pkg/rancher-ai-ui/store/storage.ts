@@ -28,9 +28,12 @@ const getters = {
         const parsed = JSON.parse(stored);
 
         if (parsed.revision === revision && parsed.user === user) {
-          state.data = parsed.data;
+          state.data = {
+            ...DEFAULT_STORAGE,
+            ...parsed.data,
+          };
 
-          return parsed.data;
+          return state.data;
         }
       }
     } catch (error) {
