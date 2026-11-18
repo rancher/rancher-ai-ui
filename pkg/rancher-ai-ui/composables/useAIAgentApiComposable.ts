@@ -416,14 +416,14 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
       }
 
       if (!data.ok) {
-        throw new Error(await data.text());
+        throw new Error(res?.detail || data.statusText);
       }
 
       return res as ChatUsage;
     } catch (err) {
       error('Failed to fetch chat usage:', err);
 
-      return {} as ChatUsage;
+      return null;
     }
   }
 

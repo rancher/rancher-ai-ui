@@ -908,7 +908,12 @@ export function useChatMessageComposable(
     const usage = await fetchChatUsage(activeChatId);
 
     // Ignore the response if the user switched chat in the meantime
-    if (activeChatId === chatMetadata.value.chatId) {
+    if (activeChatId !== chatMetadata.value.chatId) {
+      return;
+    }
+
+    // A failed refresh keeps the last known usage
+    if (usage) {
       chatUsage.value = usage;
     }
   }

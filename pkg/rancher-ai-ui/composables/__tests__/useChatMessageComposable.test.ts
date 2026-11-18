@@ -2,7 +2,7 @@ import {
   describe, it, expect, beforeEach, afterEach, jest
 } from '@jest/globals';
 import { computed, defineComponent } from 'vue';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { MessageStopType, PlanningStopType, Role, Tag } from '../../types';
 import { useChatMessageComposable } from '../useChatMessageComposable';
 
@@ -1634,6 +1634,90 @@ describe('useChatMessageComposable', () => {
         'rancher-ai-ui/chat/setProcessingState',
         expect.objectContaining({ processingState: expect.objectContaining({ phase: 'idle' }) })
       );
+    });
+  });
+
+  describe('function: fetchUsage', () => {
+    const originalFetch = globalThis.fetch;
+    const mockFetch = jest.fn() as any;
+    const usageResponse = (status: number, body: any) => ({
+      ok:   status >= 200 && status < 300,
+      status,
+      json: async() => body,
+    });
+
+    beforeEach(() => {
+      mockStore.getters['rancher-ai-ui/chat/metadata'] = {
+        chatId: 'chat-1',
+        agents: []
+      };
+      mockStore.getters['rancher-ai-ui/chat/message'] = jest.fn(() => ({
+        id:             'msg-1',
+        messageContent: '',
+        thinking:       false,
+        completed:      false
+      }));
+      mockFetch.mockReset();
+      globalThis.fetch = mockFetch as any;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    async function completeMessage() {
+      await mockComponent.vm.onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await mockComponent.vm.onmessage({ data: Tag.MessageEnd } as MessageEvent);
+      await flushPromises();
+    }
+
+    it('should load the chat usage on mount and refresh it when a message completes', async() => {
+      mockFetch
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 1800 }))
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 2500 }));
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/chats/chat-1/usage'));
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ totalTokens: 1800 });
+
+      await completeMessage();
+
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ totalTokens: 2500 });
+    });
+
+    it('should keep the last known usage when a refresh fails', async() => {
+      mockFetch
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 1800 }))
+        .mockResolvedValueOnce(usageResponse(500, { detail: 'Internal Server Error' }));
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      await completeMessage();
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ totalTokens: 1800 });
+    });
+
+    it('should mark the usage as unavailable when the agent has no usage endpoint', async() => {
+      mockFetch.mockResolvedValueOnce(usageResponse(404, { detail: 'Not Found' }));
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ unavailable: true });
+    });
+
+    it('should not fetch the usage before the chat is initialized', async() => {
+      mockStore.getters['rancher-ai-ui/chat/metadata'] = undefined;
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockComponent.vm.chatUsage).toBeNull();
     });
   });
 
