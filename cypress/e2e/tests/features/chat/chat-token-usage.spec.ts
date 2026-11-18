@@ -297,6 +297,33 @@ describe('Feature: Chat token usage', () => {
     console.tokenUsageLink().should('contain.text', '8.5K in total');
   });
 
+  describe('When the chat cannot start', () => {
+    let activeLlm = '';
+
+    before(() => {
+      cy.login();
+      cy.getRancherResource('v1', 'configmaps', 'cattle-ai-agent-system/llm-config').then((resp) => {
+        activeLlm = resp.body.data.ACTIVE_LLM;
+      });
+      cy.updateAiAssistantConfigs({ ACTIVE_LLM: '' });
+    });
+
+    it('It should not show the token usage of a chat that failed to initialize', () => {
+      chat.open();
+
+      chat.getSystemErrorMessage(1).containsText('active LLM not specified');
+
+      // The space is kept so the console doesn't move once a chat starts
+      console.tokenUsage().should('exist').and('not.be.visible');
+      console.tokenUsageLoading().should('not.be.visible');
+    });
+
+    after(() => {
+      cy.login();
+      cy.updateAiAssistantConfigs({ ACTIVE_LLM: activeLlm });
+    });
+  });
+
   after(() => {
     cy.clearLLMResponses();
     cy.uninstallUIToolsDefinition();

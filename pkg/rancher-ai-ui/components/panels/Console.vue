@@ -359,6 +359,7 @@ onMounted(() => {
       </div>
       <div
         class="chat-console-row chat-console-chat-text-info"
+        :class="{ 'token-usage-placeholder': !props.activeChatId }"
       >
         <TokenUsage
           :usage="props.chatUsage"
@@ -522,5 +523,9 @@ onMounted(() => {
   font-weight: 400;
   line-height: normal;
   justify-content: flex-start;
+}
+
+.token-usage-placeholder {
+  visibility: hidden;
 }
 </style>
