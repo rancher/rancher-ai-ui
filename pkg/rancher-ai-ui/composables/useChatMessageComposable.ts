@@ -806,6 +806,14 @@ export function useChatMessageComposable(
                 planningContent: planningState.value as MessagePlanning,
               });
             }
+
+            if ([
+              MessagePlanningStatus.Completed,
+              MessagePlanningStatus.Failed,
+              MessagePlanningStatus.Canceled
+            ].includes(planning.status as MessagePlanningStatus)) {
+              Notifications.message().send(store, storage, getMessage(String(planningState.value?.messageId)));
+            }
           }
 
           break;
@@ -849,13 +857,17 @@ export function useChatMessageComposable(
 
     const prefix = t(`ai.error.${ error.key || 'message' }`, {}, true);
 
-    addMessage({
+    const errorMessage: Message = {
       role:           Role.System,
       messageContent: `${ prefix } ${ error.message || '' }`,
       timestamp:      new Date(),
       completed:      true,
       source:         MessageInternalSource.Error,
-    });
+    };
+
+    addMessage(errorMessage);
+
+    Notifications.message().send(store, storage, errorMessage);
   }
 
   function downloadMessages() {

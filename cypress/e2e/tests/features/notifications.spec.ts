@@ -16,6 +16,7 @@ function setupDesktopNotificationMock() {
 
     // Track the last instance created
     let lastInstance: any = null;
+    const bodies: string[] = [];
 
     const MockNotification = function(title: string, options: any) {
       lastInstance = {
@@ -25,6 +26,7 @@ function setupDesktopNotificationMock() {
         onclick: null,
         onclose: null
       };
+      bodies.push(options.body);
 
       return lastInstance;
     };
@@ -39,6 +41,7 @@ function setupDesktopNotificationMock() {
         return lastInstance;
       }
     });
+    Object.defineProperty(win as any, '__notificationBodies', { value: bodies });
 
     // Mock document.hasFocus() to return false so notifications are always sent
     cy.stub(win.document, 'hasFocus').returns(false);
@@ -179,10 +182,172 @@ describe('Chat', () => {
       });
     });
 
+    it('It should notify an error when it happens', () => {
+      setupDesktopNotificationMock();
+
+      cy.window().then(async(win: any) => {
+        const ws = win.$globalApp.$store.getters['rancher-ai-ui/connection/ws'];
+
+        for (const data of ['<message>', '<error>{"message":"Something went wrong"}</error>', '</message>']) {
+          await ws.onmessage(new MessageEvent('message', { data }));
+        }
+      });
+
+      chat.getMessage(3).containsText('Something went wrong');
+
+      cy.window().its('__notificationBodies').should('include', 'Response failed');
+    });
+
+    it('It should notify a pending confirmation', () => {
+      setupDesktopNotificationMock();
+
+      cy.clearLLMResponses();
+      cy.enqueueLLMResponse({
+        agentResponses: [{
+          agent:   'rancher',
+          mcpTool: {
+            name: 'createKubernetesResource',
+            args: {
+              kind:      'Pod',
+              name:      'my-pod',
+              manifest:  `{
+                apiVersion: 'v1',
+                kind:       'Pod',
+                metadata:   {
+                  name:      'my-pod',
+                  namespace: 'default'
+                },
+                spec:       {
+                  containers: [{
+                    name:  'my-container',
+                    image: 'nginx:latest'
+                  }]
+                }
+              }`,
+              cluster:   'local',
+              namespace: 'default'
+            }
+          },
+        }],
+        text: 'Pod created successfully.'
+      });
+
+      chat.sendMessage('Create a pod named my-pod in default namespace');
+
+      const confirmationMessage = chat.getMessage(3);
+
+      confirmationMessage.containsText('Are you sure you want to proceed with this action?');
+
+      cy.window().its('__notificationBodies').should('deep.equal', ['Waiting for your confirmation']);
+
+      confirmationMessage.cancelButton().click();
+      confirmationMessage.isCanceled();
+    });
+
     afterEach(() => {
       cy.login();
 
       cy.clearLocalStorage('rancher-ai-ui*');
+    });
+  });
+
+  describe('Desktop notifications for planning', () => {
+    const tasks = [
+      {
+        summary: 'Create a new namespace in the cluster \'local\'.',
+        agent:   'rancher',
+        result:  {
+          status:  'completed' as const,
+          message: 'Namespace created'
+        }
+      },
+      {
+        summary: 'Create a pod inside the newly created namespace in cluster \'local\'.',
+        agent:   'fleet',
+        result:  {
+          status:  'completed' as const,
+          message: 'Pod created'
+        }
+      }
+    ];
+
+    before(() => {
+      cy.login();
+      cy.clearLLMResponses();
+      cy.updateAiAssistantConfigs({
+        PLAN_ENABLED:          'true',
+        PLAN_APPROVAL_ENABLED: 'true'
+      });
+    });
+
+    beforeEach(() => {
+      cy.login();
+      cy.cleanChatHistory();
+
+      HomePagePo.goTo();
+
+      chat.open();
+      chat.isReady();
+
+      chat.getMessage(1).isCompleted();
+    });
+
+    it('It should notify the plan approval and its completion', () => {
+      setupDesktopNotificationMock();
+
+      cy.enqueuePlanningResponse(tasks);
+
+      chat.sendMessage('Create a namespace and a Pod in it');
+
+      const planningMessage = chat.getMessage(3).planning();
+
+      planningMessage.header().contains('Awaiting approval to execute the following tasks');
+
+      cy.window().its('__notificationBodies').should('deep.equal', ['Planning message ready: 2 tasks']);
+
+      planningMessage.approve();
+
+      planningMessage.status().contains('Completed');
+
+      cy.window().its('__notificationBodies').should('include', 'Plan completed');
+    });
+
+    it('It should notify a failed plan', () => {
+      setupDesktopNotificationMock();
+
+      cy.enqueuePlanningResponse([
+        tasks[0],
+        {
+          ...tasks[1],
+          result: {
+            status:  'failed',
+            message: 'Failed to create Pod'
+          }
+        }
+      ]);
+
+      chat.sendMessage('Create a namespace and a Pod in it');
+
+      const planningMessage = chat.getMessage(3).planning();
+
+      planningMessage.approve();
+
+      planningMessage.header().contains('Plan execution has been stopped');
+
+      cy.window().its('__notificationBodies').should('include', 'Plan failed');
+    });
+
+    afterEach(() => {
+      cy.clearLLMResponses();
+    });
+
+    after(() => {
+      cy.login();
+      cy.clearLocalStorage('rancher-ai-ui*');
+      cy.updateAiAssistantConfigs({
+        PLAN_ENABLED:          'false',
+        PLAN_APPROVAL_ENABLED: 'false'
+      });
     });
   });
 

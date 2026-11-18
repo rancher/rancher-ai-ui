@@ -150,6 +150,11 @@ ai:
       summary:
         message: 'You have unread messages'
         planning: 'Planning message ready: {count} tasks'
+        planningCompleted: 'Plan completed'
+        planningFailed: 'Plan failed'
+        planningCanceled: 'Plan canceled'
+        confirmation: 'Waiting for your confirmation'
+        error: 'Response failed'
         idle: 'Response complete'
   configurations:
     label: Uses AI, running {name} ({model}).
