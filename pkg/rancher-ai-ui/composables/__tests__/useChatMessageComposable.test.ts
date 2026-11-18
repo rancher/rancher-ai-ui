@@ -1647,6 +1647,12 @@ describe('useChatMessageComposable', () => {
     });
 
     beforeEach(() => {
+      // The usage is shared across mounts: clear the one left by the previous tests
+      const panel = mount(createTestComponent());
+
+      panel.vm.resetChatMetadata();
+      panel.unmount();
+
       mockStore.getters['rancher-ai-ui/chat/metadata'] = {
         chatId: 'chat-1',
         agents: []
@@ -1663,6 +1669,28 @@ describe('useChatMessageComposable', () => {
 
     afterEach(() => {
       globalThis.fetch = originalFetch;
+    });
+
+    it('should keep updating the usage when the chat panel is reopened', async() => {
+      mockFetch
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 1800 }))
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 1800 }))
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 2500 }));
+
+      // The first panel opens the websocket, whose handlers keep running after the panel is closed
+      const firstPanel = mount(createTestComponent());
+
+      await flushPromises();
+      firstPanel.unmount();
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      await firstPanel.vm.onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await firstPanel.vm.onmessage({ data: Tag.MessageEnd } as MessageEvent);
+      await flushPromises();
+
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ totalTokens: 2500 });
     });
 
     async function completeMessage() {

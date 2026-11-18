@@ -269,6 +269,39 @@ describe('Feature: Chat token usage', () => {
     console.tokenUsagePartial().should('exist');
   });
 
+  it('It should keep tracking token usage after the chat is closed and reopened', () => {
+    // This enqueues a response for the welcome message http request.
+    cy.enqueueLLMResponse({
+      uiTools: [
+        {
+          name: 'suggestions',
+          args: {
+            suggestion1: 'View resources',
+            suggestion2: 'Analyze logs',
+            suggestion3: 'Do action',
+          }
+        }
+      ]
+    });
+
+    chat.open();
+
+    chat.getMessage(1).isCompleted();
+
+    console.tokenUsageLink().should('contain.text', '1.8K in total');
+
+    chat.close();
+    chat.open();
+
+    console.tokenUsageLink().should('contain.text', '1.8K in total');
+
+    chat.sendMessage('First prompt');
+
+    chat.getMessage(3).isCompleted();
+
+    console.tokenUsageLink().should('contain.text', '8.5K in total');
+  });
+
   after(() => {
     cy.clearLLMResponses();
     cy.uninstallUIToolsDefinition();

@@ -61,6 +61,9 @@ const EXPAND_THINKING = false;
 const DISMISS_RECOMMENDED_AGENT_KEY = 'dismissed-agent-recommendation';
 const MAX_MESSAGES_BEFORE_RECOMMENDATION = 5;
 
+// Shared across the chat panel mounts: the websocket outlives the panel and keeps calling the handlers of the instance that opened it
+const chatUsage = ref<ChatUsage | null>(null);
+
 /**
  * Composable for managing chat messages within the AI chat.
  *
@@ -88,7 +91,6 @@ export function useChatMessageComposable(
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};
 
   const currentMsg = ref<Message>({} as Message);
-  const chatUsage = ref<ChatUsage | null>(null);
 
   const chatMetadata = computed<ChatMetadata>(() => store.getters['rancher-ai-ui/chat/metadata'] || {});
   const isChatInitialized = computed(() => !!chatMetadata.value.chatId);
