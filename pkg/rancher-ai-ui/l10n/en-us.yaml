@@ -211,8 +211,8 @@ ai:
           description: |-
             {
               namespace, select,
-                null { I will delete the {kind} <code>{name}</code> in the <code>{cluster}</code> cluster.<br> }
-                other { I will delete the {kind} <code>{name}</code> in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster.<br> }
+                null { I will delete the {kind} <code>{name}</code> in the <code>{cluster}</code> cluster. }
+                other { I will delete the {kind} <code>{name}</code> in the <code>{namespace}</code> namespace of the <code>{cluster}</code> cluster. }
             }
         external:
           tool: 'Calling tool'

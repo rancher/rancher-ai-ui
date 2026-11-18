@@ -144,7 +144,9 @@ describe('Confirmation.vue - confirmationText computed', () => {
   });
 
   describe('Base message generation', () => {
-    it('should include base confirmation question when no actions provided', () => {
+    const question = (w: VueWrapper<ComponentPublicInstance>) => w.find('[data-testid="rancher-ai-ui-chat-message-confirmation-question"]');
+
+    it('should only show the confirmation question when no actions provided', () => {
       const message: Message = {
         role:         Role.Assistant,
         confirmation: {
@@ -158,13 +160,12 @@ describe('Confirmation.vue - confirmationText computed', () => {
         ...requiredSetup(),
       });
 
-      const confirmationText = (wrapper.vm as any).confirmationText;
-
-      expect(confirmationText).toContain('Do you confirm this action?');
-      expect(confirmationText).toBe('Do you confirm this action?');
+      expect((wrapper.vm as any).confirmationText).toBe('');
+      expect(wrapper.find('[data-testid="rancher-ai-ui-chat-message-confirmation-message"]').exists()).toBe(false);
+      expect(question(wrapper).text()).toBe('Do you confirm this action?');
     });
 
-    it('should include base message even with actions', () => {
+    it('should show the confirmation question after the actions', () => {
       const message: Message = {
         role:         Role.Assistant,
         confirmation: {
@@ -178,12 +179,11 @@ describe('Confirmation.vue - confirmationText computed', () => {
         ...requiredSetup(),
       });
 
-      const confirmationText = (wrapper.vm as any).confirmationText;
-
-      expect(confirmationText).toContain('Do you confirm this action?');
+      expect((wrapper.vm as any).confirmationText).not.toContain('Do you confirm this action?');
+      expect(question(wrapper).text()).toBe('Do you confirm this action?');
     });
 
-    it('should return base message when confirmation is missing', () => {
+    it('should only show the confirmation question when confirmation is missing', () => {
       const message: Message = {} as Message;
 
       wrapper = shallowMount(Confirmation, {
@@ -191,9 +191,83 @@ describe('Confirmation.vue - confirmationText computed', () => {
         ...requiredSetup(),
       });
 
-      const confirmationText = (wrapper.vm as any).confirmationText;
+      expect((wrapper.vm as any).confirmationText).toBe('');
+      expect(question(wrapper).text()).toBe('Do you confirm this action?');
+    });
+  });
 
-      expect(confirmationText).toBe('Do you confirm this action?');
+  describe('Action details', () => {
+    const banners = (w: VueWrapper<ComponentPublicInstance>) => w.findAllComponents({ name: 'Banner' });
+
+    it('should show the detail of each action as a warning', () => {
+      const message: Message = {
+        role:         Role.Assistant,
+        confirmation: {
+          status:  ConfirmationStatus.Pending,
+          actions: [
+            createMockDeleteAction({ detail: 'The pod will be deleted' }),
+            createMockExternalAction({ detail: '  This action cannot be undone  ' }),
+          ],
+        },
+      } as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      expect(banners(wrapper).map((b) => b.props())).toStrictEqual([
+        expect.objectContaining({
+          color: 'warning',
+          label: 'The pod will be deleted'
+        }),
+        expect.objectContaining({
+          color: 'warning',
+          label: 'This action cannot be undone'
+        }),
+      ]);
+    });
+
+    it('should show the warning after the actions and the confirmation question', () => {
+      const message: Message = {
+        role:         Role.Assistant,
+        confirmation: {
+          status:  ConfirmationStatus.Pending,
+          actions: [createMockDeleteAction({ detail: 'The pod will be deleted' })],
+        },
+      } as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      const html = wrapper.html();
+      const positions = [
+        'rancher-ai-ui-chat-message-confirmation-message',
+        'rancher-ai-ui-chat-message-confirmation-question',
+        'rancher-ai-ui-chat-message-confirmation-detail',
+      ].map((id) => html.indexOf(`data-testid="${ id }"`));
+
+      expect(positions.every((p) => p >= 0)).toBe(true);
+      expect([...positions].sort((a, b) => a - b)).toStrictEqual(positions);
+    });
+
+    it('should not show a warning for actions without a detail', () => {
+      const message: Message = {
+        role:         Role.Assistant,
+        confirmation: {
+          status:  ConfirmationStatus.Pending,
+          actions: [createMockCreateAction(), createMockExternalAction({ detail: '   ' })],
+        },
+      } as Message;
+
+      wrapper = shallowMount(Confirmation, {
+        props: { message },
+        ...requiredSetup(),
+      });
+
+      expect(banners(wrapper)).toHaveLength(0);
     });
   });
 
@@ -310,7 +384,7 @@ describe('Confirmation.vue - confirmationText computed', () => {
       const confirmationText = (wrapper.vm as any).confirmationText;
 
       // Should only have base message, not tool rendering
-      expect(confirmationText).toBe('Do you confirm this action?');
+      expect(confirmationText).toBe('');
     });
 
     it('should skip external tool if args is undefined', () => {
@@ -332,7 +406,7 @@ describe('Confirmation.vue - confirmationText computed', () => {
       const confirmationText = (wrapper.vm as any).confirmationText;
 
       // Should only have base message, not tool rendering
-      expect(confirmationText).toBe('Do you confirm this action?');
+      expect(confirmationText).toBe('');
     });
 
     it('should handle external tool with empty object args', () => {
@@ -751,7 +825,7 @@ describe('Confirmation.vue - confirmationText computed', () => {
 
       const confirmationText = (wrapper.vm as any).confirmationText;
 
-      expect(confirmationText).toBe('Do you confirm this action?');
+      expect(confirmationText).toBe('');
     });
 
     it('should pass namespace as null to i18n when empty/whitespace', () => {
@@ -859,7 +933,7 @@ describe('Confirmation.vue - confirmationText computed', () => {
 
       const confirmationText = (wrapper.vm as any).confirmationText;
 
-      expect(confirmationText).toBe('Do you confirm this action?');
+      expect(confirmationText).toBe('');
     });
 
     it('should handle multiple patches in single Update action', () => {
@@ -981,7 +1055,7 @@ describe('Confirmation.vue - confirmationText computed', () => {
 
       const confirmationText = (wrapper.vm as any).confirmationText;
 
-      expect(confirmationText).toBe('Deleting Pod named test-pod in default<br>Do you confirm this action?');
+      expect(confirmationText).toBe('Deleting Pod named test-pod in default<br>');
     });
 
     it('should render Delete action for cluster-scoped resources', () => {
@@ -1036,7 +1110,7 @@ describe('Confirmation.vue - confirmationText computed', () => {
 
       const confirmationText = (wrapper.vm as any).confirmationText;
 
-      expect(confirmationText).toBe('Do you confirm this action?');
+      expect(confirmationText).toBe('');
     });
   });
 
@@ -1209,7 +1283,7 @@ describe('Confirmation.vue - confirmationText computed', () => {
 
       const confirmationText = (wrapper.vm as any).confirmationText;
 
-      expect(confirmationText).toBe('Do you confirm this action?');
+      expect(confirmationText).toBe('');
     });
 
     it('should handle undefined confirmation status gracefully', () => {
@@ -1244,7 +1318,7 @@ describe('Confirmation.vue - confirmationText computed', () => {
 
       const confirmationText = (wrapper.vm as any).confirmationText;
 
-      expect(confirmationText).toBe('Do you confirm this action?');
+      expect(confirmationText).toBe('');
     });
 
     it('should use Create as default action type when type is missing', () => {

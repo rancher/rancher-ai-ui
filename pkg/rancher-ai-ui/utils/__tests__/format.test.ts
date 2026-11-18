@@ -441,4 +441,34 @@ describe('formatConfirmationActions', () => {
       description: 'My description'
     });
   });
+
+  it('should keep the detail of an external tool confirmation action', () => {
+    const payload = JSON.stringify({
+      type:   'external',
+      name:   'externalTool',
+      args:   { id: 'my-id' },
+      detail: 'This action cannot be undone'
+    });
+
+    const result = formatConfirmationActions(`${ Tag.ConfirmationStart }${ payload }${ Tag.ConfirmationEnd }`);
+
+    expect(result?.[0].detail).toBe('This action cannot be undone');
+  });
+
+  it('should keep the detail of built-in agent confirmation actions', () => {
+    const payload = JSON.stringify([{
+      type:     'delete',
+      resource: {
+        kind:      'Pod',
+        name:      'my-pod',
+        namespace: 'default',
+        cluster:   'local'
+      },
+      detail: 'The pod will be deleted'
+    }]);
+
+    const result = formatConfirmationActions(`${ Tag.ConfirmationStart }${ payload }${ Tag.ConfirmationEnd }`);
+
+    expect(result?.[0].detail).toBe('The pod will be deleted');
+  });
 });

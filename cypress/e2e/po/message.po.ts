@@ -1,4 +1,5 @@
 import ComponentPo from '@rancher/cypress/e2e/po/components/component.po';
+import BannersPo from '@rancher/cypress/e2e/po/components/banners.po';
 import ToolPo from '@/cypress/e2e/po/ui-tools/tool.po';
 import PlanningPo from '@/cypress/e2e/po/planning.po';
 import BubbleButtonPo from '@/cypress/e2e/po/components/bubble-button.po';
@@ -57,6 +58,10 @@ class RawMessagePo extends ComponentPo {
 
   confirmationStatus() {
     return this.self().get('[data-testid^="rancher-ai-ui-chat-message-confirmation-status-"]');
+  }
+
+  confirmationDetail() {
+    return new BannersPo('[data-testid="rancher-ai-ui-chat-message-confirmation-detail"]', this.self());
   }
 
   isCompleted() {

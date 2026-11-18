@@ -5,6 +5,7 @@ import * as jsyaml from 'js-yaml';
 import { escape } from 'lodash';
 import { useI18n } from '@shell/composables/useI18n';
 import RcButton from '@components/RcButton/RcButton.vue';
+import Banner from '@components/Banner/Banner.vue';
 import { warn } from '../../utils/log';
 import { ConfirmationStatus, ConfirmationActionType, Message } from '../../types';
 import { ToolName } from '../../components/tools/types';
@@ -38,8 +39,6 @@ const CONFIRMATION_STATUS: Partial<Record<ConfirmationStatus, { icon: string; la
 };
 
 const confirmationText = computed(() => {
-  const msg = t('ai.confirmation.message.question');
-
   try {
     let out = '';
 
@@ -115,13 +114,17 @@ const confirmationText = computed(() => {
       }
     });
 
-    return `${ out }${ msg }`;
+    return out;
   } catch (e) {
     warn('Error generating confirmation description:', e);
   }
 
-  return msg;
+  return '';
 });
+
+const details = computed(() => (props.message.confirmation?.actions || [])
+  .map((action) => action.detail?.trim())
+  .filter((detail) => !!detail));
 
 const buttonLabels = computed(() => {
   return {
@@ -134,12 +137,29 @@ const buttonLabels = computed(() => {
 
 <template>
   <div class="confirmation-action">
-    <div class="confirmation-message">
+    <div
+      v-if="confirmationText"
+      class="confirmation-message"
+    >
       <span
         v-clean-html="confirmationText"
         data-testid="rancher-ai-ui-chat-message-confirmation-message"
       />
     </div>
+    <div
+      class="confirmation-message"
+      data-testid="rancher-ai-ui-chat-message-confirmation-question"
+    >
+      {{ t('ai.confirmation.message.question') }}
+    </div>
+    <Banner
+      v-for="(detail, i) in details"
+      :key="i"
+      class="confirmation-detail"
+      color="warning"
+      :label="detail"
+      data-testid="rancher-ai-ui-chat-message-confirmation-detail"
+    />
     <div
       v-if="props.message.confirmation?.status === ConfirmationStatus.Pending"
       class="confirmation-buttons"
@@ -194,8 +214,13 @@ const buttonLabels = computed(() => {
 </template>
 
 <style lang='scss' scoped>
+.confirmation-action {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .confirmation-message {
-  margin-bottom: 12px;
   word-break: break-word;
   white-space: pre-line;
   list-style-position: inside;
@@ -237,10 +262,15 @@ const buttonLabels = computed(() => {
   color: #C0EFDE;
 }
 
+.confirmation-detail {
+  margin: 0;
+}
+
 .confirmation-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  margin-top: 4px;
 
   .delete-action {
     background-color: var(--error);

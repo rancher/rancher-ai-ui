@@ -209,7 +209,8 @@ export interface MessageConfirmationAction {
   tool?: {
     name: string;
     args: Record<string, unknown> | string;
-  }
+  },
+  detail?: string;
 }
 
 export const enum MessageTemplateComponent {
