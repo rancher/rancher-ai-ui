@@ -28,6 +28,14 @@ jest.mock('../../popover/TextLabel.vue', () => ({
   }
 }));
 
+jest.mock('@components/RcIconTooltip', () => ({
+  RcIconTooltip: {
+    name:     'RcIconTooltip',
+    props:    ['content', 'iconType', 'label'],
+    template: '<button />',
+  }
+}));
+
 const totals = (totalTokens: number) => ({
   inputTokens:  totalTokens,
   outputTokens: 0,
@@ -91,6 +99,10 @@ describe('TokenUsage', () => {
       const wrapper = mountComponent({ usage: { unavailable: true } });
 
       expect(wrapper.find('[data-testid="rancher-ai-ui-chat-console-token-usage-not-found"]').text()).toBe('ai.console.tokenUsage.warning.notFound.label');
+      expect(wrapper.findComponent({ name: 'RcIconTooltip' }).props()).toStrictEqual(expect.objectContaining({
+        iconType: 'alert-alt',
+        content:  'ai.console.tokenUsage.warning.notFound.tooltip',
+      }));
       expect(wrapper.findComponent({ name: 'TextLabelPopover' }).exists()).toBe(false);
     });
   });
@@ -124,6 +136,7 @@ describe('TokenUsage', () => {
       });
 
       expect(byTestId(wrapper, 'not-available').text()).toBe('ai.console.tokenUsage.warning.notAvailable.label');
+      expect(wrapper.findComponent({ name: 'RcIconTooltip' }).props('content')).toBe('ai.console.tokenUsage.warning.notAvailable.tooltip');
       expect(wrapper.findComponent({ name: 'TextLabelPopover' }).exists()).toBe(false);
     });
 
@@ -135,7 +148,10 @@ describe('TokenUsage', () => {
         })
       });
 
-      expect(byTestId(wrapper, 'partial').classes()).toContain('icon-alert-alt');
+      expect(wrapper.findComponent({ name: 'RcIconTooltip' }).props()).toStrictEqual(expect.objectContaining({
+        iconType: 'alert-alt',
+        content:  'ai.console.tokenUsage.warning.partial',
+      }));
       expect(byTestId(wrapper, 'not-available').exists()).toBe(false);
     });
 
@@ -147,8 +163,7 @@ describe('TokenUsage', () => {
         })
       });
 
-      expect(byTestId(wrapper, 'partial').exists()).toBe(false);
-      expect(byTestId(wrapper, 'content-partial').exists()).toBe(false);
+      expect(wrapper.findComponent({ name: 'RcIconTooltip' }).exists()).toBe(false);
       expect(byTestId(wrapper, 'not-available').exists()).toBe(false);
     });
   });

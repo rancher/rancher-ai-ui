@@ -2,6 +2,8 @@
 import { computed, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
+// @ts-expect-error FIXME: RcIconTooltip does not have proper TypeScript types
+import { RcIconTooltip } from '@components/RcIconTooltip';
 import TextLabelPopover from '../popover/TextLabel.vue';
 import { Agent, ChatUsage, UsageTotals } from '../../types';
 
@@ -121,9 +123,9 @@ const sections = computed(() => [
       >
         {{ t('ai.console.tokenUsage.warning.notFound.label') }}
       </span>
-      <i
-        v-clean-tooltip="t('ai.console.tokenUsage.warning.notFound.tooltip')"
-        class="icon icon-alert-alt"
+      <RcIconTooltip
+        icon-type="alert-alt"
+        :content="t('ai.console.tokenUsage.warning.notFound.tooltip')"
       />
     </template>
     <template v-else-if="reporting.none">
@@ -133,9 +135,9 @@ const sections = computed(() => [
       >
         {{ t('ai.console.tokenUsage.warning.notAvailable.label') }}
       </span>
-      <i
-        v-clean-tooltip="t('ai.console.tokenUsage.warning.notAvailable.tooltip')"
-        class="icon icon-alert-alt"
+      <RcIconTooltip
+        icon-type="alert-alt"
+        :content="t('ai.console.tokenUsage.warning.notAvailable.tooltip')"
       />
     </template>
     <template v-else>
@@ -175,10 +177,10 @@ const sections = computed(() => [
           </div>
         </div>
       </TextLabelPopover>
-      <i
+      <RcIconTooltip
         v-if="reporting.partial"
-        v-clean-tooltip="t('ai.console.tokenUsage.warning.partial', {}, true)"
-        class="icon icon-alert-alt"
+        icon-type="alert-alt"
+        :content="t('ai.console.tokenUsage.warning.partial', {}, true)"
         data-testid="rancher-ai-ui-chat-console-token-usage-partial"
       />
     </template>
@@ -197,6 +199,15 @@ const sections = computed(() => [
   .token-usage-label {
     flex-shrink: 0;
     white-space: nowrap;
+  }
+
+  // Same size as the text, with the default cursor: the icon only shows a hint
+  :deep(.rc-icon-tooltip) {
+    cursor: default;
+
+    .rc-icon {
+      font-size: inherit;
+    }
   }
 
   // Truncate the clickable count instead of overflowing the panel; the popover itself must not be clipped
