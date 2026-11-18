@@ -2,7 +2,7 @@ import {
   describe, it, expect, beforeEach, afterEach, jest
 } from '@jest/globals';
 import { computed, defineComponent } from 'vue';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { MessageStopType, PlanningStopType, Role, Tag } from '../../types';
 import { useChatMessageComposable } from '../useChatMessageComposable';
 
@@ -10,7 +10,10 @@ let mockStore: any;
 let mockComponent: any;
 
 jest.mock('vuex', () => ({ useStore: () => mockStore }));
-jest.mock('../../utils/log', () => ({ warn: jest.fn() }));
+jest.mock('../../utils/log', () => ({
+  warn:  jest.fn(),
+  error: jest.fn()
+}));
 jest.mock('@shell/composables/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 
 // Helper: Create a real Vue component that uses the composable
@@ -1631,6 +1634,127 @@ describe('useChatMessageComposable', () => {
         'rancher-ai-ui/chat/setProcessingState',
         expect.objectContaining({ processingState: expect.objectContaining({ phase: 'idle' }) })
       );
+    });
+  });
+
+  describe('function: fetchUsage', () => {
+    const originalFetch = globalThis.fetch;
+    const mockFetch = jest.fn() as any;
+    const usageResponse = (status: number, body: any) => ({
+      ok:   status >= 200 && status < 300,
+      status,
+      json: async() => body,
+    });
+
+    beforeEach(() => {
+      // The usage is shared across mounts: clear the one left by the previous tests
+      const panel = mount(createTestComponent());
+
+      panel.vm.resetChatMetadata();
+      panel.unmount();
+
+      mockStore.getters['rancher-ai-ui/chat/metadata'] = {
+        chatId: 'chat-1',
+        agents: []
+      };
+      mockStore.getters['rancher-ai-ui/chat/message'] = jest.fn(() => ({
+        id:             'msg-1',
+        messageContent: '',
+        thinking:       false,
+        completed:      false
+      }));
+      mockFetch.mockReset();
+      globalThis.fetch = mockFetch as any;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it('should keep updating the usage when the chat panel is reopened', async() => {
+      mockFetch
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 1800 }))
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 1800 }))
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 2500 }));
+
+      // The first panel opens the websocket, whose handlers keep running after the panel is closed
+      const firstPanel = mount(createTestComponent());
+
+      await flushPromises();
+      firstPanel.unmount();
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      await firstPanel.vm.onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await firstPanel.vm.onmessage({ data: Tag.MessageEnd } as MessageEvent);
+      await flushPromises();
+
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ totalTokens: 2500 });
+    });
+
+    async function completeMessage() {
+      await mockComponent.vm.onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await mockComponent.vm.onmessage({ data: Tag.MessageEnd } as MessageEvent);
+      await flushPromises();
+    }
+
+    it('should load the chat usage on mount and refresh it when a message completes', async() => {
+      mockFetch
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 1800 }))
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 2500 }));
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/chats/chat-1/usage'));
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ totalTokens: 1800 });
+
+      await completeMessage();
+
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ totalTokens: 2500 });
+    });
+
+    it('should keep the last known usage when a refresh fails', async() => {
+      mockFetch
+        .mockResolvedValueOnce(usageResponse(200, { totalTokens: 1800 }))
+        .mockResolvedValueOnce(usageResponse(500, { detail: 'Internal Server Error' }));
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      await completeMessage();
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ totalTokens: 1800 });
+    });
+
+    it('should show an empty usage instead of loading forever when the first fetch fails', async() => {
+      mockFetch.mockResolvedValueOnce(usageResponse(500, { detail: 'Internal Server Error' }));
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      expect(mockComponent.vm.chatUsage).toStrictEqual({});
+    });
+
+    it('should mark the usage as unavailable when the agent has no usage endpoint', async() => {
+      mockFetch.mockResolvedValueOnce(usageResponse(404, { detail: 'Not Found' }));
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      expect(mockComponent.vm.chatUsage).toStrictEqual({ unavailable: true });
+    });
+
+    it('should not fetch the usage before the chat is initialized', async() => {
+      mockStore.getters['rancher-ai-ui/chat/metadata'] = undefined;
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockComponent.vm.chatUsage).toBeNull();
     });
   });
 

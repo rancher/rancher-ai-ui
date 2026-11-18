@@ -7,6 +7,7 @@ import {
   Agent, AgentSettings, AIAgentAPIEvent, Context, HistoryChat, HistoryChatMessage, LLMProvider, Message,
   ToolCall,
   ToolsConfig,
+  ChatUsage,
 } from '../types';
 import { Settings } from '../pages/settings/types';
 import { buildMessageFromHistoryMessage } from '../utils/format';
@@ -38,6 +39,7 @@ interface McpAuthenticationEvent {
 }
 
 interface UIToolsCallsPayload {
+  chatId: string;
   context: Context[];
   prompt: string;
   tools: ToolsConfig
@@ -403,6 +405,28 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
     }
   }
 
+  async function fetchChatUsage(chatId: string): Promise<ChatUsage | null> {
+    try {
+      const data = await fetch(`${ apiPath }/chats/${ chatId }/usage`);
+
+      const res = await data.json();
+
+      if (data.status === 404 && res?.detail === 'Not Found') {
+        return { unavailable: true } as ChatUsage;
+      }
+
+      if (!data.ok) {
+        throw new Error(res?.detail || data.statusText);
+      }
+
+      return res as ChatUsage;
+    } catch (err) {
+      error('Failed to fetch chat usage:', err);
+
+      return null;
+    }
+  }
+
   return {
     refreshMcpAuthenticationToken,
     fetchMcpAuthenticationMetadata,
@@ -418,5 +442,6 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
     fetchMessages,
     updateChat,
     deleteChat,
+    fetchChatUsage,
   };
 }

@@ -22,6 +22,10 @@ const props = defineProps({
     type:    Boolean,
     default: false,
   },
+  ariaLabel: {
+    type:    String,
+    default: undefined,
+  },
 });
 </script>
 
@@ -37,6 +41,7 @@ const props = defineProps({
         variant="ghost"
         small
         :disabled="props.disabled"
+        :aria-label="props.ariaLabel"
       >
         <span
           ref="triggerEl"

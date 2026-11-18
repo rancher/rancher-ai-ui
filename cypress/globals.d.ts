@@ -7,6 +7,7 @@ export interface LlmResponseArgs {
   text?: string | string[];
   chunkSize?: number;
   uiTools?: Tool[];
+  trackUsage?: boolean;
 }
 
 export interface Tool {

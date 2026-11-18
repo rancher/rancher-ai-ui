@@ -112,6 +112,27 @@ ai:
     actions:
       stop: Stop message
       send: Send message
+    tokenUsage:
+      title: Overall Usage
+      label: 'Tokens used:'
+      inTotal: |-
+        {total, plural,
+          =0 { {total} }
+          other { {total} in total }
+        }
+      total: 'Total'
+      input: Input
+      output: Output
+      byAgent: By Agent
+      bySource: By Source
+      warning:
+        notFound:
+          label: Token usage not available
+          tooltip: The AI Agent does not provide usage data.
+        notAvailable:
+          label: Token usage not available
+          tooltip: The LLM model does not provide usage data.
+        partial: 'The usage data might be incomplete due to the LLM’s limited reporting.'
   context:
     label: CONTEXT
     add: Context

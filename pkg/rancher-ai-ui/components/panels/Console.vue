@@ -10,10 +10,11 @@ import { useI18n } from '@shell/composables/useI18n';
 import { isMac } from '@shell/utils/platform';
 import RcButton from '@components/RcButton/RcButton.vue';
 import {
-  Agent, FormattedMessage, LLMConfig, Message, Role
+  Agent, ChatUsage, FormattedMessage, LLMConfig, Message, Role
 } from '../../types';
 import SelectAgent from '../agent/SelectAgent.vue';
 import LlmModelLabel from '../console/LlmModelLabel.vue';
+import TokenUsage from '../console/TokenUsage.vue';
 import VerifyResultsDisclaimer from '../console/VerifyResultsDisclaimer.vue';
 import { useInputComposable } from '../../composables/useInputComposable';
 import { extractMessageText } from '../../utils/label';
@@ -59,6 +60,10 @@ const props = defineProps({
   hasPermissions: {
     type:    Boolean,
     default: true,
+  },
+  chatUsage: {
+    type:    Object as PropType<ChatUsage | null>,
+    default: null,
   }
 });
 
@@ -67,7 +72,8 @@ defineExpose({ focusInput });
 const emit = defineEmits([
   'input:content',
   'stop:content',
-  'select:agent'
+  'select:agent',
+  'fetch:usage'
 ]);
 
 const {
@@ -270,7 +276,7 @@ onMounted(() => {
     data-testid="rancher-ai-ui-chat-console"
   >
     <div
-      class="chat-input-wrapper"
+      class="chat-input-body"
       :class="{
         focused: isFocused,
         'disabled-panel': props.disabled
@@ -340,13 +346,26 @@ onMounted(() => {
     </div>
     <div
       v-if="props.hasPermissions"
-      class="chat-console-row chat-console-chat-text-info"
-      data-testid="rancher-ai-ui-chat-console-llm-info"
+      class="chat-input-footer"
     >
-      <LlmModelLabel
-        :llm-config="props.llmConfig"
-      />
-      <VerifyResultsDisclaimer />
+      <div
+        class="chat-console-row chat-console-chat-text-info"
+        data-testid="rancher-ai-ui-chat-console-llm-info"
+      >
+        <LlmModelLabel
+          :llm-config="props.llmConfig"
+        />
+        <VerifyResultsDisclaimer />
+      </div>
+      <div
+        class="chat-console-row chat-console-chat-text-info"
+        :class="{ 'token-usage-placeholder': !props.activeChatId }"
+      >
+        <TokenUsage
+          :usage="props.chatUsage"
+          :agents="props.agents"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -360,7 +379,7 @@ onMounted(() => {
   height: auto;
 }
 
-.chat-input-wrapper {
+.chat-input-body {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
@@ -379,6 +398,12 @@ onMounted(() => {
   &.disabled {
     background-color: var(--disabled-bg);
   }
+}
+
+.chat-input-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .chat-input-complete {
@@ -498,5 +523,9 @@ onMounted(() => {
   font-weight: 400;
   line-height: normal;
   justify-content: flex-start;
+}
+
+.token-usage-placeholder {
+  visibility: hidden;
 }
 </style>
