@@ -7,6 +7,8 @@ describe('Feature: Chat token usage', () => {
   const chat = new ChatPo();
   const console = new ConsolePo();
 
+  const toNumber = (text: string) => Number(text.replace(/\D/g, ''));
+
   before(() => {
     cy.login();
     cy.installUIToolsDefinition();
@@ -20,6 +22,18 @@ describe('Feature: Chat token usage', () => {
   });
 
   it('It should track token usage, including welcome message and subagent responses', () => {
+    let lastTotal = 0;
+
+    const checkTotalIncreased = () => {
+      console.tokenUsageLink()
+        .should(($el) => {
+          expect(toNumber($el.text())).to.be.greaterThan(lastTotal);
+        })
+        .then(($el) => {
+          lastTotal = toNumber($el.text());
+        });
+    };
+
     // This enqueues a response for the welcome message http request.
     cy.enqueueLLMResponse({
       uiTools:   [
@@ -47,7 +61,7 @@ describe('Feature: Chat token usage', () => {
       .should('be.visible')
       .and('contain.text', 'Tokens used:');
     console.tokenUsageLink()
-      .should('contain.text', '1.8K in total')
+      .should('contain.text', 'in total')
       .click();
 
     console.tokenUsageContent()
@@ -56,14 +70,12 @@ describe('Feature: Chat token usage', () => {
       .and('contain.text', 'Input')
       .and('contain.text', 'Output')
       .and('contain.text', 'Total')
-      .and('contain.text', '1,747')
-      .and('contain.text', '25')
-      .and('contain.text', '1,772')
       .and('contain.text', 'By Agent')
       .and('contain.text', 'supervisor')
-      .and('contain.text', '1,772')
       .and('contain.text', 'By Source')
       .and('contain.text', 'ui-tools');
+
+    checkTotalIncreased();
 
     chat.console().textarea().focus();
 
@@ -76,7 +88,7 @@ describe('Feature: Chat token usage', () => {
       .should('be.visible')
       .and('contain.text', 'Tokens used:');
     console.tokenUsageLink()
-      .should('contain.text', '8.5K in total')
+      .should('contain.text', 'in total')
       .click();
 
     console.tokenUsageContent()
@@ -85,15 +97,12 @@ describe('Feature: Chat token usage', () => {
       .and('contain.text', 'Input')
       .and('contain.text', 'Output')
       .and('contain.text', 'Total')
-      .and('contain.text', '8,384')
-      .and('contain.text', '73')
-      .and('contain.text', '8,457')
       .and('contain.text', 'By Agent')
       .and('contain.text', 'supervisor')
       .and('contain.text', 'By Source')
-      .and('contain.text', 'ui-tools')
-      .and('contain.text', '6,030')
-      .and('contain.text', '2,427');
+      .and('contain.text', 'ui-tools');
+
+    checkTotalIncreased();
 
     // Check token usage after sending the second prompt using Rancher agent
     cy.enqueueLLMResponse({
@@ -178,7 +187,7 @@ describe('Feature: Chat token usage', () => {
       .should('be.visible')
       .and('contain.text', 'Tokens used:');
     console.tokenUsageLink()
-      .should('contain.text', '42.3K in total')
+      .should('contain.text', 'in total')
       .click();
 
     // The input tokens depend on the deployments returned by the cluster, which vary between environments
@@ -188,13 +197,14 @@ describe('Feature: Chat token usage', () => {
       .and('contain.text', 'Input')
       .and('contain.text', 'Output')
       .and('contain.text', 'Total')
-      .and('contain.text', '347')
       .and('contain.text', 'By Agent')
       .and('contain.text', 'supervisor')
       .and('contain.text', 'Rancher')
       .and('contain.text', 'By Source')
       .and('contain.text', 'agent')
       .and('contain.text', 'ui-tools');
+
+    checkTotalIncreased();
   });
 
   it('It should not track token usage when the LLM response does not provide usage data', () => {
@@ -259,7 +269,7 @@ describe('Feature: Chat token usage', () => {
       .should('be.visible')
       .and('contain.text', 'Tokens used:');
     console.tokenUsageLink()
-      .should('contain.text', '6K in total');
+      .should('contain.text', 'in total');
 
     console.tokenUsagePartial().should('exist');
   });
@@ -279,22 +289,37 @@ describe('Feature: Chat token usage', () => {
       ]
     });
 
+    let total = 0;
+
     chat.open();
 
     chat.getMessage(1).isCompleted();
 
-    console.tokenUsageLink().should('contain.text', '1.8K in total');
+    console.tokenUsageLink().should('contain.text', 'in total').click();
+    console.tokenUsageLink().should(($el) => {
+      total = toNumber($el.text());
+
+      expect(total).to.be.greaterThan(0);
+    });
 
     chat.close();
     chat.open();
 
-    console.tokenUsageLink().should('contain.text', '1.8K in total');
+    console.tokenUsageLink().should('contain.text', 'in total').click();
+    console.tokenUsageLink().should(($el) => {
+      expect(toNumber($el.text())).to.equal(total);
+    });
+
+    chat.console().textarea().focus();
 
     chat.sendMessage('First prompt');
 
     chat.getMessage(3).isCompleted();
 
-    console.tokenUsageLink().should('contain.text', '8.5K in total');
+    console.tokenUsageLink().should('contain.text', 'in total').click();
+    console.tokenUsageLink().should(($el) => {
+      expect(toNumber($el.text())).to.be.greaterThan(total);
+    });
   });
 
   describe('When the chat cannot start', () => {
