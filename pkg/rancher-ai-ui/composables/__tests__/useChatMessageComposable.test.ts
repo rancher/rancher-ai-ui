@@ -1701,6 +1701,15 @@ describe('useChatMessageComposable', () => {
       expect(mockComponent.vm.chatUsage).toStrictEqual({ totalTokens: 1800 });
     });
 
+    it('should show an empty usage instead of loading forever when the first fetch fails', async() => {
+      mockFetch.mockResolvedValueOnce(usageResponse(500, { detail: 'Internal Server Error' }));
+
+      mockComponent = mount(createTestComponent());
+      await flushPromises();
+
+      expect(mockComponent.vm.chatUsage).toStrictEqual({});
+    });
+
     it('should mark the usage as unavailable when the agent has no usage endpoint', async() => {
       mockFetch.mockResolvedValueOnce(usageResponse(404, { detail: 'Not Found' }));
 

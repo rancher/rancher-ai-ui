@@ -912,9 +912,15 @@ export function useChatMessageComposable(
       return;
     }
 
-    // A failed refresh keeps the last known usage
     if (usage) {
       chatUsage.value = usage;
+
+      return;
+    }
+
+    // A failed refresh keeps the last known usage, a failed first load shows no usage instead of loading forever
+    if (!chatUsage.value) {
+      chatUsage.value = {} as ChatUsage;
     }
   }
 
