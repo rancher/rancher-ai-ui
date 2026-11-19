@@ -269,7 +269,7 @@ describe('Messages', () => {
     const confirmationRequestMessage = chat.getMessage(3);
 
     confirmationRequestMessage.scrollIntoView();
-    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
+    confirmationRequestMessage.self().contains('Are you sure you want to proceed with this action?');
     confirmationRequestMessage.confirmButton().click();
 
     confirmationRequestMessage.isConfirmed();
@@ -375,6 +375,10 @@ describe('Messages', () => {
 
     confirmationRequestMessage.confirmButton().click();
     confirmationRequestMessage.isConfirmed();
+
+    const resultMessage = chat.getMessage(4);
+
+    resultMessage.containsText('GlobalRole my-role deleted.');
   });
 
   it('Cancel single-resource create action', () => {
