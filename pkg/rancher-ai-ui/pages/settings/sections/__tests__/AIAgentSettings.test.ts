@@ -3,6 +3,28 @@ import AIAgentSettings from '../AIAgentSettings.vue';
 import { Settings, SettingsFormData, ValidationStatus } from '../../types';
 import { LLMProvider as ChatBotEnum } from '../../../../types';
 
+// Mock shell components that use imported TS types, which the jest SFC compiler can't resolve
+jest.mock('@components/RcButton/RcButton.vue', () => ({
+  default: {
+    name:     'RcButton',
+    template: '<button><slot /></button>'
+  }
+}));
+jest.mock('@components/RcIcon/RcIcon.vue', () => ({
+  default: {
+    name:     'RcIcon',
+    template: '<i />'
+  }
+}));
+jest.mock('@shell/components/form/LabeledSelect.vue', () => ({
+  default: {
+    name:     'LabeledSelect',
+    props:    ['value', 'label', 'options', 'mode', 'disabled', 'required'],
+    template: '<select class="labeled-select" />',
+    emits:    ['update:value']
+  }
+}));
+
 // Mock Password component to avoid clipboard-polyfill dependency
 jest.mock('@shell/components/form/Password.vue', () => ({
   default: {

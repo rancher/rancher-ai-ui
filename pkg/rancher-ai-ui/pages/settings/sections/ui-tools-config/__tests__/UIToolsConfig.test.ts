@@ -2,6 +2,11 @@ import { shallowMount } from '@vue/test-utils';
 import UIToolsConfig from '../index.vue';
 import { UIToolsConfigs, ToolsDefinitionActionType } from '../../../../../types';
 
+jest.mock('@components/Form/Checkbox/Checkbox.vue', () => ({
+  name:     'Checkbox',
+  template: '<div><slot /></div>'
+}));
+
 // Mock component dependencies
 jest.mock('@components/RcButton/RcButton.vue', () => ({
   name:     'RcButton',

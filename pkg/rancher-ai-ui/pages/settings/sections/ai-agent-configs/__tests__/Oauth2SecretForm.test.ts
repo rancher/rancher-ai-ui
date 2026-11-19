@@ -4,6 +4,20 @@ import Oauth2SecretForm from '../Oauth2SecretForm.vue';
 import { AiAgentConfigOAuth2SecretPayload } from '../../../types';
 import { AIAgentAPIEvent } from '../../../../../types';
 
+// Mock shell components that use imported TS types, which the jest SFC compiler can't resolve
+jest.mock('@components/RcButton/RcButton.vue', () => ({
+  default: {
+    name:     'RcButton',
+    template: '<button><slot /></button>'
+  }
+}));
+jest.mock('@components/RcIcon/RcIcon.vue', () => ({
+  default: {
+    name:     'RcIcon',
+    template: '<i />'
+  }
+}));
+
 const mockStore = { dispatch: jest.fn() };
 
 jest.mock('vuex', () => ({ useStore: jest.fn(() => mockStore) }));
