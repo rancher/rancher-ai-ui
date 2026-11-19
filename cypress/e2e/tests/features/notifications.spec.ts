@@ -4,6 +4,32 @@ import HomePagePo from '@rancher/cypress/e2e/po/pages/home.po';
 import ChatPo from '@/cypress/e2e/po/chat.po';
 import ChatPanelMenuPo from '@/cypress/e2e/po/chat-panel-menu.po';
 import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
+import DesktopNotificationsInfoPo from '@/cypress/e2e/po/desktop-notifications-info.po';
+
+const USER_AGENTS = {
+  edge:    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0',
+  firefox: 'Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0',
+  chrome:  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+};
+
+/**
+ * Simulate a browser that has not asked for the notifications permission yet
+ */
+function setupPendingPermission(userAgent: string) {
+  cy.window().then((win) => {
+    const MockNotification = function() {} as any;
+
+    MockNotification.permission = 'default';
+    MockNotification.requestPermission = cy.stub().callsFake(() => {
+      MockNotification.permission = 'granted';
+
+      return Promise.resolve('granted');
+    }).as('requestPermission');
+    win.Notification = MockNotification;
+
+    Object.defineProperty(win.navigator, 'userAgent', { get: () => userAgent });
+  });
+}
 
 /**
  * Mock the Notification API and document.hasFocus()
@@ -12,8 +38,6 @@ import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 function setupDesktopNotificationMock() {
   cy.window().then((win) => {
     // Mock Notification API
-    const OriginalNotification = win.Notification;
-
     // Track the last instance created
     let lastInstance: any = null;
     const bodies: string[] = [];
@@ -31,7 +55,7 @@ function setupDesktopNotificationMock() {
       return lastInstance;
     };
 
-    MockNotification.permission = OriginalNotification.permission || 'granted';
+    MockNotification.permission = 'granted';
     MockNotification.requestPermission = cy.stub().resolves('granted');
     win.Notification = MockNotification as any;
 
@@ -242,6 +266,64 @@ describe('Chat', () => {
 
       confirmationMessage.cancelButton().click();
       confirmationMessage.isCanceled();
+    });
+
+    afterEach(() => {
+      cy.login();
+
+      cy.clearLocalStorage('rancher-ai-ui*');
+    });
+  });
+
+  describe('Desktop notifications permission', () => {
+    const info = new DesktopNotificationsInfoPo();
+
+    beforeEach(() => {
+      cy.login();
+
+      HomePagePo.goTo();
+    });
+
+    it('It should inform the user before asking for the permission', () => {
+      setupPendingPermission(USER_AGENTS.edge);
+
+      chat.open();
+      chat.getMessage(1).isCompleted();
+
+      info.self().should('be.visible').and('contain.text', 'Desktop Notifications are ON');
+      info.settingsHint().should('contain.text', 'check the notification settings of your browser');
+
+      info.allow();
+
+      cy.get('@requestPermission').should('have.been.calledOnce');
+      info.checkNotExists();
+    });
+
+    it('It should turn the notifications off from the message', () => {
+      setupPendingPermission(USER_AGENTS.firefox);
+
+      chat.open();
+      chat.getMessage(1).isCompleted();
+
+      info.settingsHint().should('not.exist');
+
+      info.turnOff();
+
+      cy.get('@requestPermission').should('not.have.been.called');
+      info.checkNotExists();
+
+      chatMenu.toggleMenu();
+      chatMenu.option('Enable Desktop Notifications').should('exist');
+    });
+
+    it('It should show the message on Chrome, without the browser settings hint', () => {
+      setupPendingPermission(USER_AGENTS.chrome);
+
+      chat.open();
+      chat.getMessage(1).isCompleted();
+
+      info.self().should('be.visible');
+      info.settingsHint().should('not.exist');
     });
 
     afterEach(() => {

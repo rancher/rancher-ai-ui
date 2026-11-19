@@ -200,6 +200,10 @@ async function toggleHistoryPanel() {
 async function updatePreferences({ key, value }: { key: StorageKey, value: any }) {
   const currentValue = { ...preferences.value }[key];
 
+  if (key === StorageKey.ENABLE_DESKTOP_NOTIFICATIONS && value) {
+    Notifications.requestPermission();
+  }
+
   if (value !== currentValue) {
     storage.set(key, value);
 

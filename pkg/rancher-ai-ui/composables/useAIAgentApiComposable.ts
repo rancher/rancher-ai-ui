@@ -2,7 +2,7 @@ import { ComputedRef } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { AGENT_NAME, AGENT_NAMESPACE, AGENT_REST_API_PATH } from '../product';
-import { error } from '../utils/log';
+import { error, warn } from '../utils/log';
 import {
   Agent, AgentSettings, AIAgentAPIEvent, Context, HistoryChat, HistoryChatMessage, LLMProvider, Message,
   ToolCall,
@@ -421,7 +421,8 @@ export function useAIAgentApiComposable(agents?: ComputedRef<Agent[]>) {
 
       return res as ChatUsage;
     } catch (err) {
-      error('Failed to fetch chat usage:', err);
+      // It fails for new chats, this is expected and not necessarily an error
+      warn('Failed to fetch chat usage:', err);
 
       return null;
     }

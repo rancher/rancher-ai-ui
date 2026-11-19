@@ -62,15 +62,9 @@ export abstract class NotificationChannel {
       return;
     }
 
-    // Request permission if not already granted
+    // Permission is asked from user gestures only (see NotificationHandler.requestPermission)
     if (Notification.permission === 'granted') {
       this.createDesktopNotification(options);
-    } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission().then((permission) => {
-        if (permission === 'granted') {
-          this.createDesktopNotification(options);
-        }
-      });
     }
   }
 

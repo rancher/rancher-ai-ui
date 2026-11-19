@@ -52,6 +52,9 @@ ai:
         results:
           confirm: Switched to <code>{agent}</code> Agent
           dismiss: Keeping adaptive selection
+      desktopNotifications:
+        info: '<b>Desktop Notifications are ON</b>: I will notify you when a response is ready while you are away from this page. Your browser needs your permission to show them: <allow>Allow Notifications</allow> or <turnOff>Turn them off</turnOff>.'
+        settingsHint: '<br>If you don’t receive notifications, check the notification settings of your browser.'
       agentTokenRefresh:
         info: '<b>The tool you have selected requires authentication</b>. This is normal, especially for short-lived tokens.<br><br>Before you continue, <b>make sure your browser allows popups</b> - the authentication will open in a new browser window.<br><br>Once you log in, I’ll resume my response automatically...'
         actions:
@@ -389,6 +392,7 @@ ai:
           description:
             enable: Turn on Desktop Notifications
             disable: Turn off Desktop Notifications
+          blocked: Your browser is blocking notifications for this site. Allow them in the browser's site settings.
   history:
     chat:
       create: Start a New Chat
