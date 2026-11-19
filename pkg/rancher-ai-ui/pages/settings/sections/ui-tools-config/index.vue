@@ -672,6 +672,7 @@ const resetToolsToDefaults = () => {
   :deep() .switch {
     width: 32px;
     height: 16px;
+    min-width: 32px;
   }
 
   :deep() .slider:before {
