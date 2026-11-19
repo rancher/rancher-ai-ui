@@ -272,12 +272,17 @@ const buttonLabels = computed(() => {
   gap: 8px;
   margin-top: 4px;
 
-  .delete-action {
-    background-color: var(--error);
-    color: var(--error-text);
+  // .rc-button raises the specificity over RcButton's tertiary :focus rule
+  .rc-button.delete-action {
+    &, &:focus, &.focused {
+      background-color: var(--error);
+      border-color: var(--error);
+      color: var(--error-text);
+    }
 
     &:hover {
       background-color: var(--error-hover-bg);
+      border-color: var(--error-hover-bg);
       color: var(--error-hover-text);
     }
   }
