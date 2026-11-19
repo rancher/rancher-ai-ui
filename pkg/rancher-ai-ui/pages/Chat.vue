@@ -446,21 +446,21 @@ watch(() => [
 });
 
 onMounted(() => {
-  window.addEventListener('beforeunload', clearBeforeUnload);
+  window.addEventListener('beforeunload', disconnectAndRestorePanel);
 
-  clearOnFocus();
-  window.addEventListener('focus', clearOnFocus);
+  clearNotifications();
+  window.addEventListener('focus', clearNotifications);
 });
 
 onBeforeUnmount(() => {
-  clearBeforeUnload();
-  window.removeEventListener('beforeunload', clearBeforeUnload);
+  disconnectAndRestorePanel();
+  window.removeEventListener('beforeunload', disconnectAndRestorePanel);
 
-  clearOnFocus();
-  window.removeEventListener('focus', clearOnFocus);
+  clearNotifications();
+  window.removeEventListener('focus', clearNotifications);
 });
 
-function clearBeforeUnload() {
+function disconnectAndRestorePanel() {
   // Clear connection when websocket is disconnected and chat is manually closed
   if ((!Chat.isOpen(store) && !isChatInitialized.value)) {
     disconnect();
@@ -469,8 +469,7 @@ function clearBeforeUnload() {
   restorePanel();
 }
 
-function clearOnFocus() {
-  // Clear notifications
+function clearNotifications() {
   Notifications.message().clear(store);
 }
 </script>
