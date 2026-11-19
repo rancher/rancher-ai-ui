@@ -73,35 +73,15 @@ function setupDesktopNotificationMock() {
 }
 
 /**
- * Stub WebSocket to intercept and control message completion
+ * Deliver the given data to the chat as if it came from the agent, through the chat's open socket
  */
-function setupWebSocketStub() {
-  cy.window().then((win) => {
-    const OriginalWebSocket = win.WebSocket;
-    const sockets: any[] = [];
+function receiveFromAgent(chunks: string[]) {
+  cy.window().then(async(win: any) => {
+    const ws = win.$globalApp.$store.getters['rancher-ai-ui/connection/ws'];
 
-    class WebSocketStub extends OriginalWebSocket {
-      url: string;
-
-      constructor(url: string) {
-        super(url);
-        this.url = url;
-        sockets.push(this);
-      }
+    for (const data of chunks) {
+      await ws.onmessage(new MessageEvent('message', { data }));
     }
-
-    // Expose method to trigger completion only on /v1/ws/messages socket
-    Object.defineProperty(win as any, '__triggerMessageCompletion', {
-      value: () => {
-        const messagesSocket = sockets.find((socket) => socket.url.includes('/v1/ws/messages'));
-
-        if (messagesSocket && messagesSocket.onmessage) {
-          messagesSocket.onmessage(new MessageEvent('message', { data: '</message>' }));
-        }
-      }
-    });
-
-    win.WebSocket = WebSocketStub as any;
   });
 }
 
@@ -124,20 +104,10 @@ describe('Chat', () => {
     });
 
     it('It should show notification indicator on the Liz button', () => {
-      setupWebSocketStub();
-
-      chat.sendMessage('Request');
-
-      chat.getMessage(2).containsText('Request');
-
       chat.close();
 
-      // Trigger message completion via WebSocket stub
-      cy.window().then((win) => {
-        (win as any).__triggerMessageCompletion();
-      });
+      receiveFromAgent(['<message>', 'Response', '</message>']);
 
-      // Wait for the notification indicator to appear
       RancherHeaderPo.lizNotificationIndicator().should('exist');
 
       chat.open();
@@ -209,13 +179,7 @@ describe('Chat', () => {
     it('It should notify an error when it happens', () => {
       setupDesktopNotificationMock();
 
-      cy.window().then(async(win: any) => {
-        const ws = win.$globalApp.$store.getters['rancher-ai-ui/connection/ws'];
-
-        for (const data of ['<message>', '<error>{"message":"Something went wrong"}</error>', '</message>']) {
-          await ws.onmessage(new MessageEvent('message', { data }));
-        }
-      });
+      receiveFromAgent(['<message>', '<error>{"message":"Something went wrong"}</error>', '</message>']);
 
       chat.getMessage(3).containsText('Something went wrong');
 
