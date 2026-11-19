@@ -3,6 +3,7 @@ import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import { HeaderPo } from '@/cypress/e2e/po/header.po';
 import { ConsolePo } from '@/cypress/e2e/po/console.po';
 import ContextPo from '@/cypress/e2e/po/context.po';
+import InstallAgentPo from '@/cypress/e2e/po/install-agent.po';
 import MessagesPo from '@/cypress/e2e/po/messages.po';
 
 export default class ChatPo extends ComponentPo {
@@ -32,6 +33,10 @@ export default class ChatPo extends ComponentPo {
 
   console() {
     return new ConsolePo();
+  }
+
+  installAgent() {
+    return new InstallAgentPo();
   }
 
   isReady(timeout = 10000) {

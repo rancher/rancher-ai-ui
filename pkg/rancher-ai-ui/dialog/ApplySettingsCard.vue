@@ -14,6 +14,10 @@ const props = defineProps({
     type:    String,
     default: '',
   },
+  hasChats: {
+    type:    Boolean,
+    default: true,
+  },
   onConfirm: {
     type:     Function,
     required: true,
@@ -64,9 +68,17 @@ function close() {
     <template #body>
       <div
         v-if="warningMessage"
-        class="mb-10"
+        class="prompt-apply-settings-body mb-1"
       >
-        <span v-clean-html="warningMessage" />
+        <span v-clean-html="t('aiConfig.dialog.applySettings.warning.redeploy', {}, true)" />
+        <span
+          v-if="props.hasChats"
+          v-clean-html="warningMessage"
+        />
+        <span
+          v-clean-html="t('aiConfig.dialog.applySettings.warning.continue', {}, true)"
+          class="prompt-apply-settings-body-continue-label"
+        />
       </div>
     </template>
     <template #actions>
@@ -92,6 +104,15 @@ function close() {
   .prompt-apply-settings {
     &.card-container {
       box-shadow: none;
+    }
+
+    &-body {
+      display: flex;
+      flex-direction: column;
+
+      &-continue-label {
+        margin-top: 8px;
+      }
     }
 
     #confirm {
