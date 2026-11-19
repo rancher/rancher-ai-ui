@@ -2168,6 +2168,19 @@ describe('useChatMessageComposable', () => {
       });
     });
 
+    it('should notify a sign-in request while the response is still open', async() => {
+      const agents = computed(() => [{ name: 'test-agent' }]);
+
+      mockComponent = mount(createTestComponent({ agents }));
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage({ data: '<authentication>{"url":"https://example.com/auth","agent":"test-agent"}</authentication>' } as MessageEvent);
+
+      expect(currentMessage.completed).toBe(false);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), expect.objectContaining({ templateContent: expect.objectContaining({ component: 'mcp-authentication-request' }) }));
+    });
+
     it('should notify the completed response', async() => {
       mockComponent = mount(createTestComponent());
       const { onmessage } = mockComponent.vm;

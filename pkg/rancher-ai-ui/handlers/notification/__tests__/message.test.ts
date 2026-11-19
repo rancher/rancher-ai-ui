@@ -1,6 +1,6 @@
 import MessageChannel from '../channel/message';
 import Chat from '../../chat';
-import { Role } from '../../../types';
+import { MessageTemplateComponent, Role } from '../../../types';
 
 jest.mock('@shell/composables/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 jest.mock('../../chat', () => ({
@@ -63,5 +63,31 @@ describe('Desktop notifications', () => {
 
     expect(Chat.open).toHaveBeenCalledWith(store);
     expect(instance.close).toHaveBeenCalled();
+  });
+
+  it('should notify a sign-in request', () => {
+    MessageChannel.send(store, storage, {
+      role:            Role.System,
+      completed:       true,
+      templateContent: {
+        component: MessageTemplateComponent.McpAuthenticationRequest,
+        content:   {}
+      }
+    });
+
+    expect(instance.options.body).toBe('ai.notifications.message.summary.authentication');
+  });
+
+  it('should not notify other system messages', () => {
+    MessageChannel.send(store, storage, {
+      role:            Role.System,
+      completed:       true,
+      templateContent: {
+        component: MessageTemplateComponent.SystemMessage,
+        content:   {}
+      }
+    });
+
+    expect((window as any).Notification).not.toHaveBeenCalled();
   });
 });

@@ -1,14 +1,14 @@
 import { Store } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import {
-  ConfirmationStatus, Message, MessageInternalSource, MessagePlanningStatus, NotificationType, Role, StorageKey
+  ConfirmationStatus, Message, MessageInternalSource, MessagePlanningStatus, MessageTemplateComponent, NotificationType, Role, StorageKey
 } from '../../../types';
 import { NotificationChannel } from './index';
 
 class NotificationMessageChannel extends NotificationChannel {
   send(store: Store<any>, storage: { get: Function }, message: Message): void {
-    // Only notify for assistant messages and errors
-    if (message.role !== Role.Assistant && message.source !== MessageInternalSource.Error) {
+    // Only notify for assistant messages, errors and sign-in requests
+    if (message.role !== Role.Assistant && message.source !== MessageInternalSource.Error && !this.isAuthenticationRequest(message)) {
       return;
     }
 
@@ -32,9 +32,17 @@ class NotificationMessageChannel extends NotificationChannel {
     this.clearNotifications(store, NotificationType.MESSAGE);
   }
 
+  private isAuthenticationRequest(message: Message): boolean {
+    return message.templateContent?.component === MessageTemplateComponent.McpAuthenticationRequest;
+  }
+
   private extractMessageSummary(t: Function, message: Message): string {
     if (message.source === MessageInternalSource.Error) {
       return t('ai.notifications.message.summary.error');
+    }
+
+    if (this.isAuthenticationRequest(message)) {
+      return t('ai.notifications.message.summary.authentication');
     }
 
     if (message.confirmation?.status === ConfirmationStatus.Pending) {

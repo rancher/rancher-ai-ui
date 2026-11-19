@@ -158,6 +158,7 @@ ai:
         planningCanceled: 'Plan canceled'
         confirmation: 'Waiting for your confirmation'
         error: 'Response failed'
+        authentication: 'Sign-in required to continue'
         idle: 'Response complete'
   configurations:
     label: Uses AI, running {name} ({model}).

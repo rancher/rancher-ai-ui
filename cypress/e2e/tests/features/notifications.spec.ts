@@ -232,6 +232,24 @@ describe('Chat', () => {
       confirmationMessage.isCanceled();
     });
 
+    it('It should notify an MCP sign-in request', () => {
+      setupDesktopNotificationMock();
+
+      cy.clearLLMResponses();
+      cy.enqueueLLMResponse({ text: '<authentication>{"type": "oauth2", "url": "https://suse.com", "agent": "rancher"}</authentication>' });
+
+      chat.sendMessage('Request message.');
+
+      const authRequestMessage = chat.getMessage(4);
+
+      authRequestMessage.containsText('The tool you have selected requires authentication');
+
+      cy.window().its('__notificationBodies').should('include', 'Sign-in required to continue');
+
+      authRequestMessage.cancelButton().click();
+      authRequestMessage.isCanceled();
+    });
+
     afterEach(() => {
       cy.login();
 

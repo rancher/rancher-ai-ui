@@ -437,6 +437,8 @@ export function useChatMessageComposable(
       });
 
       await addMessage(message);
+
+      Notifications.message().send(store, storage, message);
     }
   }
 
