@@ -11,6 +11,7 @@ import lizIcon from '../../../assets/liz-icon.svg';
 import Tool from '../../tools/Tool.vue';
 import News from '../../News.vue';
 import RequiredToolsAction from '../../tools/RequiredAction.vue';
+import DesktopNotificationsInfo from '../../DesktopNotificationsInfo.vue';
 
 const store = useStore();
 const { t } = useI18n(store);
@@ -103,6 +104,8 @@ function handleToolAction(event: ToolActionEvent) {
     <News />
 
     <RequiredToolsAction />
+
+    <DesktopNotificationsInfo />
 
     <div
       v-if="props.message.completed && props.message.messageContent"

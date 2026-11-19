@@ -22,7 +22,11 @@ export default class ChatPanelMenuPo extends ComponentPo {
    * container — clicking the container center would hit the wrong item.
    */
   clickOption(label: string) {
-    return cy.get('.v-popper__popper').filter(':visible').contains(label).click();
+    return this.option(label).click();
+  }
+
+  option(label: string) {
+    return cy.get('.v-popper__popper').filter(':visible').contains(label);
   }
 
   /**

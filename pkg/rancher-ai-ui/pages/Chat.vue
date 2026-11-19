@@ -6,10 +6,11 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessageInternalSource, MessagePhase, Preferences, Role, StorageKey, StorageType
+  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessageInternalSource, MessagePhase, Preferences, Role, SessionKey, StorageKey, StorageType
 } from '../types';
 import { extractMessageText } from '../utils/label';
 import Chat from '../handlers/chat';
+import Notifications from '../handlers/notification/index';
 import { useConnectionComposable } from '../composables/useConnectionComposable';
 import { useChatMessageComposable } from '../composables/useChatMessageComposable';
 import { useContextComposable } from '../composables/useContextComposable';
@@ -133,7 +134,10 @@ const showHistory = ref(false);
 const chatHistory = ref<HistoryChat[]>([]);
 const deletingChat = ref<HistoryChat | null>(null);
 
-const preferences = computed<Preferences>(() => ({ [StorageKey.ENABLE_AUTO_SCROLL]: storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true }));
+const preferences = computed<Preferences>(() => ({
+  [StorageKey.ENABLE_AUTO_SCROLL]:           storage.get(StorageKey.ENABLE_AUTO_SCROLL) === 'true' || storage.get(StorageKey.ENABLE_AUTO_SCROLL) === true,
+  [StorageKey.ENABLE_DESKTOP_NOTIFICATIONS]: storage.get(StorageKey.ENABLE_DESKTOP_NOTIFICATIONS) === 'true' || storage.get(StorageKey.ENABLE_DESKTOP_NOTIFICATIONS) === true,
+}));
 
 const chatAgents = computed<Agent[]>(() => {
   return agents.value.map((agent) => {
@@ -195,6 +199,13 @@ async function toggleHistoryPanel() {
 
 async function updatePreferences({ key, value }: { key: StorageKey, value: any }) {
   const currentValue = { ...preferences.value }[key];
+
+  if (key === StorageKey.ENABLE_DESKTOP_NOTIFICATIONS && value) {
+    Notifications.requestPermission();
+
+    // Notify that the desktop notifications info has been dismissed
+    store.commit('rancher-ai-ui/chat/setSession', { [SessionKey.DISMISSED_DESKTOP_NOTIFICATIONS_INFO]: true });
+  }
 
   if (value !== currentValue) {
     storage.set(key, value);
@@ -435,21 +446,31 @@ watch(() => [
 });
 
 onMounted(() => {
-  // Ensure disconnection on browser refresh/close
-  window.addEventListener('beforeunload', unmount);
+  window.addEventListener('beforeunload', disconnectAndRestorePanel);
+
+  clearNotifications();
+  window.addEventListener('focus', clearNotifications);
 });
 
 onBeforeUnmount(() => {
-  unmount();
-  window.removeEventListener('beforeunload', unmount);
+  disconnectAndRestorePanel();
+  window.removeEventListener('beforeunload', disconnectAndRestorePanel);
+
+  clearNotifications();
+  window.removeEventListener('focus', clearNotifications);
 });
 
-function unmount() {
+function disconnectAndRestorePanel() {
   // Clear connection when websocket is disconnected and chat is manually closed
   if ((!Chat.isOpen(store) && !isChatInitialized.value)) {
     disconnect();
   }
+  // Restore the panel to its default position when the chat is closed or the page is refreshed
   restorePanel();
+}
+
+function clearNotifications() {
+  Notifications.message().clear(store);
 }
 </script>
 

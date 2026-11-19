@@ -3087,15 +3087,15 @@
     typescript "^5.9.3"
     ws "8.21.0"
 
-"@rancher/icons@2.0.66":
-  version "2.0.66"
-  resolved "https://registry.yarnpkg.com/@rancher/icons/-/icons-2.0.66.tgz#ed3c22d1c17e679a00f93401887e71296ecf1e4f"
-  integrity sha512-LSejfrgrtjI6Nd2iQmKWaUFhdDRp4CnW/MTCHgakv4cH71KuuwS7UQQn8UcOq3r3sv+4kRyuBHg7vhuUqnk5WQ==
+"@rancher/icons@2.0.67":
+  version "2.0.67"
+  resolved "https://registry.yarnpkg.com/@rancher/icons/-/icons-2.0.67.tgz#d696713cb9db2f76f7c2685ed0b56d0e6bcc0e5f"
+  integrity sha512-lsHnUasPNAaPkQ6ArKTHDP/kYyVNn73MnIsKPY6N4qzxhopNnjIGuCOl6uuijs2hTGJ5R1IRd2o+SWN9G6uakg==
 
-"@rancher/shell@3.0.15-rc.4":
-  version "3.0.15-rc.4"
-  resolved "https://registry.yarnpkg.com/@rancher/shell/-/shell-3.0.15-rc.4.tgz#7439e3b653984777ae97d115f33f2cb0d9cd6253"
-  integrity sha512-8wUt8bwIaXLSNsUz7nm5vmq9lx0MQ0eYUuDG72vP8IPoX2tySrckJ82sLq3tcdl8edJRAbSzLv2ehTgVnYsl7Q==
+"@rancher/shell@3.0.16-rc.1":
+  version "3.0.16-rc.1"
+  resolved "https://registry.yarnpkg.com/@rancher/shell/-/shell-3.0.16-rc.1.tgz#02052110c9f707ea2ed3d248b78aa6795b81ccbd"
+  integrity sha512-7/U0hJ9RKaxlmNtDo52XewNxwEUxPszQ4U4DLuyIv9A4kWyYyZ1oWm4cx9D8FSaRtUfdB7Li2RAzW+w9enDjSQ==
   dependencies:
     "@aws-sdk/client-ec2" "3.1041.0"
     "@aws-sdk/client-eks" "3.1041.0"
@@ -3120,7 +3120,7 @@
     "@lezer/highlight" "1.2.4"
     "@novnc/novnc" "1.2.0"
     "@popperjs/core" "2.11.8"
-    "@rancher/icons" "2.0.66"
+    "@rancher/icons" "2.0.67"
     "@replit/codemirror-vim" "6.4.0"
     "@smithy/fetch-http-handler" "5.1.1"
     "@types/is-url" "1.2.30"
@@ -3222,7 +3222,7 @@
     worker-loader "3.0.8"
     xmlbuilder2 "4.0.1"
     yarn "1.22.22"
-    zod "3.24.3"
+    zod "4.6.6"
 
 "@replit/codemirror-vim-core@^0.1.0":
   version "0.1.0"
@@ -16724,7 +16724,7 @@ yocto-queue@^1.0.0:
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-1.2.2.tgz#3e09c95d3f1aa89a58c114c99223edf639152c00"
   integrity sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ==
 
-zod@3.24.3:
-  version "3.24.3"
-  resolved "https://registry.yarnpkg.com/zod/-/zod-3.24.3.tgz#1f40f750a05e477396da64438e0e1c0995dafd87"
-  integrity sha512-HhY1oqzWCQWuUqvBFnsyrtZRhyPeR7SUGv+C4+MsisMuVfSPx8HpwWqH8tRahSlt6M3PiFAcoeFhZAqIXTxoSg==
+zod@4.6.6:
+  version "4.6.6"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-4.6.6.tgz#0bb0cf57b87011a71ec28ed2e1b51f6455563f9a"
+  integrity sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==

@@ -9,7 +9,18 @@ import { useChatMessageComposable } from '../useChatMessageComposable';
 let mockStore: any;
 let mockComponent: any;
 
+const mockSendNotification = jest.fn();
+
 jest.mock('vuex', () => ({ useStore: () => mockStore }));
+jest.mock('../../handlers/notification', () => ({
+  __esModule: true,
+  default:    {
+    message: () => ({
+      send:  mockSendNotification,
+      clear: jest.fn()
+    })
+  }
+}));
 jest.mock('../../utils/log', () => ({
   warn:  jest.fn(),
   error: jest.fn()
@@ -2106,6 +2117,191 @@ describe('useChatMessageComposable', () => {
         'rancher-ai-ui/chat/setProcessingState',
         expect.objectContaining({ processingState: expect.objectContaining({ phase: 'idle' }) })
       );
+    });
+  });
+
+  describe('Notifications', () => {
+    const planningMessage = {
+      id:        'plan-1',
+      role:      Role.Assistant,
+      completed: true
+    };
+    let messages: Record<string, any>;
+    let currentMessage: any;
+    let planningState: any;
+
+    const planningEvent = (status: string) => ({
+      data: `${ Tag.PlanningStart }${ JSON.stringify({
+        status,
+        tasks: []
+      }) }${ Tag.PlanningEnd }`
+    } as MessageEvent);
+
+    beforeEach(() => {
+      currentMessage = {
+        id:              'msg-1',
+        role:            Role.Assistant,
+        messageContent:  '',
+        thinkingContent: '',
+        thinking:        false,
+        completed:       false
+      };
+      messages = { 'msg-1': currentMessage };
+      planningState = null;
+
+      mockStore.getters['rancher-ai-ui/chat/metadata'] = {
+        chatId: 'chat-1',
+        agents: []
+      };
+      mockStore.getters['rancher-ai-ui/chat/messages'] = jest.fn(() => messages);
+      mockStore.getters['rancher-ai-ui/chat/message'] = jest.fn(({ messageId }: any) => messages[messageId]);
+      mockStore.getters['rancher-ai-ui/chat/planningState'] = jest.fn(() => planningState);
+      mockStore.dispatch.mockImplementation((action: string, { message }: any = {}) => {
+        if (action === 'rancher-ai-ui/chat/addMessage' && message?.source === 'error') {
+          messages = {
+            ...messages,
+            error: message
+          };
+        }
+
+        return Promise.resolve('msg-1');
+      });
+    });
+
+    it('should notify a sign-in request while the response is still open', async() => {
+      const agents = computed(() => [{ name: 'test-agent' }]);
+
+      mockComponent = mount(createTestComponent({ agents }));
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage({ data: '<authentication>{"url":"https://example.com/auth","agent":"test-agent"}</authentication>' } as MessageEvent);
+
+      expect(currentMessage.completed).toBe(false);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), expect.objectContaining({ templateContent: expect.objectContaining({ component: 'mcp-authentication-request' }) }));
+    });
+
+    it('should notify the completed response', async() => {
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage({ data: 'Hello' } as MessageEvent);
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);
+    });
+
+    it('should notify an error where it happens and not when its message ends', async() => {
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage({ data: '<error>{"message":"boom"}</error>' } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), expect.objectContaining({ source: 'error' }));
+
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+    });
+
+    it('should notify the messages of a plan step, e.g. a step asking the user for more information', async() => {
+      messages = {
+        'plan-1': planningMessage,
+        'msg-1':  currentMessage
+      };
+      planningState = {
+        messageId: 'plan-1',
+        status:    'in_progress',
+        tasks:     []
+      };
+
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage({ data: 'Which cluster?' } as MessageEvent);
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);
+    });
+
+    it('should notify a confirmation requested by a plan step', async() => {
+      messages = {
+        'plan-1': planningMessage,
+        'msg-1':  currentMessage
+      };
+      planningState = {
+        messageId: 'plan-1',
+        status:    'in_progress',
+        tasks:     []
+      };
+
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      currentMessage.confirmation = {
+        status:  'pending',
+        actions: []
+      };
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);
+    });
+
+    it('should notify the planning message when the plan ends', async() => {
+      messages = {
+        'plan-1': planningMessage,
+        'msg-1':  currentMessage
+      };
+      planningState = {
+        messageId: 'plan-1',
+        status:    'in_progress',
+        tasks:     []
+      };
+
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage({ data: 'Step result' } as MessageEvent);
+      await onmessage(planningEvent('in_progress'));
+
+      expect(mockSendNotification).not.toHaveBeenCalled();
+
+      await onmessage(planningEvent('completed'));
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), planningMessage);
+    });
+
+    it('should notify a new user turn after a finished plan', async() => {
+      messages = {
+        'plan-1': planningMessage,
+        user:     {
+          id:   'user',
+          role: Role.User
+        },
+        'msg-1': currentMessage
+      };
+      planningState = {
+        messageId: 'plan-1',
+        status:    'completed',
+        tasks:     []
+      };
+
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage({ data: 'Hello' } as MessageEvent);
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);
     });
   });
 });

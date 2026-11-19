@@ -10,7 +10,10 @@ interface State {
   data?: Record<StorageKey, any>;
 }
 
-const DEFAULT_STORAGE = { [StorageKey.ENABLE_AUTO_SCROLL]: true };
+const DEFAULT_STORAGE = {
+  [StorageKey.ENABLE_AUTO_SCROLL]:           true,
+  [StorageKey.ENABLE_DESKTOP_NOTIFICATIONS]: true,
+};
 
 const getters = {
   get: (state: State) => (user: string, revision: number) => {
@@ -25,9 +28,12 @@ const getters = {
         const parsed = JSON.parse(stored);
 
         if (parsed.revision === revision && parsed.user === user) {
-          state.data = parsed.data;
+          state.data = {
+            ...DEFAULT_STORAGE,
+            ...parsed.data,
+          };
 
-          return parsed.data;
+          return state.data;
         }
       }
     } catch (error) {
