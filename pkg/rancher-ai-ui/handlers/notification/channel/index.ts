@@ -7,7 +7,9 @@ import { NotificationType } from '../../../types';
 import Chat from '../../chat';
 
 const NOTIFICATION_API = 'Notification';
-const DESKTOP_NOTIFICATION_TIMEOUT = 5000;
+
+// 0 disables the auto-close and keeps the notification in the OS notification center until the user interacts with it
+const DESKTOP_NOTIFICATION_TIMEOUT = 0;
 
 interface DesktopNotificationOptions {
   title: string;
@@ -83,12 +85,10 @@ export abstract class NotificationChannel {
         requireInteraction: false
       });
 
-      // Auto-close notification after 5 seconds
-      const timeoutId = setTimeout(() => {
+      const timeoutId = DESKTOP_NOTIFICATION_TIMEOUT ? setTimeout(() => {
         notification.close();
-      }, DESKTOP_NOTIFICATION_TIMEOUT);
+      }, DESKTOP_NOTIFICATION_TIMEOUT) : null;
 
-      // Clear timeout when notification is clicked
       notification.onclick = () => {
         if (timeoutId) {
           clearTimeout(timeoutId);
@@ -100,7 +100,6 @@ export abstract class NotificationChannel {
         notification.close();
       };
 
-      // Clear timeout when notification closes (by any means)
       notification.onclose = () => {
         if (timeoutId) {
           clearTimeout(timeoutId);
