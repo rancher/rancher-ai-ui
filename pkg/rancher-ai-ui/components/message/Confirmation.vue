@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue';
 import { useStore } from 'vuex';
-import { useI18n } from '@shell/composables/useI18n';
 import * as jsyaml from 'js-yaml';
 import { escape } from 'lodash';
+import { useI18n } from '@shell/composables/useI18n';
 import RcButton from '@components/RcButton/RcButton.vue';
+import Banner from '@components/Banner/Banner.vue';
 import { warn } from '../../utils/log';
 import { ConfirmationStatus, ConfirmationActionType, Message } from '../../types';
 import { ToolName } from '../../components/tools/types';
@@ -22,6 +23,10 @@ const props = defineProps({
 
 const emit = defineEmits(['confirm']);
 
+const hasDeleteActions = computed(() => {
+  return props.message.confirmation?.actions?.some((action) => action.type === ConfirmationActionType.Delete);
+});
+
 const CONFIRMATION_STATUS: Partial<Record<ConfirmationStatus, { icon: string; label: string }>> = {
   [ConfirmationStatus.Confirmed]: {
     icon:  'icon icon-checkmark',
@@ -34,8 +39,6 @@ const CONFIRMATION_STATUS: Partial<Record<ConfirmationStatus, { icon: string; la
 };
 
 const confirmationText = computed(() => {
-  const msg = t('ai.confirmation.message.question');
-
   try {
     let out = '';
 
@@ -74,7 +77,8 @@ const confirmationText = computed(() => {
       if (kind && name && cluster) {
         switch (actionType) {
         case ConfirmationActionType.Create:
-          out += `${ t(`ai.confirmation.message.operation.create.description`, {
+        case ConfirmationActionType.Delete:
+          out += `${ t(`ai.confirmation.message.operation.${ actionType }.description`, {
             name,
             kind,
             namespace: namespace?.trim() || null,
@@ -110,58 +114,79 @@ const confirmationText = computed(() => {
       }
     });
 
-    return `${ out }${ msg }`;
+    return out;
   } catch (e) {
     warn('Error generating confirmation description:', e);
   }
 
-  return msg;
+  return '';
+});
+
+const details = computed(() => (props.message.confirmation?.actions || [])
+  .map((action) => action.detail?.trim())
+  .filter((detail) => !!detail));
+
+const buttonLabels = computed(() => {
+  return {
+    // The agent does not support multiple actions as of now, so we have only one action in the array.
+    confirm: hasDeleteActions.value ? t('ai.confirmation.delete') : t('ai.confirmation.confirm'),
+    cancel:  t('ai.confirmation.cancel')
+  };
 });
 </script>
 
 <template>
   <div class="confirmation-action">
-    <div class="confirmation-message">
+    <div
+      v-if="confirmationText"
+      class="confirmation-message"
+    >
       <span
         v-clean-html="confirmationText"
         data-testid="rancher-ai-ui-chat-message-confirmation-message"
       />
     </div>
     <div
+      class="confirmation-message"
+      data-testid="rancher-ai-ui-chat-message-confirmation-question"
+    >
+      {{ t('ai.confirmation.message.question') }}
+    </div>
+    <Banner
+      v-for="(detail, i) in details"
+      :key="i"
+      class="confirmation-detail"
+      color="warning"
+      :label="detail"
+      data-testid="rancher-ai-ui-chat-message-confirmation-detail"
+    />
+    <div
       v-if="props.message.confirmation?.status === ConfirmationStatus.Pending"
       class="confirmation-buttons"
     >
-      <div
-        v-if="props.message.confirmation?.actions?.some(action => action.type === ConfirmationActionType.Delete)"
-        class="delete-confirmation"
+      <RcButton
+        small
+        variant="link"
+        :aria-label="buttonLabels.cancel"
+        data-testid="rancher-ai-ui-chat-message-confirmation-cancel-button"
+        @click="emit('confirm', false)"
       >
-        <!-- TODO Add Delete resource buttons when available in the backend -->
-      </div>
-      <div
-        v-else
-        class="standard-confirmation"
+        <span class="rc-button-label">
+          {{ buttonLabels.cancel }}
+        </span>
+      </RcButton>
+      <RcButton
+        :class="{ 'delete-action': hasDeleteActions }"
+        small
+        variant="tertiary"
+        :aria-label="buttonLabels.confirm"
+        data-testid="rancher-ai-ui-chat-message-confirmation-confirm-button"
+        @click="emit('confirm', true)"
       >
-        <RcButton
-          small
-          variant="link"
-          data-testid="rancher-ai-ui-chat-message-confirmation-cancel-button"
-          @click="emit('confirm', false)"
-        >
-          <span class="rc-button-label">
-            {{ t('ai.confirmation.cancel') }}
-          </span>
-        </RcButton>
-        <RcButton
-          small
-          variant="tertiary"
-          data-testid="rancher-ai-ui-chat-message-confirmation-confirm-button"
-          @click="emit('confirm', true)"
-        >
-          <span class="rc-button-label">
-            {{ t('ai.confirmation.confirm') }}
-          </span>
-        </RcButton>
-      </div>
+        <span class="rc-button-label">
+          {{ buttonLabels.confirm }}
+        </span>
+      </RcButton>
     </div>
     <div
       v-else-if="props.message.confirmation"
@@ -189,8 +214,13 @@ const confirmationText = computed(() => {
 </template>
 
 <style lang='scss' scoped>
+.confirmation-action {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .confirmation-message {
-  margin-bottom: 12px;
   word-break: break-word;
   white-space: pre-line;
   list-style-position: inside;
@@ -232,10 +262,30 @@ const confirmationText = computed(() => {
   color: #C0EFDE;
 }
 
-.confirmation-buttons, .standard-confirmation, .delete-confirmation {
+.confirmation-detail {
+  margin: 0;
+}
+
+.confirmation-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  margin-top: 4px;
+
+  // .rc-button raises the specificity over RcButton's tertiary :focus rule
+  .rc-button.delete-action {
+    &, &:focus, &.focused {
+      background-color: var(--error);
+      border-color: var(--error);
+      color: var(--error-text);
+    }
+
+    &:hover {
+      background-color: var(--error-hover-bg);
+      border-color: var(--error-hover-bg);
+      color: var(--error-hover-text);
+    }
+  }
 }
 
 .confirmation-status {

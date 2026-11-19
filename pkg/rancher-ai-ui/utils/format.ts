@@ -223,11 +223,12 @@ export function formatConfirmationActions(value: string): MessageConfirmationAct
       // Handle custom agent's tool (no approval 'plan')
       if (parsed.type === ConfirmationActionType.External && parsed.name && parsed.args !== undefined) {
         return [{
-          type: parsed.type,
-          tool: {
+          type:   parsed.type,
+          tool:   {
             name: parsed.name,
             args: parsed.args,
-          }
+          },
+          detail: parsed.detail,
         }];
       }
 
