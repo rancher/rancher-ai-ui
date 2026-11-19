@@ -116,7 +116,7 @@ describe('Multi Agent Messages', () => {
 
     confirmationRequestMessage.scrollIntoView();
     confirmationRequestMessage.isCompleted();
-    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
+    confirmationRequestMessage.self().contains('Are you sure you want to proceed with this action?');
     confirmationRequestMessage.confirmButton().click();
 
     confirmationRequestMessage.agentSelectionLabel().contains('Adaptive Agent(s) Selection');
@@ -352,7 +352,7 @@ describe('Multi Agent Messages', () => {
 
     confirmationRequestMessage.scrollIntoView();
     confirmationRequestMessage.isCompleted();
-    confirmationRequestMessage.containsText('Are you sure you want to proceed with this action?');
+    confirmationRequestMessage.self().contains('Are you sure you want to proceed with this action?');
 
     chat.messagesPanel().processingState('Awaiting confirmation').should('be.visible');
 
