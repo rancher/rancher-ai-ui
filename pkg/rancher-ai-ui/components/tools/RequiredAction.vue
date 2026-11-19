@@ -51,8 +51,9 @@ function routeToSettings() {
           <template #installTools="{ content }">
             <a
               v-clean-tooltip="{ content: t('ai.message.system.tools.action.refreshTooltip'), delay: { show: 300 } }"
+              href="#"
               class="text-label clickable-label"
-              @click="routeToSettings()"
+              @click.prevent="routeToSettings()"
             >
               {{ content }}
             </a>
@@ -60,8 +61,9 @@ function routeToSettings() {
           <template #refreshTools="{ content }">
             <a
               v-clean-tooltip="{ content: t('ai.message.system.tools.action.refreshTooltip'), delay: { show: 300 } }"
+              href="#"
               class="text-label clickable-label"
-              @click="routeToSettings()"
+              @click.prevent="routeToSettings()"
             >
               {{ content }}
             </a>

@@ -47,18 +47,20 @@ function turnOff() {
       <RichTranslation k="ai.message.system.desktopNotifications.info">
         <template #allow="{ content }">
           <a
+            href="#"
             class="text-label clickable-label"
             data-testid="rancher-ai-ui-desktop-notifications-allow"
-            @click="allow"
+            @click.prevent="allow"
           >
             {{ content }}
           </a>
         </template>
         <template #turnOff="{ content }">
           <a
+            href="#"
             class="text-label clickable-label"
             data-testid="rancher-ai-ui-desktop-notifications-turn-off"
-            @click="turnOff"
+            @click.prevent="turnOff"
           >
             {{ content }}
           </a>
