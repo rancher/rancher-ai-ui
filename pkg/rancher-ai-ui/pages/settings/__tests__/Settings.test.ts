@@ -15,6 +15,18 @@ jest.mock('../../../composables/useAIAgentApiComposable', () => ({
 }));
 jest.mock('../sections/AIAgentSettings.vue', () => ({}));
 jest.mock('../../../dialog/ApplySettingsCard.vue', () => ({}));
+jest.mock('@components/RcIcon/RcIcon.vue', () => ({
+  default: {
+    name:     'RcIcon',
+    template: '<i />'
+  }
+}));
+jest.mock('@shell/components/form/LabeledSelect.vue', () => ({
+  default: {
+    name:     'LabeledSelect',
+    template: '<select class="labeled-select" />'
+  }
+}));
 jest.mock('@components/RcButton/RcButton.vue', () => ({
   default: {
     name:     'RcButton',

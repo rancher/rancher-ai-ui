@@ -13,6 +13,11 @@ jest.mock('@components/RcItemCard/RcItemCard.vue', () => ({
   template: '<div><slot /></div>'
 }));
 
+jest.mock('@components/Form/Checkbox/Checkbox.vue', () => ({
+  name:     'Checkbox',
+  template: '<div><slot /></div>'
+}));
+
 // Mock Vuex
 jest.mock('vuex', () => {
   const actual = jest.requireActual('vuex');
