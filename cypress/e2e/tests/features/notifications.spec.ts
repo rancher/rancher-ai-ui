@@ -89,6 +89,17 @@ describe('Chat', () => {
   const chat = new ChatPo();
   const chatMenu = new ChatPanelMenuPo();
 
+  // A one-task plan event, as the planner agent streams it
+  const plan = (status: string, approval = false) => `<plan>${ JSON.stringify({
+    status,
+    approval,
+    tasks: [{
+      task:   'Create a namespace',
+      agent:  'rancher',
+      status: status === 'pending' ? 'pending' : 'in_progress'
+    }]
+  }) }</plan>`;
+
   describe('UI notifications', () => {
     beforeEach(() => {
       cy.login();
@@ -183,7 +194,7 @@ describe('Chat', () => {
 
       chat.getMessage(3).containsText('Something went wrong');
 
-      cy.window().its('__notificationBodies').should('include', 'Response failed');
+      cy.window().its('__notificationBodies').should('deep.equal', ['Response failed']);
     });
 
     it('It should notify a pending confirmation', () => {
@@ -426,6 +437,35 @@ describe('Chat', () => {
       planningMessage.header().contains('Plan execution has been stopped');
 
       cy.window().its('__notificationBodies').should('include', 'Plan failed');
+    });
+
+    it('It should notify a plan step that fails', () => {
+      setupDesktopNotificationMock();
+
+      receiveFromAgent([
+        '<message>', plan('pending', true), '</message>',
+        '<message>', plan('in_progress'), '<error>{"message":"Something went wrong"}</error>', '</message>'
+      ]);
+
+      cy.window().its('__notificationBodies').should('deep.equal', ['Planning message ready: 1 tasks', 'Response failed']);
+    });
+
+    it('It should notify a plan step waiting for confirmation', () => {
+      setupDesktopNotificationMock();
+
+      const confirmation = JSON.stringify({
+        type: 'external',
+        name: 'externalTool',
+        args: { id: 'my-id' }
+      });
+
+      receiveFromAgent([
+        '<message>', plan('pending', true), '</message>',
+        '<message>', plan('in_progress'), 'Step result', '</message>',
+        '<message>', `<confirmation-response>${ confirmation }</confirmation-response>`, '</message>'
+      ]);
+
+      cy.window().its('__notificationBodies').should('include', 'Waiting for your confirmation');
     });
 
     afterEach(() => {

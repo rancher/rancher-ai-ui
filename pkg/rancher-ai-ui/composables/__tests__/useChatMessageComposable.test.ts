@@ -2193,7 +2193,22 @@ describe('useChatMessageComposable', () => {
       expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);
     });
 
-    it('should notify the messages of a plan step', async() => {
+    it('should notify an error where it happens and not when its message ends', async() => {
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage({ data: '<error>{"message":"boom"}</error>' } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), expect.objectContaining({ source: 'error' }));
+
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+    });
+
+    it('should notify the messages of a plan step, e.g. a step asking the user for more information', async() => {
       messages = {
         'plan-1': planningMessage,
         'msg-1':  currentMessage
@@ -2208,7 +2223,7 @@ describe('useChatMessageComposable', () => {
       const { onmessage } = mockComponent.vm;
 
       await onmessage({ data: Tag.MessageStart } as MessageEvent);
-      await onmessage({ data: 'Step result' } as MessageEvent);
+      await onmessage({ data: 'Which cluster?' } as MessageEvent);
       await onmessage({ data: Tag.MessageEnd } as MessageEvent);
 
       expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);

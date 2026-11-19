@@ -464,6 +464,17 @@ export function useChatMessageComposable(
     await addMessage(message);
   }
 
+  // TODO: Consider to receice single step notifications directly from the agent instead of aggregating them in the plan message
+  // This would allow the UI to show notifications for individual steps as they happen, for instance when a step fails or requires user input.
+  function shouldNotifyMessage() {
+    // The error was already notified when it arrived
+    if (messages.value[messages.value.length - 1]?.source === MessageInternalSource.Error) {
+      return false;
+    }
+
+    return true;
+  }
+
   function onopen(event: { target: WebSocket }) {
     const ws = event.target;
 
@@ -633,7 +644,9 @@ export function useChatMessageComposable(
 
       fetchUsage();
 
-      Notifications.message().send(store, storage, currentMsg.value);
+      if (shouldNotifyMessage()) {
+        Notifications.message().send(store, storage, currentMsg.value);
+      }
 
       break;
     default:
