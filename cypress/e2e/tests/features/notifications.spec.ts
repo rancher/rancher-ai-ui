@@ -20,11 +20,11 @@ function setupPendingPermission(userAgent: string) {
     const MockNotification = function() {} as any;
 
     MockNotification.permission = 'default';
-    MockNotification.requestPermission = cy.stub().callsFake(() => {
+    MockNotification.requestPermission = cy.stub().as('requestPermission').callsFake(() => {
       MockNotification.permission = 'granted';
 
       return Promise.resolve('granted');
-    }).as('requestPermission');
+    });
     win.Notification = MockNotification;
 
     Object.defineProperty(win.navigator, 'userAgent', { get: () => userAgent });
@@ -296,6 +296,33 @@ describe('Chat', () => {
 
       chatMenu.toggleMenu();
       chatMenu.option('Enable Desktop Notifications').should('exist');
+    });
+
+    it('It should not show the message again after enabling the notifications from the menu', () => {
+      setupPendingPermission(USER_AGENTS.firefox);
+
+      // The user dismisses the browser prompt: the permission stays pending
+      cy.window().then((win: any) => {
+        win.Notification.requestPermission = cy.stub().as('requestPermission').resolves('default');
+      });
+
+      chat.open();
+      chat.getMessage(1).isCompleted();
+
+      chatMenu.toggleMenu();
+      chatMenu.clickOption('Disable Desktop Notifications');
+      info.checkNotExists();
+
+      chatMenu.toggleMenu();
+      chatMenu.clickOption('Enable Desktop Notifications');
+
+      cy.get('@requestPermission').should('have.been.calledOnce');
+
+      chat.close();
+      chat.open();
+      chat.getMessage(1).isCompleted();
+
+      info.checkNotExists();
     });
 
     it('It should show the message on Chrome, without the browser settings hint', () => {

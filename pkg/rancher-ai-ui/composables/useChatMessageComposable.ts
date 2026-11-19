@@ -30,6 +30,7 @@ import {
   MessageTemplateComponent,
   PlanningStopType,
   Role,
+  SessionKey,
   Tag,
   ToolCall
 } from '../types';
@@ -60,7 +61,6 @@ import Notifications from '../handlers/notification';
 
 const EXPAND_THINKING = false;
 
-const DISMISS_RECOMMENDED_AGENT_KEY = 'dismissed-agent-recommendation';
 const MAX_MESSAGES_BEFORE_RECOMMENDATION = 5;
 
 // Shared across the chat panel mounts: the websocket outlives the panel and keeps calling the handlers of the instance that opened it
@@ -343,7 +343,7 @@ export function useChatMessageComposable(
   async function ensureSwitchAgentSuggestion(agentName = '') {
     if (
       agentName &&
-      !store.getters['rancher-ai-ui/chat/session']?.[DISMISS_RECOMMENDED_AGENT_KEY] &&
+      !store.getters['rancher-ai-ui/chat/session']?.[SessionKey.DISMISSED_AGENT_RECOMMENDATION] &&
       currentMsg.value.agentMetadata?.selectionMode === AgentSelectionMode.Auto &&
       Number(currentMsg.value.id) >= MAX_MESSAGES_BEFORE_RECOMMENDATION
     ) {
@@ -369,7 +369,7 @@ export function useChatMessageComposable(
           type:   ActionType.Button,
           action: () => {
             // Dismiss future recommendations for this session (for all chats)
-            store.commit('rancher-ai-ui/chat/setSession', { [DISMISS_RECOMMENDED_AGENT_KEY]: true });
+            store.commit('rancher-ai-ui/chat/setSession', { [SessionKey.DISMISSED_AGENT_RECOMMENDATION]: true });
 
             return {
               label:   t('ai.message.system.switchAgent.results.dismiss', {}, true),

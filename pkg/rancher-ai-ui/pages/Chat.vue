@@ -6,7 +6,7 @@ import {
 } from 'vue';
 import { PRODUCT_NAME } from '../product';
 import {
-  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessageInternalSource, MessagePhase, Preferences, Role, StorageKey, StorageType
+  Agent, AgentState, AIServiceState, ConnectionPhase, FormattedMessage, HistoryChat, Message, MessageInternalSource, MessagePhase, Preferences, Role, SessionKey, StorageKey, StorageType
 } from '../types';
 import { extractMessageText } from '../utils/label';
 import Chat from '../handlers/chat';
@@ -202,6 +202,9 @@ async function updatePreferences({ key, value }: { key: StorageKey, value: any }
 
   if (key === StorageKey.ENABLE_DESKTOP_NOTIFICATIONS && value) {
     Notifications.requestPermission();
+
+    // Notify that the desktop notifications info has been dismissed
+    store.commit('rancher-ai-ui/chat/setSession', { [SessionKey.DISMISSED_DESKTOP_NOTIFICATIONS_INFO]: true });
   }
 
   if (value !== currentValue) {

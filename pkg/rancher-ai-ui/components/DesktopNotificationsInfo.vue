@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import RichTranslation from '@shell/components/RichTranslation.vue';
-import { StorageKey } from '../types';
+import { SessionKey, StorageKey } from '../types';
 import { useLocalStorageComposable } from '../composables/useLocalStorageComposable';
 import Notifications from '../handlers/notification';
 
@@ -15,19 +15,25 @@ const storage = useLocalStorageComposable();
 const userAgent = navigator.userAgent;
 const isChromeOrFirefox = /Firefox\//.test(userAgent) || (/Chrome\//.test(userAgent) && !/Edg\/|OPR\//.test(userAgent));
 
-// Hidden once the user acts on it: a dismissed browser prompt leaves the permission pending
-const isPermissionPending = ref(Notifications.isPermissionPending());
+// A dismissed browser prompt leaves the permission pending
+const isDismissed = computed(() => !!store.getters['rancher-ai-ui/chat/session']?.[SessionKey.DISMISSED_DESKTOP_NOTIFICATIONS_INFO]);
 
-const show = computed(() => isPermissionPending.value && !!storage.get(StorageKey.ENABLE_DESKTOP_NOTIFICATIONS));
+const show = computed(() => !isDismissed.value && !!storage.get(StorageKey.ENABLE_DESKTOP_NOTIFICATIONS) && Notifications.isPermissionPending());
+
+function dismiss() {
+  store.commit('rancher-ai-ui/chat/setSession', { [SessionKey.DISMISSED_DESKTOP_NOTIFICATIONS_INFO]: true });
+}
 
 function allow() {
   Notifications.requestPermission();
 
-  isPermissionPending.value = false;
+  dismiss();
 }
 
 function turnOff() {
   storage.set(StorageKey.ENABLE_DESKTOP_NOTIFICATIONS, false);
+
+  dismiss();
 }
 </script>
 

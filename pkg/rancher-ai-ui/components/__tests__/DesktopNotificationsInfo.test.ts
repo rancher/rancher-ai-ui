@@ -1,10 +1,21 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
+import { reactive } from 'vue';
 import Notifications from '../../handlers/notification';
 import DesktopNotificationsInfo from '../DesktopNotificationsInfo.vue';
 
 const mockStorage: Record<string, any> = {};
+const mockSession = reactive<Record<string, any>>({});
 
-jest.mock('vuex', () => ({ useStore: () => ({}) }));
+jest.mock('vuex', () => ({
+  useStore: () => ({
+    getters: {
+      get 'rancher-ai-ui/chat/session'() {
+        return mockSession;
+      }
+    },
+    commit: (_: string, data: Record<string, any>) => Object.assign(mockSession, data)
+  })
+}));
 jest.mock('@shell/composables/useI18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 jest.mock('../../composables/useLocalStorageComposable', () => ({
   useLocalStorageComposable: () => ({
@@ -48,6 +59,7 @@ function mountComponent() {
 describe('DesktopNotificationsInfo', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    Object.keys(mockSession).forEach((key) => delete mockSession[key]);
     mockStorage.enable_desktop_notifications = true;
     mockNotifications.isPermissionPending.mockReturnValue(true);
   });
@@ -86,6 +98,25 @@ describe('DesktopNotificationsInfo', () => {
     await wrapper.find('[data-testid="rancher-ai-ui-desktop-notifications-turn-off"]').trigger('click');
 
     expect(mockStorage.enable_desktop_notifications).toBe(false);
+  });
+
+  it('should stay hidden after turning off and on again in the same session', async() => {
+    const wrapper = mountComponent();
+
+    await wrapper.find('[data-testid="rancher-ai-ui-desktop-notifications-turn-off"]').trigger('click');
+    mockStorage.enable_desktop_notifications = true;
+
+    const remounted = mountComponent();
+
+    expect(remounted.find('[data-testid="rancher-ai-ui-desktop-notifications-action-message"]').exists()).toBe(false);
+  });
+
+  it('should not show when the permission was already requested from the menu', () => {
+    mockSession['dismissed-desktop-notifications-info'] = true;
+
+    const wrapper = mountComponent();
+
+    expect(wrapper.find('[data-testid="rancher-ai-ui-desktop-notifications-action-message"]').exists()).toBe(false);
   });
 
   it.each([
