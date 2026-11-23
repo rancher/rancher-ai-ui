@@ -85,12 +85,19 @@ const steps = computed(() => [
 
   return {
     ...step,
-    link:   disabled ? null : step.link,
+    link:      disabled ? null : step.link,
     disabled,
-    index:  index + 1,
+    index:     index + 1,
     status,
     icon,
-    error:  state.steps[step.key].error,
+    // The step the installation is at: the running, failed or next one
+    current:   status === InstallStepStatus.InProgress || status === InstallStepStatus.Error || isNext,
+    error:     state.steps[step.key].error,
+    ariaLabel: t('ai.install.a11y.step', {
+      step:   t(`ai.install.steps.${ step.key }.label`),
+      status: t(`ai.install.status.${ status }`),
+      error:  state.steps[step.key].error || '',
+    }, true).trim(),
   };
 }));
 
@@ -209,20 +216,22 @@ function routeToSettings() {
             :key="step.key"
             class="install-agent-step"
             :class="[`status-${ step.status }`, { disabled: step.disabled }]"
+            :aria-label="step.ariaLabel"
+            :aria-current="step.current ? 'step' : undefined"
+            :aria-disabled="step.disabled ? 'true' : undefined"
             :data-testid="`rancher-ai-ui-install-agent-step-${ step.key }`"
           >
             <span
               v-if="step.disabled"
               class="install-agent-step-number"
-              :aria-label="t(`ai.install.status.${ step.status }`)"
+              aria-hidden="true"
             >
               {{ step.index }}
             </span>
             <i
               v-else
               :class="['icon', 'install-agent-step-status', step.icon]"
-              role="img"
-              :aria-label="t(`ai.install.status.${ step.status }`)"
+              aria-hidden="true"
             />
             <div class="install-agent-step-content">
               <span class="install-agent-step-label">
