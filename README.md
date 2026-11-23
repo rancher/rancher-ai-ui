@@ -43,6 +43,24 @@ Bump the app version on `package.json` file, then run:
 yarn serve-pkgs
 ```
 
+## Developers
+
+#### Bumping a new version
+
+Set the same `version` in the root [package.json](package.json) and in the extension's [package.json](pkg/rancher-ai-ui/package.json). The catalog release compares the release tag with the root `version` and fails with "release tag doesn't match catalog tag" if only the extension one is bumped.
+
+The extension's [package.json](pkg/rancher-ai-ui/package.json) also holds the other versions the release depends on. Update them together:
+
+```json
+{
+  "version": "1.2.0",
+  "docsVersion": "1.2.0"
+}
+```
+
+- `version`, the extension version: it is also used to load the remote assets from the `rancher-ai-ui-<version>` tag.
+- `docsVersion`, the documentation version linked from the UI (e.g. `https://documentation.suse.com/cloudnative/rancher-ai/<docsVersion>/en/...`). Set it to a published documentation version, or `latest`.
+
 ## E2E tests
 
 #### Install Rancher
