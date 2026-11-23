@@ -364,6 +364,94 @@ describe('useAiAgentInstallerComposable', () => {
       expect(stepStatus(installer, InstallStep.Agent).error).toContain('ImagePullBackOff: image not found');
     });
 
+    it('should fail when an agent pod cannot be scheduled', async() => {
+      addRepository();
+      deployAgent({ withPod: false });
+      addAgentPod('rancher-ai-agent-abc', {
+        status: {
+          phase:      'Pending',
+          conditions: [{
+            type:    'PodScheduled',
+            status:  'False',
+            reason:  'Unschedulable',
+            message: '0/1 nodes are available: 1 Insufficient cpu.'
+          }],
+        },
+      });
+
+      await installer.install();
+
+      expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Error);
+      expect(stepStatus(installer, InstallStep.Agent).error).toBe('Pod rancher-ai-agent-abc cannot be scheduled. 0/1 nodes are available: 1 Insufficient cpu.');
+    });
+
+    it('should fail when an agent container cannot start, whatever the reason', async() => {
+      addRepository();
+      deployAgent({ withPod: false });
+      addAgentPod('rancher-ai-agent-abc', {
+        status: {
+          phase:             'Pending',
+          containerStatuses: [{
+            ready: false,
+            state: {
+              waiting: {
+                reason:  'RunContainerError',
+                message: 'exec format error'
+              }
+            }
+          }],
+        },
+      });
+
+      await installer.install();
+
+      expect(stepStatus(installer, InstallStep.Agent).error).toContain('RunContainerError: exec format error');
+    });
+
+    it('should fail when the agent pods cannot be created', async() => {
+      addRepository();
+      deployAgent({ withPod: false });
+      mockResources[WORKLOAD_TYPES.DEPLOYMENT][DEPLOYMENT_ID].status.conditions = [{
+        type:    'ReplicaFailure',
+        status:  'True',
+        reason:  'FailedCreate',
+        message: 'pods "rancher-ai-agent-abc" is forbidden: exceeded quota: pods'
+      }];
+
+      await installer.install();
+
+      expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Error);
+      expect(stepStatus(installer, InstallStep.Agent).error).toContain('exceeded quota');
+    });
+
+    it('should ignore the conditions of a previous deployment generation', async() => {
+      addRepository();
+      deployAgent();
+      Object.assign(mockResources[WORKLOAD_TYPES.DEPLOYMENT][DEPLOYMENT_ID], {
+        metadata: {
+          ...mockResources[WORKLOAD_TYPES.DEPLOYMENT][DEPLOYMENT_ID].metadata,
+          generation: 2
+        },
+      });
+      mockResources[WORKLOAD_TYPES.DEPLOYMENT][DEPLOYMENT_ID].status.conditions = [{
+        type:   'ReplicaFailure',
+        status: 'True',
+      }];
+
+      const installing = installer.install();
+
+      await flushPromises();
+      expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.InProgress);
+
+      Object.assign(mockResources[WORKLOAD_TYPES.DEPLOYMENT][DEPLOYMENT_ID].status, {
+        observedGeneration: 2,
+        conditions:         [],
+      });
+      await installing;
+
+      expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Done);
+    });
+
     it('should ignore the failed pods of a previous installation', async() => {
       addRepository();
       deployAgent();
@@ -674,6 +762,21 @@ describe('useAiAgentInstallerComposable', () => {
       expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Error);
       expect(stepStatus(installer, InstallStep.Apply).error).toContain('CrashLoopBackOff');
       expect(installer.state.configApplied).toBe(false);
+    });
+
+    it('should fail when the redeployed agent pods cannot be created', async() => {
+      mockResources[WORKLOAD_TYPES.DEPLOYMENT][DEPLOYMENT_ID].status.conditions = [{
+        type:    'ReplicaFailure',
+        status:  'True',
+        reason:  'FailedCreate',
+        message: 'exceeded quota: pods'
+      }];
+
+      installer.markConfigApplied();
+      await flushPromises();
+
+      expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Error);
+      expect(stepStatus(installer, InstallStep.Apply).error).toContain('exceeded quota');
     });
 
     it('should apply the saved configuration again after a failure', async() => {

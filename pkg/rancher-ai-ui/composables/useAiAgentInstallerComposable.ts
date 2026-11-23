@@ -72,15 +72,8 @@ const AGENT_RESOURCES: AgentResource[] = [
   },
 ];
 
-// Container states that won't recover without a change to the release
-const POD_FAILURE_REASONS = [
-  'CrashLoopBackOff',
-  'ImagePullBackOff',
-  'ErrImagePull',
-  'InvalidImageName',
-  'CreateContainerConfigError',
-  'CreateContainerError'
-];
+// The waiting reasons of a container that is still starting: any other one means it can't start
+const CONTAINER_STARTING_REASONS = ['ContainerCreating', 'PodInitializing'];
 
 // Shared between the chat panel and the settings page
 const state = reactive({
@@ -487,6 +480,23 @@ export function useAiAgentInstallerComposable() {
       return `The ${ AGENT_NAME } deployment was not found`;
     }
 
+    // Conditions of a previous generation can be stale while a rollout is starting
+    if ((deployment.status?.observedGeneration ?? 0) >= (deployment.metadata?.generation ?? 0)) {
+      const conditions = deployment.status?.conditions || [];
+      // e.g. the pods are rejected by a resource quota or an admission webhook
+      const replicaFailure = conditions.find((c: any) => c.type === 'ReplicaFailure' && c.status === 'True');
+      // e.g. the progress deadline is exceeded
+      const progressing = conditions.find((c: any) => c.type === 'Progressing' && c.status === 'False');
+
+      if (replicaFailure) {
+        return `The ${ AGENT_NAME } pods cannot be created. ${ replicaFailure.message || replicaFailure.reason || '' }`.trim();
+      }
+
+      if (progressing) {
+        return `The ${ AGENT_NAME } deployment is not progressing. ${ progressing.message || progressing.reason || '' }`.trim();
+      }
+    }
+
     const selector = podSelector(deployment);
     const createdAt = new Date(deployment.metadata?.creationTimestamp).getTime();
     // Skip the pods of a previous installation and the ones being replaced by a rollout
@@ -494,8 +504,15 @@ export function useAiAgentInstallerComposable() {
       .filter((pod: any) => !pod.metadata?.deletionTimestamp && new Date(pod.metadata?.creationTimestamp).getTime() >= createdAt);
 
     for (const pod of pods) {
+      // e.g. not enough resources, taints or affinity rules
+      const unscheduled = (pod.status?.conditions || []).find((c: any) => c.type === 'PodScheduled' && c.status === 'False');
+
+      if (unscheduled) {
+        return `Pod ${ pod.metadata?.name } cannot be scheduled. ${ unscheduled.message || unscheduled.reason || '' }`.trim();
+      }
+
       const statuses = [...(pod.status?.initContainerStatuses || []), ...(pod.status?.containerStatuses || [])];
-      const failed = statuses.find((c: any) => POD_FAILURE_REASONS.includes(c.state?.waiting?.reason));
+      const failed = statuses.find((c: any) => c.state?.waiting?.reason && !CONTAINER_STARTING_REASONS.includes(c.state.waiting.reason));
 
       if (pod.status?.phase === 'Failed' || failed) {
         const reason = failed ? `${ failed.state.waiting.reason }: ${ failed.state.waiting.message || '' }` : pod.status?.reason || 'Failed';
