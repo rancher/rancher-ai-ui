@@ -4,10 +4,12 @@ import {
 import { useStore } from 'vuex';
 import { cloneDeep, isEqual, merge } from 'lodash';
 import {
-  CATALOG, CONFIG_MAP, POD, SECRET, WORKLOAD_TYPES
+  CATALOG, CONFIG_MAP, MANAGEMENT, POD, SECRET, WORKLOAD_TYPES
 } from '@shell/config/types';
+import { SETTING } from '@shell/config/settings';
 import { SECRET_TYPES } from '@shell/config/secret';
 import { base64Encode } from '@shell/utils/crypto';
+import { diff, get, set } from '@shell/utils/object';
 import { isAdminUser } from '@shell/store/type-map';
 import { CATALOG as CATALOG_ANNOTATIONS } from '@shell/config/labels-annotations';
 import { getHelmChart, getHelmRepositoryExact } from '@shell/utils/uiplugins';
@@ -47,6 +49,9 @@ interface AgentResource {
 }
 
 const AGENT_DEPLOYMENT_ID = `${ AGENT_NAMESPACE }/${ AGENT_NAME }`;
+
+// The agent is always installed in the local cluster
+const LOCAL_CLUSTER_ID = 'local';
 
 // Deployed by the chart: removing any of them breaks the agent
 const AGENT_RESOURCES: AgentResource[] = [
@@ -327,6 +332,15 @@ export function useAiAgentInstallerComposable() {
     };
   }
 
+  async function fetchChartDefaults(repo: any): Promise<Record<string, any>> {
+    const info = await store.dispatch('management/request', {
+      method: 'GET',
+      url:    `${ repo.links?.info }&chartName=${ AGENT_CHART_NAME }`,
+    });
+
+    return info?.values || {};
+  }
+
   /**
    * Returns the Helm values for the agent chart: the ones edited by the user,
    * or the chart defaults merged with our overrides.
@@ -336,17 +350,55 @@ export function useAiAgentInstallerComposable() {
       return cloneDeep(state.values);
     }
 
-    const repo = await findRepository();
-    const info = await store.dispatch('management/request', {
-      method: 'GET',
-      url:    `${ repo.links?.info }&chartName=${ AGENT_CHART_NAME }`,
-    });
-
-    const defaults = merge(cloneDeep(info?.values || {}), getValuesOverrides());
+    const defaults = merge(cloneDeep(await fetchChartDefaults(await findRepository())), getValuesOverrides());
 
     defaultValues = defaults;
 
     return cloneDeep(defaults);
+  }
+
+  async function findSettingValue(id: string): Promise<string> {
+    return (await findResource(MANAGEMENT.SETTING, id))?.value || '';
+  }
+
+  /**
+   * The registry Rancher's chart install defaults to: the cluster one, or the global system default registry.
+   */
+  async function findDefaultRegistry(): Promise<string> {
+    try {
+      const cluster = await findResource(MANAGEMENT.CLUSTER, LOCAL_CLUSTER_ID);
+      const normanCluster = await cluster?.findNormanCluster?.();
+      const clusterRegistry = normanCluster?.importedConfig?.privateRegistryURL;
+
+      if (clusterRegistry) {
+        return clusterRegistry;
+      }
+    } catch (err) {
+      warn('Unable to get the cluster registry:', err);
+    }
+
+    return findSettingValue(SETTING.SYSTEM_DEFAULT_REGISTRY);
+  }
+
+  /**
+   * The values sent by Rancher's chart install: only the ones that differ from the chart defaults,
+   * so that upgrades from Apps get the new defaults, plus the system default registry.
+   */
+  async function buildInstallValues(chartDefaults: Record<string, any>): Promise<Record<string, any>> {
+    const values = diff(chartDefaults, state.values || merge(cloneDeep(chartDefaults), getValuesOverrides()));
+
+    // Like Rancher, only for charts with the registry values
+    if (get(chartDefaults, 'global.systemDefaultRegistry') !== undefined || get(chartDefaults, 'global.cattle.systemDefaultRegistry') !== undefined) {
+      const registry = await findDefaultRegistry();
+
+      ['global.cattle.systemDefaultRegistry', 'global.systemDefaultRegistry'].forEach((path) => {
+        if (typeof get(values, path) === 'undefined') {
+          set(values, path, registry);
+        }
+      });
+    }
+
+    return values;
   }
 
   function setValues(values: Record<string, any> | null) {
@@ -497,6 +549,8 @@ export function useAiAgentInstallerComposable() {
       throw new Error(`Chart ${ AGENT_CHART_NAME } not found in ${ AGENT_REPO_URL }`);
     }
 
+    const values = await buildInstallValues(await fetchChartDefaults(repo));
+
     const operation = await repo.doAction('install', {
       charts: [{
         chartName:   AGENT_CHART_NAME,
@@ -507,7 +561,7 @@ export function useAiAgentInstallerComposable() {
           [CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE]: 'cluster',
           [CATALOG_ANNOTATIONS.SOURCE_REPO_NAME]: state.repositoryName,
         },
-        values: state.values ? cloneDeep(state.values) : getValuesOverrides(),
+        values,
       }],
       noHooks:                  false,
       timeout:                  '600s',

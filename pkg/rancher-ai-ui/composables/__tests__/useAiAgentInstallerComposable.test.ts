@@ -1,8 +1,9 @@
 import { reactive } from 'vue';
 import { flushPromises } from '@vue/test-utils';
 import {
-  CATALOG, CONFIG_MAP, POD, SECRET, WORKLOAD_TYPES
+  CATALOG, CONFIG_MAP, MANAGEMENT, POD, SECRET, WORKLOAD_TYPES
 } from '@shell/config/types';
+import { SETTING } from '@shell/config/settings';
 import { isAdminUser } from '@shell/store/type-map';
 import { getHelmChart, getHelmRepositoryExact } from '@shell/utils/uiplugins';
 import Chat from '../../handlers/chat';
@@ -399,6 +400,49 @@ describe('useAiAgentInstallerComposable', () => {
       }));
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Done);
       expect(installer.isAgentNotInstalled.value).toBe(false);
+    });
+
+    it('should install the chart with the system default registry', async() => {
+      addRepository();
+      addResource(MANAGEMENT.SETTING, SETTING.SYSTEM_DEFAULT_REGISTRY, { value: 'stgregistry.suse.com' });
+      mockRequest.mockResolvedValue({ values: { global: { cattle: { systemDefaultRegistry: '' } } } });
+      await installer.install();
+      mockHelmInstall();
+
+      await installer.installChart();
+
+      const { values } = mockResources[CATALOG.CLUSTER_REPO][AGENT_REPO_NAME].doAction.mock.calls[0][1].charts[0];
+
+      expect(values.global).toStrictEqual({
+        systemDefaultRegistry: 'stgregistry.suse.com',
+        cattle:                { systemDefaultRegistry: 'stgregistry.suse.com' },
+      });
+    });
+
+    it('should only send the edited values that differ from the chart defaults', async() => {
+      addRepository();
+      mockRequest.mockResolvedValue({
+        values: {
+          image: { tag: 'v1' },
+          plan:  { enabled: false }
+        }
+      });
+      await installer.install();
+      mockHelmInstall();
+
+      installer.setValues({
+        ...(await installer.loadValues()),
+        log: { level: 'debug' },
+      });
+      await installer.installChart();
+
+      const { values } = mockResources[CATALOG.CLUSTER_REPO][AGENT_REPO_NAME].doAction.mock.calls[0][1].charts[0];
+
+      expect(values).toStrictEqual({
+        plan:         { enabled: true },
+        planApproval: { enabled: true },
+        log:          { level: 'debug' },
+      });
     });
 
     it('should show the Helm error when the chart installation fails', async() => {
