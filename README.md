@@ -47,7 +47,9 @@ yarn serve-pkgs
 
 #### Bumping a new version
 
-The extension's [package.json](pkg/rancher-ai-ui/package.json) holds the versions the release depends on. Update them together when bumping a new version:
+Set the same `version` in the root [package.json](package.json) and in the extension's [package.json](pkg/rancher-ai-ui/package.json). The catalog release compares the release tag with the root `version` and fails with "release tag doesn't match catalog tag" if only the extension one is bumped.
+
+The extension's [package.json](pkg/rancher-ai-ui/package.json) also holds the other versions the release depends on. Update them together:
 
 ```json
 {
