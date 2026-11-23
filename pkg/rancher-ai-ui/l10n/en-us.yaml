@@ -51,6 +51,26 @@ ai:
       apply:
         label: Apply Configurations
         description: Redeploy the AI Agent pod to load the new configuration
+    errors:
+      repositoryDownload: 'Unable to download the Helm repository {url}: {message}'
+      repositoryCredentials: 'Credentials are required to access {url}'
+      repositoryNotFound: 'The Helm repository {url} was not found'
+      repositoryRemoved: 'The Helm repository {name} has been removed'
+      chartNotFound: 'Chart {name} not found in {url}'
+      helmInstallation: 'Helm installation failed: {reason}'
+      deploymentNotFound: 'The {name} deployment was not found'
+      podsNotCreated: 'The {name} pods cannot be created. {reason}'
+      deploymentNotProgressing: 'The {name} deployment is not progressing. {reason}'
+      podNotScheduled: 'Pod {name} cannot be scheduled. {reason}'
+      podNotRunning: 'Pod {name} is not running. {reason}'
+      llmProviderMissing: The LLM provider is not configured
+      llmModelMissing: The LLM model is not configured
+      removed:
+        chart: 'The {name} chart has been removed'
+        crd: 'The {name} CRD has been removed'
+        deployment: 'The {id} deployment has been removed'
+        secret: 'The {id} secret has been removed'
+        configMap: 'The {id} config map has been removed'
   message:
     system:
       welcome:

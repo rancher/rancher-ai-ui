@@ -3,6 +3,7 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import { cloneDeep, isEqual, merge } from 'lodash';
+import { useI18n } from '@shell/composables/useI18n';
 import {
   CATALOG, CONFIG_MAP, MANAGEMENT, POD, SECRET, WORKLOAD_TYPES
 } from '@shell/config/types';
@@ -43,6 +44,7 @@ interface InstallStepState {
 }
 
 interface AgentResource {
+  // Key of the removal message in ai.install.errors.removed
   kind: string;
   type: string;
   id: string;
@@ -66,7 +68,7 @@ const AGENT_RESOURCES: AgentResource[] = [
     id:   `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_SECRET_NAME }`
   },
   {
-    kind: 'config map',
+    kind: 'configMap',
     type: CONFIG_MAP,
     id:   `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_CONFIG_MAP_NAME }`
   },
@@ -152,6 +154,7 @@ function podSelector(deployment: any): string {
  */
 export function useAiAgentInstallerComposable() {
   const store = useStore();
+  const { t } = useI18n(store);
 
   const canInstall = computed(() => {
     const canCreate = (type: string) => !!store.getters['management/schemaFor'](type)?.collectionMethods?.find((m: string) => m.toUpperCase() === 'POST');
@@ -258,7 +261,10 @@ export function useAiAgentInstallerComposable() {
       const downloaded = repository.value?.status?.conditions?.find((c: any) => c.type === 'OCIDownloaded' || c.type === 'Downloaded');
 
       if (downloaded?.status === 'False' && downloaded.message) {
-        return `Unable to download the Helm repository ${ AGENT_REPO_URL }: ${ downloaded.message }`;
+        return t('ai.install.errors.repositoryDownload', {
+          url:     AGENT_REPO_URL,
+          message: downloaded.message
+        }, true);
       }
 
       return downloaded?.status === 'True';
@@ -276,7 +282,7 @@ export function useAiAgentInstallerComposable() {
 
     if (AGENT_REPO_AUTH_ENABLED) {
       if (!credentials) {
-        throw new Error(`Credentials are required to access ${ AGENT_REPO_URL }`);
+        throw new Error(t('ai.install.errors.repositoryCredentials', { url: AGENT_REPO_URL }, true));
       }
 
       const secret = await store.dispatch('management/create', {
@@ -312,7 +318,7 @@ export function useAiAgentInstallerComposable() {
     const repo = await findResource(CATALOG.CLUSTER_REPO, state.repositoryName);
 
     if (!repo) {
-      throw new Error(`The Helm repository ${ AGENT_REPO_URL } was not found`);
+      throw new Error(t('ai.install.errors.repositoryNotFound', { url: AGENT_REPO_URL }, true));
     }
 
     return repo;
@@ -439,7 +445,7 @@ export function useAiAgentInstallerComposable() {
   /**
    * Waits for the Helm command run by the operation pod to complete; throws if it failed.
    */
-  async function waitForHelmOperation(operation: any, action: string, run: number) {
+  async function waitForHelmOperation(operation: any, run: number) {
     if (!operation?.operationName) {
       return;
     }
@@ -466,7 +472,7 @@ export function useAiAgentInstallerComposable() {
     if (terminated.exitCode !== 0) {
       const reason = await fetchHelmError(podNamespace, podName) || terminated.message || terminated.reason;
 
-      throw new Error(`Helm ${ action } failed: ${ reason }`);
+      throw new Error(t('ai.install.errors.helmInstallation', { reason }, true));
     }
   }
 
@@ -477,7 +483,7 @@ export function useAiAgentInstallerComposable() {
     const deployment = agentDeployment.value;
 
     if (!deployment) {
-      return `The ${ AGENT_NAME } deployment was not found`;
+      return t('ai.install.errors.deploymentNotFound', { name: AGENT_NAME }, true);
     }
 
     // Conditions of a previous generation can be stale while a rollout is starting
@@ -489,11 +495,17 @@ export function useAiAgentInstallerComposable() {
       const progressing = conditions.find((c: any) => c.type === 'Progressing' && c.status === 'False');
 
       if (replicaFailure) {
-        return `The ${ AGENT_NAME } pods cannot be created. ${ replicaFailure.message || replicaFailure.reason || '' }`.trim();
+        return t('ai.install.errors.podsNotCreated', {
+          name:   AGENT_NAME,
+          reason: replicaFailure.message || replicaFailure.reason || ''
+        }, true).trim();
       }
 
       if (progressing) {
-        return `The ${ AGENT_NAME } deployment is not progressing. ${ progressing.message || progressing.reason || '' }`.trim();
+        return t('ai.install.errors.deploymentNotProgressing', {
+          name:   AGENT_NAME,
+          reason: progressing.message || progressing.reason || ''
+        }, true).trim();
       }
     }
 
@@ -508,7 +520,10 @@ export function useAiAgentInstallerComposable() {
       const unscheduled = (pod.status?.conditions || []).find((c: any) => c.type === 'PodScheduled' && c.status === 'False');
 
       if (unscheduled) {
-        return `Pod ${ pod.metadata?.name } cannot be scheduled. ${ unscheduled.message || unscheduled.reason || '' }`.trim();
+        return t('ai.install.errors.podNotScheduled', {
+          name:   pod.metadata?.name,
+          reason: unscheduled.message || unscheduled.reason || ''
+        }, true).trim();
       }
 
       const statuses = [...(pod.status?.initContainerStatuses || []), ...(pod.status?.containerStatuses || [])];
@@ -517,7 +532,10 @@ export function useAiAgentInstallerComposable() {
       if (pod.status?.phase === 'Failed' || failed) {
         const reason = failed ? `${ failed.state.waiting.reason }: ${ failed.state.waiting.message || '' }` : pod.status?.reason || 'Failed';
 
-        return `Pod ${ pod.metadata?.name } is not running. ${ reason }`.trim();
+        return t('ai.install.errors.podNotRunning', {
+          name: pod.metadata?.name,
+          reason
+        }, true).trim();
       }
     }
 
@@ -582,7 +600,10 @@ export function useAiAgentInstallerComposable() {
     const chart = await getHelmChart(store, repo, AGENT_CHART_NAME);
 
     if (!chart) {
-      throw new Error(`Chart ${ AGENT_CHART_NAME } not found in ${ AGENT_REPO_URL }`);
+      throw new Error(t('ai.install.errors.chartNotFound', {
+        name: AGENT_CHART_NAME,
+        url:  AGENT_REPO_URL
+      }, true));
     }
 
     const values = await buildInstallValues(await fetchChartDefaults(repo));
@@ -609,7 +630,7 @@ export function useAiAgentInstallerComposable() {
       skipCRDs:                 false,
     });
 
-    await waitForHelmOperation(operation, 'installation', run);
+    await waitForHelmOperation(operation, run);
   }
 
   /**
@@ -692,21 +713,21 @@ export function useAiAgentInstallerComposable() {
   }
 
   /**
-   * The first resource deployed by the chart that has been removed.
+   * The removal message of the first resource deployed by the chart that has been removed.
    */
   function findRemovedAgentResource(): string | null {
     if (state.appExists && !agentApp.value) {
-      return `The ${ AGENT_CHART_NAME } chart`;
+      return t('ai.install.errors.removed.chart', { name: AGENT_CHART_NAME }, true);
     }
 
     const removed = state.agentResources.find(({ type, id }) => !store.getters['management/byId'](type, id));
 
     if (removed) {
-      return `The ${ removed.id } ${ removed.kind }`;
+      return t(`ai.install.errors.removed.${ removed.kind }`, { id: removed.id }, true);
     }
 
     if (state.agentCrdExists && !store.getters['management/schemaFor'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG)) {
-      return `The ${ RANCHER_AI_SCHEMA.AI_AGENT_CONFIG } CRD`;
+      return t('ai.install.errors.removed.crd', { name: RANCHER_AI_SCHEMA.AI_AGENT_CONFIG }, true);
     }
 
     return null;
@@ -745,9 +766,9 @@ export function useAiAgentInstallerComposable() {
       removedAgentResource: findRemovedAgentResource(),
     }), ({ repository, removedAgentResource }) => {
       if (!repository && state.steps[InstallStep.Repository].status === InstallStepStatus.Done) {
-        invalidate(InstallStep.Repository, `The Helm repository ${ state.repositoryName } has been removed`);
+        invalidate(InstallStep.Repository, t('ai.install.errors.repositoryRemoved', { name: state.repositoryName }, true));
       } else if (removedAgentResource && state.steps[InstallStep.Agent].status === InstallStepStatus.Done) {
-        invalidate(InstallStep.Agent, `${ removedAgentResource } has been removed`);
+        invalidate(InstallStep.Agent, removedAgentResource);
       }
     });
   }
@@ -768,11 +789,11 @@ export function useAiAgentInstallerComposable() {
     const data = configMap?.data || {};
 
     if (!data.ACTIVE_LLM) {
-      throw new Error('The LLM provider is not configured');
+      throw new Error(t('ai.install.errors.llmProviderMissing'));
     }
 
     if (!data[decodeModelKey(data.ACTIVE_LLM)]) {
-      throw new Error('The LLM model is not configured');
+      throw new Error(t('ai.install.errors.llmModelMissing'));
     }
   }
 

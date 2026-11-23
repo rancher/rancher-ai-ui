@@ -20,6 +20,10 @@ import { InstallStep, InstallStepStatus } from '../../types';
 import { useAiAgentInstallerComposable } from '../useAiAgentInstallerComposable';
 
 jest.mock('../../utils/log', () => ({ warn: jest.fn() }));
+
+const mockT = jest.fn((key: string) => key);
+
+jest.mock('@shell/composables/useI18n', () => ({ useI18n: () => ({ t: mockT }) }));
 jest.mock('@shell/store/type-map', () => ({ isAdminUser: jest.fn(() => true) }));
 jest.mock('@shell/utils/uiplugins', () => ({
   getHelmChart:           jest.fn(),
@@ -201,6 +205,10 @@ function stepStatus(installer: ReturnType<typeof useAiAgentInstallerComposable>,
   return installer.state.steps[step];
 }
 
+function expectTranslated(key: string, args: Record<string, any>) {
+  expect(mockT).toHaveBeenCalledWith(key, expect.objectContaining(args), true);
+}
+
 describe('useAiAgentInstallerComposable', () => {
   let installer: ReturnType<typeof useAiAgentInstallerComposable>;
 
@@ -288,7 +296,8 @@ describe('useAiAgentInstallerComposable', () => {
       await installer.install();
 
       expect(stepStatus(installer, InstallStep.Repository).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Repository).error).toContain('unauthorized');
+      expect(stepStatus(installer, InstallStep.Repository).error).toBe('ai.install.errors.repositoryDownload');
+      expectTranslated('ai.install.errors.repositoryDownload', { message: 'unauthorized' });
       expect(installer.canStartInstall.value).toBe(true);
     });
 
@@ -361,7 +370,11 @@ describe('useAiAgentInstallerComposable', () => {
       await installer.install();
 
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Agent).error).toContain('ImagePullBackOff: image not found');
+      expect(stepStatus(installer, InstallStep.Agent).error).toBe('ai.install.errors.podNotRunning');
+      expectTranslated('ai.install.errors.podNotRunning', {
+        name:   'rancher-ai-agent-abc',
+        reason: 'ImagePullBackOff: image not found'
+      });
     });
 
     it('should fail when an agent pod cannot be scheduled', async() => {
@@ -382,7 +395,11 @@ describe('useAiAgentInstallerComposable', () => {
       await installer.install();
 
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Agent).error).toBe('Pod rancher-ai-agent-abc cannot be scheduled. 0/1 nodes are available: 1 Insufficient cpu.');
+      expect(stepStatus(installer, InstallStep.Agent).error).toBe('ai.install.errors.podNotScheduled');
+      expectTranslated('ai.install.errors.podNotScheduled', {
+        name:   'rancher-ai-agent-abc',
+        reason: '0/1 nodes are available: 1 Insufficient cpu.'
+      });
     });
 
     it('should fail when an agent container cannot start, whatever the reason', async() => {
@@ -405,7 +422,8 @@ describe('useAiAgentInstallerComposable', () => {
 
       await installer.install();
 
-      expect(stepStatus(installer, InstallStep.Agent).error).toContain('RunContainerError: exec format error');
+      expect(stepStatus(installer, InstallStep.Agent).error).toBe('ai.install.errors.podNotRunning');
+      expectTranslated('ai.install.errors.podNotRunning', { reason: 'RunContainerError: exec format error' });
     });
 
     it('should fail when the agent pods cannot be created', async() => {
@@ -421,7 +439,11 @@ describe('useAiAgentInstallerComposable', () => {
       await installer.install();
 
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Agent).error).toContain('exceeded quota');
+      expect(stepStatus(installer, InstallStep.Agent).error).toBe('ai.install.errors.podsNotCreated');
+      expectTranslated('ai.install.errors.podsNotCreated', {
+        name:   AGENT_NAME,
+        reason: 'pods "rancher-ai-agent-abc" is forbidden: exceeded quota: pods'
+      });
     });
 
     it('should ignore the conditions of a previous deployment generation', async() => {
@@ -575,7 +597,8 @@ describe('useAiAgentInstallerComposable', () => {
       await installer.installChart();
 
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Agent).error).toBe('Helm installation failed: INSTALLATION FAILED: invalid values');
+      expect(stepStatus(installer, InstallStep.Agent).error).toBe('ai.install.errors.helmInstallation');
+      expectTranslated('ai.install.errors.helmInstallation', { reason: 'INSTALLATION FAILED: invalid values' });
     });
 
     it('should uninstall the current release before installing the chart again', async() => {
@@ -661,7 +684,8 @@ describe('useAiAgentInstallerComposable', () => {
       await flushPromises();
 
       expect(stepStatus(installer, InstallStep.Repository).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Repository).error).toContain('has been removed');
+      expect(stepStatus(installer, InstallStep.Repository).error).toBe('ai.install.errors.repositoryRemoved');
+      expectTranslated('ai.install.errors.repositoryRemoved', { name: AGENT_REPO_NAME });
     });
 
     it('should fail the agent step when a resource deployed by the chart is removed', async() => {
@@ -673,7 +697,8 @@ describe('useAiAgentInstallerComposable', () => {
       await flushPromises();
 
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Agent).error).toBe(`The ${ AGENT_NAMESPACE }/${ AGENT_CONFIG_SECRET_NAME } secret has been removed`);
+      expect(stepStatus(installer, InstallStep.Agent).error).toBe('ai.install.errors.removed.secret');
+      expectTranslated('ai.install.errors.removed.secret', { id: `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_SECRET_NAME }` });
       expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Pending);
     });
 
@@ -686,7 +711,8 @@ describe('useAiAgentInstallerComposable', () => {
       await flushPromises();
 
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Agent).error).toContain('CRD has been removed');
+      expect(stepStatus(installer, InstallStep.Agent).error).toBe('ai.install.errors.removed.crd');
+      expectTranslated('ai.install.errors.removed.crd', { name: RANCHER_AI_SCHEMA.AI_AGENT_CONFIG });
     });
   });
 
@@ -714,7 +740,7 @@ describe('useAiAgentInstallerComposable', () => {
       await flushPromises();
 
       expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Configure).error).toBe('The LLM provider is not configured');
+      expect(stepStatus(installer, InstallStep.Configure).error).toBe('ai.install.errors.llmProviderMissing');
       expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Pending);
       expect(installer.state.configApplied).toBe(false);
     });
@@ -760,7 +786,8 @@ describe('useAiAgentInstallerComposable', () => {
 
       expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Done);
       expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Apply).error).toContain('CrashLoopBackOff');
+      expect(stepStatus(installer, InstallStep.Apply).error).toBe('ai.install.errors.podNotRunning');
+      expectTranslated('ai.install.errors.podNotRunning', { reason: 'CrashLoopBackOff: back-off restarting failed container' });
       expect(installer.state.configApplied).toBe(false);
     });
 
@@ -776,7 +803,8 @@ describe('useAiAgentInstallerComposable', () => {
       await flushPromises();
 
       expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Error);
-      expect(stepStatus(installer, InstallStep.Apply).error).toContain('exceeded quota');
+      expect(stepStatus(installer, InstallStep.Apply).error).toBe('ai.install.errors.podsNotCreated');
+      expectTranslated('ai.install.errors.podsNotCreated', { reason: 'exceeded quota: pods' });
     });
 
     it('should apply the saved configuration again after a failure', async() => {
