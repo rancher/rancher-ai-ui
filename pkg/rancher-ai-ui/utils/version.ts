@@ -2,7 +2,6 @@ import { getVersionData } from '@shell/config/version';
 import packageJson from '../package.json';
 import { warn } from './log';
 
-export const agentVersion = packageJson.agentVersion;
 export const uiVersion = packageJson.version;
 export const docsVersion = packageJson.docsVersion;
 
