@@ -34,9 +34,14 @@ const emit = defineEmits([
 ]);
 
 const warningMessage = computed(() => {
+  if (!props.hasChats) {
+    return '';
+  }
+
   if (!props.storageType) {
     return t('aiConfig.dialog.applySettings.warning.unknownStorage', {}, true);
   }
+
   if (props.storageType === StorageType.InMemory) {
     return t('aiConfig.dialog.applySettings.warning.inMemory', {}, true);
   }
@@ -66,13 +71,10 @@ function close() {
       </h4>
     </template>
     <template #body>
-      <div
-        v-if="warningMessage"
-        class="prompt-apply-settings-body mb-1"
-      >
+      <div class="prompt-apply-settings-body mb-1">
         <span v-clean-html="t('aiConfig.dialog.applySettings.warning.redeploy', {}, true)" />
         <span
-          v-if="props.hasChats"
+          v-if="warningMessage"
           v-clean-html="warningMessage"
         />
         <span
