@@ -88,6 +88,45 @@ Cypress.Commands.add('uninstallRancherAIService', () => {
 });
 
 /**
+ * Redeploys the rancher-ai-agent deployment (rollout restart), keeping the Helm release installed.
+ */
+Cypress.Commands.add('redeployRancherAIAgent', (args: { waitForAIServiceReady?: boolean } = { waitForAIServiceReady: true }) => {
+  return resolveKubeconfig().then((kubeconfig) => {
+    const deployment = `deployment/rancher-ai-agent -n cattle-ai-agent-system --kubeconfig=${ kubeconfig }`;
+
+    cy.exec(`kubectl rollout restart ${ deployment }`, { timeout: 30000 });
+
+    if (args.waitForAIServiceReady) {
+      cy.exec(`kubectl rollout status ${ deployment } --timeout=300s`, { timeout: 330000 });
+    }
+  });
+});
+
+/**
+ * Deletes the rancher-ai-agent deployment, keeping the Helm release: the chat shows the "pod not found" error
+ * instead of the install panel. Use `restoreRancherAIAgentDeployment` to deploy it again.
+ */
+Cypress.Commands.add('deleteRancherAIAgentDeployment', () => {
+  return resolveKubeconfig().then((kubeconfig) => {
+    cy.exec(`kubectl delete deployment/rancher-ai-agent -n cattle-ai-agent-system --ignore-not-found --wait=false --kubeconfig=${ kubeconfig }`, { timeout: 30000 });
+  });
+});
+
+/**
+ * Deploys again the rancher-ai-agent deployment from the installed Helm release.
+ */
+Cypress.Commands.add('restoreRancherAIAgentDeployment', (args: InstallRancherAIServiceArgs = { waitForAIServiceReady: true }) => {
+  return resolveKubeconfig().then((kubeconfig) => {
+    // Helm creates the release resources missing from the cluster
+    cy.exec(`helm upgrade ai-agent ./rancher-ai-agent/chart/agent -n cattle-ai-agent-system --reuse-values --kubeconfig=${ kubeconfig }`, { timeout: 120000 });
+
+    if (args.waitForAIServiceReady) {
+      cy.exec(`kubectl rollout status deployment/rancher-ai-agent -n cattle-ai-agent-system --timeout=300s --kubeconfig=${ kubeconfig }`, { timeout: 330000 });
+    }
+  });
+});
+
+/**
  * Updates the AI Assistant configurations by modifying the relevant ConfigMap and Secret, then restarts the Ai Agent deployment.
  *
  * @param data - A record of key-value pairs to update in the ConfigMap and Secret.
