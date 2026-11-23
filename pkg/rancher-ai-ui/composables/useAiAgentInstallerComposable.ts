@@ -198,6 +198,9 @@ export function useAiAgentInstallerComposable() {
   // Until the Apps are loaded we can't tell if the agent is installed
   const isInstallStateKnown = computed(() => !canInstall.value || state.started || state.appsChecked);
 
+  // Started from this page load and the configuration not applied yet: the agent has no chats
+  const isInstalling = computed(() => state.started && !state.configApplied);
+
   function setStep(step: InstallStep, status: InstallStepStatus, error?: string) {
     state.steps[step] = {
       status,
@@ -820,6 +823,7 @@ export function useAiAgentInstallerComposable() {
     isAgentAppMissing,
     isAgentNotInstalled,
     isInstallStateKnown,
+    isInstalling,
     agentApp,
     repository,
     loadAiAgentApp,

@@ -54,10 +54,10 @@ const { t } = useI18n(store);
 // const shellApi = useShell();
 
 // TODO: All settings will be fetched through the API in the future.
-const { fetchChats, fetchSettings, saveSettings } = useAIAgentApiComposable();
+const { fetchSettings, saveSettings } = useAIAgentApiComposable();
 
 const {
-  isAgentNotInstalled, canOpenChatAndInstall, markConfigApplied, loadAiAgentApp, openChatAndInstall
+  isAgentNotInstalled, isInstalling, canOpenChatAndInstall, markConfigApplied, loadAiAgentApp, openChatAndInstall
 } = useAiAgentInstallerComposable();
 
 const {
@@ -98,7 +98,12 @@ const toolsActionResultBanner = ref<{ color: string; label: string } | null>(nul
 
 const isAiAgentSettingsTouched = ref<boolean | null>(false);
 
-const hasChats = ref<boolean>(false);
+/**
+ * TODO: Implement a proper check for existing chats using a dedicated API call.
+ * As of now, it's not possible to determine if there are existing chats,
+ * There are no chats if the agent is currently installing.
+ */
+const hasChats = ref<boolean>(!isInstalling.value);
 
 /**
  * Fetches the rancher-ai-agent deployment.
@@ -648,12 +653,8 @@ async function publishToolsDefinitionAndRefetch() {
   fetchUIToolsConfigSettings();
 }
 
-async function showApplySettingsModal(cb: AsyncButtonCallback) {
+function showApplySettingsModal(cb: AsyncButtonCallback) {
   applySettingsCb.value = cb;
-
-  const allChats = await fetchChats();
-
-  hasChats.value = allChats?.length > 0;
   isSaving.value = true;
 }
 

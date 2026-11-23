@@ -903,6 +903,6 @@ aiConfig:
       confirm: Confirm
       warning:
         redeploy: 'Applying new settings will redeploy the AI agent.'
-        unknownStorage: 'If the AI Agent is using in-memory storage, <b>all messages might be lost</b> after applying the new settings.'
-        inMemory: 'The AI agent is using in-memory storage, <b>all messages will be lost</b> after applying the new settings.'
+        unknownStorage: 'If the AI Agent is using in-memory storage and there are existing chats, including those of other users, <b>all messages might be lost</b> after applying the new settings.'
+        inMemory: 'The AI Agent is using in-memory storage. If there are existing chats, including those of other users, <b>all messages will be lost</b> after applying the new settings.'
         continue: 'Do you want to continue?'
