@@ -838,6 +838,22 @@ describe('useAiAgentInstallerComposable', () => {
       expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Done);
       expect(installer.state.configApplied).toBe(true);
     });
+
+    it('should save the deployment fetched from the cluster on retry, not the store copy', async() => {
+      const deployment = mockResources[WORKLOAD_TYPES.DEPLOYMENT][DEPLOYMENT_ID];
+
+      deployment.spec.template = {};
+      deployment.save = jest.fn();
+
+      await installer.retryApply();
+
+      expect(mockStore.dispatch).toHaveBeenCalledWith('management/find', {
+        type: WORKLOAD_TYPES.DEPLOYMENT,
+        id:   DEPLOYMENT_ID,
+        opt:  { force: true },
+      });
+      expect(deployment.save).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('openChatAndInstall', () => {

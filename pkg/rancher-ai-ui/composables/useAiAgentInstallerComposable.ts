@@ -854,9 +854,11 @@ export function useAiAgentInstallerComposable() {
     setStep(InstallStep.Apply, InstallStepStatus.InProgress);
 
     try {
+      // force fetching the latest version of the deployment from the cluster
       const deployment = await store.dispatch('management/find', {
         type: WORKLOAD_TYPES.DEPLOYMENT,
         id:   AGENT_DEPLOYMENT_ID,
+        opt:  { force: true },
       });
       const template = deployment.spec.template;
 
