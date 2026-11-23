@@ -2,6 +2,10 @@ import { getVersionData } from '@shell/config/version';
 import packageJson from '../package.json';
 import { warn } from './log';
 
+export const agentVersion = packageJson.agentVersion;
+export const uiVersion = packageJson.version;
+export const docsVersion = packageJson.docsVersion;
+
 export function getRancherVersion(): string {
   const envVersion = process.env.VUE_APP_RANCHER_VERSION; // eslint-disable-line no-undef
 
@@ -36,8 +40,6 @@ export function getRancherVersion(): string {
     return rawVersion;
   }
 }
-
-export const uiVersion = packageJson.version;
 
 export const remoteAssetsBasePath = (isDev: boolean) => {
   const branchOrTag = isDev ? 'main' : `rancher-ai-ui-${ uiVersion }`;

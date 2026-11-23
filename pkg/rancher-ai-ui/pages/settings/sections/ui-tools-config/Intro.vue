@@ -5,6 +5,7 @@ import { useI18n } from '@shell/composables/useI18n';
 import Banner from '@components/Banner/Banner.vue';
 import RcButton from '@components/RcButton/RcButton.vue';
 import RichTranslation from '@shell/components/RichTranslation.vue';
+import { DOCS_LINK } from '../../../../docs';
 import { ToolsDefinitionActionType } from '../../../../types';
 
 const store = useStore();
@@ -32,8 +33,6 @@ const toolsDefinitionActionBanner = computed(() => {
     key:   `aiConfig.form.section.tools.publish.message.${ user }.${ type }.label`,
   };
 });
-
-const docsUrl = 'https://rancher.github.io/rancher-ai-product-docs/rancher-ai/latest/en/introduction.html';
 </script>
 
 <template>
@@ -53,7 +52,7 @@ const docsUrl = 'https://rancher.github.io/rancher-ai-product-docs/rancher-ai/la
         <RichTranslation :k="toolsDefinitionActionBanner.key">
           <template #documentation="{ content }">
             <a
-              :href="docsUrl"
+              :href="DOCS_LINK.INTRO"
               target="_blank"
               rel="noopener noreferrer"
             >

@@ -19,8 +19,6 @@ export const TOOLS_CONFIG_NAME = 'rancher-ai-ui';
 
 export const PANEL_POSITION = RIGHT;
 
-export const PERMISSIONS_DOCS_URL = 'https://rancher.github.io/rancher-ai-product-docs/rancher-ai/latest/en/how-tos/how-to-admin.html#rbac';
-
 export function init($extension: IExtension, store: any) {
   // Configure Settings page to include AI Assistant settings
   const {
