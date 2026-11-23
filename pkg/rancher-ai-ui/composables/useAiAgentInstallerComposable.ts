@@ -343,14 +343,14 @@ export function useAiAgentInstallerComposable() {
 
   /**
    * Returns the Helm values for the agent chart: the ones edited by the user,
-   * or the chart defaults merged with our overrides.
+   * or the chart defaults merged with our overrides and the effective registry.
    */
   async function loadValues(): Promise<Record<string, any>> {
     if (state.values) {
       return cloneDeep(state.values);
     }
 
-    const defaults = merge(cloneDeep(await fetchChartDefaults(await findRepository())), getValuesOverrides());
+    const defaults = await buildDefaultValues(await fetchChartDefaults(await findRepository()));
 
     defaultValues = defaults;
 
@@ -380,22 +380,41 @@ export function useAiAgentInstallerComposable() {
     return findSettingValue(SETTING.SYSTEM_DEFAULT_REGISTRY);
   }
 
+  // Like Rancher, the registry values are only set for charts that declare them
+  function hasRegistryValues(chartDefaults: Record<string, any>): boolean {
+    return get(chartDefaults, 'global.systemDefaultRegistry') !== undefined || get(chartDefaults, 'global.cattle.systemDefaultRegistry') !== undefined;
+  }
+
+  function setRegistry(values: Record<string, any>, registry: string) {
+    set(values, 'global.cattle.systemDefaultRegistry', registry);
+    set(values, 'global.systemDefaultRegistry', registry);
+  }
+
+  /**
+   * The chart defaults merged with our overrides, using the Rancher registry instead of the chart one.
+   */
+  async function buildDefaultValues(chartDefaults: Record<string, any>): Promise<Record<string, any>> {
+    const values = merge(cloneDeep(chartDefaults), getValuesOverrides());
+
+    if (hasRegistryValues(chartDefaults)) {
+      const chartRegistry = get(chartDefaults, 'global.cattle.systemDefaultRegistry') || get(chartDefaults, 'global.systemDefaultRegistry') || '';
+
+      setRegistry(values, await findDefaultRegistry() || chartRegistry);
+    }
+
+    return values;
+  }
+
   /**
    * The values sent by Rancher's chart install: only the ones that differ from the chart defaults,
-   * so that upgrades from Apps get the new defaults, plus the system default registry.
+   * so that upgrades from Apps get the new defaults, plus the registry shown in the values editor.
    */
   async function buildInstallValues(chartDefaults: Record<string, any>): Promise<Record<string, any>> {
-    const values = diff(chartDefaults, state.values || merge(cloneDeep(chartDefaults), getValuesOverrides()));
+    const allValues = state.values || await buildDefaultValues(chartDefaults);
+    const values = diff(chartDefaults, allValues);
 
-    // Like Rancher, only for charts with the registry values
-    if (get(chartDefaults, 'global.systemDefaultRegistry') !== undefined || get(chartDefaults, 'global.cattle.systemDefaultRegistry') !== undefined) {
-      const registry = await findDefaultRegistry();
-
-      ['global.cattle.systemDefaultRegistry', 'global.systemDefaultRegistry'].forEach((path) => {
-        if (typeof get(values, path) === 'undefined') {
-          set(values, path, registry);
-        }
-      });
+    if (hasRegistryValues(chartDefaults)) {
+      setRegistry(values, get(allValues, 'global.cattle.systemDefaultRegistry') ?? get(allValues, 'global.systemDefaultRegistry') ?? '');
     }
 
     return values;

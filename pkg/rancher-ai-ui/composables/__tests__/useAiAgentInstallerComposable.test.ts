@@ -419,6 +419,39 @@ describe('useAiAgentInstallerComposable', () => {
       });
     });
 
+    it('should show the Rancher registry in the values instead of the chart one', async() => {
+      addRepository();
+      addResource(MANAGEMENT.SETTING, SETTING.SYSTEM_DEFAULT_REGISTRY, { value: 'stgregistry.suse.com' });
+      mockRequest.mockResolvedValue({ values: { global: { cattle: { systemDefaultRegistry: 'registry.suse.com' } } } });
+      await installer.install();
+
+      expect((await installer.loadValues()).global).toStrictEqual({
+        systemDefaultRegistry: 'stgregistry.suse.com',
+        cattle:                { systemDefaultRegistry: 'stgregistry.suse.com' },
+      });
+    });
+
+    it('should install the chart with the registry edited in the values', async() => {
+      addRepository();
+      addResource(MANAGEMENT.SETTING, SETTING.SYSTEM_DEFAULT_REGISTRY, { value: 'stgregistry.suse.com' });
+      mockRequest.mockResolvedValue({ values: { global: { cattle: { systemDefaultRegistry: 'registry.suse.com' } } } });
+      await installer.install();
+      mockHelmInstall();
+
+      const values = await installer.loadValues();
+
+      values.global.cattle.systemDefaultRegistry = 'my.registry.com';
+      installer.setValues(values);
+      await installer.installChart();
+
+      const sent = mockResources[CATALOG.CLUSTER_REPO][AGENT_REPO_NAME].doAction.mock.calls[0][1].charts[0].values;
+
+      expect(sent.global).toStrictEqual({
+        systemDefaultRegistry: 'my.registry.com',
+        cattle:                { systemDefaultRegistry: 'my.registry.com' },
+      });
+    });
+
     it('should only send the edited values that differ from the chart defaults', async() => {
       addRepository();
       mockRequest.mockResolvedValue({
