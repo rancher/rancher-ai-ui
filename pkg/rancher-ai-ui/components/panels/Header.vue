@@ -54,7 +54,6 @@ function toggleHistory() {
         <div
           v-if="!props.readonly"
           class="chat-history-btn"
-          :class="{ disabled }"
         >
           <RcButton
             small
@@ -113,8 +112,8 @@ function toggleHistory() {
 
 <style lang="scss" scoped>
 .chat-header {
-  background: var(--active);
-  color: var(--on-active);
+  // Same of selected rows background
+  background: linear-gradient(var(--sortable-table-selected-bg), var(--sortable-table-selected-bg)), var(--sortable-table-bg);
   padding: 12px;
   display: flex;
   align-items: center;
@@ -134,7 +133,6 @@ function toggleHistory() {
     align-items: center;
     font-weight: 600;
     font-size: 1em;
-    color: var(--on-active);
     margin: 0;
     width: 60px;
 
@@ -151,19 +149,13 @@ function toggleHistory() {
   border-radius: 8px;
   transition: background 0.2s;
   .btn-close {
+    width: 32px;
     margin: 0 8px;
   }
 }
 
-.chat-history-btn {
-  &.disabled {
-    opacity: 1;
-    pointer-events: none;
-  }
-}
-
 .chat-close-btn:hover, .chat-history-btn:hover {
-  background: var(--active-hover);
+  background: var(--accent-btn);
 }
 
 .btn-close, .btn-open-history {

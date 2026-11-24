@@ -58,8 +58,7 @@ function toggleHistory() {
 
 <style lang="scss" scoped>
 .chat-header {
-  background: #A7BFF1;
-  color: #3C57A3;
+  background: color-mix(in srgb, var(--body-bg) 35%, transparent);
   padding: 12px;
   display: flex;
   align-items: center;
@@ -68,10 +67,9 @@ function toggleHistory() {
 
 .theme-dark .chat-header {
   color: #fff;
-  background: var(--category-active, var(--nav-active));
 
   .chat-history-btn:hover {
-    background: color-mix(in srgb, var(--category-active, var(--nav-active)) 80%, #fff);
+    background: var(--accent-btn);
   }
 }
 
