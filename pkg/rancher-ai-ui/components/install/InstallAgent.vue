@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-expect-error FIXME: no type declarations for js-yaml
 import jsyaml from 'js-yaml';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { CATALOG, NORMAN } from '@shell/config/types';
@@ -85,21 +85,33 @@ const steps = computed(() => [
 
   return {
     ...step,
-    link:      disabled ? null : step.link,
+    link:        disabled ? null : step.link,
     disabled,
-    index:     index + 1,
+    index:       index + 1,
     status,
     icon,
     // The step the installation is at: the running, failed or next one
-    current:   status === InstallStepStatus.InProgress || status === InstallStepStatus.Error || isNext,
-    error:     state.steps[step.key].error,
-    ariaLabel: t('ai.install.a11y.step', {
+    current:     status === InstallStepStatus.InProgress || status === InstallStepStatus.Error || isNext,
+    error:       state.steps[step.key].error,
+    statusLabel: t(`ai.install.status.${ status }`),
+    summary:     t('ai.install.a11y.step', {
       step:   t(`ai.install.steps.${ step.key }.label`),
       status: t(`ai.install.status.${ status }`),
       error:  state.steps[step.key].error || '',
     }, true).trim(),
   };
 }));
+
+// Read by screen readers when a step starts, completes or fails
+const announcement = ref('');
+
+watch(() => steps.value.map((step) => step.status), (statuses, previous) => {
+  const changed = steps.value.filter((step, i) => step.status !== previous?.[i] && step.status !== InstallStepStatus.Pending);
+
+  if (changed.length) {
+    announcement.value = changed.map((step) => step.summary).join('. ');
+  }
+});
 
 const showAgentActions = computed(() => state.started &&
   state.steps[InstallStep.Repository].status === InstallStepStatus.Done &&
@@ -187,6 +199,15 @@ function routeToSettings() {
       data-testid="rancher-ai-ui-install-agent-bubble"
     >
       <div
+        class="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="rancher-ai-ui-install-agent-announcement"
+      >
+        {{ announcement }}
+      </div>
+      <div
         v-if="state.started"
         class="install-agent-title"
       >
@@ -216,9 +237,7 @@ function routeToSettings() {
             :key="step.key"
             class="install-agent-step"
             :class="[`status-${ step.status }`, { disabled: step.disabled }]"
-            :aria-label="step.ariaLabel"
             :aria-current="step.current ? 'step' : undefined"
-            :aria-disabled="step.disabled ? 'true' : undefined"
             :data-testid="`rancher-ai-ui-install-agent-step-${ step.key }`"
           >
             <span
@@ -244,6 +263,7 @@ function routeToSettings() {
                 <template v-else>
                   {{ t(`ai.install.steps.${ step.key }.label`) }}
                 </template>
+                <span class="sr-only">: {{ step.statusLabel }}</span>
               </span>
               <span
                 v-clean-html="t(`ai.install.steps.${ step.key }.description`, { disabled: step.disabled }, true)"

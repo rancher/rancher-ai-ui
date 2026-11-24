@@ -181,6 +181,40 @@ describe('InstallAgent.vue', () => {
     });
   });
 
+  describe('Accessibility', () => {
+    it('should read the status of each step from its content, not from a name on the list item', () => {
+      mockInstaller = createInstaller({}, { [InstallStep.Repository]: InstallStepStatus.InProgress });
+      wrapper = mountComponent();
+
+      const repository = byTestId(wrapper, 'rancher-ai-ui-install-agent-step-repository');
+
+      expect(repository.attributes('aria-label')).toBeUndefined();
+      expect(repository.attributes('aria-current')).toBe('step');
+      expect(repository.find('.install-agent-step-label .sr-only').text()).toBe(': ai.install.status.inProgress');
+    });
+
+    it('should announce a step when it fails, not when the steps are first shown', async() => {
+      mockInstaller = createInstaller({}, {
+        [InstallStep.Repository]: InstallStepStatus.Done,
+        [InstallStep.Agent]:      InstallStepStatus.InProgress,
+      });
+      wrapper = mountComponent();
+
+      const announcement = byTestId(wrapper, 'rancher-ai-ui-install-agent-announcement');
+
+      expect(announcement.attributes('role')).toBe('status');
+      expect(announcement.text()).toBe('');
+
+      mockInstaller.state.steps[InstallStep.Agent] = {
+        status: InstallStepStatus.Error,
+        error:  'Helm failed'
+      };
+      await flushPromises();
+
+      expect(announcement.text()).toBe('ai.install.a11y.step');
+    });
+  });
+
   describe('Agent step', () => {
     it('should install the chart when the repository is ready', async() => {
       mockInstaller = createInstaller({}, { [InstallStep.Repository]: InstallStepStatus.Done });
