@@ -80,14 +80,13 @@ const CONTAINER_STARTING_REASONS = ['ContainerCreating', 'PodInitializing'];
 // Shared between the chat panel and the settings page
 const state = reactive({
   started:          false,
-  // The Apps are in the store and kept up to date
-  appsLoaded:       false,
   // The Apps request completed, successfully or not
   appsChecked:      false,
   configApplied:    false,
   repositoryName:   AGENT_REPO_NAME,
   repositoryExists: false,
-  appExists:        false,
+  // The AI agent Helm release in the cluster, undefined until known: other pages can make the store forget the Apps
+  agentAppId:       undefined as string | null | undefined,
   // The chart resources found once the agent step completed, validated until the installation ends
   agentResources:   [] as AgentResource[],
   agentCrdExists:   false,
@@ -171,13 +170,9 @@ export function useAiAgentInstallerComposable() {
 
   const repository = computed(() => store.getters['management/byId'](CATALOG.CLUSTER_REPO, state.repositoryName));
 
-  // The AI agent Helm release, whatever its name
-  const agentApp = computed(() => store.getters['management/all'](CATALOG.APP)
-    .find((app: any) => app.metadata?.namespace === AGENT_NAMESPACE && app.spec?.chart?.metadata?.name === AGENT_CHART_NAME));
-
   const agentDeployment = computed(() => store.getters['management/byId'](WORKLOAD_TYPES.DEPLOYMENT, AGENT_DEPLOYMENT_ID));
 
-  const isAgentAppMissing = computed(() => state.appsLoaded && !agentApp.value);
+  const isAgentAppMissing = computed(() => state.agentAppId === null);
 
   // The AI agent Helm chart is not installed, or is still being installed
   const isAgentNotInstalled = computed(() => {
@@ -224,19 +219,31 @@ export function useAiAgentInstallerComposable() {
     }
   }
 
+  /**
+   * The id of the AI agent Helm release in the cluster, whatever its name; undefined if the Apps can't be loaded.
+   */
+  async function findAgentAppId(): Promise<string | null | undefined> {
+    try {
+      const apps = await store.dispatch('management/findAll', {
+        type: CATALOG.APP,
+        opt:  { force: true }
+      });
+
+      return apps.find((app: any) => app.metadata?.namespace === AGENT_NAMESPACE && app.spec?.chart?.metadata?.name === AGENT_CHART_NAME)?.id || null;
+    } catch (err) {
+      warn('Unable to load the Apps:', err);
+
+      return undefined;
+    }
+  }
+
   async function loadAiAgentApp() {
-    if (state.appsLoaded || !canInstall.value) {
+    if (state.agentAppId !== undefined || !canInstall.value) {
       return;
     }
 
-    try {
-      await store.dispatch('management/findAll', { type: CATALOG.APP });
-      state.appsLoaded = true;
-    } catch (err) {
-      warn('Unable to load the Apps:', err);
-    } finally {
-      state.appsChecked = true;
-    }
+    state.agentAppId = await findAgentAppId();
+    state.appsChecked = true;
   }
 
   // Whether the agent is installed decides between the chat and the install flow
@@ -579,7 +586,7 @@ export function useAiAgentInstallerComposable() {
    * Removes the current AI agent Helm release, if any: waits for an ongoing uninstallation, or starts a new one.
    */
   async function uninstallAgent(run: number) {
-    const id = agentApp.value?.id || `${ AGENT_NAMESPACE }/${ AGENT_RELEASE_NAME }`;
+    const id = state.agentAppId || `${ AGENT_NAMESPACE }/${ AGENT_RELEASE_NAME }`;
     // Forced: the store copy can be stale, e.g. while the App detail page replaces the Apps watch
     const app = await findResource(CATALOG.APP, id, { force: true });
 
@@ -592,7 +599,7 @@ export function useAiAgentInstallerComposable() {
     }
 
     await until(() => !store.getters['management/byId'](CATALOG.APP, id), run);
-    state.appExists = false;
+    state.agentAppId = null;
   }
 
   async function installAgent(run: number) {
@@ -651,8 +658,9 @@ export function useAiAgentInstallerComposable() {
       await until(() => store.getters['management/schemaFor'](RANCHER_AI_SCHEMA.AI_AGENT_CONFIG), run);
 
       await loadAgentResources();
+
       // A deployment installed outside this flow has no Helm release to validate
-      state.appExists = !!agentApp.value;
+      state.agentAppId = await findAgentAppId() ?? null;
     } catch (err) {
       if (!(err instanceof CancelledError) && run === currentRun.value) {
         warn('Unable to install the AI agent:', err);
@@ -716,7 +724,7 @@ export function useAiAgentInstallerComposable() {
    * The removal message of the first resource deployed by the chart that has been removed.
    */
   function findRemovedAgentResource(): string | null {
-    if (state.appExists && !agentApp.value) {
+    if (state.agentAppId && !store.getters['management/byId'](CATALOG.APP, state.agentAppId)) {
       return t('ai.install.errors.removed.chart', { name: AGENT_CHART_NAME }, true);
     }
 
@@ -737,15 +745,8 @@ export function useAiAgentInstallerComposable() {
    * Reloads the resources deployed by the chart from the cluster, which puts the existing ones back in the store.
    */
   async function reloadAgentResources() {
-    if (state.appExists) {
-      try {
-        await store.dispatch('management/findAll', {
-          type: CATALOG.APP,
-          opt:  { force: true }
-        });
-      } catch (err) {
-        warn('Unable to load the Apps:', err);
-      }
+    if (state.agentAppId && !await findResource(CATALOG.APP, state.agentAppId, { force: true })) {
+      state.agentAppId = null;
     }
 
     await Promise.all(state.agentResources.map(({ type, id }) => findResource(type, id, { force: true })));
@@ -765,7 +766,6 @@ export function useAiAgentInstallerComposable() {
     if (step === InstallStep.Repository) {
       state.repositoryExists = false;
     } else {
-      state.appExists = false;
       state.agentResources = [];
       state.agentCrdExists = false;
     }
@@ -944,11 +944,15 @@ export function useAiAgentInstallerComposable() {
     state.started = false;
     state.configApplied = false;
     state.repositoryExists = false;
-    state.appExists = false;
     state.agentResources = [];
     state.agentCrdExists = false;
     state.values = null;
     [InstallStep.Repository, InstallStep.Agent, InstallStep.Configure, InstallStep.Apply].forEach((step) => setStep(step, InstallStepStatus.Pending));
+
+    // The release can differ from the one found by the agent step, e.g. added to the store from the Apps list
+    // so we clear the agentAppId to force reloading it from the store
+    state.agentAppId = undefined;
+    loadAiAgentApp();
   }
 
   return {
@@ -965,7 +969,6 @@ export function useAiAgentInstallerComposable() {
     isAgentNotInstalled,
     isInstallStateKnown,
     isInstalling,
-    agentApp,
     repository,
     loadAiAgentApp,
     markConfigApplied,

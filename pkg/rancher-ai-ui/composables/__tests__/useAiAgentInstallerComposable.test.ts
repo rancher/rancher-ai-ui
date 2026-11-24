@@ -226,12 +226,10 @@ describe('useAiAgentInstallerComposable', () => {
     (getHelmRepositoryExact as jest.Mock).mockImplementation(async() => mockResources[CATALOG.CLUSTER_REPO]?.[AGENT_REPO_NAME]);
 
     installer = useAiAgentInstallerComposable();
-    installer.reset();
     // The state is shared between the composable instances
-    installer.state.appsLoaded = false;
-    installer.state.appsChecked = false;
     installer.state.repositoryName = AGENT_REPO_NAME;
-    await installer.loadAiAgentApp();
+    installer.reset();
+    await flushPromises();
   });
 
   afterEach(() => {
@@ -254,10 +252,24 @@ describe('useAiAgentInstallerComposable', () => {
       expect(installer.isAgentNotInstalled.value).toBe(true);
 
       addAgentApp('deployed', 'custom-release-name');
+      installer.reset();
+      await flushPromises();
 
       expect(installer.isAgentAppMissing.value).toBe(false);
       expect(installer.isAgentNotInstalled.value).toBe(false);
-      expect(installer.agentApp.value?.metadata.name).toBe('custom-release-name');
+      expect(installer.state.agentAppId).toBe(`${ AGENT_NAMESPACE }/custom-release-name`);
+    });
+
+    it('should not offer the installation when the store forgets the Apps', async() => {
+      addAgentApp();
+      installer.reset();
+      await flushPromises();
+
+      // Leaving the Extensions page makes the store forget the Apps
+      removeResource(CATALOG.APP, APP_ID);
+
+      expect(installer.isAgentAppMissing.value).toBe(false);
+      expect(installer.isAgentNotInstalled.value).toBe(false);
     });
   });
 
@@ -313,6 +325,20 @@ describe('useAiAgentInstallerComposable', () => {
       expect(installer.state.started).toBe(false);
       expect(stepStatus(installer, InstallStep.Repository).status).toBe(InstallStepStatus.Pending);
       expect(stepStatus(installer, InstallStep.Repository).error).toBeUndefined();
+    });
+
+    it('should look up the agent Helm release again on reset', async() => {
+      addRepository();
+      await installer.install();
+      expect(installer.state.agentAppId).toBeNull();
+
+      // e.g. installed meanwhile from Apps
+      addAgentApp();
+      installer.reset();
+      await flushPromises();
+
+      expect(installer.state.agentAppId).toBe(APP_ID);
+      expect(installer.isAgentNotInstalled.value).toBe(false);
     });
   });
 

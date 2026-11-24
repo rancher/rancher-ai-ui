@@ -196,6 +196,21 @@ describe('Chat - AI agent installation', () => {
     chat.console().checkExists();
   });
 
+  it('Should not show the installation panel after a visit to the Extensions page', () => {
+    HomePagePo.goTo();
+    chat.open();
+    chat.isReady();
+
+    // Leaving the Extensions page makes the store forget the Apps
+    cy.window().then((win: any) => win.$globalApp.$router.push('/c/local/uiplugins'));
+    cy.url().should('include', '/c/local/uiplugins');
+    cy.window().then((win: any) => win.$globalApp.$router.push('/home'));
+    cy.url().should('include', '/home');
+
+    installAgent.checkNotExists();
+    chat.console().checkExists();
+  });
+
   describe('When the AI agent Helm chart is not installed', () => {
     beforeEach(() => {
       hideAgentApp();
@@ -471,14 +486,10 @@ describe('Chat - AI agent installation', () => {
         installAgent.reloadButton().scrollIntoView();
         installAgent.reloadButton().should('be.visible').and('contain', 'Start chatting');
 
-        // A real installation adds the Helm release to the store: refetch the Apps, no longer filtered
+        // A real installation adds the Helm release: let the Apps list return it again
         cy.then(() => {
           agentAppHidden = false;
         });
-        cy.window().then((win: any) => win.$globalApp.$store.dispatch('management/findAll', {
-          type: 'catalog.cattle.io.app',
-          opt:  { force: true }
-        }));
 
         installAgent.reloadButton().click();
 

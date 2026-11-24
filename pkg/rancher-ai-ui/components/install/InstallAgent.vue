@@ -27,13 +27,22 @@ const { t } = useI18n(store);
 const emit = defineEmits(['reload']);
 
 const {
-  state, install, installChart, retryApply, agentApp, repository, loadValues, setValues
+  state, install, installChart, retryApply, repository, loadValues, setValues
 } = useAiAgentInstallerComposable();
 
 const userName = computed(() => {
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']);
 
   return principal?.loginName === 'admin' ? principal.loginName : principal?.name || 'User';
+});
+
+const agentAppRef = computed(() => {
+  const [namespace, name] = (state.agentAppId || '').split('/');
+
+  return name ? {
+    namespace,
+    name
+  } : null;
 });
 
 const steps = computed(() => [
@@ -51,14 +60,14 @@ const steps = computed(() => [
   },
   {
     key:  InstallStep.Agent,
-    link: agentApp.value ? {
+    link: agentAppRef.value ? {
       name:   'c-cluster-product-resource-namespace-id',
       params: {
         cluster:   'local',
         product:   'apps',
         resource:  CATALOG.APP,
-        namespace: agentApp.value.metadata?.namespace,
-        id:        agentApp.value.metadata?.name
+        namespace: agentAppRef.value.namespace,
+        id:        agentAppRef.value.name
       },
     } : null,
   },

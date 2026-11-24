@@ -80,7 +80,6 @@ function createInstaller(state: Record<string, any> = {}, steps: Partial<Record<
     retryApply:   jest.fn(),
     loadValues:   jest.fn().mockResolvedValue({ plan: { enabled: true } }),
     setValues:    jest.fn(),
-    agentApp:     ref(null),
     repository:   ref(null),
   };
 }
