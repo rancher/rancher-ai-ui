@@ -2328,6 +2328,27 @@ describe('useChatMessageComposable', () => {
       expect(mockSendNotification).toHaveBeenCalledTimes(1);
     });
 
+    it('should notify a plan that ends in the message it started in when the message ends', async() => {
+      planningState = {
+        messageId: 'msg-1',
+        status:    'failed',
+        tasks:     []
+      };
+
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage(planningEvent('failed'));
+
+      expect(mockSendNotification).not.toHaveBeenCalled();
+
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage, planningState);
+    });
+
     it('should notify a new user turn after a finished plan', async() => {
       messages = {
         'plan-1': planningMessage,

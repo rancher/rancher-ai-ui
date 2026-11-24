@@ -842,7 +842,8 @@ export function useChatMessageComposable(
               MessagePlanningStatus.Completed,
               MessagePlanningStatus.Failed,
               MessagePlanningStatus.Canceled
-            ].includes(planning.status as MessagePlanningStatus)) {
+            ].includes(planning.status as MessagePlanningStatus) && planningState.value?.messageId !== messageId) {
+              // A plan ending in its own message is still incomplete here: it is notified at the message end
               Notifications.message().send(store, storage, getMessage(String(planningState.value?.messageId)));
               planningEndNotified = true;
             }
