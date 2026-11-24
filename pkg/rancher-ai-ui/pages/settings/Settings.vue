@@ -3,6 +3,7 @@ import { cloneDeep } from 'lodash';
 import dayjs from 'dayjs';
 import {
   ref,
+  computed,
   onMounted,
   watch,
 } from 'vue';
@@ -103,7 +104,7 @@ const isAiAgentSettingsTouched = ref<boolean | null>(false);
  * As of now, it's not possible to determine if there are existing chats,
  * There are no chats if the agent is currently installing.
  */
-const hasChats = ref<boolean>(!isInstalling.value);
+const hasChats = computed<boolean>(() => !isInstalling.value);
 
 /**
  * Fetches the rancher-ai-agent deployment.
