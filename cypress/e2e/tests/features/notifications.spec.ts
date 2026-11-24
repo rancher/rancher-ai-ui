@@ -90,9 +90,10 @@ describe('Chat', () => {
   const chatMenu = new ChatPanelMenuPo();
 
   // A one-task plan event, as the planner agent streams it
-  const plan = (status: string, approval = false) => `<plan>${ JSON.stringify({
+  const plan = (status: string, approval = false, awaitingInput = false) => `<plan>${ JSON.stringify({
     status,
     approval,
+    awaitingInput,
     tasks: [{
       task:   'Create a namespace',
       agent:  'rancher',
@@ -194,7 +195,7 @@ describe('Chat', () => {
 
       chat.getMessage(3).containsText('Something went wrong');
 
-      cy.window().its('__notificationBodies').should('deep.equal', ['Response failed']);
+      cy.window().its('__notificationBodies').should('deep.equal', ['An error occurred processing your request']);
     });
 
     it('It should notify a pending confirmation', () => {
@@ -447,7 +448,7 @@ describe('Chat', () => {
         '<message>', plan('in_progress'), '<error>{"message":"Something went wrong"}</error>', '</message>'
       ]);
 
-      cy.window().its('__notificationBodies').should('deep.equal', ['Planning message ready: 1 tasks', 'Response failed']);
+      cy.window().its('__notificationBodies').should('deep.equal', ['Planning message ready: 1 tasks', 'An error occurred processing your request']);
     });
 
     it('It should notify a plan step waiting for confirmation', () => {
@@ -466,6 +467,35 @@ describe('Chat', () => {
       ]);
 
       cy.window().its('__notificationBodies').should('include', 'Waiting for your confirmation');
+    });
+
+    it('It should notify a plan step awaiting the user input', () => {
+      setupDesktopNotificationMock();
+
+      receiveFromAgent([
+        '<message>', plan('pending', true), '</message>',
+        '<message>', plan('in_progress'), 'Step result', '</message>',
+        '<message>', plan('in_progress', false, true), 'Which cluster?', '</message>'
+      ]);
+
+      cy.window().its('__notificationBodies').should('deep.equal', ['Planning message ready: 1 tasks', 'The plan needs your input to continue']);
+    });
+
+    it('It should notify a confirmation requested by a plan step awaiting the user input', () => {
+      setupDesktopNotificationMock();
+
+      const confirmation = JSON.stringify({
+        type: 'external',
+        name: 'externalTool',
+        args: { id: 'my-id' }
+      });
+
+      receiveFromAgent([
+        '<message>', plan('pending', true), '</message>',
+        '<message>', plan('in_progress', false, true), `<confirmation-response>${ confirmation }</confirmation-response>`, '</message>'
+      ]);
+
+      cy.window().its('__notificationBodies').should('deep.equal', ['Planning message ready: 1 tasks', 'Waiting for your confirmation']);
     });
 
     afterEach(() => {
