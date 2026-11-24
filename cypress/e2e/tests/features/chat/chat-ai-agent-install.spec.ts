@@ -429,6 +429,21 @@ describe('Chat - AI agent installation', () => {
         installAgent.step('repository').link().should('have.attr', 'href').and('contain', `catalog.cattle.io.clusterrepo/${ AGENT_REPO_NAME }`);
       });
 
+      it('Should keep the agent step done when another page reloads the secrets', () => {
+        installAgent.step('agent').isDone();
+
+        cy.intercept('GET', /\/v1\/secrets(\?.*)?$/).as('secrets');
+
+        // The repository creation page loads its own list of secrets, which replaces the ones in the store
+        cy.window().then((win: any) => win.$globalApp.$router.push('/c/_/manager/catalog.cattle.io.clusterrepo/create'));
+        cy.url().should('include', 'catalog.cattle.io.clusterrepo/create');
+        cy.wait('@secrets');
+
+        installAgent.step('agent').isDone();
+        installAgent.step('agent').error().should('not.exist');
+        installAgent.step('configure').isInProgress();
+      });
+
       it('Should open the AI Assistant settings to configure the AI provider', () => {
         installAgent.configureButton().click();
 

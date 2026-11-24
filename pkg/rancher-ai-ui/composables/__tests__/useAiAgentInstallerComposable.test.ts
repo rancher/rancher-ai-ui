@@ -702,6 +702,38 @@ describe('useAiAgentInstallerComposable', () => {
       expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Pending);
     });
 
+    it('should not fail the agent step when a resource is only dropped from the store by another page', async() => {
+      addRepository();
+      deployAgent();
+      await installer.install();
+
+      const secretId = `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_SECRET_NAME }`;
+      const secret = mockResources[SECRET][secretId];
+      const dispatch = mockStore.dispatch.getMockImplementation() as any;
+
+      // The secret is still in the cluster: fetching it puts it back in the store
+      mockStore.dispatch.mockImplementation(async(action: string, params: any) => {
+        if (action === 'management/find' && params.type === SECRET && params.opt?.force) {
+          mockResources[SECRET][secretId] = secret;
+        }
+
+        return dispatch(action, params);
+      });
+
+      removeResource(SECRET, secretId);
+      await flushPromises();
+
+      expect(mockStore.dispatch).toHaveBeenCalledWith('management/find', {
+        type: SECRET,
+        id:   secretId,
+        opt:  { force: true },
+      });
+      expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Done);
+      expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.InProgress);
+
+      mockStore.dispatch.mockImplementation(dispatch);
+    });
+
     it('should fail the agent step when the AI agent CRD is removed', async() => {
       addRepository();
       deployAgent();

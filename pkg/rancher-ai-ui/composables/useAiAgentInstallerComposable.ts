@@ -734,6 +734,24 @@ export function useAiAgentInstallerComposable() {
   }
 
   /**
+   * Reloads the resources deployed by the chart from the cluster, which puts the existing ones back in the store.
+   */
+  async function reloadAgentResources() {
+    if (state.appExists) {
+      try {
+        await store.dispatch('management/findAll', {
+          type: CATALOG.APP,
+          opt:  { force: true }
+        });
+      } catch (err) {
+        warn('Unable to load the Apps:', err);
+      }
+    }
+
+    await Promise.all(state.agentResources.map(({ type, id }) => findResource(type, id, { force: true })));
+  }
+
+  /**
    * Stops the running steps and marks the given step as failed, resetting the following ones.
    */
   function invalidate(step: InstallStep, error: string) {
@@ -764,11 +782,21 @@ export function useAiAgentInstallerComposable() {
     stopValidation = watch(() => ({
       repository:           !!repository.value,
       removedAgentResource: findRemovedAgentResource(),
-    }), ({ repository, removedAgentResource }) => {
+    }), async({ repository, removedAgentResource }) => {
+      // The store might have dropped resources that are still present in the cluster (e.g., when navigating to another product which resets the store).
+      // We need to check the actual cluster state to determine if the resources are truly removed.
       if (!repository && state.steps[InstallStep.Repository].status === InstallStepStatus.Done) {
-        invalidate(InstallStep.Repository, t('ai.install.errors.repositoryRemoved', { name: state.repositoryName }, true));
+        if (!await findResource(CATALOG.CLUSTER_REPO, state.repositoryName, { force: true }) && state.steps[InstallStep.Repository].status === InstallStepStatus.Done) {
+          invalidate(InstallStep.Repository, t('ai.install.errors.repositoryRemoved', { name: state.repositoryName }, true));
+        }
       } else if (removedAgentResource && state.steps[InstallStep.Agent].status === InstallStepStatus.Done) {
-        invalidate(InstallStep.Agent, removedAgentResource);
+        await reloadAgentResources();
+
+        const removed = findRemovedAgentResource();
+
+        if (removed && state.steps[InstallStep.Agent].status === InstallStepStatus.Done) {
+          invalidate(InstallStep.Agent, removed);
+        }
       }
     });
   }
