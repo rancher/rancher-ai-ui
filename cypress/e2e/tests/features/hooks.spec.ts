@@ -153,6 +153,10 @@ function verifyBadgeStyle(stateColumn: Cypress.Chainable<JQuery<HTMLElement>>, b
       // Verify the background color after the sliding badge is shown
       expect(formatColor(bgColorAfterSlidingBadge)).to.eq(factoryBgColor);
 
+      // The sliding badge text is always white, whatever the theme or brand
+      slidingBadge.overlay().first().should('have.css', 'color', 'rgb(255, 255, 255)');
+      slidingBadge.overlay().first().find('.icon-ai').should('have.css', 'color', 'rgb(255, 255, 255)');
+
       slidingBadge.dismiss();
 
       // Verify that the background color is restored
@@ -207,59 +211,72 @@ describe('Hooks', () => {
 
     describe('Badge colors', () => {
       [
-        Theme.Dark,
-        Theme.Light
-      ].forEach((theme) => {
-        describe(`Theme: ${ theme }`, () => {
+        '',
+        'suse'
+      ].forEach((brand) => {
+        describe(`Brand: ${ brand || 'default' }`, () => {
           before(() => {
             cy.login();
 
-            cy.setUserPreference({ theme: `\"${ theme }\"` });
+            cy.setRancherResource('v3', 'settings', 'ui-brand', { value: brand });
           });
 
-          it('It should show the sliding badge with the correct colors', () => {
-            cy.login();
+          [
+            Theme.Dark,
+            Theme.Light
+          ].forEach((theme) => {
+            describe(`Theme: ${ theme }`, () => {
+              before(() => {
+                cy.login();
 
-            HomePagePo.goTo();
-
-            // Push a mock GitRepo for each status
-            const mockGitRepos = statusByTheme[theme].map(({ status: name }) => ({
-              ...gitRepo,
-              metadata: {
-                ...gitRepo.metadata,
-                name,
-                state: { name },
-              },
-            }));
-
-            cy.intercept('GET', '/v1/fleet.cattle.io.gitrepos?*', (req) => {
-              req.continue((res) => {
-                res.body.data.push(...mockGitRepos);
-                res.send(res.body);
+                cy.setUserPreference({ theme: `\"${ theme }\"` });
               });
-            }).as('fleetGitRepos');
 
-            const fleetAppBundlesListPage = new FleetApplicationListPagePo();
+              it('It should show the sliding badge with the correct colors', () => {
+                cy.login();
 
-            fleetAppBundlesListPage.navTo();
-            fleetAppBundlesListPage.waitForPage();
+                HomePagePo.goTo();
 
-            cy.wait('@fleetGitRepos');
+                // Push a mock GitRepo for each status
+                const mockGitRepos = statusByTheme[theme].map(({ status: name }) => ({
+                  ...gitRepo,
+                  metadata: {
+                    ...gitRepo.metadata,
+                    name,
+                    state: { name },
+                  },
+                }));
 
-            statusByTheme[theme].forEach(({ status, colors }) => {
-              fleetAppBundlesListPage.list().resourceTable().sortableTable().filter(status);
+                cy.intercept('GET', '/v1/fleet.cattle.io.gitrepos?*', (req) => {
+                  req.continue((res) => {
+                    res.body.data.push(...mockGitRepos);
+                    res.send(res.body);
+                  });
+                }).as('fleetGitRepos');
 
-              SlidingBadgePo.hooks().should('have.length', 1);
+                const fleetAppBundlesListPage = new FleetApplicationListPagePo();
 
-              const stateColumn = fleetAppBundlesListPage.list().resourceTable().sortableTable().row(0)
-                .column(1);
+                fleetAppBundlesListPage.navTo();
+                fleetAppBundlesListPage.waitForPage();
 
-              verifyBadgeStyle(stateColumn, colors.default, colors.sliding);
+                cy.wait('@fleetGitRepos');
 
-              fleetAppBundlesListPage.list().resourceTable().sortableTable().filterComponent()
-                .clear();
+                statusByTheme[theme].forEach(({ status, colors }) => {
+                  fleetAppBundlesListPage.list().resourceTable().sortableTable().filter(status);
 
-              SlidingBadgePo.hooks().should('have.length', 5);
+                  SlidingBadgePo.hooks().should('have.length', 1);
+
+                  const stateColumn = fleetAppBundlesListPage.list().resourceTable().sortableTable().row(0)
+                    .column(1);
+
+                  verifyBadgeStyle(stateColumn, colors.default, colors.sliding);
+
+                  fleetAppBundlesListPage.list().resourceTable().sortableTable().filterComponent()
+                    .clear();
+
+                  SlidingBadgePo.hooks().should('have.length', 5);
+                });
+              });
             });
           });
         });
@@ -268,6 +285,7 @@ describe('Hooks', () => {
       after(() => {
         cy.login();
 
+        cy.setRancherResource('v3', 'settings', 'ui-brand', { value: '' });
         cy.setUserPreference({ theme: `\"${ Theme.Light }\"` });
       });
     });
