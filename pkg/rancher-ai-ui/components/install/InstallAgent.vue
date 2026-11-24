@@ -287,7 +287,7 @@ function routeToSettings() {
                   data-testid="rancher-ai-ui-install-agent-install-chart"
                   @click="installChart"
                 >
-                  {{ t('ai.install.actions.installChart') }}
+                  {{ t(step.status === InstallStepStatus.Error ? 'ai.install.actions.retryInstallChart' : 'ai.install.actions.installChart') }}
                 </RcButton>
               </div>
               <div

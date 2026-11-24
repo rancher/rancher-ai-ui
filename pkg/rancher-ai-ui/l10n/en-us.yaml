@@ -17,6 +17,7 @@ ai:
       retry: Retry
       reload: Start chatting
       installChart: Install
+      retryInstallChart: Retry Install
       editValues: Edit Values
       editedValues: Edit Values (customized)
     values:
