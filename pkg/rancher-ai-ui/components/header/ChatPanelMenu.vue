@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type PropType, ref } from 'vue';
+import { type PropType, ref } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import {
@@ -8,6 +8,7 @@ import {
   RcDropdownItem,
 } from '@components/RcDropdown';
 import { Preferences, StorageKey } from '../../types';
+import Notifications from '../../handlers/notification';
 
 const store = useStore();
 const { t } = useI18n(store);
@@ -32,8 +33,9 @@ const emit = defineEmits([
   'update:preferences',
 ]);
 
-const options = computed(() => {
+const options = () => {
   const isAutoScrollEnabled = props.preferences[StorageKey.ENABLE_AUTO_SCROLL];
+  const isDesktopNotificationsEnabled = props.preferences[StorageKey.ENABLE_DESKTOP_NOTIFICATIONS];
 
   return [
     {
@@ -56,6 +58,18 @@ const options = computed(() => {
       },
     },
     {
+      label:       t(`ai.menu.options.chat.desktopNotifications.label.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
+      description: t(`ai.menu.options.chat.desktopNotifications.description.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
+      icon:        isDesktopNotificationsEnabled ? 'icon-notify-bell-off' : 'icon-notify-bell',
+      warning:     isDesktopNotificationsEnabled && Notifications.isBlocked() ? t('ai.menu.options.chat.desktopNotifications.blocked', {}, true) : '',
+      action:      () => {
+        emit('update:preferences', {
+          key:   StorageKey.ENABLE_DESKTOP_NOTIFICATIONS,
+          value: !isDesktopNotificationsEnabled
+        });
+      }
+    },
+    {
       label:       t('ai.menu.options.chat.shortcuts.label'),
       description: t('ai.menu.options.chat.shortcuts.description'),
       icon:        'icon-keyboard',
@@ -72,7 +86,7 @@ const options = computed(() => {
       },
     },
   ];
-});
+};
 
 const isOpen = ref(false);
 </script>
@@ -92,12 +106,19 @@ const isOpen = ref(false);
       </rc-dropdown-trigger>
       <template #dropdownCollection>
         <rc-dropdown-item
-          v-for="(opt, i) in options"
+          v-for="(opt, i) in options()"
           :key="i"
           v-clean-tooltip="opt.description"
           @click="opt.action"
         >
           {{ opt.label }}
+          <i
+            v-if="opt.warning"
+            v-clean-tooltip="opt.warning"
+            class="icon icon-error text-error"
+            :aria-label="opt.warning"
+            data-testid="rancher-ai-ui-chat-menu-notifications-blocked"
+          />
           <template
             #before
           >

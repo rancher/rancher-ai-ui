@@ -30,6 +30,7 @@ import {
   MessageTemplateComponent,
   PlanningStopType,
   Role,
+  SessionKey,
   Tag,
   ToolCall
 } from '../types';
@@ -54,11 +55,12 @@ import { downloadFile } from '@shell/utils/download';
 import { useContextComposable } from './useContextComposable';
 import { useAIAgentApiComposable } from './useAIAgentApiComposable';
 import { useToolsComposable } from './useToolsComposable';
+import { useLocalStorageComposable } from './useLocalStorageComposable';
 import AuthenticationHandler from '../handlers/authentication';
+import Notifications from '../handlers/notification';
 
 const EXPAND_THINKING = false;
 
-const DISMISS_RECOMMENDED_AGENT_KEY = 'dismissed-agent-recommendation';
 const MAX_MESSAGES_BEFORE_RECOMMENDATION = 5;
 
 // Shared across the chat panel mounts: the websocket outlives the panel and keeps calling the handlers of the instance that opened it
@@ -84,6 +86,7 @@ export function useChatMessageComposable(
   const store = useStore();
   const { t } = useI18n(store);
 
+  const storage = useLocalStorageComposable();
   const { selectContext, selectedContext } = useContextComposable();
   const { toolsSelector } = useToolsComposable();
   const { refreshMcpAuthenticationToken, fetchUIToolsCalls, fetchChatUsage } = useAIAgentApiComposable();
@@ -91,6 +94,9 @@ export function useChatMessageComposable(
   const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']) || {};
 
   const currentMsg = ref<Message>({} as Message);
+
+  // The current message ended a plan, which is notified with the planning message
+  let planningEndNotified = false;
 
   const chatMetadata = computed<ChatMetadata>(() => store.getters['rancher-ai-ui/chat/metadata'] || {});
   const isChatInitialized = computed(() => !!chatMetadata.value.chatId);
@@ -340,7 +346,7 @@ export function useChatMessageComposable(
   async function ensureSwitchAgentSuggestion(agentName = '') {
     if (
       agentName &&
-      !store.getters['rancher-ai-ui/chat/session']?.[DISMISS_RECOMMENDED_AGENT_KEY] &&
+      !store.getters['rancher-ai-ui/chat/session']?.[SessionKey.DISMISSED_AGENT_RECOMMENDATION] &&
       currentMsg.value.agentMetadata?.selectionMode === AgentSelectionMode.Auto &&
       Number(currentMsg.value.id) >= MAX_MESSAGES_BEFORE_RECOMMENDATION
     ) {
@@ -366,7 +372,7 @@ export function useChatMessageComposable(
           type:   ActionType.Button,
           action: () => {
             // Dismiss future recommendations for this session (for all chats)
-            store.commit('rancher-ai-ui/chat/setSession', { [DISMISS_RECOMMENDED_AGENT_KEY]: true });
+            store.commit('rancher-ai-ui/chat/setSession', { [SessionKey.DISMISSED_AGENT_RECOMMENDATION]: true });
 
             return {
               label:   t('ai.message.system.switchAgent.results.dismiss', {}, true),
@@ -434,6 +440,8 @@ export function useChatMessageComposable(
       });
 
       await addMessage(message);
+
+      Notifications.message().send(store, storage, message);
     }
   }
 
@@ -457,6 +465,29 @@ export function useChatMessageComposable(
     const message = buildSystemMessage({ content });
 
     await addMessage(message);
+  }
+
+  // TODO: Consider to receice single step notifications directly from the agent instead of aggregating them in the plan message
+  // This would allow the UI to show notifications for individual steps as they happen, for instance when a step fails or requires user input.
+  function shouldNotifyMessage() {
+    // The error was already notified when it arrived
+    if (messages.value[messages.value.length - 1]?.source === MessageInternalSource.Error) {
+      return false;
+    }
+
+    // The plan end was already notified with the planning message
+    if (planningEndNotified) {
+      return false;
+    }
+
+    // During a plan, only its approval and the steps waiting for the user's input or confirmation are notified
+    if (pendingPlanning.value) {
+      return planningState.value?.status === MessagePlanningStatus.Pending ||
+        !!planningState.value?.awaitingInput ||
+        currentMsg.value.confirmation?.status === ConfirmationStatus.Pending;
+    }
+
+    return true;
   }
 
   function onopen(event: { target: WebSocket }) {
@@ -596,6 +627,7 @@ export function useChatMessageComposable(
       const msgId = await addMessage(buildMessage(agentName.value));
 
       currentMsg.value = getMessage(msgId);
+      planningEndNotified = false;
       break;
     case Tag.ThinkingStart: {
       setProcessingState({ phase: MessagePhase.Thinking });
@@ -627,6 +659,10 @@ export function useChatMessageComposable(
       }
 
       fetchUsage();
+
+      if (shouldNotifyMessage()) {
+        Notifications.message().send(store, storage, currentMsg.value, planningState.value);
+      }
 
       break;
     default:
@@ -801,6 +837,16 @@ export function useChatMessageComposable(
                 planningContent: planningState.value as MessagePlanning,
               });
             }
+
+            if ([
+              MessagePlanningStatus.Completed,
+              MessagePlanningStatus.Failed,
+              MessagePlanningStatus.Canceled
+            ].includes(planning.status as MessagePlanningStatus) && planningState.value?.messageId !== messageId) {
+              // A plan ending in its own message is still incomplete here: it is notified at the message end
+              Notifications.message().send(store, storage, getMessage(String(planningState.value?.messageId)));
+              planningEndNotified = true;
+            }
           }
 
           break;
@@ -844,13 +890,17 @@ export function useChatMessageComposable(
 
     const prefix = t(`ai.error.${ error.key || 'message' }`, {}, true);
 
-    addMessage({
+    const errorMessage: Message = {
       role:           Role.System,
       messageContent: `${ prefix } ${ error.message || '' }`,
       timestamp:      new Date(),
       completed:      true,
       source:         MessageInternalSource.Error,
-    });
+    };
+
+    addMessage(errorMessage);
+
+    Notifications.message().send(store, storage, errorMessage);
   }
 
   function downloadMessages() {
@@ -877,6 +927,8 @@ export function useChatMessageComposable(
       agents:      null,
       storageType: null
     });
+
+    setPlanningState(null);
 
     fetchUsage({ reset: true });
   }

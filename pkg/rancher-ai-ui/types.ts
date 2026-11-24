@@ -253,6 +253,7 @@ export interface MessagePlanning {
   tasks: MessagePlanningTask[];
   status?: MessagePlanningStatus;
   approval?: boolean;
+  awaitingInput?: boolean;
   isCollapsed?: boolean;
 }
 
@@ -533,10 +534,23 @@ export const enum LLMProvider {
   GenericOpenAI = 'generic-openai',
 }
 
+// Storage keys for user preferences
 export const enum StorageKey {
-  ENABLE_AUTO_SCROLL = 'enable_auto_scroll'
+  ENABLE_AUTO_SCROLL = 'enable_auto_scroll',
+  ENABLE_DESKTOP_NOTIFICATIONS = 'enable_desktop_notifications',
+}
+
+// Chat session flags, kept until the page is reloaded
+export const enum SessionKey {
+  DISMISSED_AGENT_RECOMMENDATION = 'dismissed-agent-recommendation',
+  DISMISSED_DESKTOP_NOTIFICATIONS_INFO = 'dismissed-desktop-notifications-info',
 }
 
 export interface Preferences {
   [StorageKey.ENABLE_AUTO_SCROLL]?: boolean;
+  [StorageKey.ENABLE_DESKTOP_NOTIFICATIONS]?: boolean;
+}
+
+export const enum NotificationType {
+  MESSAGE = 'message'
 }

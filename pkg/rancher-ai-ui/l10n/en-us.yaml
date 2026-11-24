@@ -37,6 +37,9 @@ ai:
           enable_auto_scroll:
             true: 'The <code>auto-scroll</code> of the chat window is now turned <b>ON</b>&ensp;'
             false: 'The <code>auto-scroll</code> of the chat window is now turned <b>OFF</b>'
+          enable_desktop_notifications:
+            true: 'Desktop Notifications are now turned <b>ON</b>'
+            false: 'Desktop Notifications are now turned <b>OFF</b>'
       message-manual-stop:
         info: 'You stopped the previous response.'
       planning-manual-stop:
@@ -49,6 +52,9 @@ ai:
         results:
           confirm: Switched to <code>{agent}</code> Agent
           dismiss: Keeping adaptive selection
+      desktopNotifications:
+        info: '<b>Desktop Notifications are ON</b>: I will notify you when a response is ready while you are away from this page. Your browser needs your permission to show them: <allow>Allow Notifications</allow> or <turnOff>Turn them off</turnOff>.'
+        settingsHint: '<br>If you don’t receive notifications, check the notification settings of your browser.'
       agentTokenRefresh:
         info: '<b>The tool you have selected requires authentication</b>. This is normal, especially for short-lived tokens.<br><br>Before you continue, <b>make sure your browser allows popups</b> - the authentication will open in a new browser window.<br><br>Once you log in, I’ll resume my response automatically...'
         actions:
@@ -141,6 +147,20 @@ ai:
     resources:
       cluster: Cluster
       namespace: Namespace
+  notifications:
+    message:
+      title: Rancher AI Assistant
+      summary:
+        message: 'You have unread messages'
+        planning: 'Planning message ready: {count} tasks'
+        planningCompleted: 'Plan completed'
+        planningFailed: 'Plan failed'
+        planningCanceled: 'Plan canceled'
+        confirmation: 'Waiting for your confirmation'
+        awaitingInput: 'The plan needs your input to continue'
+        error: 'An error occurred processing your request'
+        authentication: 'Sign-in required to continue'
+        idle: 'Response complete'
   configurations:
     label: Uses AI, running {name} ({model}).
     verifyResults:
@@ -375,6 +395,14 @@ ai:
           description:
             enable: Automatically scroll to the bottom of the chat when new messages arrive
             disable: Stop automatically scrolling to the bottom of the chat when new messages arrive
+        desktopNotifications:
+          label:
+            enable: Enable Desktop Notifications
+            disable: Disable Desktop Notifications
+          description:
+            enable: Turn on Desktop Notifications
+            disable: Turn off Desktop Notifications
+          blocked: Your browser is blocking notifications for this site. Allow them in the browser's site settings.
   history:
     chat:
       create: Start a New Chat
