@@ -252,6 +252,7 @@ export interface MessagePlanning {
   tasks: MessagePlanningTask[];
   status?: MessagePlanningStatus;
   approval?: boolean;
+  awaitingInput?: boolean;
   isCollapsed?: boolean;
 }
 

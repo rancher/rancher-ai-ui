@@ -2190,7 +2190,7 @@ describe('useChatMessageComposable', () => {
       await onmessage({ data: Tag.MessageEnd } as MessageEvent);
 
       expect(mockSendNotification).toHaveBeenCalledTimes(1);
-      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage, null);
     });
 
     it('should notify an error where it happens and not when its message ends', async() => {
@@ -2208,7 +2208,7 @@ describe('useChatMessageComposable', () => {
       expect(mockSendNotification).toHaveBeenCalledTimes(1);
     });
 
-    it('should notify the messages of a plan step, e.g. a step asking the user for more information', async() => {
+    it('should not notify the messages of a running plan', async() => {
       messages = {
         'plan-1': planningMessage,
         'msg-1':  currentMessage
@@ -2223,10 +2223,10 @@ describe('useChatMessageComposable', () => {
       const { onmessage } = mockComponent.vm;
 
       await onmessage({ data: Tag.MessageStart } as MessageEvent);
-      await onmessage({ data: 'Which cluster?' } as MessageEvent);
+      await onmessage({ data: 'Step result' } as MessageEvent);
       await onmessage({ data: Tag.MessageEnd } as MessageEvent);
 
-      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);
+      expect(mockSendNotification).not.toHaveBeenCalled();
     });
 
     it('should notify a confirmation requested by a plan step', async() => {
@@ -2250,7 +2250,50 @@ describe('useChatMessageComposable', () => {
       };
       await onmessage({ data: Tag.MessageEnd } as MessageEvent);
 
-      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage, planningState);
+    });
+
+    it('should notify a plan step awaiting the user input', async() => {
+      messages = {
+        'plan-1': planningMessage,
+        'msg-1':  currentMessage
+      };
+      planningState = {
+        messageId:     'plan-1',
+        status:        'in_progress',
+        awaitingInput: true,
+        tasks:         []
+      };
+
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage({ data: 'Which cluster?' } as MessageEvent);
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage, planningState);
+    });
+
+    it('should notify a plan awaiting approval', async() => {
+      planningState = {
+        messageId: 'msg-1',
+        status:    'pending',
+        approval:  true,
+        tasks:     []
+      };
+
+      mockComponent = mount(createTestComponent());
+      const { onmessage } = mockComponent.vm;
+
+      await onmessage({ data: Tag.MessageStart } as MessageEvent);
+      await onmessage(planningEvent('pending'));
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage, planningState);
     });
 
     it('should notify the planning message when the plan ends', async() => {
@@ -2277,6 +2320,12 @@ describe('useChatMessageComposable', () => {
 
       expect(mockSendNotification).toHaveBeenCalledTimes(1);
       expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), planningMessage);
+
+      // The step that ended the plan is not notified again
+      planningState.status = 'completed';
+      await onmessage({ data: Tag.MessageEnd } as MessageEvent);
+
+      expect(mockSendNotification).toHaveBeenCalledTimes(1);
     });
 
     it('should notify a new user turn after a finished plan', async() => {
@@ -2301,7 +2350,7 @@ describe('useChatMessageComposable', () => {
       await onmessage({ data: 'Hello' } as MessageEvent);
       await onmessage({ data: Tag.MessageEnd } as MessageEvent);
 
-      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage);
+      expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage, planningState);
     });
   });
 });

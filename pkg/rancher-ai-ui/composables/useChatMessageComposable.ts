@@ -95,6 +95,9 @@ export function useChatMessageComposable(
 
   const currentMsg = ref<Message>({} as Message);
 
+  // The current message ended a plan, which is notified with the planning message
+  let planningEndNotified = false;
+
   const chatMetadata = computed<ChatMetadata>(() => store.getters['rancher-ai-ui/chat/metadata'] || {});
   const isChatInitialized = computed(() => !!chatMetadata.value.chatId);
 
@@ -472,6 +475,18 @@ export function useChatMessageComposable(
       return false;
     }
 
+    // The plan end was already notified with the planning message
+    if (planningEndNotified) {
+      return false;
+    }
+
+    // During a plan, only its approval and the steps waiting for the user's input or confirmation are notified
+    if (pendingPlanning.value) {
+      return planningState.value?.status === MessagePlanningStatus.Pending ||
+        !!planningState.value?.awaitingInput ||
+        currentMsg.value.confirmation?.status === ConfirmationStatus.Pending;
+    }
+
     return true;
   }
 
@@ -612,6 +627,7 @@ export function useChatMessageComposable(
       const msgId = await addMessage(buildMessage(agentName.value));
 
       currentMsg.value = getMessage(msgId);
+      planningEndNotified = false;
       break;
     case Tag.ThinkingStart: {
       setProcessingState({ phase: MessagePhase.Thinking });
@@ -645,7 +661,7 @@ export function useChatMessageComposable(
       fetchUsage();
 
       if (shouldNotifyMessage()) {
-        Notifications.message().send(store, storage, currentMsg.value);
+        Notifications.message().send(store, storage, currentMsg.value, planningState.value);
       }
 
       break;
@@ -828,6 +844,7 @@ export function useChatMessageComposable(
               MessagePlanningStatus.Canceled
             ].includes(planning.status as MessagePlanningStatus)) {
               Notifications.message().send(store, storage, getMessage(String(planningState.value?.messageId)));
+              planningEndNotified = true;
             }
           }
 

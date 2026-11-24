@@ -157,6 +157,7 @@ ai:
         planningFailed: 'Plan failed'
         planningCanceled: 'Plan canceled'
         confirmation: 'Waiting for your confirmation'
+        awaitingInput: 'The plan needs your input to continue'
         error: 'Response failed'
         authentication: 'Sign-in required to continue'
         idle: 'Response complete'

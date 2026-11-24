@@ -260,6 +260,7 @@ const mutations = {
     // Update the items of the existing planning state, preserving the messageId
     state.chats[chatId].planningState.tasks = planningState?.tasks || [];
     state.chats[chatId].planningState.status = planningState?.status;
+    state.chats[chatId].planningState.awaitingInput = planningState?.awaitingInput;
   },
 
   setError(state: State, args: { chatId: string; error: ChatError | null }) {
