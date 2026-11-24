@@ -3,7 +3,7 @@ import { computed, type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import RichTranslation from '@shell/components/RichTranslation.vue';
-import { PERMISSIONS_DOCS_URL } from '../../../product';
+import { DOCS_LINK } from '../../../docs';
 import { Message } from '../../../types';
 // @ts-expect-error FIXME: Cannot find module '../../../assets/liz-icon.svg'... Remove this comment to see the full error message
 import lizIcon from '../../../assets/liz-icon.svg';
@@ -67,7 +67,7 @@ const user = computed(() => {
         >
           <template #docsUrl="{ content }">
             <a
-              :href="`${ PERMISSIONS_DOCS_URL }`"
+              :href="`${ DOCS_LINK.PERMISSIONS }`"
               tabindex="0"
               target="_blank"
               rel="noopener noreferrer nofollow"

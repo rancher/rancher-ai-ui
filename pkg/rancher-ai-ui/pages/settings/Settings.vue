@@ -13,9 +13,9 @@ import {
   AGENT_NAMESPACE,
   AGENT_CONFIG_SECRET_NAME,
   AGENT_CONFIG_CONFIG_MAP_NAME,
-  PERMISSIONS_DOCS_URL,
   TOOLS_CONFIG_NAME,
 } from '../../product';
+import { DOCS_LINK } from '../../docs';
 import { warn } from '../../utils/log';
 import { CONFIG_MAP, SECRET, WORKLOAD_TYPES } from '@shell/config/types';
 import { SECRET_TYPES } from '@shell/config/secret';
@@ -715,7 +715,7 @@ onMounted(async() => {
         >
           <template #docsUrl="{ content }">
             <a
-              :href="`${ PERMISSIONS_DOCS_URL }`"
+              :href="`${ DOCS_LINK.PERMISSIONS }`"
               tabindex="0"
               target="_blank"
               rel="noopener noreferrer nofollow"
