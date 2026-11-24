@@ -218,6 +218,8 @@ const mutations = {
     }
 
     if (!planningState) {
+      state.chats[chatId].planningState = undefined;
+
       return;
     }
 

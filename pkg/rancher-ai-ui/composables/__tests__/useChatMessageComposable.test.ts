@@ -2352,5 +2352,22 @@ describe('useChatMessageComposable', () => {
 
       expect(mockSendNotification).toHaveBeenCalledWith(mockStore, expect.anything(), currentMessage, planningState);
     });
+
+    it('should clear the plan state when a new chat starts', () => {
+      planningState = {
+        messageId: 'plan-1',
+        status:    'in_progress',
+        tasks:     []
+      };
+
+      mockComponent = mount(createTestComponent());
+
+      mockComponent.vm.resetChatMetadata({ chatId: null });
+
+      expect(mockStore.commit).toHaveBeenCalledWith('rancher-ai-ui/chat/setPlanningState', {
+        chatId:        'chat-1',
+        planningState: null
+      });
+    });
   });
 });

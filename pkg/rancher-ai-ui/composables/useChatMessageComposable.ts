@@ -927,6 +927,8 @@ export function useChatMessageComposable(
       storageType: null
     });
 
+    setPlanningState(null);
+
     fetchUsage({ reset: true });
   }
 

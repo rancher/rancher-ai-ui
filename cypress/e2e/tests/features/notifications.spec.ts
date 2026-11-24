@@ -5,6 +5,7 @@ import ChatPo from '@/cypress/e2e/po/chat.po';
 import ChatPanelMenuPo from '@/cypress/e2e/po/chat-panel-menu.po';
 import RancherHeaderPo from '@/cypress/e2e/po/components/rancher-header.po';
 import DesktopNotificationsInfoPo from '@/cypress/e2e/po/desktop-notifications-info.po';
+import { HistoryPo } from '@/cypress/e2e/po/history.po';
 
 const USER_AGENTS = {
   edge:    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0',
@@ -88,6 +89,7 @@ function receiveFromAgent(chunks: string[]) {
 describe('Chat', () => {
   const chat = new ChatPo();
   const chatMenu = new ChatPanelMenuPo();
+  const history = new HistoryPo();
 
   // A one-task plan event, as the planner agent streams it
   const plan = (status: string, approval = false, awaitingInput = false) => `<plan>${ JSON.stringify({
@@ -496,6 +498,25 @@ describe('Chat', () => {
       ]);
 
       cy.window().its('__notificationBodies').should('deep.equal', ['Planning message ready: 1 tasks', 'Waiting for your confirmation']);
+    });
+
+    it('It should forget old planning state when a new chat starts and send notifications for new messages', () => {
+      setupDesktopNotificationMock();
+
+      receiveFromAgent([
+        '<message>', plan('pending', true), '</message>',
+        '<message>', plan('in_progress'), 'Step result', '</message>'
+      ]);
+
+      history.open();
+      history.createChat();
+
+      chat.getMessage(1).isCompleted();
+      chat.isReady();
+
+      receiveFromAgent(['<message>', 'Hello', '</message>']);
+
+      cy.window().its('__notificationBodies').should('deep.equal', ['Planning message ready: 1 tasks', 'You have unread messages']);
     });
 
     afterEach(() => {
