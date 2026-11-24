@@ -1,4 +1,5 @@
-import { PERMISSIONS_DOCS_URL, PRODUCT_NAME } from '../product';
+import { PRODUCT_NAME } from '../product';
+import { DOCS_LINK } from '../docs';
 import { CoreStoreSpecifics, CoreStoreConfig } from '@shell/core/types';
 import { error } from '../utils/log';
 import { ConnectionError, ConnectionParams, ConnectionPhase } from '../types';
@@ -88,7 +89,7 @@ const actions = {
           key:         'ai.error.websocket.generic',
           sourceLinks: [{
             key:   'ai.error.services.docsLinkLabel',
-            value: PERMISSIONS_DOCS_URL
+            value: DOCS_LINK.PERMISSIONS
           }]
         });
       };
