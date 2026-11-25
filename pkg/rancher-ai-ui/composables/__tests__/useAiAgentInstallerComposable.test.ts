@@ -40,12 +40,15 @@ jest.mock('../../handlers/chat', () => ({
 // The store resources, kept reactive like the ones updated by the websocket
 const mockResources: Record<string, Record<string, any>> = reactive({});
 const mockSchemas: Record<string, any> = reactive({});
+// Whether the store forgot the Apps, as after leaving the Extensions page
+const mockStoreState = reactive({ appsForgotten: false });
 const mockRequest = jest.fn();
 
 const mockStore = {
   state:   {},
   getters: {
     'management/schemaFor': (type: string) => mockSchemas[type],
+    'management/haveAll':   (type: string) => type !== CATALOG.APP || !mockStoreState.appsForgotten,
     'management/byId':      (type: string, id: string) => mockResources[type]?.[id],
     'management/all':       (type: string) => Object.values(mockResources[type] || {}),
     'management/matching':  (type: string, selector: string, namespace: string) => Object.values(mockResources[type] || {})
@@ -63,6 +66,11 @@ const mockStore = {
       return resource;
     }
     case 'management/findAll':
+      if (params.type === CATALOG.APP) {
+        mockStoreState.appsForgotten = false;
+      }
+
+      return Object.values(mockResources[params.type] || {});
     case 'management/findMatching':
       return Object.values(mockResources[params.type] || {});
     case 'management/request':
@@ -217,6 +225,7 @@ describe('useAiAgentInstallerComposable', () => {
 
     Object.keys(mockResources).forEach((type) => delete mockResources[type]);
     Object.keys(mockSchemas).forEach((type) => delete mockSchemas[type]);
+    mockStoreState.appsForgotten = false;
     mockSchemas[CATALOG.CLUSTER_REPO] = { collectionMethods: ['GET', 'POST'] };
     mockSchemas[CATALOG.APP] = { collectionMethods: ['GET', 'POST'] };
 
@@ -260,16 +269,48 @@ describe('useAiAgentInstallerComposable', () => {
       expect(installer.state.agentAppId).toBe(`${ AGENT_NAMESPACE }/custom-release-name`);
     });
 
-    it('should not offer the installation when the store forgets the Apps', async() => {
+    it('should not offer the installation when the store forgets the Apps, and load them again', async() => {
       addAgentApp();
       installer.reset();
       await flushPromises();
 
-      // Leaving the Extensions page makes the store forget the Apps
-      removeResource(CATALOG.APP, APP_ID);
+      // Leaving the Extensions page makes the store forget the Apps, still in the cluster
+      mockStoreState.appsForgotten = true;
 
       expect(installer.isAgentAppMissing.value).toBe(false);
       expect(installer.isAgentNotInstalled.value).toBe(false);
+
+      await flushPromises();
+
+      expect(mockStoreState.appsForgotten).toBe(false);
+      expect(installer.state.agentAppId).toBe(APP_ID);
+    });
+
+    it('should follow the agent Helm release installed or removed elsewhere, e.g. with Helm', async() => {
+      expect(installer.isAgentNotInstalled.value).toBe(true);
+
+      addAgentApp();
+      await flushPromises();
+
+      expect(installer.state.agentAppId).toBe(APP_ID);
+      expect(installer.isAgentNotInstalled.value).toBe(false);
+
+      removeResource(CATALOG.APP, APP_ID);
+      await flushPromises();
+
+      expect(installer.isAgentAppMissing.value).toBe(true);
+      expect(installer.isAgentNotInstalled.value).toBe(true);
+    });
+
+    it('should not skip the lost chats warning when the agent was deployed before the installation', async() => {
+      addRepository();
+      deployAgent();
+      addAgentApp();
+
+      await installer.install();
+
+      expect(installer.state.started).toBe(true);
+      expect(installer.isInstalling.value).toBe(false);
     });
   });
 

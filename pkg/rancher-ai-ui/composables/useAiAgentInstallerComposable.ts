@@ -83,6 +83,8 @@ const state = reactive({
   // The Apps request completed, successfully or not
   appsChecked:      false,
   configApplied:    false,
+  // The chart was installed by this flow: an agent deployed before
+  chartInstalled:   false,
   repositoryName:   AGENT_REPO_NAME,
   repositoryExists: false,
   // The AI agent Helm release in the cluster, undefined until known: other pages can make the store forget the Apps
@@ -105,6 +107,8 @@ class CancelledError extends Error {}
 // Incremented to cancel the steps currently running
 const currentRun = ref(0);
 let stopValidation: WatchStopHandle | null = null;
+// The Apps forgotten by the store are being loaded again, by one of the composable instances
+let reloadingApps = false;
 // The chart defaults merged with our overrides, to tell whether the user customized them
 let defaultValues: Record<string, any> | null = null;
 
@@ -194,8 +198,8 @@ export function useAiAgentInstallerComposable() {
   // Until the Apps are loaded we can't tell if the agent is installed
   const isInstallStateKnown = computed(() => !canInstall.value || state.started || state.appsChecked);
 
-  // Started from this page load and the configuration not applied yet: the agent has no chats
-  const isInstalling = computed(() => state.started && !state.configApplied);
+  // The chart was installed from this page load and the configuration not applied yet: the agent has no chats
+  const isInstalling = computed(() => state.started && state.chartInstalled && !state.configApplied);
 
   function setStep(step: InstallStep, status: InstallStepStatus, error?: string) {
     state.steps[step] = {
@@ -252,6 +256,26 @@ export function useAiAgentInstallerComposable() {
       loadAiAgentApp();
     }
   }, { immediate: true });
+
+  // False when the store forgot the Apps, e.g. after leaving the Extensions page
+  const appsInStore = computed(() => !!store.getters['management/haveAll']?.(CATALOG.APP));
+
+  // The Apps kept up to date in the store follow the releases installed or removed elsewhere, e.g. with Helm
+  watch(() => (appsInStore.value ? store.getters['management/all'](CATALOG.APP)
+    .find((app: any) => app.metadata?.namespace === AGENT_NAMESPACE && app.spec?.chart?.metadata?.name === AGENT_CHART_NAME)?.id || null : undefined), (id) => {
+    if (id !== undefined && state.agentAppId !== undefined) {
+      state.agentAppId = id;
+    }
+  });
+
+  // Loads the forgotten Apps again, so that the store keeps following the releases
+  watch(appsInStore, async(value) => {
+    if (!value && !reloadingApps && state.agentAppId !== undefined && canInstall.value) {
+      reloadingApps = true;
+      state.agentAppId = await findAgentAppId() ?? state.agentAppId;
+      reloadingApps = false;
+    }
+  });
 
   /**
    * Step 1: adds the OCI ClusterRepo, if missing, and waits for its index to be downloaded.
@@ -650,6 +674,7 @@ export function useAiAgentInstallerComposable() {
       if (reinstall) {
         await uninstallAgent(run);
         await installAgent(run);
+        state.chartInstalled = true;
       }
 
       await waitForAgentReady(run);
@@ -683,6 +708,7 @@ export function useAiAgentInstallerComposable() {
     const run = ++currentRun.value;
 
     state.started = true;
+    state.chartInstalled = false;
     state.configApplied = false;
     setStep(InstallStep.Repository, InstallStepStatus.InProgress);
     [InstallStep.Agent, InstallStep.Configure, InstallStep.Apply].forEach((step) => setStep(step, InstallStepStatus.Pending));
@@ -946,6 +972,7 @@ export function useAiAgentInstallerComposable() {
     endValidation();
     state.started = false;
     state.configApplied = false;
+    state.chartInstalled = false;
     state.repositoryExists = false;
     state.agentResources = [];
     state.agentCrdExists = false;
