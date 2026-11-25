@@ -41,7 +41,8 @@ export class InstallAgentStepPo extends ComponentPo {
    * A step that can't start until the previous ones complete, showing the gray waiting icon.
    */
   isBlocked() {
-    return this.self().should('have.class', 'disabled').scrollIntoView().find('.icon-spinner').should('be.visible');
+    return this.self().should('have.class', 'disabled').scrollIntoView().find('.icon-spinner')
+      .should('be.visible');
   }
 
   isEnabled() {
