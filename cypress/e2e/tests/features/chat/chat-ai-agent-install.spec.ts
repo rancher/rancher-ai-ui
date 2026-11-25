@@ -477,16 +477,48 @@ describe('Chat - AI agent installation', () => {
         installAgent.reloadButton().scrollIntoView();
         installAgent.reloadButton().should('be.visible').and('contain', 'Start chatting');
 
-        // A real installation adds the Helm release: let the Apps list return it again
+        // A real installation adds the Helm release to the store: load the Apps list again, returning it
         cy.then(() => {
           agentAppHidden = false;
         });
+        cy.window().then((win: any) => win.$globalApp.$store.dispatch('management/findAll', {
+          type: 'catalog.cattle.io.app',
+          opt:  { force: true }
+        }));
 
         installAgent.reloadButton().click();
 
         installAgent.checkNotExists();
         chat.isReady();
         chat.console().checkExists();
+      });
+
+      it('Should fail the agent step when the AI agent is removed after the configuration is applied', () => {
+        installAgent.configureButton().click();
+        settingsPage.settings().aiAgentSettings().checkExists();
+
+        settingsPage.settings().saveButton().click();
+        new ApplySettingsPromptPo().confirm();
+
+        installAgent.step('apply').isDone(30000);
+
+        // The chart is removed: the deployment is gone from the cluster and from the store
+        hideAgentDeployment();
+        cy.window().then((win: any) => {
+          const store = win.$globalApp.$store;
+
+          store.commit('management/remove', store.getters['management/byId']('apps.deployment', `${ AGENT_NAMESPACE }/${ AGENT_NAME }`));
+        });
+
+        installAgent.step('agent').isError();
+        installAgent.step('agent').error().should('contain', `The ${ AGENT_NAMESPACE }/${ AGENT_NAME } deployment has been removed`);
+        installAgent.step('configure').isBlocked();
+        installAgent.step('apply').isBlocked();
+        installAgent.installChartButton().should('be.visible').and('contain', 'Retry Install');
+        installAgent.reloadButton().should('not.exist');
+
+        settingsPage.agentNotInstalledState().checkExists();
+        settingsPage.settings().aiAgentSettings().checkNotExists();
       });
     });
   });

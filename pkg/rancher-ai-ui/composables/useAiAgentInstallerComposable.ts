@@ -1,5 +1,5 @@
 import {
-  computed, reactive, ref, watch, WatchStopHandle
+  computed, effectScope, reactive, ref, watch, WatchStopHandle
 } from 'vue';
 import { useStore } from 'vuex';
 import { cloneDeep, isEqual, merge } from 'lodash';
@@ -107,10 +107,87 @@ class CancelledError extends Error {}
 // Incremented to cancel the steps currently running
 const currentRun = ref(0);
 let stopValidation: WatchStopHandle | null = null;
-// The Apps forgotten by the store are being loaded again, by one of the composable instances
-let reloadingApps = false;
+// The watchers following the AI agent Helm release, shared by all the composable instances
+let appTrackingStarted = false;
+// The chart values, fetched once per installation
+let chartDefaultsRequest: Promise<Record<string, any>> | null = null;
 // The chart defaults merged with our overrides, to tell whether the user customized them
 let defaultValues: Record<string, any> | null = null;
+
+function isInstallAllowed(store: any): boolean {
+  const canCreate = (type: string) => !!store.getters['management/schemaFor'](type)?.collectionMethods?.find((m: string) => m.toUpperCase() === 'POST');
+
+  return isAdminUser(store.getters) && canCreate(CATALOG.CLUSTER_REPO) && canCreate(CATALOG.APP);
+}
+
+function isAgentApp(app: any): boolean {
+  return app.metadata?.namespace === AGENT_NAMESPACE && app.spec?.chart?.metadata?.name === AGENT_CHART_NAME;
+}
+
+/**
+ * The id of the AI agent Helm release, whatever its name; undefined if the Apps can't be loaded.
+ * The Apps are only fetched when the store doesn't have them, as it keeps them up to date.
+ */
+async function findAgentAppId(store: any): Promise<string | null | undefined> {
+  try {
+    const apps = await store.dispatch('management/findAll', { type: CATALOG.APP });
+
+    return apps.find(isAgentApp)?.id || null;
+  } catch (err) {
+    warn('Unable to load the Apps:', err);
+
+    return undefined;
+  }
+}
+
+async function loadAiAgentApp(store: any) {
+  if (state.agentAppId !== undefined || !isInstallAllowed(store)) {
+    return;
+  }
+
+  state.agentAppId = await findAgentAppId(store);
+  state.appsChecked = true;
+}
+
+/**
+ * Follows the AI agent Helm release in the store, so that installs and uninstalls made elsewhere (e.g. with Helm) are detected.
+ * Started once: the watchers are detached from the components using the composable.
+ */
+function startAppTracking(store: any) {
+  if (appTrackingStarted) {
+    return;
+  }
+  appTrackingStarted = true;
+
+  effectScope(true).run(() => {
+    const canInstall = computed(() => isInstallAllowed(store));
+    // False when the store forgot the Apps, e.g. after leaving the Extensions page
+    const appsInStore = computed(() => !!store.getters['management/haveAll']?.(CATALOG.APP));
+    let reloadingApps = false;
+
+    // Whether the agent is installed decides between the chat and the install flow
+    watch(canInstall, (value) => {
+      if (value) {
+        loadAiAgentApp(store);
+      }
+    }, { immediate: true });
+
+    watch(() => (appsInStore.value ? store.getters['management/all'](CATALOG.APP).find(isAgentApp)?.id || null : undefined), (id) => {
+      if (id !== undefined && state.agentAppId !== undefined) {
+        state.agentAppId = id;
+      }
+    });
+
+    // Loads the forgotten Apps again, so that the store keeps following the releases
+    watch(appsInStore, async(value) => {
+      if (!value && !reloadingApps && state.agentAppId !== undefined && canInstall.value) {
+        reloadingApps = true;
+        state.agentAppId = await findAgentAppId(store) ?? state.agentAppId;
+        reloadingApps = false;
+      }
+    });
+  });
+}
 
 /**
  * Resolves with the first truthy value of `source`, which reads the resources kept up to date in the store.
@@ -159,11 +236,9 @@ export function useAiAgentInstallerComposable() {
   const store = useStore();
   const { t } = useI18n(store);
 
-  const canInstall = computed(() => {
-    const canCreate = (type: string) => !!store.getters['management/schemaFor'](type)?.collectionMethods?.find((m: string) => m.toUpperCase() === 'POST');
+  const canInstall = computed(() => isInstallAllowed(store));
 
-    return isAdminUser(store.getters) && canCreate(CATALOG.CLUSTER_REPO) && canCreate(CATALOG.APP);
-  });
+  startAppTracking(store);
 
   const hasFailedStep = computed(() => Object.values(state.steps).some((step) => step.status === InstallStepStatus.Error));
 
@@ -222,60 +297,6 @@ export function useAiAgentInstallerComposable() {
       return null;
     }
   }
-
-  /**
-   * The id of the AI agent Helm release in the cluster, whatever its name; undefined if the Apps can't be loaded.
-   */
-  async function findAgentAppId(): Promise<string | null | undefined> {
-    try {
-      const apps = await store.dispatch('management/findAll', {
-        type: CATALOG.APP,
-        opt:  { force: true }
-      });
-
-      return apps.find((app: any) => app.metadata?.namespace === AGENT_NAMESPACE && app.spec?.chart?.metadata?.name === AGENT_CHART_NAME)?.id || null;
-    } catch (err) {
-      warn('Unable to load the Apps:', err);
-
-      return undefined;
-    }
-  }
-
-  async function loadAiAgentApp() {
-    if (state.agentAppId !== undefined || !canInstall.value) {
-      return;
-    }
-
-    state.agentAppId = await findAgentAppId();
-    state.appsChecked = true;
-  }
-
-  // Whether the agent is installed decides between the chat and the install flow
-  watch(canInstall, (value) => {
-    if (value) {
-      loadAiAgentApp();
-    }
-  }, { immediate: true });
-
-  // False when the store forgot the Apps, e.g. after leaving the Extensions page
-  const appsInStore = computed(() => !!store.getters['management/haveAll']?.(CATALOG.APP));
-
-  // The Apps kept up to date in the store follow the releases installed or removed elsewhere, e.g. with Helm
-  watch(() => (appsInStore.value ? store.getters['management/all'](CATALOG.APP)
-    .find((app: any) => app.metadata?.namespace === AGENT_NAMESPACE && app.spec?.chart?.metadata?.name === AGENT_CHART_NAME)?.id || null : undefined), (id) => {
-    if (id !== undefined && state.agentAppId !== undefined) {
-      state.agentAppId = id;
-    }
-  });
-
-  // Loads the forgotten Apps again, so that the store keeps following the releases
-  watch(appsInStore, async(value) => {
-    if (!value && !reloadingApps && state.agentAppId !== undefined && canInstall.value) {
-      reloadingApps = true;
-      state.agentAppId = await findAgentAppId() ?? state.agentAppId;
-      reloadingApps = false;
-    }
-  });
 
   /**
    * Step 1: adds the OCI ClusterRepo, if missing, and waits for its index to be downloaded.
@@ -362,13 +383,19 @@ export function useAiAgentInstallerComposable() {
     };
   }
 
-  async function fetchChartDefaults(repo: any): Promise<Record<string, any>> {
-    const info = await store.dispatch('management/request', {
-      method: 'GET',
-      url:    `${ repo.links?.info }&chartName=${ AGENT_CHART_NAME }`,
-    });
+  function fetchChartDefaults(repo: any): Promise<Record<string, any>> {
+    if (!chartDefaultsRequest) {
+      chartDefaultsRequest = store.dispatch('management/request', {
+        method: 'GET',
+        url:    `${ repo.links?.info }&chartName=${ AGENT_CHART_NAME }`,
+      }).then((info: any) => info?.values || {});
 
-    return info?.values || {};
+      chartDefaultsRequest.catch(() => {
+        chartDefaultsRequest = null;
+      });
+    }
+
+    return chartDefaultsRequest as Promise<Record<string, any>>;
   }
 
   /**
@@ -440,7 +467,7 @@ export function useAiAgentInstallerComposable() {
    * so that upgrades from Apps get the new defaults, plus the registry shown in the values editor.
    */
   async function buildInstallValues(chartDefaults: Record<string, any>): Promise<Record<string, any>> {
-    const allValues = state.values || await buildDefaultValues(chartDefaults);
+    const allValues = state.values || defaultValues || await buildDefaultValues(chartDefaults);
     const values = diff(chartDefaults, allValues);
 
     if (hasRegistryValues(chartDefaults)) {
@@ -684,8 +711,9 @@ export function useAiAgentInstallerComposable() {
 
       await loadAgentResources();
 
-      // A deployment installed outside this flow has no Helm release to validate
-      state.agentAppId = await findAgentAppId() ?? null;
+      // A deployment installed outside this flow has no Helm release to validate.
+      // A release not in the store yet is set by the Apps tracking once received.
+      state.agentAppId = await findAgentAppId(store) ?? null;
     } catch (err) {
       if (!(err instanceof CancelledError) && run === currentRun.value) {
         warn('Unable to install the AI agent:', err);
@@ -710,6 +738,8 @@ export function useAiAgentInstallerComposable() {
     state.started = true;
     state.chartInstalled = false;
     state.configApplied = false;
+    chartDefaultsRequest = null;
+    defaultValues = null;
     setStep(InstallStep.Repository, InstallStepStatus.InProgress);
     [InstallStep.Agent, InstallStep.Configure, InstallStep.Apply].forEach((step) => setStep(step, InstallStepStatus.Pending));
     startValidation();
@@ -790,6 +820,7 @@ export function useAiAgentInstallerComposable() {
 
     steps.slice(steps.indexOf(step) + 1).forEach((s) => setStep(s, InstallStepStatus.Pending));
     setStep(step, InstallStepStatus.Error, error);
+    state.configApplied = false;
 
     if (step === InstallStep.Repository) {
       state.repositoryExists = false;
@@ -800,7 +831,7 @@ export function useAiAgentInstallerComposable() {
   }
 
   /**
-   * Invalidates the completed steps whose resources are removed, until the installation ends.
+   * Invalidates the completed steps whose resources are removed, until the flow is closed by reset().
    */
   function startValidation() {
     if (stopValidation) {
@@ -873,7 +904,6 @@ export function useAiAgentInstallerComposable() {
     if (run === currentRun.value) {
       setStep(InstallStep.Apply, InstallStepStatus.Done);
       state.configApplied = true;
-      endValidation();
     }
   }
 
@@ -977,12 +1007,10 @@ export function useAiAgentInstallerComposable() {
     state.agentResources = [];
     state.agentCrdExists = false;
     state.values = null;
+    chartDefaultsRequest = null;
+    defaultValues = null;
     [InstallStep.Repository, InstallStep.Agent, InstallStep.Configure, InstallStep.Apply].forEach((step) => setStep(step, InstallStepStatus.Pending));
-
-    // The release can differ from the one found by the agent step, e.g. added to the store from the Apps list
-    // so we clear the agentAppId to force reloading it from the store
-    state.agentAppId = undefined;
-    loadAiAgentApp();
+    // state.agentAppId is kept: the Apps tracking follows the release in the store
   }
 
   return {
@@ -1000,7 +1028,7 @@ export function useAiAgentInstallerComposable() {
     isInstallStateKnown,
     isInstalling,
     repository,
-    loadAiAgentApp,
+    loadAiAgentApp: () => loadAiAgentApp(store),
     markConfigApplied,
     retryApply,
     reset,

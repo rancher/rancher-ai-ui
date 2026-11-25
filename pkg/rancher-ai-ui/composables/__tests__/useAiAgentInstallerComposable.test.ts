@@ -238,6 +238,8 @@ describe('useAiAgentInstallerComposable', () => {
     // The state is shared between the composable instances
     installer.state.repositoryName = AGENT_REPO_NAME;
     installer.reset();
+    installer.state.agentAppId = undefined;
+    await installer.loadAiAgentApp();
     await flushPromises();
   });
 
@@ -261,7 +263,6 @@ describe('useAiAgentInstallerComposable', () => {
       expect(installer.isAgentNotInstalled.value).toBe(true);
 
       addAgentApp('deployed', 'custom-release-name');
-      installer.reset();
       await flushPromises();
 
       expect(installer.isAgentAppMissing.value).toBe(false);
@@ -271,7 +272,6 @@ describe('useAiAgentInstallerComposable', () => {
 
     it('should not offer the installation when the store forgets the Apps, and load them again', async() => {
       addAgentApp();
-      installer.reset();
       await flushPromises();
 
       // Leaving the Extensions page makes the store forget the Apps, still in the cluster
@@ -368,18 +368,20 @@ describe('useAiAgentInstallerComposable', () => {
       expect(stepStatus(installer, InstallStep.Repository).error).toBeUndefined();
     });
 
-    it('should look up the agent Helm release again on reset', async() => {
+    it('should keep following the agent Helm release after a reset, without loading the Apps again', async() => {
       addRepository();
       await installer.install();
       expect(installer.state.agentAppId).toBeNull();
+      mockStore.dispatch.mockClear();
 
+      installer.reset();
       // e.g. installed meanwhile from Apps
       addAgentApp();
-      installer.reset();
       await flushPromises();
 
       expect(installer.state.agentAppId).toBe(APP_ID);
       expect(installer.isAgentNotInstalled.value).toBe(false);
+      expect(mockStore.dispatch).not.toHaveBeenCalledWith('management/findAll', expect.anything());
     });
   });
 
@@ -830,6 +832,21 @@ describe('useAiAgentInstallerComposable', () => {
       expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Done);
       expect(installer.state.configApplied).toBe(true);
       expect(Chat.open).toHaveBeenCalledTimes(1);
+    });
+
+    it('should fail the agent step when the chart is removed after the configuration is applied', async() => {
+      addAgentApp();
+      installer.markConfigApplied();
+      await flushPromises();
+      expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Done);
+
+      removeResource(CATALOG.APP, APP_ID);
+      removeResource(SECRET, `${ AGENT_NAMESPACE }/${ AGENT_CONFIG_SECRET_NAME }`);
+      await flushPromises();
+
+      expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Error);
+      expect(stepStatus(installer, InstallStep.Apply).status).toBe(InstallStepStatus.Pending);
+      expect(installer.isAgentNotInstalled.value).toBe(true);
     });
 
     it('should fail when the LLM provider is not configured', async() => {
