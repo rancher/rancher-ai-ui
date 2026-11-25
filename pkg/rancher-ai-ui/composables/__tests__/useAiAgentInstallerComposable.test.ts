@@ -274,14 +274,14 @@ describe('useAiAgentInstallerComposable', () => {
   });
 
   describe('Repository step', () => {
-    it('should wait for the user to review the Helm values when the agent is not deployed', async() => {
+    it('should wait for the user to edit the Helm values when the agent is not deployed', async() => {
       addRepository();
 
       await installer.install();
 
       expect(installer.state.started).toBe(true);
       expect(stepStatus(installer, InstallStep.Repository).status).toBe(InstallStepStatus.Done);
-      expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Pending);
+      expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Ready);
       expect(installer.isAgentNotInstalled.value).toBe(true);
     });
 
@@ -351,7 +351,7 @@ describe('useAiAgentInstallerComposable', () => {
 
       expect(mockResources[CATALOG.CLUSTER_REPO][AGENT_REPO_NAME].doAction).not.toHaveBeenCalled();
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Done);
-      expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.InProgress);
+      expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Ready);
     });
 
     it('should complete only once the agent pods are ready', async() => {
@@ -755,7 +755,7 @@ describe('useAiAgentInstallerComposable', () => {
         opt:  { force: true },
       });
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Done);
-      expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.InProgress);
+      expect(stepStatus(installer, InstallStep.Configure).status).toBe(InstallStepStatus.Ready);
 
       mockStore.dispatch.mockImplementation(dispatch);
     });

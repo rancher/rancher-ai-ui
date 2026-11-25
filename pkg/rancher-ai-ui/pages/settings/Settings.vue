@@ -3,7 +3,6 @@ import { cloneDeep } from 'lodash';
 import dayjs from 'dayjs';
 import {
   ref,
-  computed,
   onMounted,
   watch,
 } from 'vue';
@@ -98,13 +97,6 @@ const buttonProps = ref({
 const toolsActionResultBanner = ref<{ color: string; label: string } | null>(null);
 
 const isAiAgentSettingsTouched = ref<boolean | null>(false);
-
-/**
- * TODO: Implement a proper check for existing chats using a dedicated API call.
- * As of now, it's not possible to determine if there are existing chats,
- * There are no chats if the agent is currently installing.
- */
-const hasChats = computed<boolean>(() => !isInstalling.value);
 
 /**
  * Fetches the rancher-ai-agent deployment.
@@ -656,6 +648,14 @@ async function publishToolsDefinitionAndRefetch() {
 
 function showApplySettingsModal(cb: AsyncButtonCallback) {
   applySettingsCb.value = cb;
+
+  // The agent has no chats to lose while installing
+  if (isInstalling.value) {
+    applySettings();
+
+    return;
+  }
+
   isSaving.value = true;
 }
 
@@ -892,7 +892,6 @@ onMounted(() => {
     >
       <ApplySettings
         :storage-type="chatSettings?.storageType || ''"
-        :has-chats="hasChats"
         @confirm="applySettings"
         @cancel="discardSettings"
       />

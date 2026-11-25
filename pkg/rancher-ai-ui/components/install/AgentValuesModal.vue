@@ -91,11 +91,11 @@ watch(() => props.value, (value) => {
         <RcButton
           variant="primary"
           :disabled="props.loading || !yaml"
-          :aria-label="t('ai.install.values.ariaLabel.save')"
-          data-testid="rancher-ai-ui-install-agent-values-save"
+          :aria-label="t('ai.install.values.ariaLabel.install')"
+          data-testid="rancher-ai-ui-install-agent-values-install"
           @click="emit('save', yaml)"
         >
-          {{ t('generic.save') }}
+          {{ t('ai.install.values.install') }}
         </RcButton>
       </div>
     </div>

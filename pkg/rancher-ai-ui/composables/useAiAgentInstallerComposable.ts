@@ -672,7 +672,7 @@ export function useAiAgentInstallerComposable() {
 
     if (run === currentRun.value) {
       setStep(InstallStep.Agent, InstallStepStatus.Done);
-      setStep(InstallStep.Configure, InstallStepStatus.InProgress);
+      setStep(InstallStep.Configure, InstallStepStatus.Ready);
     }
   }
 
@@ -703,6 +703,8 @@ export function useAiAgentInstallerComposable() {
 
     if (await findResource(WORKLOAD_TYPES.DEPLOYMENT, AGENT_DEPLOYMENT_ID)) {
       await runAgentStep(run, false);
+    } else if (run === currentRun.value) {
+      setStep(InstallStep.Agent, InstallStepStatus.Ready);
     }
   }
 
@@ -855,6 +857,7 @@ export function useAiAgentInstallerComposable() {
   async function verifyConfigApplied() {
     const run = ++currentRun.value;
 
+    setStep(InstallStep.Configure, InstallStepStatus.InProgress);
     setStep(InstallStep.Apply, InstallStepStatus.Pending);
 
     try {
@@ -916,7 +919,7 @@ export function useAiAgentInstallerComposable() {
     const configure = state.steps[InstallStep.Configure].status;
     const apply = state.steps[InstallStep.Apply].status;
 
-    if (configure !== InstallStepStatus.InProgress && configure !== InstallStepStatus.Error && apply !== InstallStepStatus.Error) {
+    if (configure !== InstallStepStatus.Ready && configure !== InstallStepStatus.Error && apply !== InstallStepStatus.Error) {
       return;
     }
 

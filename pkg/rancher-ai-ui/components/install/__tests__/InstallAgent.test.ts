@@ -26,7 +26,8 @@ jest.mock('vuex', () => ({
 }));
 
 jest.mock('@components/RcButton/RcButton.vue', () => ({
-  default: {
+  __esModule: true,
+  default:    {
     name:     'RcButton',
     template: '<button class="rc-button"><slot /></button>',
     props:    ['small', 'variant', 'disabled'],
@@ -140,7 +141,7 @@ describe('InstallAgent.vue', () => {
   });
 
   describe('Steps', () => {
-    it('should show a spinner on the running step and the number of the following ones', () => {
+    it('should spin the icon of the running step and show a gray spinner on the following ones', () => {
       mockInstaller = createInstaller({}, { [InstallStep.Repository]: InstallStepStatus.InProgress });
       wrapper = mountComponent();
 
@@ -148,10 +149,12 @@ describe('InstallAgent.vue', () => {
       const agent = byTestId(wrapper, 'rancher-ai-ui-install-agent-step-agent');
       const configure = byTestId(wrapper, 'rancher-ai-ui-install-agent-step-configure');
 
-      expect(repository.find('.icon-spinner').exists()).toBe(true);
+      expect(repository.classes()).toContain('running');
+      expect(repository.find('.icon-spinner.icon-spin').exists()).toBe(true);
       expect(agent.classes()).toContain('disabled');
-      expect(agent.find('.install-agent-step-number').text()).toBe('2');
-      expect(configure.find('.install-agent-step-number').text()).toBe('3');
+      expect(agent.find('.icon-spinner').exists()).toBe(true);
+      expect(agent.find('.icon-spin').exists()).toBe(false);
+      expect(configure.find('.icon-spinner').exists()).toBe(true);
     });
 
     it('should show the error and the retry button when the repository step fails', async() => {
@@ -215,39 +218,52 @@ describe('InstallAgent.vue', () => {
   });
 
   describe('Agent step', () => {
-    it('should install the chart when the repository is ready', async() => {
-      mockInstaller = createInstaller({}, { [InstallStep.Repository]: InstallStepStatus.Done });
+    it('should show a caret, the Edit Values and the Install buttons when the agent step is reached', async() => {
+      mockInstaller = createInstaller({}, {
+        [InstallStep.Repository]: InstallStepStatus.Done,
+        [InstallStep.Agent]:      InstallStepStatus.Ready,
+      });
       wrapper = mountComponent();
+
+      expect(byTestId(wrapper, 'rancher-ai-ui-install-agent-step-agent').find('.icon-chevron-right').exists()).toBe(true);
+      expect(findButton(wrapper, 'rancher-ai-ui-install-agent-edit-values')?.text()).toBe('ai.install.actions.editValues');
+      expect(findButton(wrapper, 'rancher-ai-ui-install-agent-install-chart')?.text()).toBe('ai.install.actions.installChart');
 
       await clickButton(wrapper, 'rancher-ai-ui-install-agent-install-chart');
 
       expect(mockInstaller.installChart).toHaveBeenCalledTimes(1);
     });
 
-    it('should hide the agent actions while the chart is being installed', () => {
+    it('should spin the icon and hide the buttons while the chart is being installed', () => {
       mockInstaller = createInstaller({}, {
         [InstallStep.Repository]: InstallStepStatus.Done,
         [InstallStep.Agent]:      InstallStepStatus.InProgress,
       });
       wrapper = mountComponent();
 
-      expect(findButton(wrapper, 'rancher-ai-ui-install-agent-install-chart')).toBeUndefined();
+      expect(byTestId(wrapper, 'rancher-ai-ui-install-agent-step-agent').find('.install-agent-step-status.icon-spinner.icon-spin').exists()).toBe(true);
       expect(findButton(wrapper, 'rancher-ai-ui-install-agent-edit-values')).toBeUndefined();
+      expect(findButton(wrapper, 'rancher-ai-ui-install-agent-install-chart')).toBeUndefined();
     });
 
-    it('should label the values button as edited when the values are customized', () => {
-      mockInstaller = createInstaller({ values: { plan: { enabled: false } } }, { [InstallStep.Repository]: InstallStepStatus.Done });
+    it('should offer to edit the values and retry when the installation fails', () => {
+      mockInstaller = createInstaller({}, {
+        [InstallStep.Repository]: InstallStepStatus.Done,
+        [InstallStep.Agent]:      InstallStepStatus.Error,
+      });
       wrapper = mountComponent();
 
-      const label = findButton(wrapper, 'rancher-ai-ui-install-agent-edit-values')?.vm.$slots.default?.()[0].children;
-
-      expect(String(label).trim()).toBe('ai.install.actions.editedValues');
+      expect(findButton(wrapper, 'rancher-ai-ui-install-agent-edit-values')).toBeDefined();
+      expect(findButton(wrapper, 'rancher-ai-ui-install-agent-install-chart')?.text()).toBe('ai.install.actions.retryInstallChart');
     });
   });
 
   describe('Helm values modal', () => {
     async function openModal() {
-      mockInstaller = createInstaller({}, { [InstallStep.Repository]: InstallStepStatus.Done });
+      mockInstaller = createInstaller({}, {
+        [InstallStep.Repository]: InstallStepStatus.Done,
+        [InstallStep.Agent]:      InstallStepStatus.Ready,
+      });
       wrapper = mountComponent();
 
       await clickButton(wrapper, 'rancher-ai-ui-install-agent-edit-values');
@@ -264,13 +280,14 @@ describe('InstallAgent.vue', () => {
       expect(modal.props('loading')).toBe(false);
     });
 
-    it('should save valid YAML values and close the modal', async() => {
+    it('should install the chart with valid YAML values and close the modal', async() => {
       const modal = await openModal();
 
       modal.vm.$emit('save', 'plan:\n  enabled: false\n');
       await flushPromises();
 
       expect(mockInstaller.setValues).toHaveBeenCalledWith({ plan: { enabled: false } });
+      expect(mockInstaller.installChart).toHaveBeenCalledTimes(1);
       expect(wrapper.findComponent({ name: 'AgentValuesModal' }).exists()).toBe(false);
     });
 
@@ -281,17 +298,20 @@ describe('InstallAgent.vue', () => {
       await flushPromises();
 
       expect(mockInstaller.setValues).not.toHaveBeenCalled();
+      expect(mockInstaller.installChart).not.toHaveBeenCalled();
       expect(wrapper.findComponent({ name: 'AgentValuesModal' }).props('error')).toBe('ai.install.values.invalid');
     });
 
-    it('should restore the default values and close the modal', async() => {
+    it('should restore the default values in the open modal', async() => {
       const modal = await openModal();
 
       modal.vm.$emit('restore');
       await flushPromises();
 
       expect(mockInstaller.setValues).toHaveBeenCalledWith(null);
-      expect(wrapper.findComponent({ name: 'AgentValuesModal' }).exists()).toBe(false);
+      expect(mockInstaller.loadValues).toHaveBeenCalledTimes(2);
+      expect(wrapper.findComponent({ name: 'AgentValuesModal' }).props('value')).toContain('enabled: true');
+      expect(mockInstaller.installChart).not.toHaveBeenCalled();
     });
   });
 
@@ -299,7 +319,7 @@ describe('InstallAgent.vue', () => {
     const agentInstalled = {
       [InstallStep.Repository]: InstallStepStatus.Done,
       [InstallStep.Agent]:      InstallStepStatus.Done,
-      [InstallStep.Configure]:  InstallStepStatus.InProgress,
+      [InstallStep.Configure]:  InstallStepStatus.Ready,
     };
 
     it('should route to the settings page when clicking configure', async() => {
@@ -322,16 +342,16 @@ describe('InstallAgent.vue', () => {
       expect(findButton(wrapper, 'rancher-ai-ui-install-agent-configure')).toBeUndefined();
     });
 
-    it('should show a spinner while waiting for the configuration', () => {
+    it('should show a caret while waiting for the configuration', () => {
       mockInstaller = createInstaller({}, agentInstalled);
       wrapper = mountComponent();
 
       const configure = byTestId(wrapper, 'rancher-ai-ui-install-agent-step-configure');
       const apply = byTestId(wrapper, 'rancher-ai-ui-install-agent-step-apply');
 
-      expect(configure.find('.icon-spinner').exists()).toBe(true);
+      expect(configure.find('.icon-chevron-right').exists()).toBe(true);
       expect(apply.classes()).toContain('disabled');
-      expect(apply.find('.install-agent-step-number').text()).toBe('4');
+      expect(apply.find('.icon-spinner').exists()).toBe(true);
     });
   });
 

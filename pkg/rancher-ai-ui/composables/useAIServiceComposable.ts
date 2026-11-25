@@ -3,9 +3,7 @@ import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import { warn } from '../utils/log';
 import { decodeModelKey } from '../utils/settings';
-import {
-  AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME, PRODUCT_NAME
-} from '../product';
+import { AGENT_NAMESPACE, AGENT_NAME, AGENT_CONFIG_CONFIG_MAP_NAME, PRODUCT_NAME } from '../product';
 import { DOCS_LINK } from '../docs';
 import { CONFIG_MAP, WORKLOAD_TYPES } from '@shell/config/types';
 import { ActionType, AIServiceState, ChatError, LLMConfig } from '../types';

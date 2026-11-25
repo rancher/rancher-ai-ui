@@ -15,7 +15,8 @@ import { InstallStep, InstallStepStatus } from '../../types';
 import { useAiAgentInstallerComposable } from '../../composables/useAiAgentInstallerComposable';
 
 const STATUS_ICON: Record<InstallStepStatus, string> = {
-  [InstallStepStatus.Pending]:    'icon-chevron-right',
+  [InstallStepStatus.Pending]:    'icon-spinner',
+  [InstallStepStatus.Ready]:      'icon-chevron-right',
   [InstallStepStatus.InProgress]: 'icon-spinner icon-spin',
   [InstallStepStatus.Done]:       'icon-checkmark',
   [InstallStepStatus.Error]:      'icon-error',
@@ -83,24 +84,19 @@ const steps = computed(() => [
     key:  InstallStep.Apply,
     link: null,
   },
-].map((step, index, all) => {
+].map((step) => {
   const status = state.steps[step.key].status;
-
-  // A pending step is next when no step is running or has failed
-  const isBlocked = all.some((s) => [InstallStepStatus.InProgress, InstallStepStatus.Error].includes(state.steps[s.key].status));
-  const isNext = !isBlocked && status === InstallStepStatus.Pending && all.findIndex((s) => state.steps[s.key].status === InstallStepStatus.Pending) === index;
-  const disabled = status === InstallStepStatus.Pending && !isNext;
-  const icon = STATUS_ICON[status];
+  const disabled = status === InstallStepStatus.Pending;
 
   return {
     ...step,
     link:        disabled ? null : step.link,
     disabled,
-    index:       index + 1,
+    running:     status === InstallStepStatus.InProgress,
     status,
-    icon,
-    // The step the installation is at: the running, failed or next one
-    current:     status === InstallStepStatus.InProgress || status === InstallStepStatus.Error || isNext,
+    icon:        STATUS_ICON[status],
+    // The step the installation is at: the reached, running or failed one
+    current:     [InstallStepStatus.Ready, InstallStepStatus.InProgress, InstallStepStatus.Error].includes(status),
     error:       state.steps[step.key].error,
     statusLabel: t(`ai.install.status.${ status }`),
     summary:     t('ai.install.a11y.step', {
@@ -122,19 +118,18 @@ watch(() => steps.value.map((step) => step.status), (statuses, previous) => {
   }
 });
 
-const showAgentActions = computed(() => state.started &&
-  state.steps[InstallStep.Repository].status === InstallStepStatus.Done &&
-  [InstallStepStatus.Pending, InstallStepStatus.Error].includes(state.steps[InstallStep.Agent].status));
+const showAgentActions = computed(() => [InstallStepStatus.Ready, InstallStepStatus.Error].includes(state.steps[InstallStep.Agent].status));
 
 const showValuesModal = ref(false);
 const valuesYaml = ref('');
 const valuesLoading = ref(false);
 const valuesError = ref('');
 
-async function openValuesModal() {
-  showValuesModal.value = true;
+async function loadValuesYaml() {
   valuesLoading.value = true;
   valuesError.value = '';
+  // Cleared so the editor gets the loaded values even if they didn't change
+  valuesYaml.value = '';
 
   try {
     valuesYaml.value = jsyaml.dump(await loadValues(), { lineWidth: -1 });
@@ -145,7 +140,12 @@ async function openValuesModal() {
   }
 }
 
-function saveValues(yaml: string) {
+function openValuesModal() {
+  showValuesModal.value = true;
+  loadValuesYaml();
+}
+
+function installValues(yaml: string) {
   let values;
 
   try {
@@ -164,11 +164,12 @@ function saveValues(yaml: string) {
 
   setValues(values);
   showValuesModal.value = false;
+  installChart();
 }
 
 function restoreValues() {
   setValues(null);
-  showValuesModal.value = false;
+  loadValuesYaml();
 }
 
 function routeToSettings() {
@@ -245,19 +246,11 @@ function routeToSettings() {
             v-for="step in steps"
             :key="step.key"
             class="install-agent-step"
-            :class="[`status-${ step.status }`, { disabled: step.disabled }]"
+            :class="[`status-${ step.status }`, { disabled: step.disabled, current: step.current, running: step.running }]"
             :aria-current="step.current ? 'step' : undefined"
             :data-testid="`rancher-ai-ui-install-agent-step-${ step.key }`"
           >
-            <span
-              v-if="step.disabled"
-              class="install-agent-step-number"
-              aria-hidden="true"
-            >
-              {{ step.index }}
-            </span>
             <i
-              v-else
               :class="['icon', 'install-agent-step-status', step.icon]"
               aria-hidden="true"
             />
@@ -308,7 +301,7 @@ function routeToSettings() {
                   data-testid="rancher-ai-ui-install-agent-edit-values"
                   @click="openValuesModal"
                 >
-                  {{ t(state.values ? 'ai.install.actions.editedValues' : 'ai.install.actions.editValues') }}
+                  {{ t('ai.install.actions.editValues') }}
                 </RcButton>
                 <RcButton
                   small
@@ -319,8 +312,9 @@ function routeToSettings() {
                   {{ t(step.status === InstallStepStatus.Error ? 'ai.install.actions.retryInstallChart' : 'ai.install.actions.installChart') }}
                 </RcButton>
               </div>
+              <!-- Hidden on the settings page, where the user applies the configuration -->
               <div
-                v-if="step.key === InstallStep.Configure && (step.status === InstallStepStatus.InProgress || step.status === InstallStepStatus.Error) && $route.name !== `c-cluster-settings-${ PRODUCT_NAME }`"
+                v-if="step.key === InstallStep.Configure && (step.status === InstallStepStatus.Ready || step.status === InstallStepStatus.Error) && $route.name !== `c-cluster-settings-${ PRODUCT_NAME }`"
                 class="install-agent-actions"
               >
                 <RcButton
@@ -356,7 +350,7 @@ function routeToSettings() {
         </ol>
         <div
           v-if="state.configApplied"
-          class="install-agent-actions"
+          class="install-agent-actions install-agent-actions-start"
         >
           <RcButton
             small
@@ -381,7 +375,7 @@ function routeToSettings() {
       :value="valuesYaml"
       :loading="valuesLoading"
       :error="valuesError"
-      @save="saveValues"
+      @save="installValues"
       @restore="restoreValues"
       @close="showValuesModal = false"
     />
@@ -492,6 +486,10 @@ function routeToSettings() {
   .icon {
     margin-right: 4px;
   }
+
+  &.install-agent-actions-start {
+    justify-content: flex-start;
+  }
 }
 
 .install-agent-steps {
@@ -519,15 +517,12 @@ function routeToSettings() {
     color: var(--success);
   }
 
-  &.status-inProgress .install-agent-step-status {
+  &.current .install-agent-step-status {
     color: var(--info);
   }
 
-  .install-agent-step-number {
-    flex-shrink: 0;
-    width: 1em;
-    text-align: center;
-    opacity: 0.5;
+  &.running .install-agent-step-status {
+    color: var(--primary);
   }
 
   &.status-error .install-agent-step-status {
@@ -535,7 +530,7 @@ function routeToSettings() {
   }
 
   &.disabled {
-    .install-agent-step-label, .install-agent-step-description {
+    .install-agent-step-status, .install-agent-step-label, .install-agent-step-description {
       opacity: 0.5;
     }
   }
@@ -549,7 +544,12 @@ function routeToSettings() {
   }
 
   .install-agent-step-label {
+    font-size: 15px;
     font-weight: 600;
+
+    a {
+      color: var(--link);
+    }
   }
 
   .install-agent-actions {

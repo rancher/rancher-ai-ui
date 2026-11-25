@@ -14,6 +14,7 @@ const props = defineProps({
     type:    String,
     default: '',
   },
+  // TODO: right now don't have a way to check if other users have chats, we need a dedicated API
   hasChats: {
     type:    Boolean,
     default: true,

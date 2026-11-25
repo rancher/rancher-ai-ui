@@ -8,7 +8,7 @@ ai:
     title: Liz
   install:
     title: Set up the AI Assistant
-    notInstalled: The AI Agent is not installed yet. I can install it for you, then you'll only need to configure the AI Assistant in the Settings page.
+    notInstalled: The AI Agent is not installed yet - I can install it for you if you want. After that, you'll need to configure how the AI Assistant works and behaves.
     applied: The AI Assistant is configured and the AI Agent is up and running.
     viewingSettings: You are viewing the AI Assistant settings page.
     actions:
@@ -16,22 +16,23 @@ ai:
       configure: Configure AI Assistant
       retry: Retry
       reload: Start chatting
+      editValues: Edit Values
       installChart: Install
       retryInstallChart: Retry Install
-      editValues: Edit Values
-      editedValues: Edit Values (customized)
     values:
       title: AI Agent Helm values
       description: These values are used to install the AI Agent chart.
+      install: Install
       restore: Restore defaults
       invalid: 'Invalid YAML: {error}'
       notAnObject: the values must be a YAML object
       ariaLabel:
         restore: Restore defaults
         cancel: Cancel
-        save: Save
+        install: Install
     status:
       pending: Not started
+      ready: Ready to start
       inProgress: In progress
       done: Completed
       error: Failed

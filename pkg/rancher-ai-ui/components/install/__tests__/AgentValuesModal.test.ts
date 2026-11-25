@@ -52,12 +52,12 @@ const editor = (wrapper: VueWrapper<any>) => wrapper.findComponent({ name: 'Yaml
 
 describe('AgentValuesModal.vue', () => {
   describe('While the values are loading', () => {
-    it('should show a spinner instead of the editor and disable save', () => {
+    it('should show a spinner instead of the editor and disable install', () => {
       const wrapper = mountComponent({ loading: true });
 
       expect(wrapper.find('[data-testid="rancher-ai-ui-install-agent-values-loading"]').exists()).toBe(true);
       expect(editor(wrapper).exists()).toBe(false);
-      expect(findButton(wrapper, 'save').props('disabled')).toBe(true);
+      expect(findButton(wrapper, 'install').props('disabled')).toBe(true);
     });
 
     it('should show the values in the editor once loaded', async() => {
@@ -73,19 +73,19 @@ describe('AgentValuesModal.vue', () => {
 
       expect(wrapper.find('[data-testid="rancher-ai-ui-install-agent-values-loading"]').exists()).toBe(false);
       expect(editor(wrapper).props('value')).toBe(YAML);
-      expect(findButton(wrapper, 'save').props('disabled')).toBe(false);
+      expect(findButton(wrapper, 'install').props('disabled')).toBe(false);
     });
   });
 
   describe('Editing', () => {
-    it('should save the edited values', async() => {
+    it('should install the edited values', async() => {
       const wrapper = mountComponent();
       const edited = 'plan:\n  enabled: false\n';
 
       editor(wrapper).vm.$emit('update:value', edited);
       await wrapper.vm.$nextTick();
 
-      findButton(wrapper, 'save').vm.$emit('click');
+      findButton(wrapper, 'install').vm.$emit('click');
 
       expect(wrapper.emitted('save')).toStrictEqual([[edited]]);
     });
@@ -99,18 +99,18 @@ describe('AgentValuesModal.vue', () => {
 
       expect(editor(wrapper).props('value')).toBe(restored);
 
-      findButton(wrapper, 'save').vm.$emit('click');
+      findButton(wrapper, 'install').vm.$emit('click');
 
       expect(wrapper.emitted('save')).toStrictEqual([[restored]]);
     });
 
-    it('should not allow saving empty values', async() => {
+    it('should not allow installing empty values', async() => {
       const wrapper = mountComponent();
 
       editor(wrapper).vm.$emit('update:value', '');
       await wrapper.vm.$nextTick();
 
-      expect(findButton(wrapper, 'save').props('disabled')).toBe(true);
+      expect(findButton(wrapper, 'install').props('disabled')).toBe(true);
     });
   });
 

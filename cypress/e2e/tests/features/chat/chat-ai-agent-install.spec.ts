@@ -248,9 +248,9 @@ describe('Chat - AI agent installation', () => {
         installAgent.step('repository').error().should('be.visible').and('not.be.empty');
         installAgent.retryButton().should('be.visible');
 
-        installAgent.step('agent').isBlocked(2);
-        installAgent.step('configure').isBlocked(3);
-        installAgent.step('apply').isBlocked(4);
+        installAgent.step('agent').isBlocked();
+        installAgent.step('configure').isBlocked();
+        installAgent.step('apply').isBlocked();
 
         installAgent.editValuesButton().should('not.exist');
         installAgent.installChartButton().should('not.exist');
@@ -289,9 +289,10 @@ describe('Chat - AI agent installation', () => {
         installAgent.startButton().click();
 
         installAgent.step('repository').isDone();
-        installAgent.step('agent').isPending();
+        installAgent.step('agent').isReady();
         installAgent.step('agent').isEnabled();
-        installAgent.editValuesButton().should('be.visible');
+        installAgent.editValuesButton().should('be.visible').and('contain', 'Edit Values');
+        installAgent.installChartButton().should('be.visible').and('contain', 'Install');
       });
 
       it('Should install the AI agent chart', () => {
@@ -308,7 +309,7 @@ describe('Chat - AI agent installation', () => {
         installAgent.editValuesButton().should('not.exist');
         installAgent.installChartButton().should('not.exist');
 
-        installAgent.step('configure').isInProgress();
+        installAgent.step('configure').isReady();
         installAgent.configureButton().should('be.visible');
       });
 
@@ -320,15 +321,16 @@ describe('Chat - AI agent installation', () => {
 
         installAgent.step('agent').isError();
         installAgent.step('agent').error().should('contain', 'Helm installation failed: INSTALLATION FAILED: simulated failure');
-        installAgent.step('configure').isBlocked(3);
+        installAgent.step('configure').isBlocked();
 
-        installAgent.installChartButton().should('be.visible').click();
+        installAgent.editValuesButton().should('be.visible');
+        installAgent.installChartButton().should('be.visible').and('contain', 'Retry Install').click();
         cy.wait('@installChart');
         cy.get('@installChart.all').should('have.length', 2);
 
         installAgent.step('agent').isDone(30000);
         installAgent.step('agent').error().should('not.exist');
-        installAgent.step('configure').isInProgress();
+        installAgent.step('configure').isReady();
       });
 
       describe('Helm values', () => {
@@ -348,19 +350,12 @@ describe('Chat - AI agent installation', () => {
         });
 
         it('Should install the chart with the customized values', () => {
+          simulateChartInstall([0]);
+
           valuesModal.editor().set('replicaCount: 2\nplan:\n  enabled: false\n');
-          valuesModal.saveButton().click();
+          valuesModal.installButton().click();
 
           valuesModal.checkNotExists();
-          installAgent.editValuesButton().should('contain', 'Edit Values (customized)');
-
-          // The customized values are kept when reopening the editor
-          installAgent.editValuesButton().click();
-          valuesModal.editor().value().should('contain', 'replicaCount: 2');
-          valuesModal.cancelButton().click();
-
-          simulateChartInstall([0]);
-          installAgent.installChartButton().click();
 
           cy.wait('@installChart').its('request.body.charts.0.values').should('deep.equal', {
             replicaCount: 2,
@@ -368,16 +363,15 @@ describe('Chat - AI agent installation', () => {
           });
         });
 
-        it('Should not save invalid YAML', () => {
+        it('Should not install invalid YAML', () => {
           valuesModal.editor().set('plan: [unclosed');
-          valuesModal.saveButton().click();
+          valuesModal.installButton().click();
 
           valuesModal.checkVisible();
           valuesModal.errorBanner().should('be.visible').and('contain', 'Invalid YAML');
 
           valuesModal.cancelButton().click();
           valuesModal.checkNotExists();
-          installAgent.editValuesButton().should('not.contain', 'customized');
         });
 
         it('Should discard the changes on cancel', () => {
@@ -385,7 +379,6 @@ describe('Chat - AI agent installation', () => {
           valuesModal.cancelButton().click();
 
           valuesModal.checkNotExists();
-          installAgent.editValuesButton().should('not.contain', 'customized');
 
           installAgent.editValuesButton().click();
           valuesModal.editor().value().should('contain', 'replicaCount: 1');
@@ -393,17 +386,14 @@ describe('Chat - AI agent installation', () => {
 
         it('Should restore the default values', () => {
           valuesModal.editor().set('replicaCount: 2\n');
-          valuesModal.saveButton().click();
-          installAgent.editValuesButton().should('contain', 'customized').click();
-
           valuesModal.restoreButton().click();
 
-          valuesModal.checkNotExists();
-          installAgent.editValuesButton().should('not.contain', 'customized');
+          valuesModal.checkVisible();
+          valuesModal.editor().value().should('contain', 'replicaCount: 1');
 
           // Only the installer overrides are sent: Helm applies the chart defaults
           simulateChartInstall([0]);
-          installAgent.installChartButton().click();
+          valuesModal.installButton().click();
 
           cy.wait('@installChart').its('request.body.charts.0.values').should('deep.equal', {
             plan:         { enabled: true },
@@ -428,11 +418,11 @@ describe('Chat - AI agent installation', () => {
         installAgent.step('repository').isDone();
         installAgent.step('agent').isDone();
 
-        installAgent.step('configure').isInProgress();
+        installAgent.step('configure').isReady();
         installAgent.step('configure').isEnabled();
         installAgent.configureButton().should('be.visible').and('contain', 'Configure AI Assistant');
 
-        installAgent.step('apply').isBlocked(4);
+        installAgent.step('apply').isBlocked();
 
         installAgent.retryButton().should('not.exist');
         installAgent.editValuesButton().should('not.exist');
@@ -456,7 +446,7 @@ describe('Chat - AI agent installation', () => {
 
         installAgent.step('agent').isDone();
         installAgent.step('agent').error().should('not.exist');
-        installAgent.step('configure').isInProgress();
+        installAgent.step('configure').isReady();
       });
 
       it('Should open the AI Assistant settings to configure the AI provider', () => {
@@ -467,8 +457,8 @@ describe('Chat - AI agent installation', () => {
         settingsPage.settings().aiAgentSettings().checkExists();
         settingsPage.agentNotInstalledState().checkNotExists();
 
-        // The settings page is already open: the step only asks to apply the settings
-        installAgent.step('configure').isInProgress();
+        // The settings page is already open: the step waits for the user to apply the settings
+        installAgent.step('configure').isReady();
         installAgent.configureButton().should('not.exist');
       });
 
@@ -476,6 +466,7 @@ describe('Chat - AI agent installation', () => {
         installAgent.configureButton().click();
         settingsPage.settings().aiAgentSettings().checkExists();
 
+        // The agent was deployed before the installation and can have chats: applying asks first
         settingsPage.settings().saveButton().click();
         new ApplySettingsPromptPo().confirm();
 

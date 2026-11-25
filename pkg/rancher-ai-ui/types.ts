@@ -567,6 +567,7 @@ export const enum InstallStep {
 
 export const enum InstallStepStatus {
   Pending = 'pending',
+  Ready = 'ready',
   InProgress = 'inProgress',
   Done = 'done',
   Error = 'error',

@@ -3,7 +3,7 @@ import CodeMirrorPo from '@rancher/cypress/e2e/po/components/code-mirror.po';
 
 type InstallAgentStep = 'repository' | 'agent' | 'configure' | 'apply';
 
-type InstallAgentStepStatus = 'pending' | 'inProgress' | 'done' | 'error';
+type InstallAgentStepStatus = 'pending' | 'ready' | 'inProgress' | 'done' | 'error';
 
 export class InstallAgentStepPo extends ComponentPo {
   constructor(step: InstallAgentStep) {
@@ -18,8 +18,15 @@ export class InstallAgentStepPo extends ComponentPo {
     return this.withStatus('pending').should('exist');
   }
 
+  /**
+   * A step reached and waiting for the user to start it.
+   */
+  isReady() {
+    return this.withStatus('ready').find('.icon-chevron-right').should('be.visible');
+  }
+
   isInProgress() {
-    return this.withStatus('inProgress').find('.icon-spinner').should('be.visible');
+    return this.withStatus('inProgress').find('.icon-spinner.icon-spin').should('be.visible');
   }
 
   isDone(timeout = 10000) {
@@ -31,10 +38,10 @@ export class InstallAgentStepPo extends ComponentPo {
   }
 
   /**
-   * A step that can't start until the previous ones complete, showing its number instead of the status icon.
+   * A step that can't start until the previous ones complete, showing the gray waiting icon.
    */
-  isBlocked(index: number) {
-    return this.self().should('have.class', 'disabled').find('.install-agent-step-number').should('contain', `${ index }`);
+  isBlocked() {
+    return this.self().should('have.class', 'disabled').find('.icon-spinner').should('be.visible');
   }
 
   isEnabled() {
@@ -72,8 +79,8 @@ export class AgentValuesModalPo extends ComponentPo {
     return this.self().find('[data-testid="rancher-ai-ui-install-agent-values-cancel"]');
   }
 
-  saveButton() {
-    return this.self().find('[data-testid="rancher-ai-ui-install-agent-values-save"]');
+  installButton() {
+    return this.self().find('[data-testid="rancher-ai-ui-install-agent-values-install"]');
   }
 }
 
@@ -98,12 +105,12 @@ export default class InstallAgentPo extends ComponentPo {
     return this.self().find('[data-testid="rancher-ai-ui-install-agent-edit-values"]');
   }
 
-  valuesModal() {
-    return new AgentValuesModalPo();
-  }
-
   installChartButton() {
     return this.self().find('[data-testid="rancher-ai-ui-install-agent-install-chart"]');
+  }
+
+  valuesModal() {
+    return new AgentValuesModalPo();
   }
 
   configureButton() {
