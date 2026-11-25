@@ -156,4 +156,55 @@ describe('Feature: chat-panel-menu', () => {
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-9-copy-last-message');
   });
+
+  it('Test 10: Auto-scroll and desktop notifications options are hidden while a confirmation is pending (Chat is disabled)', () => {
+    menu.toggleMenu();
+    menu.option('Auto-Scroll').should('be.visible');
+    menu.option('Desktop Notifications').should('be.visible');
+    menu.toggleMenu();
+
+    cy.enqueueLLMResponse({
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod',
+            manifest:  `{
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod',
+                namespace: 'default'
+              },
+              spec:       {
+                containers: [{
+                  name:  'my-container',
+                  image: 'nginx:latest'
+                }]
+              }
+            }`,
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      }],
+      text: 'Pod created successfully.'
+    });
+
+    chat.sendMessage('Create a pod named my-pod in default namespace');
+
+    const confirmationRequestMessage = chat.getMessage(3);
+
+    confirmationRequestMessage.isCompleted();
+
+    menu.toggleMenu();
+    menu.option('Download Messages').should('be.visible');
+    menu.option('View Keyboard Shortcuts').should('be.visible');
+    menu.option('Edit Configuration').should('be.visible');
+    cy.get('.v-popper__popper').filter(':visible').should('not.contain', 'Auto-Scroll').and('not.contain', 'Desktop Notifications');
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-10-disabled-options');
+  });
 });

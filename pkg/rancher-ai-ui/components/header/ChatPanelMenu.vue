@@ -10,6 +10,14 @@ import {
 import { Preferences, StorageKey } from '../../types';
 import Notifications from '../../handlers/notification';
 
+interface MenuOption {
+  label:       string;
+  description: string;
+  icon?:       string;
+  warning?:    string;
+  action:     () => void;
+}
+
 const store = useStore();
 const { t } = useI18n(store);
 
@@ -37,7 +45,7 @@ const options = () => {
   const isAutoScrollEnabled = props.preferences[StorageKey.ENABLE_AUTO_SCROLL];
   const isDesktopNotificationsEnabled = props.preferences[StorageKey.ENABLE_DESKTOP_NOTIFICATIONS];
 
-  return [
+  const out: MenuOption[] = [
     {
       label:       t('ai.menu.options.chat.download.label'),
       description: t('ai.menu.options.chat.download.description'),
@@ -46,29 +54,37 @@ const options = () => {
         emit('download:chat');
       },
     },
-    {
-      label:       t(`ai.menu.options.chat.autoscroll.label.${ isAutoScrollEnabled ? 'disable' : 'enable' }`),
-      description: t(`ai.menu.options.chat.autoscroll.description.${ isAutoScrollEnabled ? 'disable' : 'enable' }`),
-      icon:        isAutoScrollEnabled ? 'icon-mouse-on' : 'icon-mouse-off',
-      action:      () => {
-        emit('update:preferences', {
-          key:   StorageKey.ENABLE_AUTO_SCROLL,
-          value: !isAutoScrollEnabled
-        });
+  ];
+
+  if (!props.disabled) {
+    out.push(
+      {
+        label:       t(`ai.menu.options.chat.autoscroll.label.${ isAutoScrollEnabled ? 'disable' : 'enable' }`),
+        description: t(`ai.menu.options.chat.autoscroll.description.${ isAutoScrollEnabled ? 'disable' : 'enable' }`),
+        icon:        isAutoScrollEnabled ? 'icon-mouse-on' : 'icon-mouse-off',
+        action:      () => {
+          emit('update:preferences', {
+            key:   StorageKey.ENABLE_AUTO_SCROLL,
+            value: !isAutoScrollEnabled
+          });
+        },
       },
-    },
-    {
-      label:       t(`ai.menu.options.chat.desktopNotifications.label.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
-      description: t(`ai.menu.options.chat.desktopNotifications.description.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
-      icon:        isDesktopNotificationsEnabled ? 'icon-notify-bell-off' : 'icon-notify-bell',
-      warning:     isDesktopNotificationsEnabled && Notifications.isBlocked() ? t('ai.menu.options.chat.desktopNotifications.blocked', {}, true) : '',
-      action:      () => {
-        emit('update:preferences', {
-          key:   StorageKey.ENABLE_DESKTOP_NOTIFICATIONS,
-          value: !isDesktopNotificationsEnabled
-        });
+      {
+        label:       t(`ai.menu.options.chat.desktopNotifications.label.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
+        description: t(`ai.menu.options.chat.desktopNotifications.description.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
+        icon:        isDesktopNotificationsEnabled ? 'icon-notify-bell-off' : 'icon-notify-bell',
+        warning:     isDesktopNotificationsEnabled && Notifications.isBlocked() ? t('ai.menu.options.chat.desktopNotifications.blocked', {}, true) : '',
+        action:      () => {
+          emit('update:preferences', {
+            key:   StorageKey.ENABLE_DESKTOP_NOTIFICATIONS,
+            value: !isDesktopNotificationsEnabled
+          });
+        }
       }
-    },
+    );
+  }
+
+  out.push(
     {
       label:       t('ai.menu.options.chat.shortcuts.label'),
       description: t('ai.menu.options.chat.shortcuts.description'),
@@ -84,8 +100,10 @@ const options = () => {
       action:      () => {
         emit('config:chat');
       },
-    },
-  ];
+    }
+  );
+
+  return out;
 };
 
 const isOpen = ref(false);
@@ -100,7 +118,6 @@ const isOpen = ref(false);
       <rc-dropdown-trigger
         variant="ghost"
         small
-        :disabled="props.disabled"
       >
         <i class="icon icon-actions" />
       </rc-dropdown-trigger>
