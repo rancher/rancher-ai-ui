@@ -230,6 +230,12 @@ ai:
         error: 'An error occurred processing your request'
         authentication: 'Sign-in required to continue'
         idle: 'Response complete'
+    install:
+      title: Rancher AI Assistant
+      summary:
+        ready: 'The AI Agent installation requires your action'
+        completed: 'The AI Assistant is ready'
+        error: 'The AI Assistant setup failed: {step}'
   configurations:
     label: Uses AI, running {name} ({model}).
     verifyResults:

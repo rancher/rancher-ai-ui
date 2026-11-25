@@ -32,6 +32,7 @@ import { InstallStep, InstallStepStatus } from '../types';
 import { warn } from '../utils/log';
 import { decodeModelKey } from '../utils/settings';
 import Chat from '../handlers/chat';
+import Notifications from '../handlers/notification';
 
 interface RepositoryCredentials {
   username: string;
@@ -281,6 +282,11 @@ export function useAiAgentInstallerComposable() {
       status,
       error
     };
+
+    Notifications.install().send(store, {
+      step,
+      status
+    });
   }
 
   /**

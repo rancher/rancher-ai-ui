@@ -17,7 +17,12 @@ const getters = {
   hasUnread: (state: State) => (type: NotificationType) => {
     return state.notifications[type]?.length > 0;
   },
-  unreadCount: (state: State) => (type: NotificationType) => {
+  unreadCount: (state: State) => (type?: NotificationType) => {
+    // If no type is specified, count all notifications across all types
+    if (!type) {
+      return Object.values(state.notifications).reduce((acc, arr) => acc + arr.length, 0);
+    }
+
     return state.notifications[type]?.length || 0;
   },
   notifications: (state: State) => (type: NotificationType) => {

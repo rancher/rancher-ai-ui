@@ -552,7 +552,8 @@ export interface Preferences {
 }
 
 export const enum NotificationType {
-  MESSAGE = 'message'
+  MESSAGE = 'message',
+  INSTALL = 'install'
 }
 
 /**

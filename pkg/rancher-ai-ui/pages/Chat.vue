@@ -489,6 +489,7 @@ function disconnectAndRestorePanel() {
 
 function clearNotifications() {
   Notifications.message().clear(store);
+  Notifications.install().clear(store);
 }
 </script>
 

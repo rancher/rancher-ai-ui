@@ -37,6 +37,13 @@ jest.mock('../../handlers/chat', () => ({
   },
 }));
 
+const mockSendInstallNotification = jest.fn();
+
+jest.mock('../../handlers/notification', () => ({
+  __esModule: true,
+  default:    { install: () => ({ send: mockSendInstallNotification }) },
+}));
+
 // The store resources, kept reactive like the ones updated by the websocket
 const mockResources: Record<string, Record<string, any>> = reactive({});
 const mockSchemas: Record<string, any> = reactive({});
@@ -324,6 +331,25 @@ describe('useAiAgentInstallerComposable', () => {
       expect(stepStatus(installer, InstallStep.Repository).status).toBe(InstallStepStatus.Done);
       expect(stepStatus(installer, InstallStep.Agent).status).toBe(InstallStepStatus.Ready);
       expect(installer.isAgentNotInstalled.value).toBe(true);
+    });
+
+    it('should notify the steps waiting for the user and the failures', async() => {
+      addRepository();
+
+      await installer.install();
+
+      expect(mockSendInstallNotification).toHaveBeenCalledWith(mockStore, {
+        step:   InstallStep.Agent,
+        status: InstallStepStatus.Ready
+      });
+
+      removeResource(CATALOG.CLUSTER_REPO, AGENT_REPO_NAME);
+      await flushPromises();
+
+      expect(mockSendInstallNotification).toHaveBeenCalledWith(mockStore, {
+        step:   InstallStep.Repository,
+        status: InstallStepStatus.Error
+      });
     });
 
     it('should complete once the repository index is downloaded', async() => {
