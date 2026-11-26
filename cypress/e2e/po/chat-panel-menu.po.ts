@@ -15,6 +15,11 @@ export default class ChatPanelMenuPo extends ComponentPo {
     return this.self().find('.icon-actions').click();
   }
 
+  /** The ⋮ menu trigger button */
+  trigger() {
+    return this.self().find('.chat-console-menu-container [aria-haspopup="menu"]');
+  }
+
   /**
    * Click a menu option by its visible label text.
    * Uses .v-popper__popper because rc-dropdown teleports content outside the component tree.
@@ -27,6 +32,18 @@ export default class ChatPanelMenuPo extends ComponentPo {
 
   option(label: string) {
     return cy.get('.v-popper__popper').filter(':visible').contains(label);
+  }
+
+  /** The menu item containing the label, which holds its disabled state */
+  optionItem(label: string) {
+    return this.option(label).closest('[dropdown-menu-item]');
+  }
+
+  /** The options changing the chat preferences, only usable while the chat is enabled */
+  preferenceOptionsAreDisabled(disabled = true) {
+    ['Auto-Scroll', 'Desktop Notifications'].forEach((label) => {
+      this.optionItem(label).should('be.visible').and('have.attr', 'aria-disabled', `${ disabled }`);
+    });
   }
 
   /**

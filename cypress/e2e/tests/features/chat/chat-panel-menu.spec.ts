@@ -3,10 +3,26 @@ import ChatPo from '@/cypress/e2e/po/chat.po';
 import ChatPanelMenuPo from '@/cypress/e2e/po/chat-panel-menu.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
 import DeleteChatPromptPo from '@/cypress/e2e/po/dialog/delete-chat.po';
+import { AGENT_NAME, AGENT_NAMESPACE } from '@/cypress/e2e/blueprints/aiAgentApp';
 
 describe('Feature: chat-panel-menu', () => {
   const chat = new ChatPo();
   const menu = new ChatPanelMenuPo();
+
+  // A chat without id is not initialized yet, which disables it
+  const setChatInitialized = (initialized: boolean) => {
+    cy.window().then((win: any) => {
+      const store = win.$globalApp.$store;
+
+      if (!initialized) {
+        win.chatIdBeforeTest = store.getters['rancher-ai-ui/chat/metadata']?.chatId;
+      }
+
+      store.commit('rancher-ai-ui/chat/setMetadata', { chatId: initialized ? win.chatIdBeforeTest : null });
+    });
+
+    cy.get(`[data-testid="rancher-ai-ui-chat-panel-${ initialized ? 'ready' : 'not-ready' }"]`).should('exist');
+  };
 
   beforeEach(() => {
     cy.login();
@@ -20,7 +36,13 @@ describe('Feature: chat-panel-menu', () => {
   });
 
   afterEach(() => {
+    cy.clearLLMResponses();
     cy.cleanChatHistory();
+  });
+
+  after(() => {
+    // Created by the confirmed action of Test 10
+    cy.deleteRancherResource('v1', 'pods', 'default/my-pod', false);
   });
 
   it('Test 1: Menu button opens the ⋮ dropdown', () => {
@@ -155,5 +177,184 @@ describe('Feature: chat-panel-menu', () => {
     cy.get('@clipboardWrite').should('have.been.calledWith', 'Hello from AI.');
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-9-copy-last-message');
+  });
+
+  it('Test 10: Auto-scroll and desktop notifications options are disabled while a confirmation is pending (Chat is disabled)', () => {
+    menu.toggleMenu();
+    menu.preferenceOptionsAreDisabled(false);
+
+    cy.enqueueLLMResponse({
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod',
+            manifest:  `{
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod',
+                namespace: 'default'
+              },
+              spec:       {
+                containers: [{
+                  name:  'my-container',
+                  image: 'nginx:latest'
+                }]
+              }
+            }`,
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      }],
+      text: 'Pod created successfully.'
+    });
+
+    chat.sendMessage('Create a pod named my-pod in default namespace');
+
+    const confirmationRequestMessage = chat.getMessage(3);
+
+    confirmationRequestMessage.isCompleted();
+
+    menu.toggleMenu();
+    menu.option('Download Messages').should('be.visible');
+    menu.option('View Keyboard Shortcuts').should('be.visible');
+    menu.option('Edit Configuration').should('be.visible');
+    menu.preferenceOptionsAreDisabled();
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-10-disabled-options');
+
+    menu.toggleMenu();
+
+    // Answered: the chat is enabled again and so are the options
+    confirmationRequestMessage.confirmButton().click();
+    confirmationRequestMessage.isConfirmed();
+    chat.getMessage(4).containsText('Pod created successfully.');
+
+    menu.toggleMenu();
+    menu.preferenceOptionsAreDisabled(false);
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-10-enabled-options');
+  });
+
+  it('Test 11: The open menu stays open and disables the auto-scroll and desktop notifications options when the chat becomes disabled', () => {
+    menu.toggleMenu();
+    menu.preferenceOptionsAreDisabled(false);
+
+    // The AI agent deployment goes away: the chat is disabled while the menu is open
+    cy.window().then((win: any) => {
+      const store = win.$globalApp.$store;
+
+      store.commit('management/remove', store.getters['management/byId']('apps.deployment', `${ AGENT_NAMESPACE }/${ AGENT_NAME }`));
+    });
+
+    menu.option('Download Messages').should('be.visible');
+    menu.preferenceOptionsAreDisabled();
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-11-menu-open-when-disabled');
+  });
+
+  it('Test 12: The menu shows the correct options when the chat becomes enabled and the menu is opened', () => {
+    setChatInitialized(false);
+
+    menu.toggleMenu();
+    menu.option('Download Messages').should('be.visible');
+    menu.preferenceOptionsAreDisabled();
+
+    setChatInitialized(true);
+
+    // Still open, with all the options usable
+    menu.option('Download Messages').should('be.visible');
+    menu.preferenceOptionsAreDisabled(false);
+    menu.option('View Keyboard Shortcuts').should('be.visible');
+    menu.option('Edit Configuration').should('be.visible');
+
+    // The options did not move: the keyboard goes through all of them
+    menu.optionItem('Download Messages').focus();
+    cy.focused().type('{downArrow}');
+    cy.focused().should('contain', 'Auto-Scroll');
+    cy.focused().type('{downArrow}');
+    cy.focused().should('contain', 'Desktop Notifications');
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-12-enabled-options');
+  });
+
+  it('Test 13: The auto-scroll and desktop notifications options are disabled while the chat is initializing', () => {
+    setChatInitialized(false);
+
+    menu.toggleMenu();
+    menu.option('Download Messages').should('be.visible');
+    menu.option('View Keyboard Shortcuts').should('be.visible');
+    menu.option('Edit Configuration').should('be.visible');
+    menu.preferenceOptionsAreDisabled();
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-13-initializing-options');
+  });
+
+  it('Test 14: The ⋮ button keeps the focus when a confirmation arrives', () => {
+    cy.enqueueLLMResponse({
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod-focus',
+            manifest:  `{
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod-focus',
+                namespace: 'default'
+              },
+              spec:       {
+                containers: [{
+                  name:  'my-container',
+                  image: 'nginx:latest'
+                }]
+              }
+            }`,
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      }],
+      text: 'Pod created successfully.'
+    });
+
+    chat.sendMessage('Create a pod named my-pod-focus in default namespace');
+    menu.trigger().focus();
+
+    chat.getMessage(3).isCompleted();
+    chat.getMessage(3).confirmButton().should('be.visible');
+
+    menu.trigger().should('have.focus');
+
+    // Enter still opens the menu, with the options of a disabled chat
+    cy.focused().type('{enter}');
+    menu.option('Download Messages').should('be.visible');
+    menu.preferenceOptionsAreDisabled();
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-14-focus-on-confirmation');
+  });
+
+  it('Test 15: A focused option keeps the focus when the chat becomes disabled and enabled again', () => {
+    menu.trigger().focus();
+    cy.focused().type('{enter}');
+    menu.option('Download Messages').should('be.visible');
+    cy.focused().should('have.attr', 'dropdown-menu-item');
+
+    setChatInitialized(false);
+    menu.preferenceOptionsAreDisabled();
+    cy.focused().should('contain', 'Download Messages');
+
+    setChatInitialized(true);
+    menu.preferenceOptionsAreDisabled(false);
+    cy.focused().should('contain', 'Download Messages');
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-15-focus-kept');
   });
 });

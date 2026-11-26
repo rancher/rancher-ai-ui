@@ -86,6 +86,7 @@ function toggleHistory() {
     >
       <ChatPanelMenu
         :preferences="props.preferences"
+        :disabled="props.disabled"
         @download:chat="emit('download:chat')"
         @show:help="emit('show:help')"
         @config:chat="emit('config:chat')"
