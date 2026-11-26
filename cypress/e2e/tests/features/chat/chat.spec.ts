@@ -346,7 +346,7 @@ describe('Chat', () => {
 
       welcomeMessage.isCompleted();
 
-      cy.installRancherAIService({ waitForAIServiceReady: false });
+      cy.deleteRancherAIAgentDeployment();
 
       // Verify that the processing message state is not visible when connection phase is visible
       chat.messagesPanel().processingState().should('not.exist');
@@ -356,6 +356,8 @@ describe('Chat', () => {
       chat.processingState('Disconnected').should('be.visible');
 
       chat.getSystemErrorMessage(1).containsText('Rancher AI Agent pod not found. Please ensure the Rancher AI assistant services are correctly installed and you have the necessary permissions to access it.');
+
+      cy.restoreRancherAIAgentDeployment({ waitForAIServiceReady: false });
 
       // Check for the reconnecting phase
       chat.isNotReady();
@@ -384,7 +386,7 @@ describe('Chat', () => {
     it('it should support reconnections when opening the chat and the AI service is unavailable', () => {
       HomePagePo.goTo();
 
-      cy.installRancherAIService({ waitForAIServiceReady: false });
+      cy.redeployRancherAIAgent({ waitForAIServiceReady: false });
 
       chat.open();
 
@@ -1315,14 +1317,14 @@ describe('Chat', () => {
       chat.getMessage(5).self().should('not.be.visible');
       chat.messagesPanel().scrollButton().self().should('be.visible');
 
-      cy.uninstallRancherAIService();
+      cy.deleteRancherAIAgentDeployment();
 
       const systemErrorMessage = chat.getSystemErrorMessage(1);
 
       systemErrorMessage.self().should('be.visible');
       systemErrorMessage.containsText('Rancher AI Agent pod not found. Please ensure the Rancher AI assistant services are correctly installed and you have the necessary permissions to access it.');
 
-      cy.installRancherAIService({ waitForAIServiceReady: true });
+      cy.restoreRancherAIAgentDeployment();
     });
 
     after(() => {

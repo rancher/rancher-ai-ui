@@ -14,6 +14,11 @@ const props = defineProps({
     type:    String,
     default: '',
   },
+  // TODO: right now don't have a way to check if other users have chats, we need a dedicated API
+  hasChats: {
+    type:    Boolean,
+    default: true,
+  },
   onConfirm: {
     type:     Function,
     required: true,
@@ -30,9 +35,14 @@ const emit = defineEmits([
 ]);
 
 const warningMessage = computed(() => {
+  if (!props.hasChats) {
+    return '';
+  }
+
   if (!props.storageType) {
     return t('aiConfig.dialog.applySettings.warning.unknownStorage', {}, true);
   }
+
   if (props.storageType === StorageType.InMemory) {
     return t('aiConfig.dialog.applySettings.warning.inMemory', {}, true);
   }
@@ -62,11 +72,16 @@ function close() {
       </h4>
     </template>
     <template #body>
-      <div
-        v-if="warningMessage"
-        class="mb-10"
-      >
-        <span v-clean-html="warningMessage" />
+      <div class="prompt-apply-settings-body mb-1">
+        <span v-clean-html="t('aiConfig.dialog.applySettings.warning.redeploy', {}, true)" />
+        <span
+          v-if="warningMessage"
+          v-clean-html="warningMessage"
+        />
+        <span
+          v-clean-html="t('aiConfig.dialog.applySettings.warning.continue', {}, true)"
+          class="prompt-apply-settings-body-continue-label"
+        />
       </div>
     </template>
     <template #actions>
@@ -92,6 +107,15 @@ function close() {
   .prompt-apply-settings {
     &.card-container {
       box-shadow: none;
+    }
+
+    &-body {
+      display: flex;
+      flex-direction: column;
+
+      &-continue-label {
+        margin-top: 8px;
+      }
     }
 
     #confirm {

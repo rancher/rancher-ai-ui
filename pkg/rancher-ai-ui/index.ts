@@ -75,7 +75,7 @@ export default function(extension: IExtension, { store }: any): void {
           return false;
         }
 
-        const unreadCount = store.getters[`${ PRODUCT_NAME }/notification/unreadCount`](NotificationType.MESSAGE);
+        const unreadCount = store.getters[`${ PRODUCT_NAME }/notification/unreadCount`]();
   
         return unreadCount > 0;
       },

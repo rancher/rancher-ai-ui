@@ -19,7 +19,7 @@ interface DesktopNotificationOptions {
 
 export abstract class NotificationChannel {
   // eslint-disable-next-line no-unused-vars
-  abstract send(store: Store<any>, storage: { get: Function }, payload: object): void;
+  abstract send(store: Store<any>, ...args: any[]): void;
 
   // eslint-disable-next-line no-unused-vars
   abstract clear(store: Store<any>): void;

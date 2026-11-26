@@ -336,7 +336,7 @@ describe('Feature: Chat token usage', () => {
     it('It should not show the token usage of a chat that failed to initialize', () => {
       chat.open();
 
-      chat.getSystemErrorMessage(1).containsText('active LLM not specified');
+      chat.getSystemErrorMessage(1).containsText('Configuration error, AI Provider not specified');
 
       // The space is kept so the console doesn't move once a chat starts
       console.tokenUsage().should('exist').and('not.be.visible');

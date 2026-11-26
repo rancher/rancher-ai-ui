@@ -1,0 +1,560 @@
+<script setup lang="ts">
+// @ts-expect-error FIXME: no type declarations for js-yaml
+import jsyaml from 'js-yaml';
+import { computed, ref, watch } from 'vue';
+import { useStore } from 'vuex';
+import { useI18n } from '@shell/composables/useI18n';
+import { CATALOG, NORMAN } from '@shell/config/types';
+import RcButton from '@components/RcButton/RcButton.vue';
+import AppModal from '@shell/components/AppModal.vue';
+import AgentValuesModal from './AgentValuesModal.vue';
+// @ts-expect-error FIXME: Cannot find module '../../assets/liz-icon.svg'
+import lizIcon from '../../assets/liz-icon.svg';
+import { PRODUCT_NAME } from '../../product';
+import { InstallStep, InstallStepStatus } from '../../types';
+import { useAiAgentInstallerComposable } from '../../composables/useAiAgentInstallerComposable';
+
+const STATUS_ICON: Record<InstallStepStatus, string> = {
+  [InstallStepStatus.Pending]:    'icon-spinner',
+  [InstallStepStatus.Ready]:      'icon-chevron-right',
+  [InstallStepStatus.InProgress]: 'icon-spinner icon-spin',
+  [InstallStepStatus.Done]:       'icon-checkmark',
+  [InstallStepStatus.Error]:      'icon-error',
+};
+
+const store = useStore();
+const { t } = useI18n(store);
+
+const emit = defineEmits(['reload']);
+
+const {
+  state, install, installChart, retryApply, repository, loadValues, setValues
+} = useAiAgentInstallerComposable();
+
+const userName = computed(() => {
+  const principal = store.getters['rancher/byId'](NORMAN.PRINCIPAL, store.getters['auth/principalId']);
+
+  return principal?.loginName === 'admin' ? principal.loginName : principal?.name || 'User';
+});
+
+const agentAppRef = computed(() => {
+  const [namespace, name] = (state.agentAppId || '').split('/');
+
+  return name ? {
+    namespace,
+    name
+  } : null;
+});
+
+const steps = computed(() => [
+  {
+    key:  InstallStep.Repository,
+    link: repository.value ? {
+      name:   'c-cluster-product-resource-id',
+      params: {
+        cluster:  'local',
+        product:  'apps',
+        resource: CATALOG.CLUSTER_REPO,
+        id:       repository.value.metadata?.name
+      },
+    } : null,
+  },
+  {
+    key:  InstallStep.Agent,
+    link: agentAppRef.value ? {
+      name:   'c-cluster-product-resource-namespace-id',
+      params: {
+        cluster:   'local',
+        product:   'apps',
+        resource:  CATALOG.APP,
+        namespace: agentAppRef.value.namespace,
+        id:        agentAppRef.value.name
+      },
+    } : null,
+  },
+  {
+    key:  InstallStep.Configure,
+    link: state.steps[InstallStep.Configure].status === InstallStepStatus.Done ? {
+      name:   `c-cluster-settings-${ PRODUCT_NAME }`,
+      params: { cluster: store.state.$route?.params?.cluster || 'local' },
+      query:  { section: 'ai-agent-settings' },
+    } : null,
+  },
+  {
+    key:  InstallStep.Apply,
+    link: null,
+  },
+].map((step) => {
+  const status = state.steps[step.key].status;
+  const disabled = status === InstallStepStatus.Pending;
+
+  return {
+    ...step,
+    link:        disabled ? null : step.link,
+    disabled,
+    running:     status === InstallStepStatus.InProgress,
+    status,
+    icon:        STATUS_ICON[status],
+    // The step the installation is at: the reached, running or failed one
+    current:     [InstallStepStatus.Ready, InstallStepStatus.InProgress, InstallStepStatus.Error].includes(status),
+    error:       state.steps[step.key].error,
+    statusLabel: t(`ai.install.status.${ status }`),
+    summary:     t('ai.install.a11y.step', {
+      step:   t(`ai.install.steps.${ step.key }.label`),
+      status: t(`ai.install.status.${ status }`),
+      error:  state.steps[step.key].error || '',
+    }, true).trim(),
+  };
+}));
+
+// Read by screen readers when a step starts, completes or fails
+const announcement = ref('');
+
+watch(() => steps.value.map((step) => step.status), (statuses, previous) => {
+  const changed = steps.value.filter((step, i) => step.status !== previous?.[i] && step.status !== InstallStepStatus.Pending);
+
+  if (changed.length) {
+    announcement.value = changed.map((step) => step.summary).join('. ');
+  }
+});
+
+const showAgentActions = computed(() => [InstallStepStatus.Ready, InstallStepStatus.Error].includes(state.steps[InstallStep.Agent].status));
+
+const showValuesModal = ref(false);
+const valuesYaml = ref('');
+const valuesLoading = ref(false);
+const valuesError = ref('');
+
+async function loadValuesYaml() {
+  valuesLoading.value = true;
+  valuesError.value = '';
+  // Cleared so the editor gets the loaded values even if they didn't change
+  valuesYaml.value = '';
+
+  try {
+    valuesYaml.value = jsyaml.dump(await loadValues(), { lineWidth: -1 });
+  } catch (err: any) {
+    valuesError.value = err?.message || `${ err }`;
+  } finally {
+    valuesLoading.value = false;
+  }
+}
+
+function openValuesModal() {
+  showValuesModal.value = true;
+  loadValuesYaml();
+}
+
+function installValues(yaml: string) {
+  let values;
+
+  try {
+    values = jsyaml.load(yaml) || {};
+  } catch (err: any) {
+    valuesError.value = t('ai.install.values.invalid', { error: err?.message || err });
+
+    return;
+  }
+
+  if (typeof values !== 'object' || Array.isArray(values)) {
+    valuesError.value = t('ai.install.values.invalid', { error: t('ai.install.values.notAnObject') });
+
+    return;
+  }
+
+  setValues(values);
+  showValuesModal.value = false;
+  installChart();
+}
+
+function restoreValues() {
+  setValues(null);
+  loadValuesYaml();
+}
+
+function routeToSettings() {
+  store.state.$router.push({
+    name:   `c-cluster-settings-${ PRODUCT_NAME }`,
+    params: { cluster: store.state.$route.params.cluster || 'local' },
+    query:  { section: 'ai-agent-settings' },
+  });
+}
+</script>
+
+<template>
+  <div
+    class="install-agent"
+    data-testid="rancher-ai-ui-install-agent"
+  >
+    <div class="install-agent-splash">
+      <div class="install-agent-avatar-panel">
+        <div class="install-agent-avatar">
+          <img
+            :src="lizIcon"
+            alt="Liz Avatar"
+            width="70"
+            height="70"
+          />
+        </div>
+        <div class="install-agent-greeting">
+          <span class="install-agent-greeting-bubble">
+            {{ t('ai.message.system.welcome.greetings.line3', { name: userName }, true) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="install-agent-bubble"
+      data-testid="rancher-ai-ui-install-agent-bubble"
+    >
+      <div
+        class="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="rancher-ai-ui-install-agent-announcement"
+      >
+        {{ announcement }}
+      </div>
+      <div
+        v-if="state.started"
+        class="install-agent-title"
+      >
+        <b>{{ t('ai.install.title') }}</b>
+      </div>
+
+      <!-- Not started: explain why and offer the installation -->
+      <template v-if="!state.started">
+        <span>{{ t('ai.install.notInstalled', {}, true) }}</span>
+        <div class="install-agent-actions">
+          <RcButton
+            small
+            variant="primary"
+            data-testid="rancher-ai-ui-install-agent-start"
+            @click="install"
+          >
+            {{ t('ai.install.actions.install') }}
+          </RcButton>
+        </div>
+      </template>
+
+      <!-- Installing -->
+      <template v-else>
+        <ol class="install-agent-steps">
+          <li
+            v-for="step in steps"
+            :key="step.key"
+            class="install-agent-step"
+            :class="[`status-${ step.status }`, { disabled: step.disabled, current: step.current, running: step.running }]"
+            :aria-current="step.current ? 'step' : undefined"
+            :data-testid="`rancher-ai-ui-install-agent-step-${ step.key }`"
+          >
+            <i
+              :class="['icon', 'install-agent-step-status', step.icon]"
+              aria-hidden="true"
+            />
+            <div class="install-agent-step-content">
+              <span class="install-agent-step-label">
+                <router-link
+                  v-if="step.link"
+                  :to="step.link"
+                >
+                  {{ t(`ai.install.steps.${ step.key }.label`) }}
+                </router-link>
+                <template v-else>
+                  {{ t(`ai.install.steps.${ step.key }.label`) }}
+                </template>
+                <span class="sr-only">: {{ step.statusLabel }}</span>
+              </span>
+              <span
+                v-clean-html="t(`ai.install.steps.${ step.key }.description`, { disabled: step.disabled }, true)"
+                class="install-agent-step-description text-deemphasized"
+              />
+              <span
+                v-if="step.error"
+                class="install-agent-step-error text-error"
+              >
+                {{ step.error }}
+              </span>
+              <!-- A failed agent step is retried with its own buttons, the configuration step can't fail on its own -->
+              <div
+                v-if="step.key === InstallStep.Repository && step.status === InstallStepStatus.Error"
+                class="install-agent-actions"
+              >
+                <RcButton
+                  small
+                  variant="secondary"
+                  data-testid="rancher-ai-ui-install-agent-retry"
+                  @click="install"
+                >
+                  {{ t('ai.install.actions.retry') }}
+                </RcButton>
+              </div>
+              <div
+                v-if="step.key === InstallStep.Agent && showAgentActions"
+                class="install-agent-actions"
+              >
+                <RcButton
+                  small
+                  variant="secondary"
+                  data-testid="rancher-ai-ui-install-agent-edit-values"
+                  @click="openValuesModal"
+                >
+                  {{ t('ai.install.actions.editValues') }}
+                </RcButton>
+                <RcButton
+                  small
+                  variant="primary"
+                  data-testid="rancher-ai-ui-install-agent-install-chart"
+                  @click="installChart"
+                >
+                  {{ t(step.status === InstallStepStatus.Error ? 'ai.install.actions.retryInstallChart' : 'ai.install.actions.installChart') }}
+                </RcButton>
+              </div>
+              <!-- Hidden on the settings page, where the user applies the configuration -->
+              <div
+                v-if="step.key === InstallStep.Configure && (step.status === InstallStepStatus.Ready || step.status === InstallStepStatus.Error) && $route.name !== `c-cluster-settings-${ PRODUCT_NAME }`"
+                class="install-agent-actions"
+              >
+                <RcButton
+                  small
+                  variant="primary"
+                  data-testid="rancher-ai-ui-install-agent-configure"
+                  @click="routeToSettings"
+                >
+                  {{ t('ai.install.actions.configure') }}
+                </RcButton>
+              </div>
+              <div
+                v-if="step.key === InstallStep.Apply && step.status === InstallStepStatus.Error"
+                class="install-agent-actions"
+              >
+                <RcButton
+                  small
+                  variant="secondary"
+                  data-testid="rancher-ai-ui-install-agent-retry-apply"
+                  @click="retryApply"
+                >
+                  {{ t('ai.install.actions.retry') }}
+                </RcButton>
+              </div>
+              <span
+                v-if="step.key === InstallStep.Apply && state.configApplied"
+                class="install-agent-step-description"
+              >
+                {{ t('ai.install.applied') }}
+              </span>
+            </div>
+          </li>
+        </ol>
+        <div
+          v-if="state.configApplied"
+          class="install-agent-actions install-agent-actions-start"
+        >
+          <RcButton
+            small
+            variant="primary"
+            data-testid="rancher-ai-ui-install-agent-reload"
+            @click="emit('reload')"
+          >
+            <i class="icon icon-ai" />
+            {{ t('ai.install.actions.reload', {}, true) }}
+          </RcButton>
+        </div>
+      </template>
+    </div>
+  </div>
+  <app-modal
+    v-if="showValuesModal"
+    :width="800"
+    height="auto"
+    :click-to-close="false"
+  >
+    <AgentValuesModal
+      :value="valuesYaml"
+      :loading="valuesLoading"
+      :error="valuesError"
+      @save="installValues"
+      @restore="restoreValues"
+      @close="showValuesModal = false"
+    />
+  </app-modal>
+</template>
+
+<style lang="scss" scoped>
+.install-agent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 16px;
+  margin-top: auto;
+  margin-bottom: auto;
+  overflow-y: auto;
+}
+
+.install-agent-splash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 16px;
+}
+
+.install-agent-avatar-panel {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: 100%;
+  max-width: 250px;
+  min-width: 150px;
+}
+
+.install-agent-greeting {
+  position: relative;
+  width: 100%;
+  height: 104px;
+  grid-area: 1 / 1;
+  z-index: 20;
+}
+
+.install-agent-greeting-bubble {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #35B777;
+  color: var(--body-text);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.install-agent-avatar {
+  grid-area: 1 / 1;
+  z-index: 10;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  background: var(--body-bg);
+  color: var(--body-text);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
+.install-agent-splash-text {
+  text-align: center;
+  font-family: Lato;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.install-agent-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 12px;
+  line-height: 21px;
+  background: var(--body-bg);
+  color: var(--body-text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  word-break: break-word;
+}
+
+.install-agent-title {
+  margin-bottom: 4px;
+
+  b {
+    font-size: 1.2em;
+  }
+}
+
+.install-agent-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+
+  .icon {
+    margin-right: 4px;
+  }
+
+  &.install-agent-actions-start {
+    justify-content: flex-start;
+  }
+}
+
+.install-agent-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.install-agent-step {
+  display: flex;
+  gap: 12px;
+
+  // Same as the Planning tasks status icons
+  .install-agent-step-status {
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 8px;
+    line-height: 0.3;
+  }
+
+  &.status-done .install-agent-step-status {
+    color: var(--success);
+  }
+
+  &.current .install-agent-step-status {
+    color: var(--info);
+  }
+
+  &.running .install-agent-step-status {
+    color: var(--primary);
+  }
+
+  &.status-error .install-agent-step-status {
+    color: var(--error);
+  }
+
+  &.disabled {
+    .install-agent-step-status, .install-agent-step-label, .install-agent-step-description {
+      opacity: 0.5;
+    }
+  }
+
+  .install-agent-step-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .install-agent-step-label {
+    font-size: 15px;
+    font-weight: 600;
+
+    a {
+      color: var(--link);
+    }
+  }
+
+  .install-agent-actions {
+    justify-content: flex-start;
+    margin-top: 4px;
+  }
+}
+</style>
