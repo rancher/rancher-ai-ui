@@ -106,6 +106,10 @@ const options = () => {
   return out;
 };
 
+/**
+ * Tracks whether the chat panel menu is open.
+ * Used to close the chat panel menu when the chat becomes disabled.
+ */
 const isOpen = ref(false);
 </script>
 
@@ -113,6 +117,7 @@ const isOpen = ref(false);
   <div class="chat-console-menu-container">
     <rc-dropdown
       placement="top-end"
+      :open="isOpen && !props.disabled"
       @update:open="isOpen = $event"
     >
       <rc-dropdown-trigger

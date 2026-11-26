@@ -3,6 +3,7 @@ import ChatPo from '@/cypress/e2e/po/chat.po';
 import ChatPanelMenuPo from '@/cypress/e2e/po/chat-panel-menu.po';
 import { HistoryPo } from '@/cypress/e2e/po/history.po';
 import DeleteChatPromptPo from '@/cypress/e2e/po/dialog/delete-chat.po';
+import { AGENT_NAME, AGENT_NAMESPACE } from '@/cypress/e2e/blueprints/aiAgentApp';
 
 describe('Feature: chat-panel-menu', () => {
   const chat = new ChatPo();
@@ -206,5 +207,23 @@ describe('Feature: chat-panel-menu', () => {
     cy.get('.v-popper__popper').filter(':visible').should('not.contain', 'Auto-Scroll').and('not.contain', 'Desktop Notifications');
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-10-disabled-options');
+  });
+
+  it('Test 11: The open menu closes as soon as the chat becomes disabled', () => {
+    menu.toggleMenu();
+    menu.option('Download Messages').should('be.visible');
+
+    // The AI agent deployment goes away: the chat is disabled while the menu is open
+    cy.window().then((win: any) => {
+      const store = win.$globalApp.$store;
+
+      store.commit('management/remove', store.getters['management/byId']('apps.deployment', `${ AGENT_NAMESPACE }/${ AGENT_NAME }`));
+    });
+
+    cy.get('body').should(($body) => {
+      expect($body.find('.v-popper__popper:visible:contains("Download Messages")')).to.have.length(0);
+    });
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-11-menu-closed-when-disabled');
   });
 });
