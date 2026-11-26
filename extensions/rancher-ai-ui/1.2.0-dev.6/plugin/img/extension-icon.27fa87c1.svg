@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   id="Layer_2"
+   data-name="Layer 2"
+   viewBox="0 0 24.000001 24.000001"
+   version="1.1"
+   width="24"
+   height="24"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <style
+       id="style1">
+      .cls-1 {
+        fill: #8fd0b7;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4 {
+        stroke: #0c322c;
+        stroke-miterlimit: 10;
+        stroke-width: 2.01px;
+      }
+
+      .cls-5 {
+        fill: #c3e5d9;
+      }
+
+      .cls-2 {
+        fill: #30ba78;
+      }
+
+      .cls-3 {
+        fill: #fff;
+      }
+
+      .cls-4 {
+        fill: #35b777;
+      }
+    </style>
+  </defs>
+  <g
+     id="Layer_1-2"
+     data-name="Layer 1"
+     transform="matrix(0.12745805,0,0,0.12745805,1.4199656e-4,-4.9368632e-4)">
+    <g
+       id="g5">
+      <path
+         class="cls-3"
+         d="M 160.41,27.89 C 124.56,-7.96 66.45,-7.96 30.61,27.89 1.15,57.35 -4.09,101.85 14.87,136.67 L 1.42,186.88 51.63,173.43 c 34.82,18.97 79.32,13.73 108.78,-15.73 35.84,-35.84 35.84,-93.96 0,-129.8 z"
+         id="path1" />
+      <circle
+         class="cls-5"
+         cx="95.510002"
+         cy="92.790001"
+         r="75.379997"
+         id="circle1" />
+      <g
+         id="g4">
+        <path
+           class="cls-4"
+           d="M 138.65,73.21 123.86,65.86 V 76.98 L 101.15,65.7 H 67.31 L 44.75,88.26 v 22.63 l 11.28,11.28 H 67.31 L 78.59,110.89 V 99.54 h 11.28 v 11.27 h 11.28 V 99.54 h 11.28 v 11.27 h 11.28 V 99.54 h 22.56 V 85.48 c 0,-5.21 -2.95,-9.96 -7.61,-12.28 z"
+           id="path2" />
+        <path
+           class="cls-2"
+           d="m 78.59,99.54 v 0 c 0,-6.23 -5.05,-11.28 -11.28,-11.28 v 0 L 56.03,99.54 v 11.27 h 11.28 c 0,0 0,-11.27 0,-11.27"
+           id="path3" />
+        <circle
+           class="cls-1"
+           cx="134.98"
+           cy="88.260002"
+           r="5.6399999"
+           id="circle3" />
+        <circle
+           class="cls-2"
+           cx="137.23"
+           cy="90.510002"
+           r="2.24"
+           id="circle4" />
+      </g>
+    </g>
+  </g>
+</svg>

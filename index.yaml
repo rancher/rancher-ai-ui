@@ -13,6 +13,28 @@ entries:
       catalog.cattle.io/ui-component: plugins
       catalog.cattle.io/ui-extensions-version: '>= 3.0.0 < 4.0.0'
     apiVersion: v2
+    appVersion: 1.2.0-dev.6
+    created: "2026-11-26T20:21:07.94881393Z"
+    description: AI Assistant extension
+    digest: b01dd3033457f13a2eeefd2db418029fb1b4d5e3bf2175f31304d31c5395cd09
+    icon: https://raw.githubusercontent.com/rancher/rancher-ai-ui/main/pkg/rancher-ai-ui/assets/extension-icon.svg
+    name: rancher-ai-ui
+    type: application
+    urls:
+    - assets/rancher-ai-ui/rancher-ai-ui-1.2.0-dev.6.tgz
+    version: 1.2.0-dev.6
+  - annotations:
+      catalog.cattle.io/certified: rancher
+      catalog.cattle.io/display-name: AI Assistant
+      catalog.cattle.io/namespace: cattle-ui-plugin-system
+      catalog.cattle.io/os: linux
+      catalog.cattle.io/permits-os: linux, windows
+      catalog.cattle.io/prime-only: "true"
+      catalog.cattle.io/rancher-version: '>= 2.13.0'
+      catalog.cattle.io/scope: management
+      catalog.cattle.io/ui-component: plugins
+      catalog.cattle.io/ui-extensions-version: '>= 3.0.0 < 4.0.0'
+    apiVersion: v2
     appVersion: 1.2.0-dev.5
     created: "2026-11-19T18:12:07.991468727Z"
     description: AI Assistant extension
@@ -557,4 +579,4 @@ entries:
     urls:
     - assets/rancher-ai-ui/rancher-ai-ui-0.1.1.tgz
     version: 0.1.1
-generated: "2026-11-19T18:12:07.991000848Z"
+generated: "2026-11-26T20:21:07.948152772Z"
