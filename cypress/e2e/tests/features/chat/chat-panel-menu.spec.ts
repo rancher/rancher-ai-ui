@@ -9,6 +9,27 @@ describe('Feature: chat-panel-menu', () => {
   const chat = new ChatPo();
   const menu = new ChatPanelMenuPo();
 
+  // A chat without id is not initialized yet, which disables it
+  const setChatInitialized = (initialized: boolean) => {
+    cy.window().then((win: any) => {
+      const store = win.$globalApp.$store;
+
+      if (!initialized) {
+        win.chatIdBeforeTest = store.getters['rancher-ai-ui/chat/metadata']?.chatId;
+      }
+
+      store.commit('rancher-ai-ui/chat/setMetadata', { chatId: initialized ? win.chatIdBeforeTest : null });
+    });
+
+    cy.get(`[data-testid="rancher-ai-ui-chat-panel-${ initialized ? 'ready' : 'not-ready' }"]`).should('exist');
+  };
+
+  const menuIsClosed = () => {
+    cy.get('body').should(($body) => {
+      expect($body.find('.v-popper__popper:visible:contains("Download Messages")')).to.have.length(0);
+    });
+  };
+
   beforeEach(() => {
     cy.login();
     HomePagePo.goTo();
@@ -249,13 +270,44 @@ describe('Feature: chat-panel-menu', () => {
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-11-menu-closed-when-disabled');
   });
 
-  it('Test 12: Only the download, shortcuts and configuration options are shown while the chat is initializing', () => {
-    // A chat without id is not initialized yet
-    cy.window().then((win: any) => {
-      win.$globalApp.$store.commit('rancher-ai-ui/chat/setMetadata', { chatId: null });
-    });
+  it('Test 12: The menu shows the correct options when the chat becomes enabled and the menu is opened', () => {
+    setChatInitialized(false);
 
-    cy.get('[data-testid="rancher-ai-ui-chat-panel-not-ready"]').should('exist');
+    menu.toggleMenu();
+    menu.option('Download Messages').should('be.visible');
+    cy.get('.v-popper__popper').filter(':visible').should('not.contain', 'Auto-Scroll').and('not.contain', 'Desktop Notifications');
+
+    setChatInitialized(true);
+
+    // Still open, with all the options
+    menu.option('Download Messages').should('be.visible');
+    menu.option('Auto-Scroll').should('be.visible');
+    menu.option('Desktop Notifications').should('be.visible');
+    menu.option('View Keyboard Shortcuts').should('be.visible');
+    menu.option('Edit Configuration').should('be.visible');
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-12-enabled-options');
+  });
+
+  it('Test 13: The menu closed when the chat became disabled does not reopen when it is enabled again', () => {
+    menu.toggleMenu();
+    menu.option('Auto-Scroll').should('be.visible');
+
+    setChatInitialized(false);
+    menuIsClosed();
+
+    setChatInitialized(true);
+    menuIsClosed();
+
+    // Still usable: opened again by the user
+    menu.toggleMenu();
+    menu.option('Auto-Scroll').should('be.visible');
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-13-menu-not-reopened');
+  });
+
+  it('Test 14: Only the download, shortcuts and configuration options are shown while the chat is initializing', () => {
+    setChatInitialized(false);
 
     menu.toggleMenu();
     menu.option('Download Messages').should('be.visible');
@@ -263,6 +315,6 @@ describe('Feature: chat-panel-menu', () => {
     menu.option('Edit Configuration').should('be.visible');
     cy.get('.v-popper__popper').filter(':visible').should('not.contain', 'Auto-Scroll').and('not.contain', 'Desktop Notifications');
 
-    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-12-initializing-options');
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-14-initializing-options');
   });
 });

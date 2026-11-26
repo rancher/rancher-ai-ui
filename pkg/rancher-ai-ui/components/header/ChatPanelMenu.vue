@@ -111,14 +111,26 @@ const options = () => {
  * Used to close the chat panel menu when the chat becomes disabled.
  */
 const isOpen = ref(false);
+
+/**
+ * :key is used to force the recreation of the dropdown when the `disabled` prop changes.
+ * The dropdown is recreated when `disabled` changes: once disabled the menu must not reopen when enabled again.
+ */
+function onDropdownUnmounted() {
+  if (props.disabled) {
+    isOpen.value = false;
+  }
+}
 </script>
 
 <template>
   <div class="chat-console-menu-container">
     <rc-dropdown
+      :key="`${ props.disabled }`"
       placement="top-end"
       :open="isOpen && !props.disabled"
       @update:open="isOpen = $event"
+      @vue:unmounted="onDropdownUnmounted"
     >
       <rc-dropdown-trigger
         variant="ghost"
