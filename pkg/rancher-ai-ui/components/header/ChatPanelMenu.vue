@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type PropType, ref } from 'vue';
+import { type PropType } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from '@shell/composables/useI18n';
 import {
@@ -11,10 +11,12 @@ import { Preferences, StorageKey } from '../../types';
 import Notifications from '../../handlers/notification';
 
 interface MenuOption {
+  id:          string;
   label:       string;
   description: string;
   icon?:       string;
   warning?:    string;
+  disabled?:   boolean;
   action:     () => void;
 }
 
@@ -41,12 +43,13 @@ const emit = defineEmits([
   'update:preferences',
 ]);
 
-const options = () => {
+const options = (): MenuOption[] => {
   const isAutoScrollEnabled = props.preferences[StorageKey.ENABLE_AUTO_SCROLL];
   const isDesktopNotificationsEnabled = props.preferences[StorageKey.ENABLE_DESKTOP_NOTIFICATIONS];
 
-  const out: MenuOption[] = [
+  return [
     {
+      id:          'download',
       label:       t('ai.menu.options.chat.download.label'),
       description: t('ai.menu.options.chat.download.description'),
       icon:        'icon-download',
@@ -54,38 +57,35 @@ const options = () => {
         emit('download:chat');
       },
     },
-  ];
-
-  if (!props.disabled) {
-    out.push(
-      {
-        label:       t(`ai.menu.options.chat.autoscroll.label.${ isAutoScrollEnabled ? 'disable' : 'enable' }`),
-        description: t(`ai.menu.options.chat.autoscroll.description.${ isAutoScrollEnabled ? 'disable' : 'enable' }`),
-        icon:        isAutoScrollEnabled ? 'icon-mouse-on' : 'icon-mouse-off',
-        action:      () => {
-          emit('update:preferences', {
-            key:   StorageKey.ENABLE_AUTO_SCROLL,
-            value: !isAutoScrollEnabled
-          });
-        },
-      },
-      {
-        label:       t(`ai.menu.options.chat.desktopNotifications.label.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
-        description: t(`ai.menu.options.chat.desktopNotifications.description.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
-        icon:        isDesktopNotificationsEnabled ? 'icon-notify-bell-off' : 'icon-notify-bell',
-        warning:     isDesktopNotificationsEnabled && Notifications.isBlocked() ? t('ai.menu.options.chat.desktopNotifications.blocked', {}, true) : '',
-        action:      () => {
-          emit('update:preferences', {
-            key:   StorageKey.ENABLE_DESKTOP_NOTIFICATIONS,
-            value: !isDesktopNotificationsEnabled
-          });
-        }
-      }
-    );
-  }
-
-  out.push(
     {
+      id:          'autoscroll',
+      label:       t(`ai.menu.options.chat.autoscroll.label.${ isAutoScrollEnabled ? 'disable' : 'enable' }`),
+      description: t(`ai.menu.options.chat.autoscroll.description.${ isAutoScrollEnabled ? 'disable' : 'enable' }`),
+      icon:        isAutoScrollEnabled ? 'icon-mouse-on' : 'icon-mouse-off',
+      disabled:    props.disabled,
+      action:      () => {
+        emit('update:preferences', {
+          key:   StorageKey.ENABLE_AUTO_SCROLL,
+          value: !isAutoScrollEnabled
+        });
+      },
+    },
+    {
+      id:          'desktopNotifications',
+      label:       t(`ai.menu.options.chat.desktopNotifications.label.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
+      description: t(`ai.menu.options.chat.desktopNotifications.description.${ isDesktopNotificationsEnabled ? 'disable' : 'enable' }`),
+      icon:        isDesktopNotificationsEnabled ? 'icon-notify-bell-off' : 'icon-notify-bell',
+      warning:     isDesktopNotificationsEnabled && Notifications.isBlocked() ? t('ai.menu.options.chat.desktopNotifications.blocked', {}, true) : '',
+      disabled:    props.disabled,
+      action:      () => {
+        emit('update:preferences', {
+          key:   StorageKey.ENABLE_DESKTOP_NOTIFICATIONS,
+          value: !isDesktopNotificationsEnabled
+        });
+      }
+    },
+    {
+      id:          'shortcuts',
       label:       t('ai.menu.options.chat.shortcuts.label'),
       description: t('ai.menu.options.chat.shortcuts.description'),
       icon:        'icon-keyboard',
@@ -94,6 +94,7 @@ const options = () => {
       },
     },
     {
+      id:          'config',
       label:       t('ai.menu.options.chat.config.label'),
       description: t('ai.menu.options.chat.config.description'),
       icon:        'icon-gear',
@@ -101,37 +102,13 @@ const options = () => {
         emit('config:chat');
       },
     }
-  );
-
-  return out;
+  ];
 };
-
-/**
- * Tracks whether the chat panel menu is open.
- * Used to close the chat panel menu when the chat becomes disabled.
- */
-const isOpen = ref(false);
-
-/**
- * :key is used to force the recreation of the dropdown when the `disabled` prop changes.
- * The dropdown is recreated when `disabled` changes: once disabled the menu must not reopen when enabled again.
- */
-function onDropdownUnmounted() {
-  if (props.disabled) {
-    isOpen.value = false;
-  }
-}
 </script>
 
 <template>
   <div class="chat-console-menu-container">
-    <rc-dropdown
-      :key="`${ props.disabled }`"
-      placement="top-end"
-      :open="isOpen && !props.disabled"
-      @update:open="isOpen = $event"
-      @vue:unmounted="onDropdownUnmounted"
-    >
+    <rc-dropdown placement="top-end">
       <rc-dropdown-trigger
         variant="ghost"
         small
@@ -140,9 +117,10 @@ function onDropdownUnmounted() {
       </rc-dropdown-trigger>
       <template #dropdownCollection>
         <rc-dropdown-item
-          v-for="(opt, i) in options()"
-          :key="i"
+          v-for="opt in options()"
+          :key="opt.id"
           v-clean-tooltip="opt.description"
+          :disabled="opt.disabled"
           @click="opt.action"
         >
           {{ opt.label }}

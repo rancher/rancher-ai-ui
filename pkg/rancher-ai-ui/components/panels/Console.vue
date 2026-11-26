@@ -253,7 +253,14 @@ watch(
     }
 
     if (!newDisabled && (oldDisabled || oldChatId !== newChatId)) {
-      nextTick(() => focusInput());
+      nextTick(() => {
+        const active = document.activeElement;
+
+        // Not taken from the chat menu, where the user can be when the chat is enabled
+        if (!active?.closest?.('.chat-console-menu-container')) {
+          focusInput();
+        }
+      });
     }
   }
 );

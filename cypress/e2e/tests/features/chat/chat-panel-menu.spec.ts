@@ -24,12 +24,6 @@ describe('Feature: chat-panel-menu', () => {
     cy.get(`[data-testid="rancher-ai-ui-chat-panel-${ initialized ? 'ready' : 'not-ready' }"]`).should('exist');
   };
 
-  const menuIsClosed = () => {
-    cy.get('body').should(($body) => {
-      expect($body.find('.v-popper__popper:visible:contains("Download Messages")')).to.have.length(0);
-    });
-  };
-
   beforeEach(() => {
     cy.login();
     HomePagePo.goTo();
@@ -185,10 +179,9 @@ describe('Feature: chat-panel-menu', () => {
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-9-copy-last-message');
   });
 
-  it('Test 10: Auto-scroll and desktop notifications options are hidden while a confirmation is pending (Chat is disabled)', () => {
+  it('Test 10: Auto-scroll and desktop notifications options are disabled while a confirmation is pending (Chat is disabled)', () => {
     menu.toggleMenu();
-    menu.option('Auto-Scroll').should('be.visible');
-    menu.option('Desktop Notifications').should('be.visible');
+    menu.preferenceOptionsAreDisabled(false);
 
     cy.enqueueLLMResponse({
       agentResponses: [{
@@ -226,15 +219,11 @@ describe('Feature: chat-panel-menu', () => {
 
     confirmationRequestMessage.isCompleted();
 
-    cy.get('body').should(($body) => {
-      expect($body.find('.v-popper__popper:visible:contains("Download Messages")')).to.have.length(0);
-    });
-
     menu.toggleMenu();
     menu.option('Download Messages').should('be.visible');
     menu.option('View Keyboard Shortcuts').should('be.visible');
     menu.option('Edit Configuration').should('be.visible');
-    cy.get('.v-popper__popper').filter(':visible').should('not.contain', 'Auto-Scroll').and('not.contain', 'Desktop Notifications');
+    menu.preferenceOptionsAreDisabled();
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-10-disabled-options');
 
@@ -246,15 +235,14 @@ describe('Feature: chat-panel-menu', () => {
     chat.getMessage(4).containsText('Pod created successfully.');
 
     menu.toggleMenu();
-    menu.option('Auto-Scroll').should('be.visible');
-    menu.option('Desktop Notifications').should('be.visible');
+    menu.preferenceOptionsAreDisabled(false);
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-10-enabled-options');
   });
 
-  it('Test 11: The open menu closes as soon as the chat becomes disabled', () => {
+  it('Test 11: The open menu stays open and disables the auto-scroll and desktop notifications options when the chat becomes disabled', () => {
     menu.toggleMenu();
-    menu.option('Download Messages').should('be.visible');
+    menu.preferenceOptionsAreDisabled(false);
 
     // The AI agent deployment goes away: the chat is disabled while the menu is open
     cy.window().then((win: any) => {
@@ -263,11 +251,10 @@ describe('Feature: chat-panel-menu', () => {
       store.commit('management/remove', store.getters['management/byId']('apps.deployment', `${ AGENT_NAMESPACE }/${ AGENT_NAME }`));
     });
 
-    cy.get('body').should(($body) => {
-      expect($body.find('.v-popper__popper:visible:contains("Download Messages")')).to.have.length(0);
-    });
+    menu.option('Download Messages').should('be.visible');
+    menu.preferenceOptionsAreDisabled();
 
-    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-11-menu-closed-when-disabled');
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-11-menu-open-when-disabled');
   });
 
   it('Test 12: The menu shows the correct options when the chat becomes enabled and the menu is opened', () => {
@@ -275,46 +262,99 @@ describe('Feature: chat-panel-menu', () => {
 
     menu.toggleMenu();
     menu.option('Download Messages').should('be.visible');
-    cy.get('.v-popper__popper').filter(':visible').should('not.contain', 'Auto-Scroll').and('not.contain', 'Desktop Notifications');
+    menu.preferenceOptionsAreDisabled();
 
     setChatInitialized(true);
 
-    // Still open, with all the options
+    // Still open, with all the options usable
     menu.option('Download Messages').should('be.visible');
-    menu.option('Auto-Scroll').should('be.visible');
-    menu.option('Desktop Notifications').should('be.visible');
+    menu.preferenceOptionsAreDisabled(false);
     menu.option('View Keyboard Shortcuts').should('be.visible');
     menu.option('Edit Configuration').should('be.visible');
+
+    // The options did not move: the keyboard goes through all of them
+    menu.optionItem('Download Messages').focus();
+    cy.focused().type('{downArrow}');
+    cy.focused().should('contain', 'Auto-Scroll');
+    cy.focused().type('{downArrow}');
+    cy.focused().should('contain', 'Desktop Notifications');
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-12-enabled-options');
   });
 
-  it('Test 13: The menu closed when the chat became disabled does not reopen when it is enabled again', () => {
-    menu.toggleMenu();
-    menu.option('Auto-Scroll').should('be.visible');
-
-    setChatInitialized(false);
-    menuIsClosed();
-
-    setChatInitialized(true);
-    menuIsClosed();
-
-    // Still usable: opened again by the user
-    menu.toggleMenu();
-    menu.option('Auto-Scroll').should('be.visible');
-
-    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-13-menu-not-reopened');
-  });
-
-  it('Test 14: Only the download, shortcuts and configuration options are shown while the chat is initializing', () => {
+  it('Test 13: The auto-scroll and desktop notifications options are disabled while the chat is initializing', () => {
     setChatInitialized(false);
 
     menu.toggleMenu();
     menu.option('Download Messages').should('be.visible');
     menu.option('View Keyboard Shortcuts').should('be.visible');
     menu.option('Edit Configuration').should('be.visible');
-    cy.get('.v-popper__popper').filter(':visible').should('not.contain', 'Auto-Scroll').and('not.contain', 'Desktop Notifications');
+    menu.preferenceOptionsAreDisabled();
 
-    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-14-initializing-options');
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-13-initializing-options');
+  });
+
+  it('Test 14: The ⋮ button keeps the focus when a confirmation arrives', () => {
+    cy.enqueueLLMResponse({
+      agentResponses: [{
+        agent:   'rancher',
+        mcpTool: {
+          name: 'createKubernetesResource',
+          args: {
+            kind:      'Pod',
+            name:      'my-pod-focus',
+            manifest:  `{
+              apiVersion: 'v1',
+              kind:       'Pod',
+              metadata:   {
+                name:      'my-pod-focus',
+                namespace: 'default'
+              },
+              spec:       {
+                containers: [{
+                  name:  'my-container',
+                  image: 'nginx:latest'
+                }]
+              }
+            }`,
+            cluster:   'local',
+            namespace: 'default'
+          }
+        },
+      }],
+      text: 'Pod created successfully.'
+    });
+
+    chat.sendMessage('Create a pod named my-pod-focus in default namespace');
+    menu.trigger().focus();
+
+    chat.getMessage(3).isCompleted();
+    chat.getMessage(3).confirmButton().should('be.visible');
+
+    menu.trigger().should('have.focus');
+
+    // Enter still opens the menu, with the options of a disabled chat
+    cy.focused().type('{enter}');
+    menu.option('Download Messages').should('be.visible');
+    menu.preferenceOptionsAreDisabled();
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-14-focus-on-confirmation');
+  });
+
+  it('Test 15: A focused option keeps the focus when the chat becomes disabled and enabled again', () => {
+    menu.trigger().focus();
+    cy.focused().type('{enter}');
+    menu.option('Download Messages').should('be.visible');
+    cy.focused().should('have.attr', 'dropdown-menu-item');
+
+    setChatInitialized(false);
+    menu.preferenceOptionsAreDisabled();
+    cy.focused().should('contain', 'Download Messages');
+
+    setChatInitialized(true);
+    menu.preferenceOptionsAreDisabled(false);
+    cy.focused().should('contain', 'Download Messages');
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-15-focus-kept');
   });
 });
