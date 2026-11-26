@@ -25,6 +25,11 @@ describe('Feature: chat-panel-menu', () => {
     cy.cleanChatHistory();
   });
 
+  after(() => {
+    // Created by the confirmed action of Test 10
+    cy.deleteRancherResource('v1', 'pods', 'default/my-pod', false);
+  });
+
   it('Test 1: Menu button opens the ⋮ dropdown', () => {
     menu.toggleMenu();
 
