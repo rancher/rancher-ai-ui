@@ -59,6 +59,7 @@ function toggleHistory() {
             small
             variant="ghost"
             class="btn-open-history"
+            :class="{ disabled: props.disabled }"
             data-testid="rancher-ai-ui-chat-history-button"
             :disabled="props.disabled"
             @click="toggleHistory"
@@ -160,6 +161,13 @@ function toggleHistory() {
 
 .btn-close, .btn-open-history {
   margin: 0 !important;
+}
+
+.btn-open-history {
+  &.disabled {
+    background-color: var(--disabled-bg);
+    border-color: var(--disabled-bg);
+  }
 }
 
 .icon-menu {
