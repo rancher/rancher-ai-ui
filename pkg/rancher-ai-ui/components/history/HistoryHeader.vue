@@ -65,14 +65,6 @@ function toggleHistory() {
   gap: 16px;
 }
 
-.theme-dark .chat-header {
-  color: #fff;
-
-  .chat-history-btn:hover {
-    background: var(--accent-btn);
-  }
-}
-
 .chat-title {
   display: flex;
   flex-direction: row;
@@ -113,7 +105,7 @@ function toggleHistory() {
 }
 
 .chat-history-btn:hover {
-  background: color-mix(in srgb, #A7BFF1 80%, #fff);
+  background: var(--accent-btn);
 }
 
 .btn-close, .btn-open-history {
