@@ -133,3 +133,15 @@ const isOpen = ref(false);
     </rc-dropdown>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.chat-console-menu-container {
+  .rc-button {
+    border-radius: var(--border-radius);
+
+    &:hover {
+      background: var(--accent-btn);
+    }
+  }
+}
+</style>

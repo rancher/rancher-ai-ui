@@ -117,7 +117,7 @@ class BadgeSlidingOverlay extends HooksOverlay {
       },
       overlay: {
         background: '#496192',
-        color:      'var(--primary-text)',
+        color:      '#ffffff',
       },
     };
 

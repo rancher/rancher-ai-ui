@@ -208,7 +208,6 @@ function dismissEdit() {
   width: min(75%, 100vw);
   max-width: 90vw;
   height: 100%;
-  background: var(--body-bg);
   opacity: 0.95; /* semi-transparent background */
   box-shadow: 2px 0 8px rgba(0,0,0,0.08);
   display: flex;
@@ -223,10 +222,12 @@ function dismissEdit() {
 }
 
 .history-header {
+  background: linear-gradient(var(--sortable-table-selected-bg), var(--sortable-table-selected-bg)), var(--sortable-table-bg);
   height: 54px;
 }
 
 .history-body {
+  background: var(--body-bg);
   flex: 1;
   padding: 16px;
   overflow: hidden;

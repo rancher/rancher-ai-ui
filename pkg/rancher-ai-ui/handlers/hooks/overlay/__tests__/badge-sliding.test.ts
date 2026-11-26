@@ -231,7 +231,7 @@ describe('BadgeSlidingOverlay', () => {
       expect(result).toHaveProperty('badge');
       expect(result).toHaveProperty('overlay');
       expect(result.overlay.background).toBe('#496192');
-      expect(result.overlay.color).toBe('var(--primary-text)');
+      expect(result.overlay.color).toBe('#ffffff');
     });
 
     it('should compute dark theme properties with different opacity', () => {
@@ -509,7 +509,7 @@ describe('BadgeSlidingOverlay', () => {
         },
         overlay: {
           background: '#496192',
-          color:      'var(--primary-text)'
+          color:      '#ffffff'
         }
       });
 
