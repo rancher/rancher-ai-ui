@@ -511,7 +511,7 @@ function clearNotifications() {
     >
       <Header
         :preferences="preferences"
-        :disabled="disabled"
+        :disabled="!isChatInitialized || disabled"
         :readonly="!hasPermissions || installMode"
         @close:chat="closePanel"
         @config:chat="routeToSettings"

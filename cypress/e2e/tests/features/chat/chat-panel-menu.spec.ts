@@ -21,6 +21,7 @@ describe('Feature: chat-panel-menu', () => {
   });
 
   afterEach(() => {
+    cy.clearLLMResponses();
     cy.cleanChatHistory();
   });
 
@@ -162,7 +163,6 @@ describe('Feature: chat-panel-menu', () => {
     menu.toggleMenu();
     menu.option('Auto-Scroll').should('be.visible');
     menu.option('Desktop Notifications').should('be.visible');
-    menu.toggleMenu();
 
     cy.enqueueLLMResponse({
       agentResponses: [{
@@ -200,6 +200,10 @@ describe('Feature: chat-panel-menu', () => {
 
     confirmationRequestMessage.isCompleted();
 
+    cy.get('body').should(($body) => {
+      expect($body.find('.v-popper__popper:visible:contains("Download Messages")')).to.have.length(0);
+    });
+
     menu.toggleMenu();
     menu.option('Download Messages').should('be.visible');
     menu.option('View Keyboard Shortcuts').should('be.visible');
@@ -207,6 +211,19 @@ describe('Feature: chat-panel-menu', () => {
     cy.get('.v-popper__popper').filter(':visible').should('not.contain', 'Auto-Scroll').and('not.contain', 'Desktop Notifications');
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-10-disabled-options');
+
+    menu.toggleMenu();
+
+    // Answered: the chat is enabled again and so are the options
+    confirmationRequestMessage.confirmButton().click();
+    confirmationRequestMessage.isConfirmed();
+    chat.getMessage(4).containsText('Pod created successfully.');
+
+    menu.toggleMenu();
+    menu.option('Auto-Scroll').should('be.visible');
+    menu.option('Desktop Notifications').should('be.visible');
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-10-enabled-options');
   });
 
   it('Test 11: The open menu closes as soon as the chat becomes disabled', () => {
@@ -225,5 +242,22 @@ describe('Feature: chat-panel-menu', () => {
     });
 
     cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-11-menu-closed-when-disabled');
+  });
+
+  it('Test 12: Only the download, shortcuts and configuration options are shown while the chat is initializing', () => {
+    // A chat without id is not initialized yet
+    cy.window().then((win: any) => {
+      win.$globalApp.$store.commit('rancher-ai-ui/chat/setMetadata', { chatId: null });
+    });
+
+    cy.get('[data-testid="rancher-ai-ui-chat-panel-not-ready"]').should('exist');
+
+    menu.toggleMenu();
+    menu.option('Download Messages').should('be.visible');
+    menu.option('View Keyboard Shortcuts').should('be.visible');
+    menu.option('Edit Configuration').should('be.visible');
+    cy.get('.v-popper__popper').filter(':visible').should('not.contain', 'Auto-Scroll').and('not.contain', 'Desktop Notifications');
+
+    cy.get('[data-testid="rancher-ai-ui-chat-container"]').screenshot('chat-panel-menu-test-12-initializing-options');
   });
 });
